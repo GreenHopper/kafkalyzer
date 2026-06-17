@@ -134,18 +134,23 @@ jobs:
           toolchain: stable
           cache-workspaces: "rust"
 
-      - name: Install OpenSSL via vcpkg
+      - name: Install OpenSSL and Cyrus SASL via vcpkg
         run: |
           vcpkg install openssl:x64-windows
+          vcpkg install cyrus-sasl:x64-windows
 
-      - name: Configure OpenSSL and vcpkg paths
+      - name: Configure OpenSSL, SASL and vcpkg paths
         shell: pwsh
         run: |
-          echo "OPENSSL_DIR=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows" >> $env:GITHUB_ENV
-          echo "OPENSSL_ROOT_DIR=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows" >> $env:GITHUB_ENV
+          $vcpkgInstallPath = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
+          echo "OPENSSL_DIR=$vcpkgInstallPath" >> $env:GITHUB_ENV
+          echo "OPENSSL_ROOT_DIR=$vcpkgInstallPath" >> $env:GITHUB_ENV
+          echo "SASL2_DIR=$vcpkgInstallPath" >> $env:GITHUB_ENV
+          echo "SASL2_LIB_DIR=$vcpkgInstallPath/lib" >> $env:GITHUB_ENV
+          echo "SASL2_INCLUDE_DIR=$vcpkgInstallPath/include" >> $env:GITHUB_ENV
           echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/lib/pkgconfig" >> $env:GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows" >> $env:GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$vcpkgInstallPath/lib/pkgconfig" >> $env:GITHUB_ENV
+          echo "CMAKE_PREFIX_PATH=$vcpkgInstallPath" >> $env:GITHUB_ENV
 
       - name: Install Flutter dependencies
         run: flutter pub get
