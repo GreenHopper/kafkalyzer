@@ -1,0 +1,115 @@
+# version: '3'
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: sift_kafka
+    ports:
+      - "9094:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://sift_kafka:29092,PLAINTEXT_HOST://localhost:9094'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@sift_kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://sift_kafka:29092,CONTROLLER://sift_kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      # This generates a cluster ID automatically
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: sift_kafka_ui
+    ports:
+      - "8080:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: local_kraft
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: sift_kafka:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+    depends_on:
+      - kafka
+
+  init-kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: sift_init_data
+    depends_on:
+      - kafka
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # Wait for Kafka to be reachable
+      echo 'Waiting for Kafka to be ready...'
+      # We just loop on a simple command
+      cub kafka-ready -b sift_kafka:29092 1 30 || exit 1
+
+      echo 'Kafka is ready. Creating topics...'
+      kafka-topics --bootstrap-server sift_kafka:29092 --create --if-not-exists --topic user-activity --replication-factor 1 --partitions 3
+      kafka-topics --bootstrap-server sift_kafka:29092 --create --if-not-exists --topic system-logs --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server sift_kafka:29092 --create --if-not-exists --topic inventory-updates --replication-factor 1 --partitions 2
+
+      echo 'Producing sample data...'
+      
+      # Sample User Activity
+      (for i in {1..1000}; do
+        echo \"$$i:{\\\"user_id\\\": $$i, \\\"action\\\": \\\"login\\\", \\\"timestamp\\\": $$(date +%s)}\"
+      done) | kafka-console-producer --bootstrap-server sift_kafka:29092 --topic user-activity --property "parse.key=true" --property "key.separator=:"
+      
+      echo \"{\\\"level\\\": \\\"INFO\\\", \\\"msg\\\": \\\"System started\\\"}\" | kafka-console-producer --bootstrap-server sift_kafka:29092 --topic system-logs
+      echo \"{\\\"level\\\": \\\"WARN\\\", \\\"msg\\\": \\\"Memory usage high\\\"}\" | kafka-console-producer --bootstrap-server sift_kafka:29092 --topic system-logs
+      echo \"{\\\"level\\\": \\\"ERROR\\\", \\\"msg\\\": \\\"Connection timeout\\\"}\" | kafka-console-producer --bootstrap-server sift_kafka:29092 --topic system-logs
+
+      echo \"{\\\"item\\\": \\\"Widget A\\\", \\\"quantity\\\": 100}\" | kafka-console-producer --bootstrap-server sift_kafka:29092 --topic inventory-updates
+      echo \"{\\\"item\\\": \\\"Gadget B\\\", \\\"quantity\\\": 50}\" | kafka-console-producer --bootstrap-server sift_kafka:29092 --topic inventory-updates
+
+      echo 'Initialization complete.'
+      "
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    container_name: sift_schema_registry
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'sift_kafka:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+
+  init-avro-data:
+    image: confluentinc/cp-schema-registry:7.6.0
+    container_name: sift_init_avro
+    depends_on:
+      - kafka
+      - schema-registry
+    entrypoint: []
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cub sr-ready schema-registry 8081 30 || exit 1
+        echo 'Cleaning up old schema...'
+        curl -s -X DELETE http://schema-registry:8081/subjects/avro-test-topic-value
+        
+        echo 'Producing Avro data per Confluent tutorial...'
+        SCHEMA='{"type":"record","name":"User","fields":[{"name":"id","type":"int"},{"name":"name","type":"string"}]}'
+        
+        (for i in $$(seq 1 2000); do
+          echo "user_$$i:{\"id\": $$i, \"name\": \"User_$$i\"}"
+        done) | kafka-avro-console-producer \
+          --bootstrap-server sift_kafka:29092 \
+          --topic avro-test-topic \
+          --property schema.registry.url=http://schema-registry:8081 \
+          --property value.schema="$$SCHEMA" \
+          --property parse.key=true \
+          --property key.separator=: \
+          --property key.serializer=org.apache.kafka.common.serialization.StringSerializer
+        
+        echo 'Avro initialization complete.'
+        sleep infinity

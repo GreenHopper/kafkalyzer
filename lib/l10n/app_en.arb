@@ -1,0 +1,345 @@
+{
+  "@@locale": "en",
+  "appTitle": "Kafkalyzer",
+  "explorer": "Explorer",
+  "multiSearch": "Multi-Search",
+  "scripts": "Scripts",
+  "orders": "Orders",
+  "settings": "Settings",
+  "unknownView": "Unknown View",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "apply": "Apply",
+  "clear": "Clear",
+  "now": "Now",
+  "ago": "ago",
+  "custom": "Custom",
+  "quickTimeSelection": "Quick Time Selection",
+  "editVariable": "Edit Variable",
+  "name": "Name",
+  "type": "Type",
+  "source": "Source",
+  "usedIn": "Used In",
+  "actions": "Actions",
+  "addStep": "Add Step",
+  "unnamedStep": "Unnamed Step",
+  "steps": "Steps",
+  "variables": "Variables",
+  "general": "General",
+  "clusterConfiguration": "Cluster Configuration",
+  "import": "Import",
+  "export": "Export",
+  "addCluster": "Add Cluster",
+  "deleteCluster": "Delete Cluster",
+  "deleteClusterConfirmation": "Are you sure you want to delete {clusterName}?",
+  "@deleteClusterConfirmation": {
+    "placeholders": {
+      "clusterName": {
+        "type": "String"
+      }
+    }
+  },
+  "clustersImportedSuccessfully": "Clusters imported successfully",
+  "failedToImport": "Failed to import: {error}",
+  "@failedToImport": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "clustersExportedSuccessfully": "Clusters exported successfully",
+  "failedToExport": "Failed to export: {error}",
+  "@failedToExport": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noActiveStreams": "No active streams",
+  "clearAll": "Clear All",
+  "startSearch": "Start search",
+  "viewAll": "View All",
+  "stop": "Stop",
+  "stream": "Stream",
+  "messageDetails": "Message Details",
+  "copyMessage": "Copy message",
+  "fullMessageCopied": "Full message copied to clipboard",
+  "metadataCopied": "Metadata copied to clipboard",
+  "contentCopied": "Content copied to clipboard",
+  "raw": "Raw",
+  "tree": "Tree",
+  "cards": "Cards",
+  "loadOrders": "Load Orders",
+  "noOrdersFound": "No orders found. Click Load to search.",
+  "noOrdersMatchFilter": "No orders match the filter.",
+  "pleaseSelectCluster": "Please select a cluster",
+  "failedToLoadOrders": "Failed to load orders: {error}",
+  "@failedToLoadOrders": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "run": "Run",
+  "newRun": "New Run",
+  "noVariablesRequired": "No variables required.",
+  "noPastRunsFound": "No past runs found.",
+  "runArchiveImported": "Run archive imported",
+  "failedToImportRun": "Failed to import run: {error}",
+  "@failedToImportRun": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "runArchiveExported": "Run archive exported",
+  "deleteRunResult": "Delete Run Result",
+  "deleteRunResultConfirmation": "Are you sure you want to delete this run result?",
+  "runResultDeleted": "Run result deleted",
+  "allMessages": "All Messages",
+  "otherResults": "Other Results",
+  "noResultsFound": "No results found matching '{phrase}'",
+  "@noResultsFound": {
+    "placeholders": {
+      "phrase": {
+        "type": "String"
+      }
+    }
+  },
+  "editStep": "Edit Step",
+  "addExtraction": "Add Extraction",
+  "switchLightMode": "Switch to Light Mode",
+  "switchDarkMode": "Switch to Dark Mode",
+  "defaultScriptOutputDir": "Default Script Output Directory",
+  "selectAll": "Select All",
+  "deselectAll": "Deselect All",
+  "active": "Active",
+  "edit": "Edit",
+  "simulateOrder": "Simulate Order",
+  "noClustersAvailable": "No clusters available",
+  "cluster": "Cluster",
+  "maxOrders": "Max Orders",
+  "filterByMessageId": "Filter by Message ID, CORID or PMXCOR ID",
+  "enterMessageIdToFilter": "Enter message ID, CORID or PMXCOR ID...",
+  "searchById": "Search by ID, CORID or PMXCOR ID",
+  "showingOrders": "Showing {filtered} of {total} orders",
+  "@showingOrders": {
+    "placeholders": {
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "aiAnalysisDataAvailable": "AI Analysis Data Available",
+  "pmxcorStatus": "{status}",
+  "@pmxcorStatus": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "statusOpen": "OPEN",
+  "statusAnalyzing": "AI ANALYSIS STARTED",
+  "statusCompleted": "AI ANALYSIS DONE",
+  "statusFailed": "FAILED",
+  "clusters": "CLUSTERS",
+  "selectClusterToViewTopics": "Select a cluster to view topics",
+  "topics": "Topics",
+  "clusterLabel": "Cluster: {name}",
+  "@clusterLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "showInternal": "Show internal",
+  "reloadTopicsAndSchemas": "Reload Topics & Schemas",
+  "filterTopics": "Filter topics...",
+  "multiStreamConfig": "Multi-Stream Config",
+  "selectOutputDirectory": "Select Output Directory",
+  "newSearchStream": "New Search Stream",
+  "reloadTopics": "Reload Topics",
+  "topic": "Topic",
+  "selectTopic": "Select Topic",
+  "loadingTopics": "Loading topics...",
+  "fieldOptional": "Field (Opt.)",
+  "valuesCommaSeparated": "Values (comma sep.)",
+  "scope": "Scope",
+  "contains": "Contains",
+  "regex": "Regex",
+  "exact": "Exact",
+  "key": "Key",
+  "value": "Value",
+  "both": "Both",
+  "fastTrace": "Fast Trace (Hash Key)",
+  "limit": "Limit",
+  "limitOrders": "Enable order limit",
+  "partitionOptional": "Partition (Opt.)",
+  "importScripts": "Import Scripts",
+  "exportSelectedScript": "Export Selected Script",
+  "exportScript": "Export Script",
+  "createNewScript": "Create New Script",
+  "scriptsImportedSuccessfully": "Scripts imported successfully",
+  "scriptExportedSuccessfully": "Script exported successfully",
+  "history": "History",
+  "editDefinition": "Edit Definition",
+  "newScript": "New Script",
+  "useSidebarToSelectScript": "Use the sidebar to select or create a script.",
+  "configuration": "Configuration",
+  "exportConfiguration": "Export Configuration",
+  "importConfiguration": "Import Configuration",
+  "configurationExportedSuccessfully": "Configuration exported successfully",
+  "configurationImportedSuccessfully": "Configuration imported successfully",
+  "copiedToClipboard": "Copied to clipboard",
+  "reviewPreviousRuns": "Review Previous Runs",
+  "maxScriptRunHistory": "Max Script Runs to keep",
+  "scriptExecution": "Script Execution: {name}",
+  "@scriptExecution": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scriptNotFound": "Script '{name}' not found",
+  "@scriptNotFound": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "selectValidScript": "Please select a valid script first.",
+  "rerunNotIntegrated": "Rerun from history is not fully integrated in Orders View yet.",
+  "kiError": "AI Error",
+  "totalOrders": "{total} Orders",
+  "@totalOrders": {
+    "placeholders": {
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "limitResults": "Limit results",
+  "maxResults": "Max Results",
+  "startCondition": "Start Condition",
+  "stopCondition": "Stop Condition",
+  "startOffset": "Start Offset",
+  "startTimestamp": "Start Timestamp",
+  "endOffset": "End Offset",
+  "endTimestamp": "End Timestamp",
+  "end": "End",
+  "latest": "Latest",
+  "earliest": "Earliest",
+  "offset": "Offset",
+  "timestamp": "Timestamp",
+  "duplicateScript": "Duplicate Script",
+  "load": "Load",
+  "searchingForOrders": "Searching for orders...",
+  "searchingInTopic": "Searching in: {topic}",
+  "@searchingInTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "topicsProgress": "Completed {completed} of {total} topics",
+  "@topicsProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "scannedCount": "Scanned: {count}",
+  "@scannedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "noProgressInfo": "No progress info",
+  "runSummary": "Run Summary",
+  "runDetails": "Run Details",
+  "parameters": "Parameters",
+  "examinedMessages": "Examined: {count} messages",
+  "@examinedMessages": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "firstAppearanceForKey": "First appearance for Key: {key}",
+  "@firstAppearanceForKey": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "noDifferencesFound": "No differences found.",
+  "chronological": "Chronological",
+  "byTopic": "By Topic",
+  "byStep": "By Step",
+  "matchesCount": "{current} / {total} matches",
+  "@matchesCount": {
+    "placeholders": {
+      "current": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "stepMatches": "{count} matches",
+  "@stepMatches": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "searchResults": "Search results...",
+  "scanned": "{count} scanned",
+  "@scanned": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "exportMessages": "Export Messages",
+  "messagesExportedSuccessfully": "Messages exported successfully",
+  "messagesExportFailed": "Failed to export messages: {error}",
+  "@messagesExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
+}

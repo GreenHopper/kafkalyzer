@@ -1,0 +1,40 @@
+schema: spec-driven
+
+# Project context
+# This is shown to AI when creating artifacts.
+context: |
+  Tech Stack:
+    - Frontend: Flutter (Dart 3.x) targeting cross-platform desktop (Linux, macOS, Windows).
+      - State Management & DI: get_it, watch_it, ChangeNotifier, ValueNotifier.
+      - Navigation & Routing: go_router.
+      - Data Storage & Persistence: shared_preferences (local JSON/plist stores).
+      - Styling & Theming: flex_color_scheme, google_fonts, Material 3.
+      - UI Libraries: data_table_2, timelines_plus, json_explorer, file_picker.
+    - Backend: Rust Cargo Workspace located under `rust/`.
+      - `rust_lib_kafkalyzer`: Main bridge crate / API wrapper for Dart integration.
+      - `kafkalyzer-core`: Pure Rust library for AS400 decoding and Avro conversions.
+      - `kafkalyzer-kafka`: Native Kafka transport library (connection, consumer, rdkafka wrapper).
+    - Bridge Layer: communication generated via flutter_rust_bridge v2.
+
+  Key Guidelines & Architecture:
+    - Separation of Concerns: Decouple purely computational logic (e.g., kafkalyzer-core decoding, schemas) from platform-dependent native/I/O libraries like rdkafka and openssl (kafkalyzer-kafka) to ease compilation, cross-compilation (e.g., Docker-based Windows builds), and unit testing.
+    - Bridge Boundary Type Isolation (Orphan Rule): All structs passed directly between Rust and Dart (e.g., ClusterProfile, KafkaMessage, ConsumerLag) must be defined locally in the main bridge crate (rust_lib_kafkalyzer under `rust/src/api/`) and mapped to/from domain types at the boundary.
+    - Code Quality & Style:
+      - Limit line length to a maximum of 120 characters for both Dart and Rust source files.
+      - Format Dart code strictly using `dart format`.
+      - Format Rust code strictly using `cargo fmt`.
+      - Use structured logging (via Dart's `logger` or `developer.log`) instead of plain `print` statements.
+      - Handle all potential exceptions and errors gracefully; do not let operations fail silently.
+
+# Per-artifact generation rules
+rules:
+  proposal:
+    - Clearly document the "Why", "What", and "How" of the changes.
+    - Explicitly detail any new, modified, or deleted capabilities.
+  design:
+    - Do not modify existing Dart/Flutter UI code unless explicitly requested or necessary.
+    - Maintain backwards compatibility of all existing Flutter/Dart integrations and Rust-Dart API signatures.
+    - Detail design choices, state flow, and any alternatives considered.
+  tasks:
+    - Break down execution steps logically by Rust workspace crates first, then bridge generation, and finally Dart/Flutter integration.
+    - Verify compilation and run tests at each incremental step to avoid cumulative errors.

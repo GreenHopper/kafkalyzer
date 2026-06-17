@@ -1,0 +1,200 @@
+name: Build and Release kafkalyzer
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev pkg-config libssl-dev libsasl2-dev libz-dev
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Run Rust tests
+        run: cargo test --manifest-path rust/Cargo.toml
+
+      - name: Build Linux app
+        run: flutter build linux --release --dart-define=APP_VERSION="1.0.0+${{ github.run_number }}"
+
+      - name: Post-build cleanup and packaging
+        run: |
+          # Cleanup WASM assets from pdfrx package
+          find build/linux/x64/release/bundle/ -name "pdfium.wasm" -delete || true
+          find build/linux/x64/release/bundle/ -name "pdfium_worker.js" -delete || true
+          find build/linux/x64/release/bundle/ -name "pdfium_client.js" -delete || true
+          
+          # Copy changelog.md if available
+          if [ -f changelog.md ]; then
+            cp changelog.md build/linux/x64/release/bundle/
+          fi
+          
+          mkdir -p release
+          tar -czf release/kafkalyzer-linux.tar.gz -C build/linux/x64/release bundle
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kafkalyzer-linux
+          path: release/kafkalyzer-linux.tar.gz
+
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Run Rust tests
+        run: cargo test --manifest-path rust/Cargo.toml
+
+      - name: Build macOS app
+        run: flutter build macos --release --dart-define=APP_VERSION="1.0.0+${{ github.run_number }}"
+
+      - name: Post-build packaging
+        run: |
+          if [ -f changelog.md ]; then
+            cp changelog.md build/macos/Build/Products/Release/kafkalyzer.app/Contents/Resources/ || true
+          fi
+          mkdir -p release
+          cd build/macos/Build/Products/Release
+          zip -r ../../../../release/kafkalyzer-macos.zip kafkalyzer.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kafkalyzer-macos
+          path: release/kafkalyzer-macos.zip
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install OpenSSL via vcpkg
+        run: |
+          vcpkg install openssl:x64-windows
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Run Rust tests
+        run: cargo test --manifest-path rust/Cargo.toml
+        env:
+          OPENSSL_DIR: ${{ env.VCPKG_INSTALLATION_ROOT }}/installed/x64-windows
+
+      - name: Build Windows app
+        run: flutter build windows --release --dart-define=APP_VERSION="1.0.0+${{ github.run_number }}"
+        env:
+          OPENSSL_DIR: ${{ env.VCPKG_INSTALLATION_ROOT }}/installed/x64-windows
+          OPENSSL_ROOT_DIR: ${{ env.VCPKG_INSTALLATION_ROOT }}/installed/x64-windows
+          VCPKG_ROOT: ${{ env.VCPKG_INSTALLATION_ROOT }}
+          PKG_CONFIG_PATH: ${{ env.VCPKG_INSTALLATION_ROOT }}/installed/x64-windows/lib/pkgconfig
+          CMAKE_PREFIX_PATH: ${{ env.VCPKG_INSTALLATION_ROOT }}/installed/x64-windows
+
+      - name: Post-build packaging
+        shell: pwsh
+        run: |
+          $releaseDir = "build/windows/x64/runner/Release"
+          $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
+          
+          # Delete unnecessary WASM assets from pdfrx package
+          Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium.wasm" -ErrorAction SilentlyContinue
+          Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium_worker.js" -ErrorAction SilentlyContinue
+          Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium_client.js" -ErrorAction SilentlyContinue
+          
+          # Copy vcpkg dynamic runtime DLLs
+          if (Test-Path $vcpkgBin) {
+            Copy-Item "$vcpkgBin/*.dll" -Destination $releaseDir -Force -ErrorAction SilentlyContinue
+          }
+          
+          # Create and copy ossl-modules for legacy provider (OpenSSL requirements)
+          $osslModulesTarget = "$releaseDir/ossl-modules"
+          New-Item -ItemType Directory -Force -Path $osslModulesTarget | Out-Null
+          
+          # Move legacy.dll to ossl-modules
+          if (Test-Path "$releaseDir/legacy.dll") {
+            Move-Item "$releaseDir/legacy.dll" "$osslModulesTarget/" -Force
+          }
+          
+          # Sync other modules if available
+          if (Test-Path "$vcpkgBin/ossl-modules") {
+            Copy-Item "$vcpkgBin/ossl-modules/*.dll" -Destination $osslModulesTarget -Force -ErrorAction SilentlyContinue
+          }
+          
+          # Download CA Certificates
+          Invoke-WebRequest -Uri "https://curl.se/ca/cacert.pem" -OutFile "$releaseDir/cacert.pem"
+          
+          # Copy changelog.md if available
+          if (Test-Path "changelog.md") {
+            Copy-Item "changelog.md" "$releaseDir/" -Force
+          }
+          
+          New-Item -ItemType Directory -Force -Path "release" | Out-Null
+          Compress-Archive -Path "$releaseDir/*" -DestinationPath "release/kafkalyzer-windows.zip" -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kafkalyzer-windows
+          path: release/kafkalyzer-windows.zip
