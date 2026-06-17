@@ -118,7 +118,7 @@ jobs:
           fi
           mkdir -p release
           cd build/macos/Build/Products/Release
-          zip -r ../../../../release/kafkalyzer-macos.zip kafkalyzer.app
+          zip -r "$GITHUB_WORKSPACE/release/kafkalyzer-macos.zip" kafkalyzer.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -154,7 +154,9 @@ jobs:
             ${{ runner.os }}-vcpkg-
 
       - name: Install OpenSSL and Cyrus SASL via vcpkg
+        shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/vcpkg_cache" | Out-Null
           vcpkg install openssl:x64-windows
           vcpkg install cyrus-sasl:x64-windows
         env:
