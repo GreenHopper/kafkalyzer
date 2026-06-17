@@ -20,6 +20,9 @@ A new Flutter FFI plugin project.
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
   s.dependency 'FlutterMacOS'
+  s.libraries = 'z', 'resolv'
+  s.frameworks = 'SystemConfiguration', 'CoreFoundation', 'Security'
+
 
   s.platform = :osx, '10.11'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }

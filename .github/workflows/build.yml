@@ -105,6 +105,9 @@ jobs:
       - name: Run Rust tests
         run: cargo test --manifest-path rust/Cargo.toml
 
+      - name: Disable Swift Package Manager integration
+        run: flutter config --no-enable-swift-package-manager
+
       - name: Build macOS app
         run: flutter build macos --release --dart-define=APP_VERSION="1.0.0+${{ github.run_number }}"
 
