@@ -57,8 +57,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
   // Track previous partition lags for calculating deltas: groupId -> (topic-partition -> lag)
   final Map<String, Map<String, int>> _previousLags = {};
-  // Track computed delta value per group: groupId -> delta value
+  // Track computed group-level delta: groupId -> delta value
   final Map<String, int> _groupDeltas = {};
+  // Track computed partition-level deltas: groupId -> (topic-partition -> delta)
+  final Map<String, Map<String, int>> _partitionDeltas = {};
 
   String _formatNum(num value) {
     final locale = Localizations.localeOf(context).toString();
@@ -170,6 +172,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       _loadedGroupIds.clear();
       _failedGroupIds.clear();
       _lagQueryQueue.clear();
+      _partitionDeltas.clear();
     });
 
     final stopwatch = Stopwatch()..start();
@@ -249,6 +252,19 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         final delta = _calculateLagDelta(groupId, updatedGroup.partitionLags);
         if (delta != null) {
           _groupDeltas[groupId] = delta;
+        }
+
+        final oldLags = _previousLags[groupId];
+        final groupPartitionDeltas = <String, int>{};
+        for (final lag in updatedGroup.partitionLags) {
+          final key = "${lag.topic}-${lag.partition}";
+          final oldLag = oldLags?[key];
+          if (oldLag != null) {
+            groupPartitionDeltas[key] = lag.lag.toInt() - oldLag;
+          }
+        }
+        if (oldLags != null) {
+          _partitionDeltas[groupId] = groupPartitionDeltas;
         }
 
         final newLagsMap = <String, int>{};
@@ -498,6 +514,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       _lagQueryQueue.clear();
       _previousLags.clear();
       _groupDeltas.clear();
+      _partitionDeltas.clear();
       _activeLagQueries = 0;
       if (activeProfile != null) {
         if (_refreshIntervalSeconds > 0) {
@@ -1138,7 +1155,11 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                   ),
                   children: [
                     const Divider(height: 1),
-                    GroupDetailsView(group: group, l10n: l10n),
+                    GroupDetailsView(
+                      group: group,
+                      partitionDeltas: _partitionDeltas[group.groupId],
+                      l10n: l10n,
+                    ),
                   ],
                 ),
               );

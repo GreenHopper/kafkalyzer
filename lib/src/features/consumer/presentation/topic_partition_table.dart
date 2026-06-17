@@ -5,11 +5,13 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
 class TopicPartitionTable extends StatefulWidget {
   final List<TopicPartitionLag> partitionLags;
+  final Map<String, int>? partitionDeltas;
   final AppLocalizations l10n;
 
   const TopicPartitionTable({
     super.key,
     required this.partitionLags,
+    this.partitionDeltas,
     required this.l10n,
   });
 
@@ -24,6 +26,44 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
   String _formatNum(num value) {
     final locale = Localizations.localeOf(context).toString();
     return NumberFormat.decimalPattern(locale).format(value);
+  }
+
+  int? _calculatePartitionDelta(TopicPartitionLag part) {
+    if (widget.partitionDeltas == null) return null;
+    final key = "${part.topic}-${part.partition}";
+    return widget.partitionDeltas![key];
+  }
+
+  Widget _buildDeltaCell(TopicPartitionLag part, {required int flex}) {
+    final delta = _calculatePartitionDelta(part);
+    if (delta == null) {
+      return _buildTableCell(
+        "-",
+        textColor: Theme.of(context).colorScheme.outline,
+        flex: flex,
+      );
+    }
+    if (delta > 0) {
+      return _buildTableCell(
+        "+${_formatNum(delta)}",
+        textColor: Colors.red,
+        isBold: true,
+        flex: flex,
+      );
+    } else if (delta < 0) {
+      return _buildTableCell(
+        _formatNum(delta),
+        textColor: Colors.green,
+        isBold: true,
+        flex: flex,
+      );
+    } else {
+      return _buildTableCell(
+        "0",
+        textColor: Theme.of(context).colorScheme.outline,
+        flex: flex,
+      );
+    }
   }
 
   Widget _buildHeaderCell(int index, String title, {required int flex}) {
@@ -95,6 +135,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
 
   @override
   Widget build(BuildContext context) {
+    final isGerman = Localizations.localeOf(context).languageCode == 'de';
     final sortedParts = List<TopicPartitionLag>.from(widget.partitionLags);
     sortedParts.sort((a, b) {
       int cmp;
@@ -109,6 +150,13 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
           cmp = a.currentOffset.compareTo(b.currentOffset);
           break;
         case 3:
+          cmp = a.lag.compareTo(b.lag);
+          break;
+        case 4:
+          final deltaA = _calculatePartitionDelta(a) ?? 0;
+          final deltaB = _calculatePartitionDelta(b) ?? 0;
+          cmp = deltaA.compareTo(deltaB);
+          break;
         default:
           cmp = a.lag.compareTo(b.lag);
           break;
@@ -143,6 +191,11 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                 _buildHeaderCell(1, widget.l10n.logEndOffsetCol, flex: 3),
                 _buildHeaderCell(2, widget.l10n.committedOffsetCol, flex: 3),
                 _buildHeaderCell(3, widget.l10n.lagCol, flex: 2),
+                _buildHeaderCell(
+                  4,
+                  isGerman ? 'Abarbeitung' : 'Processed',
+                  flex: 2,
+                ),
               ],
             ),
           ),
@@ -180,6 +233,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                         : null,
                     isBold: isHighLag,
                   ),
+                  _buildDeltaCell(part, flex: 2),
                 ],
               ),
             );

@@ -10,6 +10,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
+import 'package:kafkalyzer/src/features/consumer/presentation/topic_partition_table.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as api;
 
 class FakeKafkaMetadataService implements KafkaMetadataService {
@@ -733,6 +734,113 @@ void main() {
 
       // Verify "+7" delta is displayed (lag increased by 7)
       expect(find.text('+7'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'calculates and displays topic and partition deltas in detail widgets',
+    (tester) async {
+      fakeMetadataService.lags = [
+        const ConsumerGroupLag(
+          groupId: 'test-group',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 'test-topic',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 90,
+              lag: 10,
+            ),
+            TopicPartitionLag(
+              topic: 'test-topic',
+              partition: 1,
+              logEndOffset: 100,
+              currentOffset: 80,
+              lag: 20,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+        ),
+      ];
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await activeConnectionController.connect(testProfile);
+      await tester.pumpAndSettle();
+
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Expand group card
+      await tester.tap(find.text('test-group'));
+      await tester.pumpAndSettle();
+
+      // Expand topic card
+      await tester.tap(find.text('test-topic'));
+      await tester.pumpAndSettle();
+
+      // Verify initial deltas are "-" (group, topic, and 2 partitions)
+      expect(find.text('-'), findsNWidgets(4));
+
+      // Update lag values (partition 0: 10 -> 3 (-7), partition 1: 20 -> 18 (-2))
+      fakeMetadataService.lags = [
+        const ConsumerGroupLag(
+          groupId: 'test-group',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 'test-topic',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 97,
+              lag: 3,
+            ),
+            TopicPartitionLag(
+              topic: 'test-topic',
+              partition: 1,
+              logEndOffset: 100,
+              currentOffset: 82,
+              lag: 18,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+        ),
+      ];
+
+      // Trigger refresh by changing interval dropdown to 15s
+      final refreshDropdown = find.byType(DropdownButtonFormField<int>);
+      await tester.tap(refreshDropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('15s').last);
+      await tester.pump(); // Fetch group overview
+      await tester.pump(); // Fetch group details
+      await tester.pumpAndSettle();
+
+      // Verify deltas:
+      // Group delta: -9
+      // Topic delta: -9
+      // Partition 0 delta: -7
+      // Partition 1 delta: -2
+      expect(find.text('-9'), findsNWidgets(2));
+      expect(find.text('-7'), findsOneWidget);
+      expect(find.text('-2'), findsOneWidget);
+
+      // Test partition sorting on delta column
+      final processedHeader = find.descendant(
+        of: find.byType(TopicPartitionTable),
+        matching: find.text('Processed'),
+      );
+      await tester.tap(processedHeader);
+      await tester.pumpAndSettle();
+
+      // Click again for descending sort
+      await tester.tap(processedHeader);
+      await tester.pumpAndSettle();
     },
   );
 

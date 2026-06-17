@@ -6,9 +6,15 @@ import 'topic_partition_table.dart';
 
 class GroupDetailsView extends StatefulWidget {
   final ConsumerGroupLag group;
+  final Map<String, int>? partitionDeltas;
   final AppLocalizations l10n;
 
-  const GroupDetailsView({super.key, required this.group, required this.l10n});
+  const GroupDetailsView({
+    super.key,
+    required this.group,
+    this.partitionDeltas,
+    required this.l10n,
+  });
 
   @override
   State<GroupDetailsView> createState() => _GroupDetailsViewState();
@@ -25,6 +31,75 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
 
   int _calculateTopicLag(List<TopicPartitionLag> partitionLags) {
     return partitionLags.fold(0, (sum, item) => sum + item.lag.toInt());
+  }
+
+  int? _calculateTopicDelta(
+    String topic,
+    List<TopicPartitionLag> partitionLags,
+  ) {
+    if (widget.partitionDeltas == null) return null;
+    int totalDelta = 0;
+    bool hasDelta = false;
+    for (final part in partitionLags) {
+      final key = "${part.topic}-${part.partition}";
+      final delta = widget.partitionDeltas![key];
+      if (delta != null) {
+        totalDelta += delta;
+        hasDelta = true;
+      }
+    }
+    return hasDelta ? totalDelta : null;
+  }
+
+  Widget _buildTopicDeltaWidget(BuildContext context, int? delta) {
+    if (delta == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          "-",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+      );
+    }
+
+    final String text;
+    final Color color;
+    if (delta > 0) {
+      text = "+${_formatNum(delta)}";
+      color = Colors.red;
+    } else if (delta < 0) {
+      text = _formatNum(delta);
+      color = Colors.green;
+    } else {
+      text = "0";
+      color = Theme.of(context).colorScheme.outline;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+          color: color,
+        ),
+      ),
+    );
   }
 
   @override
@@ -139,6 +214,7 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
           ...topicsList.map((topic) {
             final parts = topicGroups[topic]!;
             final totalLag = _calculateTopicLag(parts);
+            final topicDelta = _calculateTopicDelta(topic, parts);
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               elevation: 0,
@@ -156,30 +232,43 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                     fontSize: 14,
                   ),
                 ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: totalLag > 0
-                        ? Theme.of(context).colorScheme.errorContainer
-                        : Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "${widget.l10n.lagCol}: ${_formatNum(totalLag)}",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      color: totalLag > 0
-                          ? Theme.of(context).colorScheme.onErrorContainer
-                          : Theme.of(context).colorScheme.onPrimaryContainer,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTopicDeltaWidget(context, topicDelta),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: totalLag > 0
+                            ? Theme.of(context).colorScheme.errorContainer
+                            : Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "${widget.l10n.lagCol}: ${_formatNum(totalLag)}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                          color: totalLag > 0
+                              ? Theme.of(context).colorScheme.onErrorContainer
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 children: [
-                  TopicPartitionTable(partitionLags: parts, l10n: widget.l10n),
+                  TopicPartitionTable(
+                    partitionLags: parts,
+                    partitionDeltas: widget.partitionDeltas,
+                    l10n: widget.l10n,
+                  ),
                 ],
               ),
             );
