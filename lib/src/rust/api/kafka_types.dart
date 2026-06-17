@@ -73,12 +73,16 @@ class ConsumerGroupLag {
   final String state;
   final String protocolType;
   final List<TopicPartitionLag> partitionLags;
+  final int membersCount;
+  final int topicsCount;
 
   const ConsumerGroupLag({
     required this.groupId,
     required this.state,
     required this.protocolType,
     required this.partitionLags,
+    required this.membersCount,
+    required this.topicsCount,
   });
 
   @override
@@ -86,7 +90,9 @@ class ConsumerGroupLag {
       groupId.hashCode ^
       state.hashCode ^
       protocolType.hashCode ^
-      partitionLags.hashCode;
+      partitionLags.hashCode ^
+      membersCount.hashCode ^
+      topicsCount.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -96,7 +102,9 @@ class ConsumerGroupLag {
           groupId == other.groupId &&
           state == other.state &&
           protocolType == other.protocolType &&
-          partitionLags == other.partitionLags;
+          partitionLags == other.partitionLags &&
+          membersCount == other.membersCount &&
+          topicsCount == other.topicsCount;
 }
 
 enum FilterType { contains, regex, exact }

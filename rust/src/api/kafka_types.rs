@@ -82,6 +82,8 @@ pub struct ConsumerGroupLag {
     pub state: String,
     pub protocol_type: String,
     pub partition_lags: Vec<TopicPartitionLag>,
+    pub members_count: i32,
+    pub topics_count: i32,
 }
 
 impl From<kafkalyzer_core::kafka_types::TopicPartitionLag> for TopicPartitionLag {
@@ -107,6 +109,8 @@ impl From<kafkalyzer_core::kafka_types::ConsumerGroupLag> for ConsumerGroupLag {
                 .into_iter()
                 .map(TopicPartitionLag::from)
                 .collect(),
+            members_count: group.members_count,
+            topics_count: group.topics_count,
         }
     }
 }

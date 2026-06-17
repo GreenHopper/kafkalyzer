@@ -54,4 +54,6 @@ pub struct ConsumerGroupLag {
     pub state: String,
     pub protocol_type: String,
     pub partition_lags: Vec<TopicPartitionLag>,
+    pub members_count: i32,
+    pub topics_count: i32,
 }

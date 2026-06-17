@@ -620,11 +620,15 @@ impl SseDecode for crate::api::kafka_types::ConsumerGroupLag {
         let mut var_protocolType = <String>::sse_decode(deserializer);
         let mut var_partitionLags =
             <Vec<crate::api::kafka_types::TopicPartitionLag>>::sse_decode(deserializer);
+        let mut var_membersCount = <i32>::sse_decode(deserializer);
+        let mut var_topicsCount = <i32>::sse_decode(deserializer);
         return crate::api::kafka_types::ConsumerGroupLag {
             group_id: var_groupId,
             state: var_state,
             protocol_type: var_protocolType,
             partition_lags: var_partitionLags,
+            members_count: var_membersCount,
+            topics_count: var_topicsCount,
         };
     }
 }
@@ -985,6 +989,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ConsumerGroupLag
             self.state.into_into_dart().into_dart(),
             self.protocol_type.into_into_dart().into_dart(),
             self.partition_lags.into_into_dart().into_dart(),
+            self.members_count.into_into_dart().into_dart(),
+            self.topics_count.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1196,6 +1202,8 @@ impl SseEncode for crate::api::kafka_types::ConsumerGroupLag {
             self.partition_lags,
             serializer,
         );
+        <i32>::sse_encode(self.members_count, serializer);
+        <i32>::sse_encode(self.topics_count, serializer);
     }
 }
 

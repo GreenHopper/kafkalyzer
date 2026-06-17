@@ -255,7 +255,9 @@ pub fn fetch_consumer_lags(
         let is_stable = state.eq_ignore_ascii_case("stable");
 
         let mut group_topics = std::collections::HashSet::new();
+        let mut members_count = 0;
         if is_stable {
+            members_count = group.members().len() as i32;
             for member in group.members() {
                 if let Some(metadata) = member.metadata() {
                     if let Some(topics) = parse_member_subscription(metadata) {
@@ -281,6 +283,7 @@ pub fn fetch_consumer_lags(
             state.to_string(),
             protocol_type.to_string(),
             group_topics,
+            members_count,
         ));
     }
 
@@ -304,7 +307,9 @@ pub fn fetch_consumer_lags(
         std::collections::HashMap::new();
 
     // 5. Query committed offsets and build results
-    for (group_id, state, protocol_type, group_topics) in active_groups {
+    for (group_id, state, protocol_type, group_topics, members_count) in
+        active_groups
+    {
         let mut partitions_to_query = rdkafka::TopicPartitionList::new();
         for topic_name in &group_topics {
             if let Some(partitions) = topic_partitions.get(topic_name) {
@@ -320,6 +325,8 @@ pub fn fetch_consumer_lags(
                 state,
                 protocol_type,
                 partition_lags: Vec::new(),
+                members_count,
+                topics_count: group_topics.len() as i32,
             });
             continue;
         }
@@ -378,6 +385,8 @@ pub fn fetch_consumer_lags(
             state,
             protocol_type,
             partition_lags,
+            members_count,
+            topics_count: group_topics.len() as i32,
         });
     }
 
@@ -432,11 +441,40 @@ pub fn fetch_consumer_groups(
             continue;
         }
 
+        let is_stable = state.eq_ignore_ascii_case("stable");
+        let mut group_topics = std::collections::HashSet::new();
+        let mut members_count = 0;
+        if is_stable {
+            members_count = group.members().len() as i32;
+            for member in group.members() {
+                if let Some(metadata) = member.metadata() {
+                    if let Some(topics) =
+                        parse_member_subscription(metadata)
+                    {
+                        for topic in topics {
+                            group_topics.insert(topic);
+                        }
+                    }
+                }
+                if let Some(assignment) = member.assignment() {
+                    if let Some(topics) =
+                        parse_member_assignment(assignment)
+                    {
+                        for topic in topics {
+                            group_topics.insert(topic);
+                        }
+                    }
+                }
+            }
+        }
+
         results.push(kafkalyzer_core::kafka_types::ConsumerGroupLag {
             group_id: group_id.to_string(),
             state: state.to_string(),
             protocol_type: protocol_type.to_string(),
             partition_lags: Vec::new(),
+            members_count,
+            topics_count: group_topics.len() as i32,
         });
     }
 
@@ -465,7 +503,9 @@ pub fn fetch_consumer_group_lag(
 
     let is_stable = state.eq_ignore_ascii_case("stable");
     let mut group_topics = std::collections::HashSet::new();
+    let mut members_count = 0;
     if is_stable {
+        members_count = group.members().len() as i32;
         for member in group.members() {
             if let Some(metadata) = member.metadata() {
                 if let Some(topics) = parse_member_subscription(metadata) {
@@ -519,6 +559,8 @@ pub fn fetch_consumer_group_lag(
             state: state.to_string(),
             protocol_type: protocol_type.to_string(),
             partition_lags: Vec::new(),
+            members_count,
+            topics_count: group_topics.len() as i32,
         });
     }
 
@@ -559,6 +601,8 @@ pub fn fetch_consumer_group_lag(
         state: state.to_string(),
         protocol_type: protocol_type.to_string(),
         partition_lags,
+        members_count,
+        topics_count: group_topics.len() as i32,
     })
 }
 

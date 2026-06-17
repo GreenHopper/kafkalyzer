@@ -689,13 +689,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ConsumerGroupLag dco_decode_consumer_group_lag(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
     return ConsumerGroupLag(
       groupId: dco_decode_String(arr[0]),
       state: dco_decode_String(arr[1]),
       protocolType: dco_decode_String(arr[2]),
       partitionLags: dco_decode_list_topic_partition_lag(arr[3]),
+      membersCount: dco_decode_i_32(arr[4]),
+      topicsCount: dco_decode_i_32(arr[5]),
     );
   }
 
@@ -961,11 +963,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_state = sse_decode_String(deserializer);
     var var_protocolType = sse_decode_String(deserializer);
     var var_partitionLags = sse_decode_list_topic_partition_lag(deserializer);
+    var var_membersCount = sse_decode_i_32(deserializer);
+    var var_topicsCount = sse_decode_i_32(deserializer);
     return ConsumerGroupLag(
       groupId: var_groupId,
       state: var_state,
       protocolType: var_protocolType,
       partitionLags: var_partitionLags,
+      membersCount: var_membersCount,
+      topicsCount: var_topicsCount,
     );
   }
 
@@ -1302,6 +1308,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.state, serializer);
     sse_encode_String(self.protocolType, serializer);
     sse_encode_list_topic_partition_lag(self.partitionLags, serializer);
+    sse_encode_i_32(self.membersCount, serializer);
+    sse_encode_i_32(self.topicsCount, serializer);
   }
 
   @protected

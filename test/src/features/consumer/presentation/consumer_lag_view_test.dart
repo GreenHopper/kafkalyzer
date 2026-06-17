@@ -34,12 +34,14 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
       throw Exception("Failed to fetch groups");
     }
     return lags
-        .map(
+        .map<ConsumerGroupLag>(
           (l) => ConsumerGroupLag(
             groupId: l.groupId,
             state: l.state,
             protocolType: l.protocolType,
             partitionLags: const [],
+            membersCount: l.membersCount,
+            topicsCount: l.topicsCount,
           ),
         )
         .toList();
@@ -149,6 +151,8 @@ void main() {
             lag: 10,
           ),
         ],
+        membersCount: 1,
+        topicsCount: 1,
       ),
     ];
 
@@ -186,6 +190,8 @@ void main() {
             lag: 50,
           ),
         ],
+        membersCount: 2,
+        topicsCount: 1,
       ),
       const ConsumerGroupLag(
         groupId: 'group-a',
@@ -200,6 +206,8 @@ void main() {
             lag: 10,
           ),
         ],
+        membersCount: 3,
+        topicsCount: 1,
       ),
     ];
 
@@ -308,5 +316,194 @@ void main() {
       ),
       isNotNull,
     );
+  });
+
+  testWidgets('filters by state and shows search statistics', (tester) async {
+    fakeMetadataService.lags = [
+      const ConsumerGroupLag(
+        groupId: 'group-stable',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [],
+        membersCount: 1,
+        topicsCount: 1,
+      ),
+      const ConsumerGroupLag(
+        groupId: 'group-empty',
+        state: 'Empty',
+        protocolType: 'consumer',
+        partitionLags: [],
+        membersCount: 0,
+        topicsCount: 0,
+      ),
+    ];
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    await activeConnectionController.connect(testProfile);
+    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Found 2 of 2 groups'), findsOneWidget);
+
+    final stateDropdownFinder = find.byType(DropdownButtonFormField<String>);
+    expect(stateDropdownFinder, findsOneWidget);
+    await tester.tap(stateDropdownFinder);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Stable').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('group-stable'), findsOneWidget);
+    expect(find.text('group-empty'), findsNothing);
+    expect(find.text('Found 1 of 2 groups'), findsOneWidget);
+  });
+
+  testWidgets('sorts by clicking column headers', (tester) async {
+    fakeMetadataService.lags = [
+      const ConsumerGroupLag(
+        groupId: 'group-b',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [],
+        membersCount: 10,
+        topicsCount: 5,
+      ),
+      const ConsumerGroupLag(
+        groupId: 'group-a',
+        state: 'Empty',
+        protocolType: 'consumer',
+        partitionLags: [],
+        membersCount: 20,
+        topicsCount: 2,
+      ),
+    ];
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    await activeConnectionController.connect(testProfile);
+    await tester.pump();
+    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    var expansionTiles = find.byType(ExpansionTile);
+    expect(
+      tester.widget<Text>(
+        find.descendant(
+          of: expansionTiles.at(0),
+          matching: find.text('group-a'),
+        ),
+      ),
+      isNotNull,
+    );
+
+    await tester.tap(find.text('Consumers'));
+    await tester.pumpAndSettle();
+
+    expansionTiles = find.byType(ExpansionTile);
+    expect(
+      tester.widget<Text>(
+        find.descendant(
+          of: expansionTiles.at(0),
+          matching: find.text('group-b'),
+        ),
+      ),
+      isNotNull,
+    );
+
+    await tester.tap(find.text('Consumers'));
+    await tester.pumpAndSettle();
+
+    expansionTiles = find.byType(ExpansionTile);
+    expect(
+      tester.widget<Text>(
+        find.descendant(
+          of: expansionTiles.at(0),
+          matching: find.text('group-a'),
+        ),
+      ),
+      isNotNull,
+    );
+  });
+
+  testWidgets('configures refresh interval via dropdown', (tester) async {
+    fakeMetadataService.lags = [];
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    final refreshDropdown = find.byType(DropdownButtonFormField<int>);
+    expect(refreshDropdown, findsOneWidget);
+
+    await tester.tap(refreshDropdown);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('5s').last);
+    await tester.pumpAndSettle();
+
+    final dropdownState = tester.state<FormFieldState<int>>(refreshDropdown);
+    expect(dropdownState.value, equals(5));
+  });
+
+  testWidgets('groups partitions by topic and supports partition sorting', (
+    tester,
+  ) async {
+    fakeMetadataService.lags = [
+      const ConsumerGroupLag(
+        groupId: 'test-group',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [
+          TopicPartitionLag(
+            topic: 'topic-z',
+            partition: 1,
+            logEndOffset: 100,
+            currentOffset: 95,
+            lag: 5,
+          ),
+          TopicPartitionLag(
+            topic: 'topic-z',
+            partition: 0,
+            logEndOffset: 200,
+            currentOffset: 180,
+            lag: 20,
+          ),
+        ],
+        membersCount: 1,
+        topicsCount: 1,
+      ),
+    ];
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    await activeConnectionController.connect(testProfile);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('test-group'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('topic-z'), findsOneWidget);
+    expect(find.text('Lag: 25'), findsNWidgets(2));
+
+    await tester.tap(find.text('topic-z'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Partition'), findsOneWidget);
+    expect(find.text('Log End Offset'), findsOneWidget);
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNWidgets(3));
   });
 }
