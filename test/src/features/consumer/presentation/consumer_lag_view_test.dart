@@ -55,6 +55,7 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
     if (shouldFail) {
       throw Exception("Failed to fetch lag");
     }
+    await Future.delayed(const Duration(milliseconds: 10));
     return lags.firstWhere((l) => l.groupId == groupId);
   }
 
@@ -505,5 +506,118 @@ void main() {
     expect(find.text('Log End Offset'), findsOneWidget);
     expect(find.text('0'), findsOneWidget);
     expect(find.text('1'), findsNWidgets(3));
+  });
+
+  testWidgets('preserves cached lag value during refresh/re-fetch', (
+    tester,
+  ) async {
+    fakeMetadataService.lags = [
+      const ConsumerGroupLag(
+        groupId: 'test-group',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [
+          TopicPartitionLag(
+            topic: 'test-topic',
+            partition: 0,
+            logEndOffset: 100,
+            currentOffset: 90,
+            lag: 10,
+          ),
+        ],
+        membersCount: 1,
+        topicsCount: 1,
+      ),
+    ];
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    // Trigger connection
+    await activeConnectionController.connect(testProfile);
+
+    // Wait for groups fetch to finish and render list
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Wait for lag details fetch to finish
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lag: 10'), findsOneWidget);
+
+    // Now trigger refresh
+    await tester.tap(find.byIcon(Icons.refresh));
+    await tester.pump(); // Start fetching groups
+    await tester.pump(); // Start loading lag details
+
+    // Use cached lag value
+    expect(find.text('Lag: 10'), findsOneWidget);
+
+    // Verify tiny loading indicator is present
+    final loadingProgressIndicator = find.byWidgetPredicate(
+      (widget) =>
+          widget is CircularProgressIndicator && widget.strokeWidth == 1.5,
+    );
+    expect(loadingProgressIndicator, findsOneWidget);
+
+    // Let the detail fetch resolve
+    await tester.pumpAndSettle();
+    expect(find.text('Lag: 10'), findsOneWidget);
+    expect(loadingProgressIndicator, findsNothing);
+  });
+
+  testWidgets('limits concurrent lag queries and processes them via queue', (
+    tester,
+  ) async {
+    fakeMetadataService.lags = List.generate(
+      4,
+      (i) => ConsumerGroupLag(
+        groupId: 'group-$i',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [
+          TopicPartitionLag(
+            topic: 'topic-1',
+            partition: 0,
+            logEndOffset: 100,
+            currentOffset: 90,
+            lag: 10,
+          ),
+        ],
+        membersCount: 1,
+        topicsCount: 1,
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    // Trigger connection
+    await activeConnectionController.connect(testProfile);
+
+    // Pump to resolve fetchConsumerGroups and trigger build
+    await tester.pump();
+
+    // Pump to render list and trigger post-frame callbacks
+    await tester.pump();
+
+    // Pump to run _loadGroupLag's synchronous setState
+    // (adds first 3 to _loadingGroupIds, queues others)
+    await tester.pump();
+
+    // Expect 3 loading indicators (with strokeWidth == 2)
+    final loadingSpinners = find.byWidgetPredicate(
+      (widget) =>
+          widget is CircularProgressIndicator && widget.strokeWidth == 2,
+    );
+    expect(loadingSpinners, findsNWidgets(3));
+
+    // Wait for everything to resolve
+    await tester.pumpAndSettle();
+
+    // Verify all 4 resolved and show Lag: 10
+    expect(find.text('Lag: 10'), findsNWidgets(4));
+    expect(loadingSpinners, findsNothing);
   });
 }

@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:watch_it/watch_it.dart';
+import 'group_details_view.dart';
 
 enum ConsumerGroupSortType {
   nameAsc,
@@ -46,6 +47,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   final Set<String> _loadingGroupIds = {};
   final Set<String> _loadedGroupIds = {};
   final Set<String> _failedGroupIds = {};
+  final Map<String, List<TopicPartitionLag>> _cachedPartitionLags = {};
+  int _activeLagQueries = 0;
+  final List<String> _lagQueryQueue = [];
+  static const int _maxConcurrentLagQueries = 3;
 
   @override
   void initState() {
@@ -142,6 +147,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       _loadingGroupIds.clear();
       _loadedGroupIds.clear();
       _failedGroupIds.clear();
+      _lagQueryQueue.clear();
     });
 
     final stopwatch = Stopwatch()..start();
@@ -178,6 +184,14 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       return;
     }
 
+    if (_activeLagQueries >= _maxConcurrentLagQueries) {
+      if (!_lagQueryQueue.contains(groupId)) {
+        _lagQueryQueue.add(groupId);
+      }
+      return;
+    }
+
+    _activeLagQueries++;
     setState(() {
       _loadingGroupIds.add(groupId);
     });
@@ -191,6 +205,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         if (idx != -1) {
           _lags[idx] = updatedGroup;
         }
+        _cachedPartitionLags[groupId] = updatedGroup.partitionLags;
         _loadingGroupIds.remove(groupId);
         _loadedGroupIds.add(groupId);
       });
@@ -200,6 +215,17 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         _loadingGroupIds.remove(groupId);
         _failedGroupIds.add(groupId);
       });
+    } finally {
+      _activeLagQueries = (_activeLagQueries - 1).clamp(0, 999);
+      _processNextLagQuery();
+    }
+  }
+
+  void _processNextLagQuery() {
+    if (_lagQueryQueue.isNotEmpty &&
+        _activeLagQueries < _maxConcurrentLagQueries) {
+      final nextGroupId = _lagQueryQueue.removeAt(0);
+      _loadGroupLag(nextGroupId);
     }
   }
 
@@ -211,8 +237,9 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     final isLoaded = _loadedGroupIds.contains(group.groupId);
     final isLoading = _loadingGroupIds.contains(group.groupId);
     final isFailed = _failedGroupIds.contains(group.groupId);
+    final hasPreviousValue = group.partitionLags.isNotEmpty;
 
-    if (isLoading) {
+    if (isLoading && !hasPreviousValue) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -247,7 +274,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       );
     }
 
-    if (!isLoaded) {
+    if (!isLoaded && !isLoading && !hasPreviousValue) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -268,22 +295,44 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     }
 
     final totalLag = _calculateGroupLag(group);
+    final badgeColor = totalLag > 0
+        ? Theme.of(context).colorScheme.errorContainer
+        : Theme.of(context).colorScheme.primaryContainer;
+    final textColor = totalLag > 0
+        ? Theme.of(context).colorScheme.onErrorContainer
+        : Theme.of(context).colorScheme.onPrimaryContainer;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: totalLag > 0
-            ? Theme.of(context).colorScheme.errorContainer
-            : Theme.of(context).colorScheme.primaryContainer,
+        color: badgeColor,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        "${l10n.lagCol}: $totalLag",
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          color: totalLag > 0
-              ? Theme.of(context).colorScheme.onErrorContainer
-              : Theme.of(context).colorScheme.onPrimaryContainer,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "${l10n.lagCol}: $totalLag",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: textColor,
+              ),
+            ),
+            if (isLoading) ...[
+              const SizedBox(width: 4),
+              SizedBox(
+                width: 10,
+                height: 10,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -302,7 +351,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   int _calculateGroupLag(ConsumerGroupLag group) {
-    return group.partitionLags.fold(0, (sum, item) => sum + item.lag.toInt());
+    final lags = group.partitionLags.isNotEmpty
+        ? group.partitionLags
+        : (_cachedPartitionLags[group.groupId] ?? const []);
+    return lags.fold(0, (sum, item) => sum + item.lag.toInt());
   }
 
   Color _getStateColor(String state) {
@@ -327,6 +379,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
     if (activeProfile != _lastProfile) {
       _lastProfile = activeProfile;
+      _cachedPartitionLags.clear();
+      _lagQueryQueue.clear();
       if (activeProfile != null) {
         scheduleMicrotask(() => _fetchLags(activeProfile));
         if (_refreshIntervalSeconds > 0) {
@@ -403,11 +457,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: _buildFetchStatusMessage(context),
               ),
-            if (_isLoading && _lags.isNotEmpty)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 16.0),
-                child: LinearProgressIndicator(),
-              ),
+
             if (_errorMessage != null && activeProfile != null)
               _buildErrorBanner(context, activeProfile),
             Expanded(
@@ -476,7 +526,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return SizedBox(
       width: 200,
       child: DropdownButtonFormField<ConsumerGroupSortType>(
-        value: _sortType,
+        key: ValueKey(_sortType),
+        initialValue: _sortType,
         isExpanded: true,
         decoration: InputDecoration(
           labelText: isGerman ? 'Sortieren nach' : 'Sort by',
@@ -589,7 +640,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return SizedBox(
       width: 130,
       child: DropdownButtonFormField<String>(
-        value: _statusFilter,
+        initialValue: _statusFilter,
         isExpanded: true,
         decoration: InputDecoration(
           labelText: isGerman ? 'Status' : 'State',
@@ -633,7 +684,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return SizedBox(
       width: 140,
       child: DropdownButtonFormField<int>(
-        value: _refreshIntervalSeconds,
+        initialValue: _refreshIntervalSeconds,
         isExpanded: true,
         decoration: InputDecoration(
           labelText: isGerman ? 'Intervall' : 'Refresh',
@@ -866,16 +917,29 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           child: ListView.builder(
             itemCount: groups.length,
             itemBuilder: (context, index) {
-              final group = groups[index];
-              final isLoaded = _loadedGroupIds.contains(group.groupId);
-              final isLoading = _loadingGroupIds.contains(group.groupId);
-              final isFailed = _failedGroupIds.contains(group.groupId);
+              final rawGroup = groups[index];
+              final isLoaded = _loadedGroupIds.contains(rawGroup.groupId);
+              final isLoading = _loadingGroupIds.contains(rawGroup.groupId);
+              final isFailed = _failedGroupIds.contains(rawGroup.groupId);
 
               if (!isLoaded && !isLoading && !isFailed) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _loadGroupLag(group.groupId);
+                  _loadGroupLag(rawGroup.groupId);
                 });
               }
+
+              final cachedLags = _cachedPartitionLags[rawGroup.groupId];
+              final partitionLags = rawGroup.partitionLags.isNotEmpty
+                  ? rawGroup.partitionLags
+                  : (cachedLags ?? const []);
+              final group = ConsumerGroupLag(
+                groupId: rawGroup.groupId,
+                state: rawGroup.state,
+                protocolType: rawGroup.protocolType,
+                partitionLags: partitionLags,
+                membersCount: rawGroup.membersCount,
+                topicsCount: rawGroup.topicsCount,
+              );
 
               return Card(
                 elevation: 0,
@@ -953,7 +1017,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                   ),
                   children: [
                     const Divider(height: 1),
-                    _GroupDetailsView(group: group, l10n: l10n),
+                    GroupDetailsView(group: group, l10n: l10n),
                   ],
                 ),
               );
@@ -961,366 +1025,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _GroupDetailsView extends StatefulWidget {
-  final ConsumerGroupLag group;
-  final AppLocalizations l10n;
-
-  const _GroupDetailsView({required this.group, required this.l10n});
-
-  @override
-  State<_GroupDetailsView> createState() => _GroupDetailsViewState();
-}
-
-class _GroupDetailsViewState extends State<_GroupDetailsView> {
-  bool _sortTopicsAscending = true;
-  bool _sortByLag = false;
-
-  int _calculateTopicLag(List<TopicPartitionLag> partitionLags) {
-    return partitionLags.fold(0, (sum, item) => sum + item.lag.toInt());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Map<String, List<TopicPartitionLag>> topicGroups = {};
-    for (final part in widget.group.partitionLags) {
-      topicGroups.putIfAbsent(part.topic, () => []).add(part);
-    }
-
-    final topicsList = topicGroups.keys.toList();
-
-    topicsList.sort((a, b) {
-      int cmp;
-      if (_sortByLag) {
-        final lagA = _calculateTopicLag(topicGroups[a]!);
-        final lagB = _calculateTopicLag(topicGroups[b]!);
-        cmp = lagA.compareTo(lagB);
-      } else {
-        cmp = a.toLowerCase().compareTo(b.toLowerCase());
-      }
-      return _sortTopicsAscending ? cmp : -cmp;
-    });
-
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                isGerman ? "Topics sortieren nach:" : "Sort topics by:",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    if (!_sortByLag) {
-                      _sortTopicsAscending = !_sortTopicsAscending;
-                    } else {
-                      _sortByLag = false;
-                      _sortTopicsAscending = true;
-                    }
-                  });
-                },
-                icon: Icon(
-                  !_sortByLag && _sortTopicsAscending
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 14,
-                ),
-                label: Text(
-                  isGerman ? "Name" : "Name",
-                  style: TextStyle(
-                    fontWeight: !_sortByLag
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    if (_sortByLag) {
-                      _sortTopicsAscending = !_sortTopicsAscending;
-                    } else {
-                      _sortByLag = true;
-                      _sortTopicsAscending = true;
-                    }
-                  });
-                },
-                icon: Icon(
-                  _sortByLag && _sortTopicsAscending
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 14,
-                ),
-                label: Text(
-                  isGerman ? "Lag" : "Lag",
-                  style: TextStyle(
-                    fontWeight: _sortByLag
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (topicsList.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Center(
-                child: Text(
-                  isGerman
-                      ? "Keine aktiven Partitionen gefunden."
-                      : "No active partition assignments.",
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.outline,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ),
-          ...topicsList.map((topic) {
-            final parts = topicGroups[topic]!;
-            final totalLag = _calculateTopicLag(parts);
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-              ),
-              child: ExpansionTile(
-                title: Text(
-                  topic,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: totalLag > 0
-                        ? Theme.of(context).colorScheme.errorContainer
-                        : Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    "${widget.l10n.lagCol}: $totalLag",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      color: totalLag > 0
-                          ? Theme.of(context).colorScheme.onErrorContainer
-                          : Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-                children: [
-                  TopicPartitionTable(partitionLags: parts, l10n: widget.l10n),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-class TopicPartitionTable extends StatefulWidget {
-  final List<TopicPartitionLag> partitionLags;
-  final AppLocalizations l10n;
-
-  const TopicPartitionTable({
-    super.key,
-    required this.partitionLags,
-    required this.l10n,
-  });
-
-  @override
-  State<TopicPartitionTable> createState() => _TopicPartitionTableState();
-}
-
-class _TopicPartitionTableState extends State<TopicPartitionTable> {
-  int _sortColumnIndex = 0;
-  bool _sortAscending = true;
-
-  Widget _buildHeaderCell(int index, String title, {required int flex}) {
-    final isSelected = _sortColumnIndex == index;
-    return Expanded(
-      flex: flex,
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            if (_sortColumnIndex == index) {
-              _sortAscending = !_sortAscending;
-            } else {
-              _sortColumnIndex = index;
-              _sortAscending = true;
-            }
-          });
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                title,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 4),
-              Icon(
-                _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 12,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTableCell(
-    String text, {
-    Color? textColor,
-    bool isBold = false,
-    required int flex,
-  }) {
-    return Expanded(
-      flex: flex,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-            color: textColor,
-            fontSize: 12,
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sortedParts = List<TopicPartitionLag>.from(widget.partitionLags);
-    sortedParts.sort((a, b) {
-      int cmp;
-      switch (_sortColumnIndex) {
-        case 0:
-          cmp = a.partition.compareTo(b.partition);
-          break;
-        case 1:
-          cmp = a.logEndOffset.compareTo(b.logEndOffset);
-          break;
-        case 2:
-          cmp = a.currentOffset.compareTo(b.currentOffset);
-          break;
-        case 3:
-        default:
-          cmp = a.lag.compareTo(b.lag);
-          break;
-      }
-      return _sortAscending ? cmp : -cmp;
-    });
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(8),
-          bottomRight: Radius.circular(8),
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  width: 1.5,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                _buildHeaderCell(0, widget.l10n.partitionCol, flex: 2),
-                _buildHeaderCell(1, widget.l10n.logEndOffsetCol, flex: 3),
-                _buildHeaderCell(2, widget.l10n.committedOffsetCol, flex: 3),
-                _buildHeaderCell(3, widget.l10n.lagCol, flex: 2),
-              ],
-            ),
-          ),
-          ...sortedParts.map((part) {
-            final lagVal = part.lag.toInt();
-            final isHighLag = lagVal > 0;
-            final committedStr = part.currentOffset.toInt() == -1
-                ? "-"
-                : part.currentOffset.toString();
-
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  _buildTableCell(part.partition.toString(), flex: 2),
-                  _buildTableCell(part.logEndOffset.toString(), flex: 3),
-                  _buildTableCell(committedStr, flex: 3),
-                  _buildTableCell(
-                    lagVal.toString(),
-                    flex: 2,
-                    textColor: isHighLag
-                        ? Theme.of(context).colorScheme.error
-                        : null,
-                    isBold: isHighLag,
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
     );
   }
 }

@@ -46,8 +46,12 @@ class _ScriptEditorState extends State<ScriptEditor> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.script.name);
-    _concurrencyController = TextEditingController(text: widget.script.concurrencyLimit.toString());
-    _outputDirController = TextEditingController(text: widget.script.outputDirectory);
+    _concurrencyController = TextEditingController(
+      text: widget.script.concurrencyLimit.toString(),
+    );
+    _outputDirController = TextEditingController(
+      text: widget.script.outputDirectory,
+    );
     _variableController = TextEditingController();
 
     _variables = List.from(widget.script.variables);
@@ -61,14 +65,18 @@ class _ScriptEditorState extends State<ScriptEditor> {
       if (_nameController.text != widget.script.name) {
         _nameController.text = widget.script.name;
       }
-      if (_concurrencyController.text != widget.script.concurrencyLimit.toString()) {
+      if (_concurrencyController.text !=
+          widget.script.concurrencyLimit.toString()) {
         _concurrencyController.text = widget.script.concurrencyLimit.toString();
       }
-      if ((_outputDirController.text.isEmpty && widget.script.outputDirectory != null) ||
-          (_outputDirController.text.isNotEmpty && _outputDirController.text != widget.script.outputDirectory)) {
+      if ((_outputDirController.text.isEmpty &&
+              widget.script.outputDirectory != null) ||
+          (_outputDirController.text.isNotEmpty &&
+              _outputDirController.text != widget.script.outputDirectory)) {
         // More complex check for null/empty vs string
         // Only update if substantively different to avoid focus loss if possible, though directory picker usually handles this.
-        if ((widget.script.outputDirectory ?? "") != _outputDirController.text) {
+        if ((widget.script.outputDirectory ?? "") !=
+            _outputDirController.text) {
           _outputDirController.text = widget.script.outputDirectory ?? "";
         }
       }
@@ -83,7 +91,9 @@ class _ScriptEditorState extends State<ScriptEditor> {
     final updated = widget.script.copyWith(
       name: _nameController.text,
       concurrencyLimit: int.tryParse(_concurrencyController.text) ?? 2,
-      outputDirectory: _outputDirController.text.isEmpty ? null : _outputDirController.text,
+      outputDirectory: _outputDirController.text.isEmpty
+          ? null
+          : _outputDirController.text,
       variables: _variables,
       steps: _steps,
     );
@@ -99,8 +109,14 @@ class _ScriptEditorState extends State<ScriptEditor> {
 
     for (int i = 0; i < limit; i++) {
       for (final extraction in _steps[i].extractions) {
-        if (extraction.variableName.isNotEmpty && !existingNames.contains(extraction.variableName)) {
-          allVars.add(ScriptVariable(name: extraction.variableName, type: ScriptVariableType.string));
+        if (extraction.variableName.isNotEmpty &&
+            !existingNames.contains(extraction.variableName)) {
+          allVars.add(
+            ScriptVariable(
+              name: extraction.variableName,
+              type: ScriptVariableType.string,
+            ),
+          );
           existingNames.add(extraction.variableName);
         }
       }
@@ -136,7 +152,8 @@ class _ScriptEditorState extends State<ScriptEditor> {
     for (int i = 0; i < _steps.length; i++) {
       final step = _steps[i];
       for (final extraction in step.extractions) {
-        if (extraction.variableName.isNotEmpty && !globalNames.contains(extraction.variableName)) {
+        if (extraction.variableName.isNotEmpty &&
+            !globalNames.contains(extraction.variableName)) {
           if (!usageList.any((u) => u.name == extraction.variableName)) {
             usageList.add(
               _VariableUsageInfo(
@@ -251,7 +268,12 @@ class _ScriptEditorState extends State<ScriptEditor> {
         scope: last.scope,
       );
     } else {
-      newStep = ScriptStep(id: const Uuid().v4(), name: "Step ${_steps.length + 1}", clusterName: "", topicNames: []);
+      newStep = ScriptStep(
+        id: const Uuid().v4(),
+        name: "Step ${_steps.length + 1}",
+        clusterName: "",
+        topicNames: [],
+      );
     }
 
     showDialog<ScriptStep>(
@@ -305,7 +327,9 @@ class _ScriptEditorState extends State<ScriptEditor> {
             for (int i = 0; i < oldExtractions.length; i++) {
               final oldName = oldExtractions[i].variableName;
               final newName = val.extractions[i].variableName;
-              if (oldName != newName && oldName.isNotEmpty && newName.isNotEmpty) {
+              if (oldName != newName &&
+                  oldName.isNotEmpty &&
+                  newName.isNotEmpty) {
                 // Update all downstream steps (and the current one if it somehow references itself)
                 for (int j = 0; j < _steps.length; j++) {
                   _steps[j] = _steps[j].replaceVariable(oldName, newName);
@@ -340,13 +364,20 @@ class _ScriptEditorState extends State<ScriptEditor> {
                 DropdownButtonFormField<ScriptVariableType>(
                   initialValue: selectedType,
                   decoration: const InputDecoration(labelText: "Type"),
-                  items: ScriptVariableType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.name))).toList(),
+                  items: ScriptVariableType.values
+                      .map(
+                        (t) => DropdownMenuItem(value: t, child: Text(t.name)),
+                      )
+                      .toList(),
                   onChanged: (val) => setDialogState(() => selectedType = val!),
                 ),
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
               FilledButton(
                 onPressed: () {
                   final index = _variables.indexOf(variable);
@@ -354,10 +385,18 @@ class _ScriptEditorState extends State<ScriptEditor> {
                     final oldName = variable.name;
                     final newName = nameCtrl.text;
                     setState(() {
-                      _variables[index] = variable.copyWith(name: newName, type: selectedType);
-                      if (oldName != newName && oldName.isNotEmpty && newName.isNotEmpty) {
+                      _variables[index] = variable.copyWith(
+                        name: newName,
+                        type: selectedType,
+                      );
+                      if (oldName != newName &&
+                          oldName.isNotEmpty &&
+                          newName.isNotEmpty) {
                         for (int i = 0; i < _steps.length; i++) {
-                          _steps[i] = _steps[i].replaceVariable(oldName, newName);
+                          _steps[i] = _steps[i].replaceVariable(
+                            oldName,
+                            newName,
+                          );
                         }
                       }
                     });
@@ -407,7 +446,10 @@ class _ScriptEditorState extends State<ScriptEditor> {
           Expanded(
             child: TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: "Script Name", border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                labelText: "Script Name",
+                border: OutlineInputBorder(),
+              ),
               onChanged: (_) => _save(),
             ),
           ),
@@ -451,7 +493,8 @@ class _ScriptEditorState extends State<ScriptEditor> {
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.folder_open),
                         onPressed: () async {
-                          String? selected = await FilePicker.platform.getDirectoryPath();
+                          String? selected = await FilePicker.platform
+                              .getDirectoryPath();
                           if (selected != null) {
                             _outputDirController.text = selected;
                             _save();
@@ -502,10 +545,19 @@ class _ScriptEditorState extends State<ScriptEditor> {
         rows: _analyzeVariables().map((info) {
           return DataRow(
             cells: [
-              DataCell(Text(info.name, style: const TextStyle(fontWeight: FontWeight.bold))),
+              DataCell(
+                Text(
+                  info.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
               DataCell(Text(info.type.name)),
               DataCell(Text(info.source)),
-              DataCell(Text(info.usedInSteps.isEmpty ? "-" : info.usedInSteps.join(", "))),
+              DataCell(
+                Text(
+                  info.usedInSteps.isEmpty ? "-" : info.usedInSteps.join(", "),
+                ),
+              ),
               DataCell(
                 info.isGlobal
                     ? Row(
@@ -516,9 +568,15 @@ class _ScriptEditorState extends State<ScriptEditor> {
                             onPressed: () => _editVariable(info.originalVar!),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                            icon: const Icon(
+                              Icons.delete,
+                              size: 18,
+                              color: Colors.red,
+                            ),
                             onPressed: () {
-                              setState(() => _variables.remove(info.originalVar));
+                              setState(
+                                () => _variables.remove(info.originalVar),
+                              );
                               _save();
                             },
                           ),
@@ -555,17 +613,24 @@ class _ScriptEditorState extends State<ScriptEditor> {
               setState(() => _newVariableType = val);
             }
           },
-          items: ScriptVariableType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.name))).toList(),
+          items: ScriptVariableType.values
+              .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+              .toList(),
         ),
         const SizedBox(width: 8),
-        IconButton(icon: const Icon(Icons.add), onPressed: () => _addNewVariable(_variableController.text)),
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () => _addNewVariable(_variableController.text),
+        ),
       ],
     );
   }
 
   void _addNewVariable(String val) {
     if (val.isNotEmpty && !_variables.any((v) => v.name == val)) {
-      setState(() => _variables.add(ScriptVariable(name: val, type: _newVariableType)));
+      setState(
+        () => _variables.add(ScriptVariable(name: val, type: _newVariableType)),
+      );
       _variableController.clear();
       _save();
     }
@@ -578,7 +643,11 @@ class _ScriptEditorState extends State<ScriptEditor> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text("Steps", style: Theme.of(context).textTheme.titleLarge),
-            FilledButton.icon(icon: const Icon(Icons.add), label: const Text("Add Step"), onPressed: _addStep),
+            FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text("Add Step"),
+              onPressed: _addStep,
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -593,11 +662,8 @@ class _ScriptEditorState extends State<ScriptEditor> {
       physics: const NeverScrollableScrollPhysics(),
       buildDefaultDragHandles: true,
       itemCount: _steps.length,
-      onReorder: (oldIndex, newIndex) {
+      onReorderItem: (oldIndex, newIndex) {
         setState(() {
-          if (oldIndex < newIndex) {
-            newIndex -= 1;
-          }
           final item = _steps.removeAt(oldIndex);
           _steps.insert(newIndex, item);
         });
@@ -614,7 +680,10 @@ class _ScriptEditorState extends State<ScriptEditor> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(icon: const Icon(Icons.edit), onPressed: () => _editStep(index)),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _editStep(index),
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () {
@@ -622,7 +691,10 @@ class _ScriptEditorState extends State<ScriptEditor> {
                     _save();
                   },
                 ),
-                ReorderableDragStartListener(index: index, child: const Icon(Icons.drag_handle)),
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(Icons.drag_handle),
+                ),
               ],
             ),
           ),
@@ -643,7 +715,9 @@ class _ScriptEditorState extends State<ScriptEditor> {
             final extracted = info["extracted"]!;
             final used = info["used"]!;
 
-            if (extracted.isEmpty && used.isEmpty) return const SizedBox.shrink();
+            if (extracted.isEmpty && used.isEmpty) {
+              return const SizedBox.shrink();
+            }
 
             return Wrap(
               spacing: 8,
@@ -658,7 +732,10 @@ class _ScriptEditorState extends State<ScriptEditor> {
                       const SizedBox(width: 4),
                       Text(
                         "Extracted: ${extracted.join(', ')}",
-                        style: const TextStyle(fontSize: 12, color: Colors.blue),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue,
+                        ),
                       ),
                     ],
                   ),
@@ -668,7 +745,13 @@ class _ScriptEditorState extends State<ScriptEditor> {
                     children: [
                       const Icon(Icons.input, size: 14, color: Colors.orange),
                       const SizedBox(width: 4),
-                      Text("Used: ${used.join(', ')}", style: const TextStyle(fontSize: 12, color: Colors.orange)),
+                      Text(
+                        "Used: ${used.join(', ')}",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange,
+                        ),
+                      ),
                     ],
                   ),
               ],
