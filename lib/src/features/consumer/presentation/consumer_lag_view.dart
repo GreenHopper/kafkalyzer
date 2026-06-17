@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
@@ -22,6 +23,8 @@ enum ConsumerGroupSortType {
   consumersDesc,
   topicsAsc,
   topicsDesc,
+  processedAsc,
+  processedDesc,
 }
 
 class ConsumerLagView extends WatchingStatefulWidget {
@@ -38,7 +41,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   bool _isLoading = false;
   String? _errorMessage;
   String _filterText = "";
-  int _refreshIntervalSeconds = 0;
+  int _refreshIntervalSeconds = 30;
   Timer? _refreshTimer;
   int _sortColumnIndex = 0;
   bool _sortAscending = true;
@@ -51,6 +54,16 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   int _activeLagQueries = 0;
   final List<String> _lagQueryQueue = [];
   static const int _maxConcurrentLagQueries = 3;
+
+  // Track previous partition lags for calculating deltas: groupId -> (topic-partition -> lag)
+  final Map<String, Map<String, int>> _previousLags = {};
+  // Track computed delta value per group: groupId -> delta value
+  final Map<String, int> _groupDeltas = {};
+
+  String _formatNum(num value) {
+    final locale = Localizations.localeOf(context).toString();
+    return NumberFormat.decimalPattern(locale).format(value);
+  }
 
   @override
   void initState() {
@@ -69,6 +82,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   void _onSearchChanged() {
     setState(() {
       _filterText = _searchController.text;
+      _lagQueryQueue.clear();
     });
   }
 
@@ -85,7 +99,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return null;
   }
 
-  set _sortType(ConsumerGroupSortType val) {
+  set _sortType(ConsumerGroupSortType? val) {
+    if (val == null) return;
     switch (val) {
       case ConsumerGroupSortType.nameAsc:
         _sortColumnIndex = 0;
@@ -135,6 +150,14 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         _sortColumnIndex = 5;
         _sortAscending = false;
         break;
+      case ConsumerGroupSortType.processedAsc:
+        _sortColumnIndex = 6;
+        _sortAscending = true;
+        break;
+      case ConsumerGroupSortType.processedDesc:
+        _sortColumnIndex = 6;
+        _sortAscending = false;
+        break;
     }
   }
 
@@ -143,7 +166,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _lastFetchDuration = null;
       _loadingGroupIds.clear();
       _loadedGroupIds.clear();
       _failedGroupIds.clear();
@@ -172,6 +194,22 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     }
   }
 
+  int? _calculateLagDelta(String groupId, List<TopicPartitionLag> newLags) {
+    final oldLagsMap = _previousLags[groupId];
+    if (oldLagsMap == null) {
+      return null;
+    }
+    int totalDelta = 0;
+    for (final lag in newLags) {
+      final key = "${lag.topic}-${lag.partition}";
+      final oldLag = oldLagsMap[key];
+      if (oldLag != null) {
+        totalDelta += (lag.lag.toInt() - oldLag);
+      }
+    }
+    return totalDelta;
+  }
+
   Future<void> _loadGroupLag(String groupId) async {
     if (!mounted) return;
     final activeController = getIt<ActiveConnectionController>();
@@ -184,7 +222,11 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       return;
     }
 
-    if (_activeLagQueries >= _maxConcurrentLagQueries) {
+    final matchesSearch =
+        _filterText.isNotEmpty &&
+        groupId.toLowerCase().contains(_filterText.toLowerCase());
+
+    if (_activeLagQueries >= _maxConcurrentLagQueries && !matchesSearch) {
       if (!_lagQueryQueue.contains(groupId)) {
         _lagQueryQueue.add(groupId);
       }
@@ -200,8 +242,21 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       final updatedGroup = await getIt<KafkaMetadataService>()
           .fetchConsumerGroupLag(profile: activeProfile, groupId: groupId);
       if (!mounted) return;
+      if (activeController.activeProfile != activeProfile) return;
       setState(() {
         final idx = _lags.indexWhere((g) => g.groupId == groupId);
+
+        final delta = _calculateLagDelta(groupId, updatedGroup.partitionLags);
+        if (delta != null) {
+          _groupDeltas[groupId] = delta;
+        }
+
+        final newLagsMap = <String, int>{};
+        for (final lag in updatedGroup.partitionLags) {
+          newLagsMap["${lag.topic}-${lag.partition}"] = lag.lag.toInt();
+        }
+        _previousLags[groupId] = newLagsMap;
+
         if (idx != -1) {
           _lags[idx] = updatedGroup;
         }
@@ -211,6 +266,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       });
     } catch (e) {
       if (!mounted) return;
+      if (activeController.activeProfile != activeProfile) return;
       setState(() {
         _loadingGroupIds.remove(groupId);
         _failedGroupIds.add(groupId);
@@ -222,6 +278,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   void _processNextLagQuery() {
+    if (!mounted) return;
     if (_lagQueryQueue.isNotEmpty &&
         _activeLagQueries < _maxConcurrentLagQueries) {
       final nextGroupId = _lagQueryQueue.removeAt(0);
@@ -314,7 +371,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "${l10n.lagCol}: $totalLag",
+              "${l10n.lagCol}: ${_formatNum(totalLag)}",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
@@ -338,15 +395,73 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     );
   }
 
+  Widget _buildDeltaWidget(BuildContext context, ConsumerGroupLag group) {
+    final delta = _groupDeltas[group.groupId];
+
+    if (delta == null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          "-",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+      );
+    }
+
+    final String text;
+    final Color color;
+    if (delta > 0) {
+      // Lag increased (bad)
+      text = "+${_formatNum(delta)}";
+      color = Colors.red;
+    } else if (delta < 0) {
+      // Lag decreased (good / messages processed)
+      text = _formatNum(delta);
+      color = Colors.green;
+    } else {
+      text = "0";
+      color = Theme.of(context).colorScheme.outline;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+          color: color,
+        ),
+      ),
+    );
+  }
+
   void _updateRefreshInterval(int seconds, ClusterProfile? profile) {
     setState(() {
       _refreshIntervalSeconds = seconds;
     });
     _refreshTimer?.cancel();
-    if (seconds > 0 && profile != null) {
-      _refreshTimer = Timer.periodic(Duration(seconds: seconds), (timer) {
-        _fetchLags(profile);
-      });
+    if (profile != null) {
+      _fetchLags(profile);
+      if (seconds > 0) {
+        _refreshTimer = Timer.periodic(Duration(seconds: seconds), (timer) {
+          _fetchLags(profile);
+        });
+      }
     }
   }
 
@@ -381,10 +496,14 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       _lastProfile = activeProfile;
       _cachedPartitionLags.clear();
       _lagQueryQueue.clear();
+      _previousLags.clear();
+      _groupDeltas.clear();
+      _activeLagQueries = 0;
       if (activeProfile != null) {
-        scheduleMicrotask(() => _fetchLags(activeProfile));
         if (_refreshIntervalSeconds > 0) {
           _updateRefreshInterval(_refreshIntervalSeconds, activeProfile);
+        } else {
+          scheduleMicrotask(() => _fetchLags(activeProfile));
         }
       } else {
         _lags = [];
@@ -424,6 +543,13 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           cmp = a.topicsCount.compareTo(b.topicsCount);
           break;
         case 5:
+          cmp = _calculateGroupLag(a).compareTo(_calculateGroupLag(b));
+          break;
+        case 6:
+          final deltaA = _groupDeltas[a.groupId] ?? 0;
+          final deltaB = _groupDeltas[b.groupId] ?? 0;
+          cmp = deltaA.compareTo(deltaB);
+          break;
         default:
           cmp = _calculateGroupLag(a).compareTo(_calculateGroupLag(b));
           break;
@@ -449,8 +575,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
               _lags.length,
             ),
             const SizedBox(height: 16),
-            if (!_isLoading &&
-                _errorMessage == null &&
+            if (_errorMessage == null &&
                 _lags.isNotEmpty &&
                 _lastFetchDuration != null)
               Padding(
@@ -569,8 +694,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         .toStringAsFixed(1);
     final count = _lags.length;
     final message = isGerman
-        ? 'Erfolgreich $count Consumer-Gruppen in ${seconds}s geladen.'
-        : 'Successfully loaded $count consumer groups in ${seconds}s.';
+        ? 'Erfolgreich ${_formatNum(count)} Consumer-Gruppen in ${seconds}s geladen.'
+        : 'Successfully loaded ${_formatNum(count)} consumer groups in ${seconds}s.';
 
     return Row(
       children: [
@@ -669,6 +794,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           if (val != null) {
             setState(() {
               _statusFilter = val;
+              _lagQueryQueue.clear();
             });
           }
         },
@@ -720,8 +846,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   ) {
     final isGerman = Localizations.localeOf(context).languageCode == 'de';
     final matchCountText = isGerman
-        ? "$matchedCount von $totalCount Gruppen gefunden"
-        : "Found $matchedCount of $totalCount groups";
+        ? "${_formatNum(matchedCount)} von ${_formatNum(totalCount)} Gruppen gefunden"
+        : "Found ${_formatNum(matchedCount)} of ${_formatNum(totalCount)} groups";
 
     return Wrap(
       spacing: 16,
@@ -763,19 +889,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         _buildStatusDropdown(context),
         _buildSortDropdown(context),
         _buildRefreshDropdown(context, activeProfile),
-        OutlinedButton.icon(
-          onPressed: (activeProfile == null || _isLoading)
-              ? null
-              : () => _fetchLags(activeProfile),
-          icon: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh),
-          label: Text(l10n.apply),
-        ),
       ],
     );
   }
@@ -879,6 +992,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           _buildHeaderCell(3, isGerman ? 'Consumers' : 'Consumers', flex: 2),
           _buildHeaderCell(4, isGerman ? 'Topics' : 'Topics', flex: 2),
           _buildHeaderCell(5, isGerman ? 'Gesamtes Lag' : 'Total Lag', flex: 2),
+          _buildHeaderCell(6, isGerman ? 'Abarbeitung' : 'Processed', flex: 2),
         ],
       ),
     );
@@ -1000,17 +1114,24 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                       ),
                       Expanded(
                         flex: 2,
-                        child: Text(group.membersCount.toString()),
+                        child: Text(_formatNum(group.membersCount)),
                       ),
                       Expanded(
                         flex: 2,
-                        child: Text(group.topicsCount.toString()),
+                        child: Text(_formatNum(group.topicsCount)),
                       ),
                       Expanded(
                         flex: 2,
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: _buildTrailingLagWidget(context, l10n, group),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: _buildDeltaWidget(context, group),
                         ),
                       ),
                     ],

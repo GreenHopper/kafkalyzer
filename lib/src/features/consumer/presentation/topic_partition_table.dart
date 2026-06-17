@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
@@ -19,6 +20,11 @@ class TopicPartitionTable extends StatefulWidget {
 class _TopicPartitionTableState extends State<TopicPartitionTable> {
   int _sortColumnIndex = 0;
   bool _sortAscending = true;
+
+  String _formatNum(num value) {
+    final locale = Localizations.localeOf(context).toString();
+    return NumberFormat.decimalPattern(locale).format(value);
+  }
 
   Widget _buildHeaderCell(int index, String title, {required int flex}) {
     final isSelected = _sortColumnIndex == index;
@@ -145,7 +151,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
             final isHighLag = lagVal > 0;
             final committedStr = part.currentOffset.toInt() == -1
                 ? "-"
-                : part.currentOffset.toString();
+                : _formatNum(part.currentOffset.toInt());
 
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -161,10 +167,13 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
               child: Row(
                 children: [
                   _buildTableCell(part.partition.toString(), flex: 2),
-                  _buildTableCell(part.logEndOffset.toString(), flex: 3),
+                  _buildTableCell(
+                    _formatNum(part.logEndOffset.toInt()),
+                    flex: 3,
+                  ),
                   _buildTableCell(committedStr, flex: 3),
                   _buildTableCell(
-                    lagVal.toString(),
+                    _formatNum(lagVal),
                     flex: 2,
                     textColor: isHighLag
                         ? Theme.of(context).colorScheme.error

@@ -546,8 +546,11 @@ void main() {
 
     expect(find.text('Lag: 10'), findsOneWidget);
 
-    // Now trigger refresh
-    await tester.tap(find.byIcon(Icons.refresh));
+    // Now trigger refresh by changing interval dropdown
+    final refreshDropdown = find.byType(DropdownButtonFormField<int>);
+    await tester.tap(refreshDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('15s').last);
     await tester.pump(); // Start fetching groups
     await tester.pump(); // Start loading lag details
 
@@ -619,5 +622,217 @@ void main() {
     // Verify all 4 resolved and show Lag: 10
     expect(find.text('Lag: 10'), findsNWidgets(4));
     expect(loadingSpinners, findsNothing);
+  });
+
+  testWidgets('defaults refresh interval to 30s', (tester) async {
+    fakeMetadataService.lags = [];
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    final refreshDropdown = find.byType(DropdownButtonFormField<int>);
+    expect(refreshDropdown, findsOneWidget);
+    final dropdownState = tester.state<FormFieldState<int>>(refreshDropdown);
+    expect(dropdownState.value, equals(30));
+  });
+
+  testWidgets(
+    'calculates and displays committed offset delta (Processed) column',
+    (tester) async {
+      fakeMetadataService.lags = [
+        const ConsumerGroupLag(
+          groupId: 'test-group',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 'test-topic',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 90,
+              lag: 10,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+        ),
+      ];
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await activeConnectionController.connect(testProfile);
+      await tester.pumpAndSettle();
+
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // On first load, delta is not available (displays "-")
+      expect(find.text('-'), findsOneWidget);
+
+      // Update committed offset from 90 to 95 (+5 delta)
+      fakeMetadataService.lags = [
+        const ConsumerGroupLag(
+          groupId: 'test-group',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 'test-topic',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 95,
+              lag: 5,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+        ),
+      ];
+
+      // Trigger refresh by changing interval dropdown
+      final refreshDropdown = find.byType(DropdownButtonFormField<int>);
+      await tester.tap(refreshDropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('15s').last);
+      await tester.pump(); // Fetch group overview
+      await tester.pump(); // Fetch group details
+      await tester.pumpAndSettle();
+
+      // Verify "-5" delta is displayed (lag decreased, messages processed)
+      expect(find.text('-5'), findsOneWidget);
+
+      // Now update lag to increase (e.g. lag goes from 5 to 12)
+      fakeMetadataService.lags = [
+        const ConsumerGroupLag(
+          groupId: 'test-group',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 'test-topic',
+              partition: 0,
+              logEndOffset: 107,
+              currentOffset: 95,
+              lag: 12,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+        ),
+      ];
+
+      // Trigger another refresh by changing interval dropdown to 5s
+      await tester.tap(refreshDropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('5s').last);
+      await tester.pump(); // Fetch group overview
+      await tester.pump(); // Fetch group details
+      await tester.pumpAndSettle();
+
+      // Verify "+7" delta is displayed (lag increased by 7)
+      expect(find.text('+7'), findsOneWidget);
+    },
+  );
+
+  testWidgets('formats numbers with thousands separators based on locale', (
+    tester,
+  ) async {
+    fakeMetadataService.lags = [
+      const ConsumerGroupLag(
+        groupId: 'test-group',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [
+          TopicPartitionLag(
+            topic: 'test-topic',
+            partition: 0,
+            logEndOffset: 1000000,
+            currentOffset: 900000,
+            lag: 100000,
+          ),
+        ],
+        membersCount: 2000,
+        topicsCount: 1500,
+      ),
+    ];
+
+    // Build with English locale
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('en')],
+        locale: const Locale('en'),
+        home: const ConsumerLagView(),
+      ),
+    );
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // 2,000 for consumers, 1,500 for topics, 100,000 for lag
+    expect(find.text('2,000'), findsOneWidget);
+    expect(find.text('1,500'), findsOneWidget);
+    expect(find.text('Lag: 100,000'), findsOneWidget);
+  });
+
+  testWidgets('widget unmounting stops background queue', (tester) async {
+    fakeMetadataService.lags = List.generate(
+      5,
+      (i) => ConsumerGroupLag(
+        groupId: 'group-$i',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [
+          TopicPartitionLag(
+            topic: 'topic-1',
+            partition: 0,
+            logEndOffset: 100,
+            currentOffset: 90,
+            lag: 10,
+          ),
+        ],
+        membersCount: 1,
+        topicsCount: 1,
+      ),
+    );
+
+    final controller = ValueNotifier<bool>(true);
+    await tester.pumpWidget(
+      ValueListenableBuilder<bool>(
+        valueListenable: controller,
+        builder: (context, show, _) {
+          return MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en')],
+            home: show ? const ConsumerLagView() : const SizedBox(),
+          );
+        },
+      ),
+    );
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pump();
+    await tester.pump(); // Starts loading first 3
+
+    controller.value = false;
+    await tester.pumpAndSettle();
+
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
   });
 }

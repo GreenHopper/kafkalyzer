@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'topic_partition_table.dart';
@@ -16,6 +17,11 @@ class GroupDetailsView extends StatefulWidget {
 class _GroupDetailsViewState extends State<GroupDetailsView> {
   bool _sortTopicsAscending = true;
   bool _sortByLag = false;
+
+  String _formatNum(num value) {
+    final locale = Localizations.localeOf(context).toString();
+    return NumberFormat.decimalPattern(locale).format(value);
+  }
 
   int _calculateTopicLag(List<TopicPartitionLag> partitionLags) {
     return partitionLags.fold(0, (sum, item) => sum + item.lag.toInt());
@@ -162,7 +168,7 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    "${widget.l10n.lagCol}: $totalLag",
+                    "${widget.l10n.lagCol}: ${_formatNum(totalLag)}",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
