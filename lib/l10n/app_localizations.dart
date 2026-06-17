@@ -134,6 +134,72 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
+  /// No description provided for @consumerLag.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumer Lag'**
+  String get consumerLag;
+
+  /// No description provided for @consumerGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumer Groups'**
+  String get consumerGroups;
+
+  /// No description provided for @noConsumerGroupsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No consumer groups found.'**
+  String get noConsumerGroupsFound;
+
+  /// No description provided for @totalLag.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Lag'**
+  String get totalLag;
+
+  /// No description provided for @autoRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-Refresh (15s)'**
+  String get autoRefresh;
+
+  /// No description provided for @topicCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic'**
+  String get topicCol;
+
+  /// No description provided for @partitionCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition'**
+  String get partitionCol;
+
+  /// No description provided for @logEndOffsetCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Log End Offset'**
+  String get logEndOffsetCol;
+
+  /// No description provided for @committedOffsetCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Committed Offset'**
+  String get committedOffsetCol;
+
+  /// No description provided for @lagCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Lag'**
+  String get lagCol;
+
+  /// No description provided for @searchGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Search consumer groups...'**
+  String get searchGroups;
+
   /// No description provided for @unknownView.
   ///
   /// In en, this message translates to:

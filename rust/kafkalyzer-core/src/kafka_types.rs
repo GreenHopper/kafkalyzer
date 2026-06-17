@@ -38,3 +38,20 @@ pub struct KafkaMessage {
     pub payload: Option<String>,
     pub timestamp: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopicPartitionLag {
+    pub topic: String,
+    pub partition: i32,
+    pub log_end_offset: i64,
+    pub current_offset: i64,
+    pub lag: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsumerGroupLag {
+    pub group_id: String,
+    pub state: String,
+    pub protocol_type: String,
+    pub partition_lags: Vec<TopicPartitionLag>,
+}

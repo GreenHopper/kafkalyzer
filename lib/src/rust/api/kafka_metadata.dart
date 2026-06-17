@@ -17,6 +17,26 @@ Future<bool> validateConnection({required ClusterProfile profile}) => RustLib
 Future<List<TopicMetadata>> fetchTopics({required ClusterProfile profile}) =>
     RustLib.instance.api.crateApiKafkaMetadataFetchTopics(profile: profile);
 
+Future<List<ConsumerGroupLag>> fetchConsumerLags({
+  required ClusterProfile profile,
+}) => RustLib.instance.api.crateApiKafkaMetadataFetchConsumerLags(
+  profile: profile,
+);
+
+Future<List<ConsumerGroupLag>> fetchConsumerGroups({
+  required ClusterProfile profile,
+}) => RustLib.instance.api.crateApiKafkaMetadataFetchConsumerGroups(
+  profile: profile,
+);
+
+Future<ConsumerGroupLag> fetchConsumerGroupLag({
+  required ClusterProfile profile,
+  required String groupId,
+}) => RustLib.instance.api.crateApiKafkaMetadataFetchConsumerGroupLag(
+  profile: profile,
+  groupId: groupId,
+);
+
 class TopicMetadata {
   final String name;
   final int partitionCount;

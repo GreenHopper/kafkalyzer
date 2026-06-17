@@ -70,7 +70,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 1022168849;
+  int get rustContentHash => 1945713043;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -99,6 +99,19 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<ClientConfig> crateApiKafkaUtilsCreateConfig({
+    required ClusterProfile profile,
+  });
+
+  Future<ConsumerGroupLag> crateApiKafkaMetadataFetchConsumerGroupLag({
+    required ClusterProfile profile,
+    required String groupId,
+  });
+
+  Future<List<ConsumerGroupLag>> crateApiKafkaMetadataFetchConsumerGroups({
+    required ClusterProfile profile,
+  });
+
+  Future<List<ConsumerGroupLag>> crateApiKafkaMetadataFetchConsumerLags({
     required ClusterProfile profile,
   });
 
@@ -270,6 +283,107 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "create_config", argNames: ["profile"]);
 
   @override
+  Future<ConsumerGroupLag> crateApiKafkaMetadataFetchConsumerGroupLag({
+    required ClusterProfile profile,
+    required String groupId,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cluster_profile(profile, serializer);
+          sse_encode_String(groupId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_consumer_group_lag,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiKafkaMetadataFetchConsumerGroupLagConstMeta,
+        argValues: [profile, groupId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaMetadataFetchConsumerGroupLagConstMeta =>
+      const TaskConstMeta(
+        debugName: "fetch_consumer_group_lag",
+        argNames: ["profile", "groupId"],
+      );
+
+  @override
+  Future<List<ConsumerGroupLag>> crateApiKafkaMetadataFetchConsumerGroups({
+    required ClusterProfile profile,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cluster_profile(profile, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_consumer_group_lag,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiKafkaMetadataFetchConsumerGroupsConstMeta,
+        argValues: [profile],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaMetadataFetchConsumerGroupsConstMeta =>
+      const TaskConstMeta(
+        debugName: "fetch_consumer_groups",
+        argNames: ["profile"],
+      );
+
+  @override
+  Future<List<ConsumerGroupLag>> crateApiKafkaMetadataFetchConsumerLags({
+    required ClusterProfile profile,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cluster_profile(profile, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_consumer_group_lag,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiKafkaMetadataFetchConsumerLagsConstMeta,
+        argValues: [profile],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaMetadataFetchConsumerLagsConstMeta =>
+      const TaskConstMeta(
+        debugName: "fetch_consumer_lags",
+        argNames: ["profile"],
+      );
+
+  @override
   Future<String> crateApiSchemaRegistryFetchSchema({
     required ClusterProfile profile,
     required String subject,
@@ -283,7 +397,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 6,
             port: port_,
           );
         },
@@ -316,7 +430,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 7,
             port: port_,
           );
         },
@@ -346,7 +460,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 8,
             port: port_,
           );
         },
@@ -373,7 +487,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 9,
             port: port_,
           );
         },
@@ -401,7 +515,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 10,
             port: port_,
           );
         },
@@ -429,7 +543,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 11,
             port: port_,
           );
         },
@@ -459,7 +573,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 12,
             port: port_,
           );
         },
@@ -572,6 +686,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ConsumerGroupLag dco_decode_consumer_group_lag(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return ConsumerGroupLag(
+      groupId: dco_decode_String(arr[0]),
+      state: dco_decode_String(arr[1]),
+      protocolType: dco_decode_String(arr[2]),
+      partitionLags: dco_decode_list_topic_partition_lag(arr[3]),
+    );
+  }
+
+  @protected
   FilterType dco_decode_filter_type(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return FilterType.values[raw as int];
@@ -612,6 +740,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<ConsumerGroupLag> dco_decode_list_consumer_group_lag(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_consumer_group_lag).toList();
+  }
+
+  @protected
   List<int> dco_decode_list_prim_u_8_loose(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as List<int>;
@@ -627,6 +761,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<TopicMetadata> dco_decode_list_topic_metadata(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_topic_metadata).toList();
+  }
+
+  @protected
+  List<TopicPartitionLag> dco_decode_list_topic_partition_lag(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_topic_partition_lag).toList();
   }
 
   @protected
@@ -671,6 +811,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       replicationFactor: dco_decode_i_32(arr[2]),
       cleanupPolicy: dco_decode_opt_String(arr[3]),
       retentionMs: dco_decode_opt_String(arr[4]),
+    );
+  }
+
+  @protected
+  TopicPartitionLag dco_decode_topic_partition_lag(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return TopicPartitionLag(
+      topic: dco_decode_String(arr[0]),
+      partition: dco_decode_i_32(arr[1]),
+      logEndOffset: dco_decode_i_64(arr[2]),
+      currentOffset: dco_decode_i_64(arr[3]),
+      lag: dco_decode_i_64(arr[4]),
     );
   }
 
@@ -800,6 +955,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ConsumerGroupLag sse_decode_consumer_group_lag(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_groupId = sse_decode_String(deserializer);
+    var var_state = sse_decode_String(deserializer);
+    var var_protocolType = sse_decode_String(deserializer);
+    var var_partitionLags = sse_decode_list_topic_partition_lag(deserializer);
+    return ConsumerGroupLag(
+      groupId: var_groupId,
+      state: var_state,
+      protocolType: var_protocolType,
+      partitionLags: var_partitionLags,
+    );
+  }
+
+  @protected
   FilterType sse_decode_filter_type(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
@@ -850,6 +1020,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<ConsumerGroupLag> sse_decode_list_consumer_group_lag(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <ConsumerGroupLag>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_consumer_group_lag(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
@@ -873,6 +1057,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <TopicMetadata>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_topic_metadata(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<TopicPartitionLag> sse_decode_list_topic_partition_lag(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TopicPartitionLag>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_topic_partition_lag(deserializer));
     }
     return ans_;
   }
@@ -942,6 +1140,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       replicationFactor: var_replicationFactor,
       cleanupPolicy: var_cleanupPolicy,
       retentionMs: var_retentionMs,
+    );
+  }
+
+  @protected
+  TopicPartitionLag sse_decode_topic_partition_lag(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_topic = sse_decode_String(deserializer);
+    var var_partition = sse_decode_i_32(deserializer);
+    var var_logEndOffset = sse_decode_i_64(deserializer);
+    var var_currentOffset = sse_decode_i_64(deserializer);
+    var var_lag = sse_decode_i_64(deserializer);
+    return TopicPartitionLag(
+      topic: var_topic,
+      partition: var_partition,
+      logEndOffset: var_logEndOffset,
+      currentOffset: var_currentOffset,
+      lag: var_lag,
     );
   }
 
@@ -1076,6 +1293,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_consumer_group_lag(
+    ConsumerGroupLag self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.groupId, serializer);
+    sse_encode_String(self.state, serializer);
+    sse_encode_String(self.protocolType, serializer);
+    sse_encode_list_topic_partition_lag(self.partitionLags, serializer);
+  }
+
+  @protected
   void sse_encode_filter_type(FilterType self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
@@ -1114,6 +1343,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_consumer_group_lag(
+    List<ConsumerGroupLag> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_consumer_group_lag(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_prim_u_8_loose(
     List<int> self,
     SseSerializer serializer,
@@ -1144,6 +1385,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_topic_metadata(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_topic_partition_lag(
+    List<TopicPartitionLag> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_topic_partition_lag(item, serializer);
     }
   }
 
@@ -1207,6 +1460,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.replicationFactor, serializer);
     sse_encode_opt_String(self.cleanupPolicy, serializer);
     sse_encode_opt_String(self.retentionMs, serializer);
+  }
+
+  @protected
+  void sse_encode_topic_partition_lag(
+    TopicPartitionLag self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.topic, serializer);
+    sse_encode_i_32(self.partition, serializer);
+    sse_encode_i_64(self.logEndOffset, serializer);
+    sse_encode_i_64(self.currentOffset, serializer);
+    sse_encode_i_64(self.lag, serializer);
   }
 
   @protected

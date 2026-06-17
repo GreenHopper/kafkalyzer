@@ -4,9 +4,9 @@ import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
 import 'package:kafkalyzer/src/features/search/multi_search_view.dart';
+import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/script_manager_view.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
-
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -44,6 +44,11 @@ class _MainLayoutState extends State<MainLayout> {
                 icon: const Icon(Icons.search_outlined),
                 selectedIcon: const Icon(Icons.search),
                 label: Text(l10n.multiSearch),
+              ),
+              NavigationRailDestination(
+                icon: const Icon(Icons.speed_outlined),
+                selectedIcon: const Icon(Icons.speed),
+                label: Text(l10n.consumerLag),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.description_outlined),
@@ -96,8 +101,9 @@ class _MainLayoutState extends State<MainLayout> {
             child: switch (_selectedIndex) {
               0 => const ExplorerView(),
               1 => const MultiSearchView(),
-              2 => const ScriptManagerView(),
-              3 => const SettingsView(),
+              2 => const ConsumerLagView(),
+              3 => const ScriptManagerView(),
+              4 => const SettingsView(),
               _ => Center(child: Text(l10n.unknownView)),
             },
           ),

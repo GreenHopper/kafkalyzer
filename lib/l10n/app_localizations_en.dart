@@ -27,6 +27,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
+  String get consumerLag => 'Consumer Lag';
+
+  @override
+  String get consumerGroups => 'Consumer Groups';
+
+  @override
+  String get noConsumerGroupsFound => 'No consumer groups found.';
+
+  @override
+  String get totalLag => 'Total Lag';
+
+  @override
+  String get autoRefresh => 'Auto-Refresh (15s)';
+
+  @override
+  String get topicCol => 'Topic';
+
+  @override
+  String get partitionCol => 'Partition';
+
+  @override
+  String get logEndOffsetCol => 'Log End Offset';
+
+  @override
+  String get committedOffsetCol => 'Committed Offset';
+
+  @override
+  String get lagCol => 'Lag';
+
+  @override
+  String get searchGroups => 'Search consumer groups...';
+
+  @override
   String get unknownView => 'Unknown View';
 
   @override

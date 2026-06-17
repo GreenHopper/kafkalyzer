@@ -1,5 +1,5 @@
-use anyhow::Result;
 use crate::api::kafka_types::ClusterProfile;
+use anyhow::Result;
 
 #[derive(Debug, Clone)]
 pub struct TopicMetadata {
@@ -31,4 +31,40 @@ pub fn fetch_topics(profile: ClusterProfile) -> Result<Vec<TopicMetadata>> {
     let domain_profile = profile.to_domain();
     let topics = kafkalyzer_kafka::kafka_metadata::fetch_topics(domain_profile)?;
     Ok(topics.into_iter().map(TopicMetadata::from).collect())
+}
+
+pub fn fetch_consumer_lags(
+    profile: ClusterProfile,
+) -> Result<Vec<crate::api::kafka_types::ConsumerGroupLag>> {
+    let domain_profile = profile.to_domain();
+    let group_lags = kafkalyzer_kafka::kafka_metadata::fetch_consumer_lags(domain_profile)?;
+    Ok(group_lags
+        .into_iter()
+        .map(crate::api::kafka_types::ConsumerGroupLag::from)
+        .collect())
+}
+
+pub fn fetch_consumer_groups(
+    profile: ClusterProfile,
+) -> Result<Vec<crate::api::kafka_types::ConsumerGroupLag>> {
+    let domain_profile = profile.to_domain();
+    let groups = kafkalyzer_kafka::kafka_metadata::fetch_consumer_groups(
+        domain_profile,
+    )?;
+    Ok(groups
+        .into_iter()
+        .map(crate::api::kafka_types::ConsumerGroupLag::from)
+        .collect())
+}
+
+pub fn fetch_consumer_group_lag(
+    profile: ClusterProfile,
+    group_id: String,
+) -> Result<crate::api::kafka_types::ConsumerGroupLag> {
+    let domain_profile = profile.to_domain();
+    let group_lag = kafkalyzer_kafka::kafka_metadata::fetch_consumer_group_lag(
+        domain_profile,
+        group_id,
+    )?;
+    Ok(crate::api::kafka_types::ConsumerGroupLag::from(group_lag))
 }

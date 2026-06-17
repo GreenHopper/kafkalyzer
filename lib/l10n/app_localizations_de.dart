@@ -27,6 +27,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settings => 'Einstellungen';
 
   @override
+  String get consumerLag => 'Consumer-Lag';
+
+  @override
+  String get consumerGroups => 'Consumer-Gruppen';
+
+  @override
+  String get noConsumerGroupsFound => 'Keine Consumer-Gruppen gefunden.';
+
+  @override
+  String get totalLag => 'Gesamt-Lag';
+
+  @override
+  String get autoRefresh => 'Auto-Aktualisierung (15s)';
+
+  @override
+  String get topicCol => 'Topic';
+
+  @override
+  String get partitionCol => 'Partition';
+
+  @override
+  String get logEndOffsetCol => 'Log-End-Offset';
+
+  @override
+  String get committedOffsetCol => 'Committed Offset';
+
+  @override
+  String get lagCol => 'Lag';
+
+  @override
+  String get searchGroups => 'Consumer-Gruppen suchen...';
+
+  @override
   String get unknownView => 'Unbekannte Ansicht';
 
   @override

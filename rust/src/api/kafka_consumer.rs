@@ -1,6 +1,6 @@
-use anyhow::Result;
-use crate::frb_generated::StreamSink;
 use crate::api::kafka_types::{ClusterProfile, FilterType, SearchScope};
+use crate::frb_generated::StreamSink;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +26,7 @@ impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
     }
 }
 
-pub fn consume_with_filter(
+pub async fn consume_with_filter(
     profile: ClusterProfile,
     topic: String,
     filter_terms: Option<Vec<String>>,
@@ -44,7 +44,7 @@ pub fn consume_with_filter(
     sink: StreamSink<KafkaMessage>,
 ) -> Result<()> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
-    
+
     let sink_clone = sink.clone();
     tokio::spawn(async move {
         while let Some(msg) = rx.recv().await {
@@ -61,21 +61,24 @@ pub fn consume_with_filter(
     let domain_filter_type = filter_type.to_domain();
     let domain_search_scope = search_scope.to_domain();
 
-    kafkalyzer_kafka::kafka_consumer::consume_with_filter(
-        domain_profile,
-        topic,
-        filter_terms,
-        filter_field,
-        domain_filter_type,
-        domain_search_scope,
-        start_offset,
-        start_timestamp,
-        start_partition,
-        fast_trace_key,
-        end_offset,
-        end_timestamp,
-        max_results,
-        run_forever,
-        kafka_sink,
-    )
+    tokio::task::spawn_blocking(move || {
+        kafkalyzer_kafka::kafka_consumer::consume_with_filter(
+            domain_profile,
+            topic,
+            filter_terms,
+            filter_field,
+            domain_filter_type,
+            domain_search_scope,
+            start_offset,
+            start_timestamp,
+            start_partition,
+            fast_trace_key,
+            end_offset,
+            end_timestamp,
+            max_results,
+            run_forever,
+            kafka_sink,
+        )
+    })
+    .await?
 }

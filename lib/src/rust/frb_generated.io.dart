@@ -65,6 +65,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ClusterProfile dco_decode_cluster_profile(dynamic raw);
 
   @protected
+  ConsumerGroupLag dco_decode_consumer_group_lag(dynamic raw);
+
+  @protected
   FilterType dco_decode_filter_type(dynamic raw);
 
   @protected
@@ -80,6 +83,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<ConsumerGroupLag> dco_decode_list_consumer_group_lag(dynamic raw);
+
+  @protected
   List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
 
   @protected
@@ -87,6 +93,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<TopicMetadata> dco_decode_list_topic_metadata(dynamic raw);
+
+  @protected
+  List<TopicPartitionLag> dco_decode_list_topic_partition_lag(dynamic raw);
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
@@ -105,6 +114,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   TopicMetadata dco_decode_topic_metadata(dynamic raw);
+
+  @protected
+  TopicPartitionLag dco_decode_topic_partition_lag(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -159,6 +171,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ClusterProfile sse_decode_cluster_profile(SseDeserializer deserializer);
 
   @protected
+  ConsumerGroupLag sse_decode_consumer_group_lag(SseDeserializer deserializer);
+
+  @protected
   FilterType sse_decode_filter_type(SseDeserializer deserializer);
 
   @protected
@@ -174,6 +189,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<ConsumerGroupLag> sse_decode_list_consumer_group_lag(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
 
   @protected
@@ -181,6 +201,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<TopicMetadata> sse_decode_list_topic_metadata(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TopicPartitionLag> sse_decode_list_topic_partition_lag(
     SseDeserializer deserializer,
   );
 
@@ -201,6 +226,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   TopicMetadata sse_decode_topic_metadata(SseDeserializer deserializer);
+
+  @protected
+  TopicPartitionLag sse_decode_topic_partition_lag(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -268,6 +298,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_consumer_group_lag(
+    ConsumerGroupLag self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_filter_type(FilterType self, SseSerializer serializer);
 
   @protected
@@ -283,6 +319,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_consumer_group_lag(
+    List<ConsumerGroupLag> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_prim_u_8_loose(List<int> self, SseSerializer serializer);
 
   @protected
@@ -294,6 +336,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_topic_metadata(
     List<TopicMetadata> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_topic_partition_lag(
+    List<TopicPartitionLag> self,
     SseSerializer serializer,
   );
 
@@ -317,6 +365,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_topic_metadata(TopicMetadata self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_topic_partition_lag(
+    TopicPartitionLag self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);

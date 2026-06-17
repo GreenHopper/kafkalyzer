@@ -36,12 +36,23 @@ export sasl_cv_gssapi_spnego=yes
 # 1d. CMake Wrapper
 export PATH="/tmp/cmake_wrapper:$PATH"
 
-# 1e. Smart Cargo Wrapper V4
+# 1e. Smart Cargo Wrapper V5
 # Detects target and sets isolated environment for C dependencies.
 mkdir -p /tmp/cargo_wrapper
 cat << 'EOF' > /tmp/cargo_wrapper/cargo
 #!/bin/bash
-REAL_CARGO="/Users/docker/.cargo/bin/cargo"
+REAL_CARGO=""
+IFS=':' read -ra PATH_DIRS <<< "$PATH"
+for dir in "${PATH_DIRS[@]}"; do
+    if [ "$dir" != "/tmp/cargo_wrapper" ] && [ -x "$dir/cargo" ]; then
+        REAL_CARGO="$dir/cargo"
+        break
+    fi
+done
+if [ -z "$REAL_CARGO" ]; then
+    REAL_CARGO="cargo"
+fi
+
 DEBUG_LOG="/tmp/cargo_wrapper_debug.log"
 
 TARGET=""
@@ -81,6 +92,61 @@ fi
 exec "$REAL_CARGO" "$@"
 EOF
 chmod +x /tmp/cargo_wrapper/cargo
+
+cat << 'EOF' > /tmp/cargo_wrapper/rustup
+#!/bin/bash
+REAL_RUSTUP=""
+IFS=':' read -ra PATH_DIRS <<< "$PATH"
+for dir in "${PATH_DIRS[@]}"; do
+    if [ "$dir" != "/tmp/cargo_wrapper" ] && [ -x "$dir/rustup" ]; then
+        REAL_RUSTUP="$dir/rustup"
+        break
+    fi
+done
+if [ -z "$REAL_RUSTUP" ]; then
+    REAL_RUSTUP="rustup"
+fi
+
+DEBUG_LOG="/tmp/cargo_wrapper_debug.log"
+
+TARGET=""
+if [[ "$*" == *"aarch64-apple-darwin"* ]]; then TARGET="arm64"; fi
+if [[ "$*" == *"x86_64-apple-darwin"* ]]; then TARGET="x64"; fi
+
+echo "--- Rustup Wrapper Call ---" >> $DEBUG_LOG
+echo "Args: $@" >> $DEBUG_LOG
+echo "Detected Target: $TARGET" >> $DEBUG_LOG
+
+if [ "$TARGET" == "arm64" ]; then
+    echo "Applying ARM64 environment to Rustup" >> $DEBUG_LOG
+    export CC="clang -arch arm64"
+    export CXX="clang++ -arch arm64"
+    export AR="ar"
+    export CFLAGS="-arch arm64"
+    export LDFLAGS="-arch arm64"
+    export CC_aarch64_apple_darwin="clang -arch arm64"
+    export CXX_aarch64_apple_darwin="clang++ -arch arm64"
+    export AR_aarch64_apple_darwin="ar"
+    export CFLAGS_aarch64_apple_darwin="-arch arm64"
+    export LDFLAGS_aarch64_apple_darwin="-arch arm64"
+elif [ "$TARGET" == "x64" ]; then
+    echo "Applying X86_64 environment to Rustup" >> $DEBUG_LOG
+    export CC="clang -arch x86_64"
+    export CXX="clang++ -arch x86_64"
+    export AR="ar"
+    export CFLAGS="-arch x86_64"
+    export LDFLAGS="-arch x86_64"
+    export CC_x86_64_apple_darwin="clang -arch x86_64"
+    export CXX_x86_64_apple_darwin="clang++ -arch x86_64"
+    export AR_x86_64_apple_darwin="ar"
+    export CFLAGS_x86_64_apple_darwin="-arch x86_64"
+    export LDFLAGS_x86_64_apple_darwin="-arch x86_64"
+fi
+
+exec "$REAL_RUSTUP" "$@"
+EOF
+chmod +x /tmp/cargo_wrapper/rustup
+
 export PATH="/tmp/cargo_wrapper:$PATH"
 
 echo "--- Build Environment Snapshot ---" >&2

@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 class ClusterProfile {
   final String name;
@@ -68,6 +68,72 @@ class ClusterProfile {
           sslTruststorePassword == other.sslTruststorePassword;
 }
 
+class ConsumerGroupLag {
+  final String groupId;
+  final String state;
+  final String protocolType;
+  final List<TopicPartitionLag> partitionLags;
+
+  const ConsumerGroupLag({
+    required this.groupId,
+    required this.state,
+    required this.protocolType,
+    required this.partitionLags,
+  });
+
+  @override
+  int get hashCode =>
+      groupId.hashCode ^
+      state.hashCode ^
+      protocolType.hashCode ^
+      partitionLags.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConsumerGroupLag &&
+          runtimeType == other.runtimeType &&
+          groupId == other.groupId &&
+          state == other.state &&
+          protocolType == other.protocolType &&
+          partitionLags == other.partitionLags;
+}
+
 enum FilterType { contains, regex, exact }
 
 enum SearchScope { key, value, both }
+
+class TopicPartitionLag {
+  final String topic;
+  final int partition;
+  final PlatformInt64 logEndOffset;
+  final PlatformInt64 currentOffset;
+  final PlatformInt64 lag;
+
+  const TopicPartitionLag({
+    required this.topic,
+    required this.partition,
+    required this.logEndOffset,
+    required this.currentOffset,
+    required this.lag,
+  });
+
+  @override
+  int get hashCode =>
+      topic.hashCode ^
+      partition.hashCode ^
+      logEndOffset.hashCode ^
+      currentOffset.hashCode ^
+      lag.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicPartitionLag &&
+          runtimeType == other.runtimeType &&
+          topic == other.topic &&
+          partition == other.partition &&
+          logEndOffset == other.logEndOffset &&
+          currentOffset == other.currentOffset &&
+          lag == other.lag;
+}

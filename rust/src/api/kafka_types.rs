@@ -67,3 +67,46 @@ impl SearchScope {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopicPartitionLag {
+    pub topic: String,
+    pub partition: i32,
+    pub log_end_offset: i64,
+    pub current_offset: i64,
+    pub lag: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsumerGroupLag {
+    pub group_id: String,
+    pub state: String,
+    pub protocol_type: String,
+    pub partition_lags: Vec<TopicPartitionLag>,
+}
+
+impl From<kafkalyzer_core::kafka_types::TopicPartitionLag> for TopicPartitionLag {
+    fn from(lag: kafkalyzer_core::kafka_types::TopicPartitionLag) -> Self {
+        Self {
+            topic: lag.topic,
+            partition: lag.partition,
+            log_end_offset: lag.log_end_offset,
+            current_offset: lag.current_offset,
+            lag: lag.lag,
+        }
+    }
+}
+
+impl From<kafkalyzer_core::kafka_types::ConsumerGroupLag> for ConsumerGroupLag {
+    fn from(group: kafkalyzer_core::kafka_types::ConsumerGroupLag) -> Self {
+        Self {
+            group_id: group.group_id,
+            state: group.state,
+            protocol_type: group.protocol_type,
+            partition_lags: group
+                .partition_lags
+                .into_iter()
+                .map(TopicPartitionLag::from)
+                .collect(),
+        }
+    }
+}

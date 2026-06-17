@@ -11,4 +11,23 @@ class KafkaMetadataService {
   }) {
     return api.fetchTopics(profile: profile);
   }
+
+  Future<List<ConsumerGroupLag>> fetchConsumerLags({
+    required ClusterProfile profile,
+  }) {
+    return api.fetchConsumerLags(profile: profile);
+  }
+
+  Future<List<ConsumerGroupLag>> fetchConsumerGroups({
+    required ClusterProfile profile,
+  }) {
+    return api.fetchConsumerGroups(profile: profile);
+  }
+
+  Future<ConsumerGroupLag> fetchConsumerGroupLag({
+    required ClusterProfile profile,
+    required String groupId,
+  }) {
+    return api.fetchConsumerGroupLag(profile: profile, groupId: groupId);
+  }
 }

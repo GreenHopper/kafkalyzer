@@ -1,5 +1,5 @@
-use anyhow::Result;
 use crate::api::kafka_types::ClusterProfile;
+use anyhow::Result;
 
 pub fn fetch_subjects(profile: ClusterProfile) -> Result<Vec<String>> {
     let domain_profile = profile.to_domain();

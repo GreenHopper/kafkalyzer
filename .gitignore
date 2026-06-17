@@ -50,5 +50,5 @@ app.*.map.json
 /release
 *.tar.gz
 macos_storage/mac_hdd_ng.img
-/data_analysis
+/logs
 
