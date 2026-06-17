@@ -225,40 +225,59 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                 ),
               ),
               child: ExpansionTile(
-                title: Text(
-                  topic,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+                tilePadding: const EdgeInsets.only(left: 24, right: 24),
+                title: Row(
                   children: [
-                    _buildTopicDeltaWidget(context, topicDelta),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: totalLag > 0
-                            ? Theme.of(context).colorScheme.errorContainer
-                            : Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                    Expanded(
+                      flex: 3,
                       child: Text(
-                        "${widget.l10n.lagCol}: ${_formatNum(totalLag)}",
-                        style: TextStyle(
+                        topic,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                          color: totalLag > 0
-                              ? Theme.of(context).colorScheme.onErrorContainer
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
+                          fontSize: 14,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Spacer(flex: 2),
+                    const Spacer(flex: 2),
+                    const Spacer(flex: 2),
+                    const Spacer(flex: 2),
+                    Expanded(
+                      flex: 2,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: totalLag > 0
+                                ? Theme.of(context).colorScheme.errorContainer
+                                : Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "${widget.l10n.lagCol}: ${_formatNum(totalLag)}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              color: totalLag > 0
+                                  ? Theme.of(context).colorScheme.onErrorContainer
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: _buildTopicDeltaWidget(context, topicDelta),
                       ),
                     ),
                   ],

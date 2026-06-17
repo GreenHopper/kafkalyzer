@@ -165,7 +165,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     });
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: const BorderRadius.only(
@@ -176,7 +176,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.only(left: 24, right: 64, bottom: 8),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -187,9 +187,9 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
             ),
             child: Row(
               children: [
-                _buildHeaderCell(0, widget.l10n.partitionCol, flex: 2),
-                _buildHeaderCell(1, widget.l10n.logEndOffsetCol, flex: 3),
-                _buildHeaderCell(2, widget.l10n.committedOffsetCol, flex: 3),
+                _buildHeaderCell(0, widget.l10n.partitionCol, flex: 3),
+                _buildHeaderCell(1, widget.l10n.logEndOffsetCol, flex: 4),
+                _buildHeaderCell(2, widget.l10n.committedOffsetCol, flex: 4),
                 _buildHeaderCell(3, widget.l10n.lagCol, flex: 2),
                 _buildHeaderCell(
                   4,
@@ -207,7 +207,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                 : _formatNum(part.currentOffset.toInt());
 
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.only(left: 24, right: 64),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -219,12 +219,12 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
               ),
               child: Row(
                 children: [
-                  _buildTableCell(part.partition.toString(), flex: 2),
+                  _buildTableCell(part.partition.toString(), flex: 3),
                   _buildTableCell(
                     _formatNum(part.logEndOffset.toInt()),
-                    flex: 3,
+                    flex: 4,
                   ),
-                  _buildTableCell(committedStr, flex: 3),
+                  _buildTableCell(committedStr, flex: 4),
                   _buildTableCell(
                     _formatNum(lagVal),
                     flex: 2,
