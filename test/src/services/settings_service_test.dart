@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
@@ -12,6 +13,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
 
 // Manual Mocks
 class MockClusterService extends ClusterService {
@@ -55,7 +57,7 @@ class MockFilePicker extends FilePicker {
     Uint8List? bytes,
     bool lockParentWindow = false,
   }) async {
-    return '/tmp/kafkalyzer_config.zip'; // Dummy path
+    return p.join(Directory.systemTemp.path, 'kafkalyzer_config.zip'); // Dummy path
   }
 }
 
@@ -82,7 +84,7 @@ void main() {
           (MethodCall methodCall) async {
             if (methodCall.method == 'getApplicationSupportDirectory' ||
                 methodCall.method == 'getApplicationDocumentsDirectory') {
-              return '/tmp';
+              return Directory.systemTemp.path;
             }
             return null;
           },
