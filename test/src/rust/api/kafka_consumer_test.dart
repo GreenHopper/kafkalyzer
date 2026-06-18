@@ -29,7 +29,7 @@ void main() {
 
   group('KafkaConsumer', () {
     test('KafkaMessage data class', () {
-      final msg = const KafkaMessage(
+      const msg = KafkaMessage(
         topic: 'topic',
         partition: 0,
         offset: 10,
@@ -38,7 +38,7 @@ void main() {
         timestamp: 1000,
       );
 
-      final other = const KafkaMessage(
+      const other = KafkaMessage(
         topic: 'topic',
         partition: 0,
         offset: 10,
@@ -47,9 +47,97 @@ void main() {
         timestamp: 1000,
       );
 
+      // Identical check
+      expect(msg == msg, isTrue);
+
+      // Equal objects
       expect(msg, equals(other));
       expect(msg.hashCode, equals(other.hashCode));
       expect(msg.key, 'key');
+      expect(msg.payload, 'value');
+
+      // Not equal to null or different type
+      expect(msg == null, isFalse);
+      expect(msg == 'not a message', isFalse);
+
+      // Mutate each field to test operator == and hashCode changes
+      expect(
+        msg ==
+            const KafkaMessage(
+              topic: 'different',
+              partition: 0,
+              offset: 10,
+              key: 'key',
+              payload: 'value',
+              timestamp: 1000,
+            ),
+        isFalse,
+      );
+
+      expect(
+        msg ==
+            const KafkaMessage(
+              topic: 'topic',
+              partition: 1,
+              offset: 10,
+              key: 'key',
+              payload: 'value',
+              timestamp: 1000,
+            ),
+        isFalse,
+      );
+
+      expect(
+        msg ==
+            const KafkaMessage(
+              topic: 'topic',
+              partition: 0,
+              offset: 11,
+              key: 'key',
+              payload: 'value',
+              timestamp: 1000,
+            ),
+        isFalse,
+      );
+
+      expect(
+        msg ==
+            const KafkaMessage(
+              topic: 'topic',
+              partition: 0,
+              offset: 10,
+              key: 'different_key',
+              payload: 'value',
+              timestamp: 1000,
+            ),
+        isFalse,
+      );
+
+      expect(
+        msg ==
+            const KafkaMessage(
+              topic: 'topic',
+              partition: 0,
+              offset: 10,
+              key: 'key',
+              payload: 'different_payload',
+              timestamp: 1000,
+            ),
+        isFalse,
+      );
+
+      expect(
+        msg ==
+            const KafkaMessage(
+              topic: 'topic',
+              partition: 0,
+              offset: 10,
+              key: 'key',
+              payload: 'value',
+              timestamp: 1001,
+            ),
+        isFalse,
+      );
     });
 
     test('consumeWithFilter calls bridge', () {

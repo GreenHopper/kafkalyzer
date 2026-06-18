@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'script.dart';
@@ -9,6 +9,7 @@ part of 'script.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -66,7 +67,7 @@ class _$ScriptVariableCopyWithImpl<$Res>
 /// Create a copy of ScriptVariable
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? type = null,}) {
-  return _then(_self.copyWith(
+  return _then(ScriptVariable(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ScriptVariableType,
@@ -332,7 +333,7 @@ class _$ScriptCopyWithImpl<$Res>
 /// Create a copy of Script
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? concurrencyLimit = null,Object? outputDirectory = freezed,Object? variables = null,Object? steps = null,}) {
-  return _then(_self.copyWith(
+  return _then(Script(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,concurrencyLimit: null == concurrencyLimit ? _self.concurrencyLimit : concurrencyLimit // ignore: cast_nullable_to_non_nullable
@@ -480,7 +481,7 @@ return $default(_that.id,_that.name,_that.concurrencyLimit,_that.outputDirectory
 @JsonSerializable()
 
 class _Script implements Script {
-  const _Script({required this.id, required this.name, this.concurrencyLimit = 2, this.outputDirectory, final  List<ScriptVariable> variables = const [], final  List<ScriptStep> steps = const []}): _variables = variables,_steps = steps;
+  const _Script({required this.id, required this.name, this.concurrencyLimit = 2, this.outputDirectory,  List<ScriptVariable> variables = const [],  List<ScriptStep> steps = const []}): _variables = variables,_steps = steps;
   factory _Script.fromJson(Map<String, dynamic> json) => _$ScriptFromJson(json);
 
 @override final  String id;
@@ -622,7 +623,7 @@ class _$ScriptExtractionCopyWithImpl<$Res>
 /// Create a copy of ScriptExtraction
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? jsonPath = null,Object? variableName = null,Object? topic = freezed,Object? source = null,}) {
-  return _then(_self.copyWith(
+  return _then(ScriptExtraction(
 jsonPath: null == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
 as String,variableName: null == variableName ? _self.variableName : variableName // ignore: cast_nullable_to_non_nullable
 as String,topic: freezed == topic ? _self.topic : topic // ignore: cast_nullable_to_non_nullable
@@ -843,11 +844,7 @@ as ScriptExtractionSource,
 /// @nodoc
 mixin _$ScriptStep {
 
- String get id; String get name; String get clusterName;// Reference by name for persistence
- List<String> get topicNames;// Reference by name for persistence
- String? get filterTemplate; FilterType get filterType; SearchScope get scope;// Configuration strategies
- MultiSearchStartStrategy get startStrategy; MultiSearchEndStrategy get endStrategy;// Stringified for variable support
- String? get startOffset; String? get startTimestamp; String? get startPartition; bool get fastTraceEnabled; String? get endOffset; String? get endTimestamp; String? get maxResults; List<ScriptExtraction> get extractions;
+ String get id; String get name; String get clusterName; List<String> get topicNames; String? get filterTemplate; FilterType get filterType; SearchScope get scope; MultiSearchStartStrategy get startStrategy; MultiSearchEndStrategy get endStrategy; String? get startOffset; String? get startTimestamp; String? get startPartition; bool get fastTraceEnabled; String? get endOffset; String? get endTimestamp; String? get maxResults; List<ScriptExtraction> get extractions;
 /// Create a copy of ScriptStep
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -898,7 +895,7 @@ class _$ScriptStepCopyWithImpl<$Res>
 /// Create a copy of ScriptStep
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? clusterName = null,Object? topicNames = null,Object? filterTemplate = freezed,Object? filterType = null,Object? scope = null,Object? startStrategy = null,Object? endStrategy = null,Object? startOffset = freezed,Object? startTimestamp = freezed,Object? startPartition = freezed,Object? fastTraceEnabled = null,Object? endOffset = freezed,Object? endTimestamp = freezed,Object? maxResults = freezed,Object? extractions = null,}) {
-  return _then(_self.copyWith(
+  return _then(ScriptStep(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,clusterName: null == clusterName ? _self.clusterName : clusterName // ignore: cast_nullable_to_non_nullable
@@ -1057,29 +1054,24 @@ return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.fil
 @JsonSerializable()
 
 class _ScriptStep implements ScriptStep {
-  const _ScriptStep({required this.id, required this.name, required this.clusterName, final  List<String> topicNames = const [], this.filterTemplate, this.filterType = FilterType.contains, this.scope = SearchScope.both, this.startStrategy = MultiSearchStartStrategy.earliest, this.endStrategy = MultiSearchEndStrategy.latest, this.startOffset, this.startTimestamp, this.startPartition, this.fastTraceEnabled = false, this.endOffset, this.endTimestamp, this.maxResults, final  List<ScriptExtraction> extractions = const []}): _topicNames = topicNames,_extractions = extractions;
+  const _ScriptStep({required this.id, required this.name, required this.clusterName,  List<String> topicNames = const [], this.filterTemplate, this.filterType = FilterType.contains, this.scope = SearchScope.both, this.startStrategy = MultiSearchStartStrategy.earliest, this.endStrategy = MultiSearchEndStrategy.latest, this.startOffset, this.startTimestamp, this.startPartition, this.fastTraceEnabled = false, this.endOffset, this.endTimestamp, this.maxResults,  List<ScriptExtraction> extractions = const []}): _topicNames = topicNames,_extractions = extractions;
   factory _ScriptStep.fromJson(Map<String, dynamic> json) => _$ScriptStepFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  String clusterName;
-// Reference by name for persistence
  final  List<String> _topicNames;
-// Reference by name for persistence
 @override@JsonKey() List<String> get topicNames {
   if (_topicNames is EqualUnmodifiableListView) return _topicNames;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_topicNames);
 }
 
-// Reference by name for persistence
 @override final  String? filterTemplate;
 @override@JsonKey() final  FilterType filterType;
 @override@JsonKey() final  SearchScope scope;
-// Configuration strategies
 @override@JsonKey() final  MultiSearchStartStrategy startStrategy;
 @override@JsonKey() final  MultiSearchEndStrategy endStrategy;
-// Stringified for variable support
 @override final  String? startOffset;
 @override final  String? startTimestamp;
 @override final  String? startPartition;

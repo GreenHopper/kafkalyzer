@@ -9,9 +9,15 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Scaffold(
-            body: TimestampPickerField(controller: controller, label: 'Test Label'),
+            body: TimestampPickerField(
+              controller: controller,
+              label: 'Test Label',
+            ),
           ),
         ),
       );
@@ -22,13 +28,18 @@ void main() {
       // but that depends on DateFormatUtils behavior which we implicitly test integration with.
     });
 
-    testWidgets('updates controller when inline chip is selected', (tester) async {
+    testWidgets('updates controller when inline chip is selected', (
+      tester,
+    ) async {
       final controller = TextEditingController();
       String? selectedLabel;
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Scaffold(
             body: TimestampPickerField(
               controller: controller,
@@ -55,9 +66,15 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Scaffold(
-            body: TimestampPickerField(controller: controller, label: 'Test Label'),
+            body: TimestampPickerField(
+              controller: controller,
+              label: 'Test Label',
+            ),
           ),
         ),
       );

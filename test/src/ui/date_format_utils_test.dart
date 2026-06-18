@@ -83,5 +83,71 @@ void main() {
       expect(parsed!.hour, 14);
       expect(parsed!.minute, 30);
     });
+
+    testWidgets('formatDate, formatTime and formatFromNow work correctly', (
+      tester,
+    ) async {
+      String? formattedDate;
+      String? formattedTime;
+      String? formattedFromNow;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          supportedLocales: const [Locale('en', 'US')],
+          locale: const Locale('en', 'US'),
+          home: Builder(
+            builder: (context) {
+              final date = DateTime(2023, 10, 25, 14, 30, 0);
+              formattedDate = DateFormatUtils.formatDate(context, date);
+              formattedTime = DateFormatUtils.formatTime(context, date);
+              formattedFromNow = DateFormatUtils.formatFromNow(
+                context,
+                const Duration(hours: 1),
+              );
+              return Container();
+            },
+          ),
+        ),
+      );
+
+      expect(formattedDate, '10/25/2023');
+      expect(formattedTime, '14:30:00');
+      expect(formattedFromNow, isNotEmpty);
+    });
+
+    testWidgets('parseDateTime handles edge cases and failures', (
+      tester,
+    ) async {
+      DateTime? parsedEmpty;
+      DateTime? parsedLoose;
+      DateTime? parsedFailed;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          supportedLocales: const [Locale('en', 'US')],
+          locale: const Locale('en', 'US'),
+          home: Builder(
+            builder: (context) {
+              parsedEmpty = DateFormatUtils.parseDateTime(context, '');
+              parsedLoose = DateFormatUtils.parseDateTime(
+                context,
+                '10/25/2023  14:30:00',
+              );
+              parsedFailed = DateFormatUtils.parseDateTime(
+                context,
+                'not-a-date',
+              );
+              return Container();
+            },
+          ),
+        ),
+      );
+
+      expect(parsedEmpty, isNull);
+      expect(parsedLoose, isNotNull); // parseLoose succeeds
+      expect(parsedFailed, isNull);
+    });
   });
 }

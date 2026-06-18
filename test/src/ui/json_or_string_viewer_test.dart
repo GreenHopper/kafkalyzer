@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:kafkalyzer/src/ui/hex_viewer.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,9 +27,6 @@ void main() {
 
       expect(find.text('Test Viewer'), findsOneWidget);
       expect(find.text('Not a JSON string'), findsOneWidget);
-      // Toggle buttons should not be visible or only Raw enabled?
-      // Logic: if !isValidJson, ToggleButtons might be hidden or just Raw selected.
-      // Implementation: if (_isValidJson) ... ToggleButtons
       expect(find.byType(ToggleButtons), findsNothing);
     });
 
@@ -45,7 +44,6 @@ void main() {
       expect(find.text('value'), findsOneWidget);
       expect(find.byType(ToggleButtons), findsOneWidget);
 
-      // Verify "Cards" is selected (index 2)
       final toggleButtons = tester.widget<ToggleButtons>(
         find.byType(ToggleButtons),
       );
@@ -62,12 +60,10 @@ void main() {
         ),
       );
 
-      // Tap "Raw" (index 0)
       await tester.tap(find.text('Raw'));
       await tester.pumpAndSettle();
 
       expect(find.text(jsonStr), findsOneWidget);
-      // Should basically see the raw string rendering
     });
 
     testWidgets('persistence restores view mode', (tester) async {
@@ -87,12 +83,133 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle(); // Allow async restore
+      await tester.pumpAndSettle();
 
       final toggleButtons = tester.widget<ToggleButtons>(
         find.byType(ToggleButtons),
       );
       expect(toggleButtons.isSelected[0], isTrue); // Raw selected
+    });
+
+    testWidgets('renders Tree view and cycles search results', (tester) async {
+      final jsonStr = '{"user": {"name": "Alice", "age": 30}}';
+      int matchCount = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JsonOrStringViewer(
+              title: 'Test Tree',
+              rawContent: jsonStr,
+              initialViewMode: 1, // Tree
+              searchQuery: 'Alice',
+              onMatchCountChanged: (count) {
+                matchCount = count;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('user'), findsOneWidget);
+      expect(find.text('name'), findsOneWidget);
+      expect(matchCount, 1);
+
+      final state = tester.state<JsonOrStringViewerState>(
+        find.byType(JsonOrStringViewer),
+      );
+      state.jumpToMatch(0);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('renders Binary/Hex view mode', (tester) async {
+      const rawBinary = '<Binary Data>:48656c6c6f'; // "Hello" in hex
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JsonOrStringViewer(
+              title: 'Binary Test',
+              rawContent: rawBinary,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HexViewer), findsOneWidget);
+      final selectableTextFinder = find.byType(SelectableText);
+      expect(selectableTextFinder, findsOneWidget);
+      final text = tester.widget<SelectableText>(selectableTextFinder).data!;
+      expect(text, contains('48 65 6c 6c 6f'));
+    });
+
+    testWidgets('copy button copies raw content to clipboard', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JsonOrStringViewer(title: 'Copy Test', rawContent: 'copy me'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final copyButton = find.byTooltip('Copy content');
+      expect(copyButton, findsOneWidget);
+      await tester.tap(copyButton);
+      await tester.pump();
+      expect(find.text('Content copied to clipboard'), findsOneWidget);
+    });
+
+    testWidgets('uses pre-parsed JSON', (tester) async {
+      final parsed = {'direct': 'value'};
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JsonOrStringViewer(
+              title: 'Preparsed Test',
+              rawContent: '',
+              preParsedJson: parsed,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('DIRECT'), findsOneWidget);
+    });
+
+    testWidgets('updates when rawContent or searchQuery changes', (
+      tester,
+    ) async {
+      int matchCount = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JsonOrStringViewer(
+              rawContent: '{"a": 1}',
+              onMatchCountChanged: (count) {
+                matchCount = count;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Change content
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JsonOrStringViewer(
+              rawContent: '{"b": 2}',
+              onMatchCountChanged: (count) {
+                matchCount = count;
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('B'), findsOneWidget);
     });
   });
 }

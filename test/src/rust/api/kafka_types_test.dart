@@ -1,39 +1,15 @@
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ClusterProfile', () {
     test('equality and hashCode', () {
-      final profile1 = const ClusterProfile(
+      const profile1 = ClusterProfile(
         name: 'test',
         bootstrapServers: 'localhost:9092',
         saslUsername: 'user',
         saslPassword: 'password',
-      );
-
-      final profile2 = const ClusterProfile(
-        name: 'test',
-        bootstrapServers: 'localhost:9092',
-        saslUsername: 'user',
-        saslPassword: 'password',
-      );
-
-      final profile3 = const ClusterProfile(
-        name: 'other',
-        bootstrapServers: 'localhost:9093',
-      );
-
-      expect(profile1, equals(profile2));
-      expect(profile1.hashCode, equals(profile2.hashCode));
-      expect(profile1, isNot(equals(profile3)));
-    });
-
-    test('supports all optional fields', () {
-      final profile = const ClusterProfile(
-        name: 'full',
-        bootstrapServers: 'localhost',
-        saslUsername: 'user',
-        saslPassword: 'pass',
         mechanism: 'PLAIN',
         securityProtocol: 'SASL_SSL',
         schemaRegistryUrl: 'http://schema',
@@ -43,9 +19,424 @@ void main() {
         sslTruststorePassword: 'pass',
       );
 
-      expect(profile.name, 'full');
-      expect(profile.mechanism, 'PLAIN');
-      expect(profile.securityProtocol, 'SASL_SSL');
+      const profile2 = ClusterProfile(
+        name: 'test',
+        bootstrapServers: 'localhost:9092',
+        saslUsername: 'user',
+        saslPassword: 'password',
+        mechanism: 'PLAIN',
+        securityProtocol: 'SASL_SSL',
+        schemaRegistryUrl: 'http://schema',
+        sslKeystoreLocation: 'key.jks',
+        sslKeystorePassword: 'pass',
+        sslTruststoreLocation: 'trust.jks',
+        sslTruststorePassword: 'pass',
+      );
+
+      expect(profile1 == profile1, isTrue);
+      expect(profile1, equals(profile2));
+      expect(profile1.hashCode, equals(profile2.hashCode));
+      expect(profile1 == null, isFalse);
+      expect(profile1 == 'not profile', isFalse);
+
+      // Mutate each field
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'other',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9093',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user2',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password2',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'SCRAM-SHA-256',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'PLAINTEXT',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema2',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key2.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass2',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust2.jks',
+              sslTruststorePassword: 'pass',
+            ),
+        isFalse,
+      );
+
+      expect(
+        profile1 ==
+            const ClusterProfile(
+              name: 'test',
+              bootstrapServers: 'localhost:9092',
+              saslUsername: 'user',
+              saslPassword: 'password',
+              mechanism: 'PLAIN',
+              securityProtocol: 'SASL_SSL',
+              schemaRegistryUrl: 'http://schema',
+              sslKeystoreLocation: 'key.jks',
+              sslKeystorePassword: 'pass',
+              sslTruststoreLocation: 'trust.jks',
+              sslTruststorePassword: 'pass2',
+            ),
+        isFalse,
+      );
+    });
+  });
+
+  group('TopicPartitionLag', () {
+    test('equality and hashCode', () {
+      const lag1 = TopicPartitionLag(
+        topic: 'topic1',
+        partition: 0,
+        logEndOffset: 100,
+        currentOffset: 80,
+        lag: 20,
+      );
+
+      const lag2 = TopicPartitionLag(
+        topic: 'topic1',
+        partition: 0,
+        logEndOffset: 100,
+        currentOffset: 80,
+        lag: 20,
+      );
+
+      expect(lag1 == lag1, isTrue);
+      expect(lag1, equals(lag2));
+      expect(lag1.hashCode, equals(lag2.hashCode));
+      expect(lag1 == null, isFalse);
+      expect(lag1 == 'not lag', isFalse);
+
+      expect(
+        lag1 ==
+            const TopicPartitionLag(
+              topic: 'topic2',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 80,
+              lag: 20,
+            ),
+        isFalse,
+      );
+
+      expect(
+        lag1 ==
+            const TopicPartitionLag(
+              topic: 'topic1',
+              partition: 1,
+              logEndOffset: 100,
+              currentOffset: 80,
+              lag: 20,
+            ),
+        isFalse,
+      );
+
+      expect(
+        lag1 ==
+            const TopicPartitionLag(
+              topic: 'topic1',
+              partition: 0,
+              logEndOffset: 101,
+              currentOffset: 80,
+              lag: 20,
+            ),
+        isFalse,
+      );
+
+      expect(
+        lag1 ==
+            const TopicPartitionLag(
+              topic: 'topic1',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 81,
+              lag: 20,
+            ),
+        isFalse,
+      );
+
+      expect(
+        lag1 ==
+            const TopicPartitionLag(
+              topic: 'topic1',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 80,
+              lag: 21,
+            ),
+        isFalse,
+      );
+    });
+  });
+
+  group('ConsumerGroupLag', () {
+    test('equality and hashCode', () {
+      const partLag = TopicPartitionLag(
+        topic: 'topic1',
+        partition: 0,
+        logEndOffset: 10,
+        currentOffset: 5,
+        lag: 5,
+      );
+
+      const groupLag1 = ConsumerGroupLag(
+        groupId: 'g1',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [partLag],
+        membersCount: 2,
+        topicsCount: 1,
+      );
+
+      const groupLag2 = ConsumerGroupLag(
+        groupId: 'g1',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [partLag],
+        membersCount: 2,
+        topicsCount: 1,
+      );
+
+      expect(groupLag1 == groupLag1, isTrue);
+      expect(groupLag1, equals(groupLag2));
+      expect(groupLag1.hashCode, equals(groupLag2.hashCode));
+      expect(groupLag1 == null, isFalse);
+      expect(groupLag1 == 'not group lag', isFalse);
+
+      expect(
+        groupLag1 ==
+            const ConsumerGroupLag(
+              groupId: 'g2',
+              state: 'Stable',
+              protocolType: 'consumer',
+              partitionLags: [partLag],
+              membersCount: 2,
+              topicsCount: 1,
+            ),
+        isFalse,
+      );
+
+      expect(
+        groupLag1 ==
+            const ConsumerGroupLag(
+              groupId: 'g1',
+              state: 'PreparingRebalance',
+              protocolType: 'consumer',
+              partitionLags: [partLag],
+              membersCount: 2,
+              topicsCount: 1,
+            ),
+        isFalse,
+      );
+
+      expect(
+        groupLag1 ==
+            const ConsumerGroupLag(
+              groupId: 'g1',
+              state: 'Stable',
+              protocolType: 'connect',
+              partitionLags: [partLag],
+              membersCount: 2,
+              topicsCount: 1,
+            ),
+        isFalse,
+      );
+
+      expect(
+        groupLag1 ==
+            const ConsumerGroupLag(
+              groupId: 'g1',
+              state: 'Stable',
+              protocolType: 'consumer',
+              partitionLags: [],
+              membersCount: 2,
+              topicsCount: 1,
+            ),
+        isFalse,
+      );
+
+      expect(
+        groupLag1 ==
+            const ConsumerGroupLag(
+              groupId: 'g1',
+              state: 'Stable',
+              protocolType: 'consumer',
+              partitionLags: [partLag],
+              membersCount: 3,
+              topicsCount: 1,
+            ),
+        isFalse,
+      );
+
+      expect(
+        groupLag1 ==
+            const ConsumerGroupLag(
+              groupId: 'g1',
+              state: 'Stable',
+              protocolType: 'consumer',
+              partitionLags: [partLag],
+              membersCount: 2,
+              topicsCount: 2,
+            ),
+        isFalse,
+      );
     });
   });
 
