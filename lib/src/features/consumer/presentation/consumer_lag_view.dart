@@ -9,6 +9,9 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:watch_it/watch_it.dart';
 import 'group_details_view.dart';
+import 'widgets/group_lag_badge.dart';
+import 'widgets/group_delta_badge.dart';
+import 'widgets/consumer_group_controls.dart';
 
 enum ConsumerGroupSortType {
   nameAsc,
@@ -302,170 +305,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     }
   }
 
-  Widget _buildTrailingLagWidget(
-    BuildContext context,
-    AppLocalizations l10n,
-    ConsumerGroupLag group,
-  ) {
-    final isLoaded = _loadedGroupIds.contains(group.groupId);
-    final isLoading = _loadingGroupIds.contains(group.groupId);
-    final isFailed = _failedGroupIds.contains(group.groupId);
-    final hasPreviousValue = group.partitionLags.isNotEmpty;
-
-    if (isLoading && !hasPreviousValue) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.outlineVariant.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
-    if (isFailed) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          "Error",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onErrorContainer,
-          ),
-        ),
-      );
-    }
-
-    if (!isLoaded && !isLoading && !hasPreviousValue) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.outlineVariant.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          "${l10n.lagCol}: -",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-        ),
-      );
-    }
-
-    final totalLag = _calculateGroupLag(group);
-    final badgeColor = totalLag > 0
-        ? Theme.of(context).colorScheme.errorContainer
-        : Theme.of(context).colorScheme.primaryContainer;
-    final textColor = totalLag > 0
-        ? Theme.of(context).colorScheme.onErrorContainer
-        : Theme.of(context).colorScheme.onPrimaryContainer;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: badgeColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "${l10n.lagCol}: ${_formatNum(totalLag)}",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-                color: textColor,
-              ),
-            ),
-            if (isLoading) ...[
-              const SizedBox(width: 4),
-              SizedBox(
-                width: 10,
-                height: 10,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDeltaWidget(BuildContext context, ConsumerGroupLag group) {
-    final delta = _groupDeltas[group.groupId];
-
-    if (delta == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.outlineVariant.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          "-",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 11,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-        ),
-      );
-    }
-
-    final String text;
-    final Color color;
-    if (delta > 0) {
-      // Lag increased (bad)
-      text = "+${_formatNum(delta)}";
-      color = Colors.red;
-    } else if (delta < 0) {
-      // Lag decreased (good / messages processed)
-      text = _formatNum(delta);
-      color = Colors.green;
-    } else {
-      text = "0";
-      color = Theme.of(context).colorScheme.outline;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 11,
-          color: color,
-        ),
-      ),
-    );
-  }
-
   void _updateRefreshInterval(int seconds, ClusterProfile? profile) {
     setState(() {
       _refreshIntervalSeconds = seconds;
@@ -503,6 +342,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isGerman = Localizations.localeOf(context).languageCode == 'de';
     final clusterController = watchIt<ClusterListController>();
     final activeController = watchIt<ActiveConnectionController>();
     final activeProfile = activeController.activeProfile;
@@ -582,14 +422,36 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           children: [
             _buildHeader(context, l10n, activeProfile),
             const SizedBox(height: 24),
-            _buildControls(
-              context,
-              l10n,
-              activeProfile,
-              clusters,
-              activeController,
-              filteredLags.length,
-              _lags.length,
+            ConsumerGroupControls(
+              clusters: clusters,
+              activeProfile: activeProfile,
+              searchController: _searchController,
+              matchCountText: isGerman
+                  ? "${_formatNum(filteredLags.length)} von ${_formatNum(_lags.length)} Gruppen gefunden"
+                  : "Found ${_formatNum(filteredLags.length)} of ${_formatNum(_lags.length)} groups",
+              statusFilter: _statusFilter,
+              sortType: _sortType,
+              refreshIntervalSeconds: _refreshIntervalSeconds,
+              l10n: l10n,
+              onClusterChanged: (profile) {
+                if (profile != null) {
+                  activeController.connect(profile);
+                }
+              },
+              onStatusFilterChanged: (val) {
+                setState(() {
+                  _statusFilter = val;
+                  _lagQueryQueue.clear();
+                });
+              },
+              onSortTypeChanged: (val) {
+                setState(() {
+                  _sortType = val;
+                });
+              },
+              onRefreshIntervalChanged: (val) {
+                _updateRefreshInterval(val, activeProfile);
+              },
             ),
             const SizedBox(height: 16),
             if (_errorMessage == null &&
@@ -663,48 +525,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     );
   }
 
-  Widget _buildSortDropdown(BuildContext context) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-    return SizedBox(
-      width: 200,
-      child: DropdownButtonFormField<ConsumerGroupSortType>(
-        key: ValueKey(_sortType),
-        initialValue: _sortType,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: isGerman ? 'Sortieren nach' : 'Sort by',
-          border: const OutlineInputBorder(),
-          isDense: true,
-        ),
-        items: [
-          DropdownMenuItem(
-            value: ConsumerGroupSortType.nameAsc,
-            child: Text(isGerman ? 'Name (A-Z)' : 'Name (A-Z)'),
-          ),
-          DropdownMenuItem(
-            value: ConsumerGroupSortType.nameDesc,
-            child: Text(isGerman ? 'Name (Z-A)' : 'Name (Z-A)'),
-          ),
-          DropdownMenuItem(
-            value: ConsumerGroupSortType.lagDesc,
-            child: Text(isGerman ? 'Lag (absteigend)' : 'Lag (Descending)'),
-          ),
-          DropdownMenuItem(
-            value: ConsumerGroupSortType.lagAsc,
-            child: Text(isGerman ? 'Lag (aufsteigend)' : 'Lag (Ascending)'),
-          ),
-        ],
-        onChanged: (val) {
-          if (val != null) {
-            setState(() {
-              _sortType = val;
-            });
-          }
-        },
-      ),
-    );
-  }
-
   Widget _buildFetchStatusMessage(BuildContext context) {
     final isGerman = Localizations.localeOf(context).languageCode == 'de';
     final seconds = (_lastFetchDuration!.inMilliseconds / 1000.0)
@@ -773,139 +593,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
             ),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _buildStatusDropdown(BuildContext context) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-    return SizedBox(
-      width: 130,
-      child: DropdownButtonFormField<String>(
-        initialValue: _statusFilter,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: isGerman ? 'Status' : 'State',
-          border: const OutlineInputBorder(),
-          isDense: true,
-        ),
-        items: [
-          DropdownMenuItem(
-            value: 'All',
-            child: Text(isGerman ? 'Alle' : 'All'),
-          ),
-          DropdownMenuItem(
-            value: 'Stable',
-            child: Text(isGerman ? 'Stable' : 'Stable'),
-          ),
-          DropdownMenuItem(
-            value: 'Empty',
-            child: Text(isGerman ? 'Empty' : 'Empty'),
-          ),
-          DropdownMenuItem(
-            value: 'Dead',
-            child: Text(isGerman ? 'Dead' : 'Dead'),
-          ),
-        ],
-        onChanged: (val) {
-          if (val != null) {
-            setState(() {
-              _statusFilter = val;
-              _lagQueryQueue.clear();
-            });
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildRefreshDropdown(
-    BuildContext context,
-    ClusterProfile? activeProfile,
-  ) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-    return SizedBox(
-      width: 140,
-      child: DropdownButtonFormField<int>(
-        initialValue: _refreshIntervalSeconds,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: isGerman ? 'Intervall' : 'Refresh',
-          border: const OutlineInputBorder(),
-          isDense: true,
-        ),
-        items: [
-          DropdownMenuItem(value: 0, child: Text(isGerman ? 'Aus' : 'Off')),
-          DropdownMenuItem(value: 5, child: Text(isGerman ? '5s' : '5s')),
-          DropdownMenuItem(value: 15, child: Text(isGerman ? '15s' : '15s')),
-          DropdownMenuItem(value: 30, child: Text(isGerman ? '30s' : '30s')),
-          DropdownMenuItem(value: 60, child: Text(isGerman ? '60s' : '60s')),
-        ],
-        onChanged: activeProfile == null
-            ? null
-            : (val) {
-                if (val != null) {
-                  _updateRefreshInterval(val, activeProfile);
-                }
-              },
-      ),
-    );
-  }
-
-  Widget _buildControls(
-    BuildContext context,
-    AppLocalizations l10n,
-    ClusterProfile? activeProfile,
-    List<ClusterProfile> clusters,
-    ActiveConnectionController activeController,
-    int matchedCount,
-    int totalCount,
-  ) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-    final matchCountText = isGerman
-        ? "${_formatNum(matchedCount)} von ${_formatNum(totalCount)} Gruppen gefunden"
-        : "Found ${_formatNum(matchedCount)} of ${_formatNum(totalCount)} groups";
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      alignment: WrapAlignment.start,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        if (clusters.isNotEmpty)
-          DropdownButton<ClusterProfile>(
-            value: clusters.any((c) => c.name == activeProfile?.name)
-                ? clusters.firstWhere((c) => c.name == activeProfile?.name)
-                : null,
-            hint: Text(l10n.pleaseSelectCluster),
-            items: clusters.map((profile) {
-              return DropdownMenuItem<ClusterProfile>(
-                value: profile,
-                child: Text(profile.name),
-              );
-            }).toList(),
-            onChanged: (profile) {
-              if (profile != null) {
-                activeController.connect(profile);
-              }
-            },
-          ),
-        SizedBox(
-          width: 300,
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: l10n.searchGroups,
-              prefixIcon: const Icon(Icons.search),
-              border: const OutlineInputBorder(),
-              isDense: true,
-              helperText: matchCountText,
-            ),
-          ),
-        ),
-        _buildStatusDropdown(context),
-        _buildSortDropdown(context),
-        _buildRefreshDropdown(context, activeProfile),
       ],
     );
   }
@@ -1141,14 +828,30 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                         flex: 2,
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: _buildTrailingLagWidget(context, l10n, group),
+                          child: GroupLagBadge(
+                            totalLag: _calculateGroupLag(group),
+                            isLoading: _loadingGroupIds.contains(group.groupId),
+                            isLoaded: _loadedGroupIds.contains(group.groupId),
+                            isFailed: _failedGroupIds.contains(group.groupId),
+                            hasPreviousValue: group.partitionLags.isNotEmpty,
+                            labelText: _loadedGroupIds.contains(group.groupId) || group.partitionLags.isNotEmpty
+                                ? "${l10n.lagCol}: ${_formatNum(_calculateGroupLag(group))}"
+                                : "${l10n.lagCol}: -",
+                          ),
                         ),
                       ),
                       Expanded(
                         flex: 2,
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: _buildDeltaWidget(context, group),
+                          child: GroupDeltaBadge(
+                            delta: _groupDeltas[group.groupId],
+                            formattedDelta: _groupDeltas[group.groupId] != null
+                                ? (_groupDeltas[group.groupId]! > 0
+                                    ? "+${_formatNum(_groupDeltas[group.groupId]!)}"
+                                    : _formatNum(_groupDeltas[group.groupId]!))
+                                : "",
+                          ),
                         ),
                       ),
                     ],
