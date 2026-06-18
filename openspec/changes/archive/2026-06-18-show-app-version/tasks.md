@@ -11,7 +11,7 @@
 
 ## 3. UI Updates & Verification
 
-- [ ] 3.1 Verify `settings_view.dart` displays the correctly fetched version format.
-- [ ] 3.2 Fix any unit tests that expect `AppVersionHelper.version` to be synchronously available without `init()`.
-- [ ] 3.3 Ensure the app builds and runs successfully.
-- [ ] 3.4 Run the full test suite (`flutter test`) and ensure all unit tests pass.
+- [x] 3.1 Verify `settings_view.dart` displays the correctly fetched version format.
+- [x] 3.2 Fix any unit tests that expect `AppVersionHelper.version` to be synchronously available without `init()`.
+- [x] 3.3 Ensure the app builds and runs successfully.
+- [x] 3.4 Run the full test suite (`flutter test`) and ensure all unit tests pass.
