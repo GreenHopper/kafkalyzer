@@ -10,8 +10,10 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
+import 'package:kafkalyzer/src/features/consumer/presentation/widgets/kpi_card.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/topic_partition_table.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as api;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeKafkaMetadataService implements KafkaMetadataService {
   List<ConsumerGroupLag> lags = [];
@@ -249,75 +251,6 @@ void main() {
       ),
       isNotNull,
     );
-
-    // Change sort dropdown to Name (Z-A)
-    final dropdownFinder = find.byType(
-      DropdownButtonFormField<ConsumerGroupSortType>,
-    );
-    expect(dropdownFinder, findsOneWidget);
-    await tester.tap(dropdownFinder);
-    await tester.pumpAndSettle();
-
-    // Tap "Name (Z-A)" option
-    await tester.tap(find.text('Name (Z-A)').last);
-    await tester.pumpAndSettle();
-
-    // Verify sort (Name Z-A): group-b should be first, then group-a
-    listTiles = find.byType(ExpansionTile);
-    expect(
-      tester.widget<Text>(
-        find.descendant(of: listTiles.at(0), matching: find.text('group-b')),
-      ),
-      isNotNull,
-    );
-    expect(
-      tester.widget<Text>(
-        find.descendant(of: listTiles.at(1), matching: find.text('group-a')),
-      ),
-      isNotNull,
-    );
-
-    // Change sort dropdown to Lag (Ascending)
-    await tester.tap(dropdownFinder);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Lag (Ascending)').last);
-    await tester.pumpAndSettle();
-
-    // Verify sort (Lag Ascending: 10 then 50): group-a should be first
-    listTiles = find.byType(ExpansionTile);
-    expect(
-      tester.widget<Text>(
-        find.descendant(of: listTiles.at(0), matching: find.text('group-a')),
-      ),
-      isNotNull,
-    );
-    expect(
-      tester.widget<Text>(
-        find.descendant(of: listTiles.at(1), matching: find.text('group-b')),
-      ),
-      isNotNull,
-    );
-
-    // Change sort dropdown to Lag (Descending)
-    await tester.tap(dropdownFinder);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Lag (Descending)').last);
-    await tester.pumpAndSettle();
-
-    // Verify sort (Lag Descending: 50 then 10): group-b should be first
-    listTiles = find.byType(ExpansionTile);
-    expect(
-      tester.widget<Text>(
-        find.descendant(of: listTiles.at(0), matching: find.text('group-b')),
-      ),
-      isNotNull,
-    );
-    expect(
-      tester.widget<Text>(
-        find.descendant(of: listTiles.at(1), matching: find.text('group-a')),
-      ),
-      isNotNull,
-    );
   });
 
   testWidgets('filters by state and shows search statistics', (tester) async {
@@ -349,7 +282,12 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text('Found 2 of 2 groups'), findsOneWidget);
+    final kpiCardFinder = find.widgetWithText(KpiCard, 'Consumer Groups');
+    expect(kpiCardFinder, findsOneWidget);
+    expect(
+      find.descendant(of: kpiCardFinder, matching: find.text('2')),
+      findsOneWidget,
+    );
 
     final stateDropdownFinder = find.byType(DropdownButtonFormField<String>);
     expect(stateDropdownFinder, findsOneWidget);
@@ -361,7 +299,14 @@ void main() {
 
     expect(find.text('group-stable'), findsOneWidget);
     expect(find.text('group-empty'), findsNothing);
-    expect(find.text('Found 1 of 2 groups'), findsOneWidget);
+    expect(
+      find.descendant(of: kpiCardFinder, matching: find.text('1')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: kpiCardFinder, matching: find.text('of 2')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('sorts by clicking column headers', (tester) async {
@@ -458,6 +403,13 @@ void main() {
   testWidgets('groups partitions by topic and supports partition sorting', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1000, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     fakeMetadataService.lags = [
       const ConsumerGroupLag(
         groupId: 'test-group',
@@ -505,8 +457,20 @@ void main() {
 
     expect(find.text('Partition'), findsOneWidget);
     expect(find.text('Log End Offset'), findsOneWidget);
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNWidgets(3));
+    expect(
+      find.descendant(
+        of: find.byType(TopicPartitionTable),
+        matching: find.text('0'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(TopicPartitionTable),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('preserves cached lag value during refresh/re-fetch', (
@@ -574,6 +538,17 @@ void main() {
   testWidgets('limits concurrent lag queries and processes them via queue', (
     tester,
   ) async {
+    SharedPreferences.setMockInitialValues({
+      'consumer_max_concurrent_queries': 3,
+    });
+
+    tester.view.physicalSize = const Size(1000, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     fakeMetadataService.lags = List.generate(
       4,
       (i) => ConsumerGroupLag(
@@ -671,6 +646,7 @@ void main() {
 
       // On first load, delta is not available (displays "-")
       expect(find.text('-'), findsOneWidget);
+      expect(find.textContaining('Change:'), findsNothing);
 
       // Update committed offset from 90 to 95 (+5 delta)
       fakeMetadataService.lags = [
@@ -703,6 +679,7 @@ void main() {
 
       // Verify "-5" delta is displayed (lag decreased, messages processed)
       expect(find.text('-5'), findsOneWidget);
+      expect(find.text('Change: -5'), findsOneWidget);
 
       // Now update lag to increase (e.g. lag goes from 5 to 12)
       fakeMetadataService.lags = [
@@ -734,12 +711,20 @@ void main() {
 
       // Verify "+7" delta is displayed (lag increased by 7)
       expect(find.text('+7'), findsOneWidget);
+      expect(find.text('Change: +7'), findsOneWidget);
     },
   );
 
   testWidgets(
     'calculates and displays topic and partition deltas in detail widgets',
     (tester) async {
+      tester.view.physicalSize = const Size(1000, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
       fakeMetadataService.lags = [
         const ConsumerGroupLag(
           groupId: 'test-group',
@@ -894,6 +879,10 @@ void main() {
   });
 
   testWidgets('widget unmounting stops background queue', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'consumer_max_concurrent_queries': 3,
+    });
+
     fakeMetadataService.lags = List.generate(
       5,
       (i) => ConsumerGroupLag(

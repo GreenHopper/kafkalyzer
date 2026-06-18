@@ -1,35 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/cluster_dropdown.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import '../consumer_lag_view.dart'; // To import ConsumerGroupSortType
+// To import ConsumerGroupSortType
 
 class ConsumerGroupControls extends StatelessWidget {
-  final List<ClusterProfile> clusters;
   final ClusterProfile? activeProfile;
   final TextEditingController searchController;
-  final String matchCountText;
   final String statusFilter;
-  final ConsumerGroupSortType? sortType;
   final int refreshIntervalSeconds;
   final AppLocalizations l10n;
   final ValueChanged<ClusterProfile?> onClusterChanged;
   final ValueChanged<String> onStatusFilterChanged;
-  final ValueChanged<ConsumerGroupSortType> onSortTypeChanged;
   final ValueChanged<int> onRefreshIntervalChanged;
 
   const ConsumerGroupControls({
     super.key,
-    required this.clusters,
     required this.activeProfile,
     required this.searchController,
-    required this.matchCountText,
     required this.statusFilter,
-    required this.sortType,
     required this.refreshIntervalSeconds,
     required this.l10n,
     required this.onClusterChanged,
     required this.onStatusFilterChanged,
-    required this.onSortTypeChanged,
     required this.onRefreshIntervalChanged,
   });
 
@@ -37,49 +30,50 @@ class ConsumerGroupControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final isGerman = Localizations.localeOf(context).languageCode == 'de';
 
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      alignment: WrapAlignment.start,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        if (clusters.isNotEmpty)
-          DropdownButton<ClusterProfile>(
-            value: clusters.any((c) => c.name == activeProfile?.name)
-                ? clusters.firstWhere((c) => c.name == activeProfile?.name)
-                : null,
-            hint: Text(l10n.pleaseSelectCluster),
-            items: clusters.map((profile) {
-              return DropdownMenuItem<ClusterProfile>(
-                value: profile,
-                child: Text(profile.name),
-              );
-            }).toList(),
-            onChanged: onClusterChanged,
-          ),
-        SizedBox(
-          width: 300,
-          child: TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              hintText: l10n.searchGroups,
-              prefixIcon: const Icon(Icons.search),
-              border: const OutlineInputBorder(),
-              isDense: true,
-              helperText: matchCountText,
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 220,
+              child: ClusterDropdown(
+                value: activeProfile,
+                labelText: l10n.cluster,
+                onChanged: onClusterChanged,
+              ),
             ),
-          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  labelText: l10n.searchGroups,
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            _buildStatusDropdown(context, isGerman),
+            const SizedBox(width: 16),
+            _buildRefreshDropdown(context, isGerman),
+          ],
         ),
-        _buildStatusDropdown(context, isGerman),
-        _buildSortDropdown(context, isGerman),
-        _buildRefreshDropdown(context, isGerman),
-      ],
+      ),
     );
   }
 
   Widget _buildStatusDropdown(BuildContext context, bool isGerman) {
     return SizedBox(
-      width: 130,
+      width: 140,
       child: DropdownButtonFormField<String>(
         initialValue: statusFilter,
         isExpanded: true,
@@ -109,45 +103,6 @@ class ConsumerGroupControls extends StatelessWidget {
         onChanged: (val) {
           if (val != null) {
             onStatusFilterChanged(val);
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildSortDropdown(BuildContext context, bool isGerman) {
-    return SizedBox(
-      width: 200,
-      child: DropdownButtonFormField<ConsumerGroupSortType>(
-        key: ValueKey(sortType),
-        initialValue: sortType,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: isGerman ? 'Sortieren nach' : 'Sort by',
-          border: const OutlineInputBorder(),
-          isDense: true,
-        ),
-        items: [
-          DropdownMenuItem(
-            value: ConsumerGroupSortType.nameAsc,
-            child: Text(isGerman ? 'Name (A-Z)' : 'Name (A-Z)'),
-          ),
-          DropdownMenuItem(
-            value: ConsumerGroupSortType.nameDesc,
-            child: Text(isGerman ? 'Name (Z-A)' : 'Name (Z-A)'),
-          ),
-          DropdownMenuItem(
-            value: ConsumerGroupSortType.lagDesc,
-            child: Text(isGerman ? 'Lag (absteigend)' : 'Lag (Descending)'),
-          ),
-          DropdownMenuItem(
-            value: ConsumerGroupSortType.lagAsc,
-            child: Text(isGerman ? 'Lag (aufsteigend)' : 'Lag (Ascending)'),
-          ),
-        ],
-        onChanged: (val) {
-          if (val != null) {
-            onSortTypeChanged(val);
           }
         },
       ),

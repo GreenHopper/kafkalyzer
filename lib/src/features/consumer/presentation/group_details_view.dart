@@ -125,75 +125,106 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
 
     final isGerman = Localizations.localeOf(context).languageCode == 'de';
 
+    Widget buildHeaderCell({
+      required String label,
+      required bool isSelected,
+      required bool isAscending,
+      required VoidCallback onTap,
+      required int flex,
+    }) {
+      return Expanded(
+        flex: flex,
+        child: InkWell(
+          onTap: onTap,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                isGerman ? "Topics sortieren nach:" : "Sort topics by:",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 26,
+              right: 64,
+              top: 4,
+              bottom: 4,
+            ),
+            child: Row(
+              children: [
+                buildHeaderCell(
+                  label: isGerman ? 'Topic' : 'Topic',
+                  isSelected: !_sortByLag,
+                  isAscending: _sortTopicsAscending,
+                  onTap: () {
+                    setState(() {
+                      if (!_sortByLag) {
+                        _sortTopicsAscending = !_sortTopicsAscending;
+                      } else {
+                        _sortByLag = false;
+                        _sortTopicsAscending = true;
+                      }
+                    });
+                  },
+                  flex: 3,
                 ),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    if (!_sortByLag) {
-                      _sortTopicsAscending = !_sortTopicsAscending;
-                    } else {
-                      _sortByLag = false;
-                      _sortTopicsAscending = true;
-                    }
-                  });
-                },
-                icon: Icon(
-                  !_sortByLag && _sortTopicsAscending
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 14,
+                const Spacer(flex: 8),
+                buildHeaderCell(
+                  label: isGerman ? 'Lag' : 'Lag',
+                  isSelected: _sortByLag,
+                  isAscending: _sortTopicsAscending,
+                  onTap: () {
+                    setState(() {
+                      if (_sortByLag) {
+                        _sortTopicsAscending = !_sortTopicsAscending;
+                      } else {
+                        _sortByLag = true;
+                        _sortTopicsAscending = true;
+                      }
+                    });
+                  },
+                  flex: 2,
                 ),
-                label: Text(
-                  isGerman ? "Name" : "Name",
-                  style: TextStyle(
-                    fontWeight: !_sortByLag
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                Expanded(
+                  flex: 2,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      isGerman ? 'Abarbeitung' : 'Processed',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    if (_sortByLag) {
-                      _sortTopicsAscending = !_sortTopicsAscending;
-                    } else {
-                      _sortByLag = true;
-                      _sortTopicsAscending = true;
-                    }
-                  });
-                },
-                icon: Icon(
-                  _sortByLag && _sortTopicsAscending
-                      ? Icons.arrow_upward
-                      : Icons.arrow_downward,
-                  size: 14,
-                ),
-                label: Text(
-                  isGerman ? "Lag" : "Lag",
-                  style: TextStyle(
-                    fontWeight: _sortByLag
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           if (topicsList.isEmpty)
@@ -255,7 +286,9 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                           decoration: BoxDecoration(
                             color: totalLag > 0
                                 ? Theme.of(context).colorScheme.errorContainer
-                                : Theme.of(context).colorScheme.primaryContainer,
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -264,7 +297,9 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                               color: totalLag > 0
-                                  ? Theme.of(context).colorScheme.onErrorContainer
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer
                                   : Theme.of(
                                       context,
                                     ).colorScheme.onPrimaryContainer,

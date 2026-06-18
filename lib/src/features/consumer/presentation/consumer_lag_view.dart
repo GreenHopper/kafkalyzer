@@ -4,14 +4,15 @@ import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:watch_it/watch_it.dart';
 import 'group_details_view.dart';
 import 'widgets/group_lag_badge.dart';
 import 'widgets/group_delta_badge.dart';
 import 'widgets/consumer_group_controls.dart';
+import 'widgets/kpi_card.dart';
 
 enum ConsumerGroupSortType {
   nameAsc,
@@ -56,7 +57,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   final Map<String, List<TopicPartitionLag>> _cachedPartitionLags = {};
   int _activeLagQueries = 0;
   final List<String> _lagQueryQueue = [];
-  static const int _maxConcurrentLagQueries = 3;
+  int _maxConcurrentLagQueries = 5;
 
   // Track previous partition lags for calculating deltas: groupId -> (topic-partition -> lag)
   final Map<String, Map<String, int>> _previousLags = {};
@@ -74,6 +75,17 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _loadConcurrencyLimit();
+  }
+
+  Future<void> _loadConcurrencyLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    final limit = prefs.getInt('consumer_max_concurrent_queries') ?? 5;
+    if (mounted) {
+      setState(() {
+        _maxConcurrentLagQueries = limit;
+      });
+    }
   }
 
   @override
@@ -91,83 +103,9 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     });
   }
 
-  ConsumerGroupSortType? get _sortType {
-    if (_sortColumnIndex == 0) {
-      return _sortAscending
-          ? ConsumerGroupSortType.nameAsc
-          : ConsumerGroupSortType.nameDesc;
-    } else if (_sortColumnIndex == 5) {
-      return _sortAscending
-          ? ConsumerGroupSortType.lagAsc
-          : ConsumerGroupSortType.lagDesc;
-    }
-    return null;
-  }
-
-  set _sortType(ConsumerGroupSortType? val) {
-    if (val == null) return;
-    switch (val) {
-      case ConsumerGroupSortType.nameAsc:
-        _sortColumnIndex = 0;
-        _sortAscending = true;
-        break;
-      case ConsumerGroupSortType.nameDesc:
-        _sortColumnIndex = 0;
-        _sortAscending = false;
-        break;
-      case ConsumerGroupSortType.stateAsc:
-        _sortColumnIndex = 1;
-        _sortAscending = true;
-        break;
-      case ConsumerGroupSortType.stateDesc:
-        _sortColumnIndex = 1;
-        _sortAscending = false;
-        break;
-      case ConsumerGroupSortType.protocolAsc:
-        _sortColumnIndex = 2;
-        _sortAscending = true;
-        break;
-      case ConsumerGroupSortType.protocolDesc:
-        _sortColumnIndex = 2;
-        _sortAscending = false;
-        break;
-      case ConsumerGroupSortType.consumersAsc:
-        _sortColumnIndex = 3;
-        _sortAscending = true;
-        break;
-      case ConsumerGroupSortType.consumersDesc:
-        _sortColumnIndex = 3;
-        _sortAscending = false;
-        break;
-      case ConsumerGroupSortType.topicsAsc:
-        _sortColumnIndex = 4;
-        _sortAscending = true;
-        break;
-      case ConsumerGroupSortType.topicsDesc:
-        _sortColumnIndex = 4;
-        _sortAscending = false;
-        break;
-      case ConsumerGroupSortType.lagAsc:
-        _sortColumnIndex = 5;
-        _sortAscending = true;
-        break;
-      case ConsumerGroupSortType.lagDesc:
-        _sortColumnIndex = 5;
-        _sortAscending = false;
-        break;
-      case ConsumerGroupSortType.processedAsc:
-        _sortColumnIndex = 6;
-        _sortAscending = true;
-        break;
-      case ConsumerGroupSortType.processedDesc:
-        _sortColumnIndex = 6;
-        _sortAscending = false;
-        break;
-    }
-  }
-
   Future<void> _fetchLags(ClusterProfile profile) async {
     if (!mounted) return;
+    _loadConcurrencyLimit();
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -228,11 +166,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       return;
     }
 
-    final matchesSearch =
-        _filterText.isNotEmpty &&
-        groupId.toLowerCase().contains(_filterText.toLowerCase());
-
-    if (_activeLagQueries >= _maxConcurrentLagQueries && !matchesSearch) {
+    if (_activeLagQueries >= _maxConcurrentLagQueries) {
       if (!_lagQueryQueue.contains(groupId)) {
         _lagQueryQueue.add(groupId);
       }
@@ -327,6 +261,15 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return lags.fold(0, (sum, item) => sum + item.lag.toInt());
   }
 
+  int get _stableGroupsCount => _lags.where((group) {
+    final s = group.state.toLowerCase();
+    return s.contains('stable') || s.contains('active');
+  }).length;
+
+  int get _totalLag {
+    return _lags.fold(0, (sum, group) => sum + _calculateGroupLag(group));
+  }
+
   Color _getStateColor(String state) {
     final s = state.toLowerCase();
     if (s.contains('stable') || s.contains('active')) {
@@ -339,14 +282,136 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return Colors.orange;
   }
 
+  Widget _buildKpiCards(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<ConsumerGroupLag> filteredLags,
+  ) {
+    final isGerman = Localizations.localeOf(context).languageCode == 'de';
+    final totalGroups = _lags.length;
+    final filteredCount = filteredLags.length;
+    final stableGroups = _stableGroupsCount;
+    final totalLag = _totalLag;
+    final activeQueries = _activeLagQueries;
+    final queuedQueries = _lagQueryQueue.length;
+
+    final totalDelta = _groupDeltas.values.fold<int>(
+      0,
+      (sum, val) => sum + val,
+    );
+    final String? lagSubtitle;
+    if (_groupDeltas.isNotEmpty) {
+      final formattedDelta = totalDelta > 0
+          ? "+${_formatNum(totalDelta)}"
+          : _formatNum(totalDelta);
+      lagSubtitle = isGerman
+          ? 'Änderung: $formattedDelta'
+          : 'Change: $formattedDelta';
+    } else {
+      lagSubtitle = null;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double cardWidth = (constraints.maxWidth - 48) / 4;
+          return IntrinsicHeight(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: cardWidth,
+                  child: KpiCard(
+                    title: isGerman ? 'Consumer-Gruppen' : 'Consumer Groups',
+                    value: _formatNum(filteredCount),
+                    subtitle: filteredCount < totalGroups
+                        ? (isGerman
+                              ? 'von ${_formatNum(totalGroups)}'
+                              : 'of ${_formatNum(totalGroups)}')
+                        : null,
+                    icon: Icons.group_work,
+                  ),
+                ),
+                SizedBox(
+                  width: cardWidth,
+                  child: KpiCard(
+                    title: isGerman ? 'Aktiv / Stabil' : 'Active / Stable',
+                    value: _formatNum(stableGroups),
+                    subtitle: isGerman
+                        ? '${_formatNum(totalGroups - stableGroups)} Inaktiv/Leer'
+                        : '${_formatNum(totalGroups - stableGroups)} Idle/Empty',
+                    icon: Icons.check_circle_outline,
+                    iconColor: Colors.green,
+                  ),
+                ),
+                SizedBox(
+                  width: cardWidth,
+                  child: KpiCard(
+                    title: isGerman ? 'Gesamtes Lag' : 'Total Lag',
+                    value: _formatNum(totalLag),
+                    subtitle: lagSubtitle,
+                    icon: Icons.warning_amber_outlined,
+                    iconColor: totalLag > 0 ? Colors.orange : Colors.green,
+                  ),
+                ),
+                SizedBox(
+                  width: cardWidth,
+                  child: KpiCard(
+                    title: isGerman ? 'Aktive Abfragen' : 'Active Queries',
+                    value: _formatNum(activeQueries),
+                    subtitle: isGerman
+                        ? 'Warteschlange: $queuedQueries'
+                        : 'Queue: $queuedQueries',
+                    icon: Icons.query_builder,
+                    trailing: activeQueries > 0 || queuedQueries > 0
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2.5),
+                          )
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildConnectingState(BuildContext context) {
+    final isGerman = Localizations.localeOf(context).languageCode == 'de';
+    final loadingText = isGerman
+        ? "Verbindung zum Cluster wird hergestellt..."
+        : "Connecting to cluster...";
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 24),
+          Text(
+            loadingText,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-    final clusterController = watchIt<ClusterListController>();
     final activeController = watchIt<ActiveConnectionController>();
     final activeProfile = activeController.activeProfile;
-    final clusters = clusterController.clusters;
 
     if (activeProfile != _lastProfile) {
       _lastProfile = activeProfile;
@@ -418,19 +483,16 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeader(context, l10n, activeProfile),
             const SizedBox(height: 24),
+            if (activeProfile != null && !activeController.isConnecting)
+              _buildKpiCards(context, l10n, filteredLags),
             ConsumerGroupControls(
-              clusters: clusters,
               activeProfile: activeProfile,
               searchController: _searchController,
-              matchCountText: isGerman
-                  ? "${_formatNum(filteredLags.length)} von ${_formatNum(_lags.length)} Gruppen gefunden"
-                  : "Found ${_formatNum(filteredLags.length)} of ${_formatNum(_lags.length)} groups",
               statusFilter: _statusFilter,
-              sortType: _sortType,
               refreshIntervalSeconds: _refreshIntervalSeconds,
               l10n: l10n,
               onClusterChanged: (profile) {
@@ -444,11 +506,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                   _lagQueryQueue.clear();
                 });
               },
-              onSortTypeChanged: (val) {
-                setState(() {
-                  _sortType = val;
-                });
-              },
               onRefreshIntervalChanged: (val) {
                 _updateRefreshInterval(val, activeProfile);
               },
@@ -456,20 +513,25 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
             const SizedBox(height: 16),
             if (_errorMessage == null &&
                 _lags.isNotEmpty &&
-                _lastFetchDuration != null)
+                _lastFetchDuration != null &&
+                !activeController.isConnecting)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
                 child: _buildFetchStatusMessage(context),
               ),
 
-            if (_errorMessage != null && activeProfile != null)
+            if (_errorMessage != null &&
+                activeProfile != null &&
+                !activeController.isConnecting)
               _buildErrorBanner(context, activeProfile),
             Expanded(
-              child: activeProfile == null
-                  ? _buildNoClusterSelected(context, l10n)
-                  : (_isLoading && _lags.isEmpty
-                        ? _buildLoadingState(context)
-                        : _buildGroupList(context, l10n, filteredLags)),
+              child: activeController.isConnecting
+                  ? _buildConnectingState(context)
+                  : (activeProfile == null
+                        ? _buildNoClusterSelected(context, l10n)
+                        : (_isLoading && _lags.isEmpty
+                              ? _buildLoadingState(context)
+                              : _buildGroupList(context, l10n, filteredLags))),
             ),
           ],
         ),
@@ -504,20 +566,35 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   Widget _buildNoClusterSelected(BuildContext context, AppLocalizations l10n) {
+    final isGerman = Localizations.localeOf(context).languageCode == 'de';
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.hub_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.hub, size: 64, color: theme.colorScheme.primary),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             l10n.pleaseSelectCluster,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isGerman
+                ? 'Wähle oben ein Cluster aus, um den Consumer-Lag anzuzeigen.'
+                : 'Select a cluster above to view consumer lag details.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.outline,
             ),
           ),
         ],
@@ -834,7 +911,9 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                             isLoaded: _loadedGroupIds.contains(group.groupId),
                             isFailed: _failedGroupIds.contains(group.groupId),
                             hasPreviousValue: group.partitionLags.isNotEmpty,
-                            labelText: _loadedGroupIds.contains(group.groupId) || group.partitionLags.isNotEmpty
+                            labelText:
+                                _loadedGroupIds.contains(group.groupId) ||
+                                    group.partitionLags.isNotEmpty
                                 ? "${l10n.lagCol}: ${_formatNum(_calculateGroupLag(group))}"
                                 : "${l10n.lagCol}: -",
                           ),
@@ -848,8 +927,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                             delta: _groupDeltas[group.groupId],
                             formattedDelta: _groupDeltas[group.groupId] != null
                                 ? (_groupDeltas[group.groupId]! > 0
-                                    ? "+${_formatNum(_groupDeltas[group.groupId]!)}"
-                                    : _formatNum(_groupDeltas[group.groupId]!))
+                                      ? "+${_formatNum(_groupDeltas[group.groupId]!)}"
+                                      : _formatNum(
+                                          _groupDeltas[group.groupId]!,
+                                        ))
                                 : "",
                           ),
                         ),

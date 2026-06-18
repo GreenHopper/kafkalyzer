@@ -12,7 +12,11 @@ import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 
-@GenerateMocks([ClusterListController, ActiveConnectionController, SettingsService])
+@GenerateMocks([
+  ClusterListController,
+  ActiveConnectionController,
+  SettingsService,
+])
 import 'settings_view_test.mocks.dart';
 
 void main() {
@@ -29,7 +33,11 @@ void main() {
   );
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({'general_default_output_dir': '/tmp', 'scripting_max_run_history': 50});
+    SharedPreferences.setMockInitialValues({
+      'general_default_output_dir': '/tmp',
+      'scripting_max_run_history': 50,
+      'consumer_max_concurrent_queries': 10,
+    });
 
     mockClusterListController = MockClusterListController();
     mockActiveConnectionController = MockActiveConnectionController();
@@ -38,13 +46,18 @@ void main() {
     final getIt = GetIt.instance;
     getIt.reset();
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
-    getIt.registerSingleton<ActiveConnectionController>(mockActiveConnectionController);
+    getIt.registerSingleton<ActiveConnectionController>(
+      mockActiveConnectionController,
+    );
     getIt.registerSingleton<SettingsService>(mockSettingsService);
   });
 
   Widget createWidgetUnderTest() {
     return MaterialApp(
-      theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+      theme: ThemeData(
+        useMaterial3: true,
+        splashFactory: InkRipple.splashFactory,
+      ),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -75,6 +88,36 @@ void main() {
       expect(find.text('/tmp'), findsOneWidget);
       expect(find.text('Max Script Runs to keep'), findsOneWidget);
       expect(find.text('50'), findsOneWidget);
+      expect(find.text('Maximum Concurrent Lag Queries'), findsOneWidget);
+      expect(find.text('10'), findsOneWidget);
+    });
+
+    testWidgets('allows changing maximum concurrent queries setting', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      when(mockClusterListController.isLoading).thenReturn(false);
+      when(mockClusterListController.clusters).thenReturn([]);
+      when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final textFieldFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'Maximum Concurrent Lag Queries',
+      );
+      expect(textFieldFinder, findsOneWidget);
+
+      await tester.enterText(textFieldFinder, '15');
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getInt('consumer_max_concurrent_queries'), 15);
     });
 
     testWidgets('renders configuration buttons', (tester) async {
@@ -112,7 +155,7 @@ void main() {
     });
 
     testWidgets('calls export configuration', (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.physicalSize = const Size(1280, 1000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
@@ -131,7 +174,7 @@ void main() {
       verify(mockSettingsService.exportConfiguration()).called(1);
     });
     testWidgets('shows add cluster dialog on tap', (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.physicalSize = const Size(1280, 1000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
@@ -164,7 +207,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Delete Cluster'), findsOneWidget);
-      expect(find.text('Are you sure you want to delete test-cluster?'), findsOneWidget);
+      expect(
+        find.text('Are you sure you want to delete test-cluster?'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();

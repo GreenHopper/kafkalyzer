@@ -113,10 +113,17 @@ class _SettingsViewState extends State<SettingsView> {
             final prefs = snapshot.data!;
             final defaultDir = prefs.getString('general_default_output_dir');
             final maxRuns = prefs.getInt('scripting_max_run_history') ?? 30;
+            final maxLagQueries =
+                prefs.getInt('consumer_max_concurrent_queries') ?? 5;
+            final isGerman =
+                Localizations.localeOf(context).languageCode == 'de';
 
             final controller = TextEditingController(text: defaultDir);
             final maxRunsController = TextEditingController(
               text: maxRuns.toString(),
+            );
+            final maxLagQueriesController = TextEditingController(
+              text: maxLagQueries.toString(),
             );
 
             return Column(
@@ -133,8 +140,8 @@ class _SettingsViewState extends State<SettingsView> {
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.folder_open),
                             onPressed: () async {
-                              String? selected = await FilePicker
-                                  .getDirectoryPath();
+                              String? selected =
+                                  await FilePicker.getDirectoryPath();
                               if (selected != null) {
                                 await prefs.setString(
                                   'general_default_output_dir',
@@ -165,6 +172,37 @@ class _SettingsViewState extends State<SettingsView> {
                           final val = int.tryParse(value);
                           if (val != null) {
                             prefs.setInt('scripting_max_run_history', val);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: maxLagQueriesController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: isGerman
+                              ? "Maximale gleichzeitige Lag-Abfragen"
+                              : "Maximum Concurrent Lag Queries",
+                          border: const OutlineInputBorder(),
+                          helperText: isGerman
+                              ? "Standard: 5 (Höhere Werte können "
+                                    "zu Lasten der Performance gehen)"
+                              : "Default: 5 (Higher values can "
+                                    "impact performance)",
+                        ),
+                        onChanged: (value) {
+                          final val = int.tryParse(value);
+                          if (val != null) {
+                            prefs.setInt(
+                              'consumer_max_concurrent_queries',
+                              val,
+                            );
                           }
                         },
                       ),
@@ -287,11 +325,10 @@ class _SettingsViewState extends State<SettingsView> {
             OutlinedButton.icon(
               onPressed: () async {
                 try {
-                  FilePickerResult? result = await FilePicker
-                      .pickFiles(
-                        type: FileType.custom,
-                        allowedExtensions: ['json', 'zip'],
-                      );
+                  FilePickerResult? result = await FilePicker.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['json', 'zip'],
+                  );
 
                   if (result != null && result.files.single.path != null) {
                     final file = File(result.files.single.path!);
