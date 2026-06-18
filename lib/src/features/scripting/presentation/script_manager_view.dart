@@ -194,7 +194,7 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
 
   Future<void> _importScripts(BuildContext context, AppLocalizations l10n, ScriptController controller) async {
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
       );
@@ -217,7 +217,7 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
   Future<void> _exportScript(BuildContext context, AppLocalizations l10n, ScriptController controller) async {
     try {
       final jsonString = controller.exportScript(_selectedScript!);
-      String? outputFile = await FilePicker.platform.saveFile(
+      String? outputFile = await FilePicker.saveFile(
         dialogTitle: l10n.exportScript,
         fileName: '${_selectedScript!.name}.json',
         type: FileType.custom,

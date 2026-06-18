@@ -58,7 +58,7 @@ class ScriptHistoryList extends StatelessWidget {
             tooltip: "Import Run Archive",
             icon: const Icon(Icons.upload_file),
             onPressed: () async {
-              FilePickerResult? result = await FilePicker.platform.pickFiles(
+              FilePickerResult? result = await FilePicker.pickFiles(
                 type: FileType.custom,
                 allowedExtensions: ['zip'],
               );
@@ -170,7 +170,7 @@ class ScriptHistoryList extends StatelessWidget {
               final path = await getIt<ScriptRunner>().exportRunArchive(run);
               if (path != null && context.mounted) {
                 final safeName = run.id.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-                String? outputFile = await FilePicker.platform.saveFile(
+                String? outputFile = await FilePicker.saveFile(
                   dialogTitle: 'Save Run Archive - ${run.scriptName}',
                   fileName: '$safeName.zip',
                   type: FileType.custom,

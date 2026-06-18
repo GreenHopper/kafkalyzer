@@ -40,7 +40,7 @@ dependencies:
   http: ^1.2.0
   rust_lib_kafkalyzer:
     path: rust_builder
-  flutter_rust_bridge: 2.11.1
+  flutter_rust_bridge: ^2.12.0
   get_it:
   watch_it:
   go_router: ^17.0.1
@@ -49,18 +49,16 @@ dependencies:
   json_annotation: ^4.9.0
   shared_preferences: ^2.5.4
   data_table_2: ^2.7.2
-  google_fonts: ^6.3.3
+  google_fonts: ^8.1.0
   group_button: ^5.3.4
   flex_color_scheme: ^8.3.1
-  file_picker: 10.3.8
+  file_picker: ^11.0.2
   uuid: ^4.5.2
-  timelines_plus: ^1.0.8
+  timelines_plus: ^2.0.0
   json_explorer: ^0.1.2
   provider: ^6.1.5+1
   archive: ^4.0.7
   path_provider: ^2.1.2
-  googleapis: ^15.0.0
-  googleapis_auth: ^2.0.0
   url_launcher: ^6.3.2
   pdfrx: ^2.2.24
   path: ^1.9.1
@@ -68,7 +66,7 @@ dependencies:
   diff_match_patch: ^0.4.1
   json_diff:
     git: https://github.com/google/dart-json_diff.git
-  two_dimensional_scrollables: ^0.3.8
+  two_dimensional_scrollables: ^0.5.2
 
 dev_dependencies:
   flutter_test:
@@ -83,7 +81,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   build_runner: ^2.10.5
-  freezed: ^3.2.4
+  freezed: ^4.0.0-dev.3
   json_serializable: ^6.11.3
   mockito: ^5.6.3
   path_provider_platform_interface: ^2.1.2

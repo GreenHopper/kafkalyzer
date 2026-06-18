@@ -360,7 +360,7 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
               tooltip: "Download Markdown",
               onPressed: () async {
                 final md = _generateMarkdown(fieldName, occurrences);
-                final outputFile = await FilePicker.platform.saveFile(
+                final outputFile = await FilePicker.saveFile(
                   dialogTitle: 'Save Schema Markdown',
                   fileName: 'schema_$fieldName.md',
                   type: FileType.custom,

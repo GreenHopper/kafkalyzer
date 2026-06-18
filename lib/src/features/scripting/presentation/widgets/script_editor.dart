@@ -493,7 +493,7 @@ class _ScriptEditorState extends State<ScriptEditor> {
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.folder_open),
                         onPressed: () async {
-                          String? selected = await FilePicker.platform
+                          String? selected = await FilePicker
                               .getDirectoryPath();
                           if (selected != null) {
                             _outputDirController.text = selected;

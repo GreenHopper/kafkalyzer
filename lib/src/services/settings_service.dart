@@ -94,7 +94,7 @@ class SettingsService {
 
       String? outputFile;
       if (!kIsWeb) {
-        outputFile = await FilePicker.platform.saveFile(
+        outputFile = await FilePicker.saveFile(
           dialogTitle: 'Export Configuration',
           fileName: 'kafkalyzer_config.zip',
           type: FileType.custom,
@@ -115,7 +115,7 @@ class SettingsService {
 
   Future<void> importConfiguration() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         dialogTitle: 'Import Configuration',
         type: FileType.custom,
         allowedExtensions: ['zip'],

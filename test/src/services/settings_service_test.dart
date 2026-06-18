@@ -10,6 +10,7 @@ import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,7 +47,7 @@ class MockScriptController extends ScriptController {
   }
 }
 
-class MockFilePicker extends FilePicker {
+class MockFilePicker extends FilePickerPlatform {
   @override
   Future<String?> saveFile({
     String? dialogTitle,
@@ -90,7 +91,7 @@ void main() {
           },
         );
 
-    FilePicker.platform = MockFilePicker();
+    FilePickerPlatform.instance = MockFilePicker();
     settingsService = SettingsService();
   });
 
@@ -118,7 +119,7 @@ void main() {
       final zipBytes = ZipEncoder().encode(archive);
 
       // Mock FilePicker to return this file
-      FilePicker.platform = MockFilePickerWithResult(zipBytes);
+      FilePickerPlatform.instance = MockFilePickerWithResult(zipBytes);
 
       await settingsService.importConfiguration();
 
@@ -128,7 +129,7 @@ void main() {
   });
 }
 
-class MockFilePickerWithResult extends FilePicker {
+class MockFilePickerWithResult extends FilePickerPlatform {
   final List<int> fileBytes;
 
   MockFilePickerWithResult(this.fileBytes);
@@ -140,13 +141,13 @@ class MockFilePickerWithResult extends FilePicker {
     FileType type = FileType.any,
     List<String>? allowedExtensions,
     Function(FilePickerStatus)? onFileLoading,
-    bool? allowCompression,
+    int compressionQuality = 0,
     bool allowMultiple = false,
-    bool? withData,
-    bool? withReadStream,
+    bool withData = false,
+    bool withReadStream = false,
     bool lockParentWindow = false,
     bool readSequential = false,
-    int compressionQuality = 30,
+    bool cancelUploadOnWindowBlur = true,
   }) async {
     return FilePickerResult([
       PlatformFile(

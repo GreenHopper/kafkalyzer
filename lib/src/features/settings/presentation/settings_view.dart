@@ -133,7 +133,7 @@ class _SettingsViewState extends State<SettingsView> {
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.folder_open),
                             onPressed: () async {
-                              String? selected = await FilePicker.platform
+                              String? selected = await FilePicker
                                   .getDirectoryPath();
                               if (selected != null) {
                                 await prefs.setString(
@@ -287,7 +287,7 @@ class _SettingsViewState extends State<SettingsView> {
             OutlinedButton.icon(
               onPressed: () async {
                 try {
-                  FilePickerResult? result = await FilePicker.platform
+                  FilePickerResult? result = await FilePicker
                       .pickFiles(
                         type: FileType.custom,
                         allowedExtensions: ['json', 'zip'],
@@ -341,7 +341,7 @@ class _SettingsViewState extends State<SettingsView> {
                         final zipBytes = await clusterController
                             .exportClustersZip(selectedClusters);
 
-                        String? outputFile = await FilePicker.platform.saveFile(
+                        String? outputFile = await FilePicker.saveFile(
                           dialogTitle: l10n.export,
                           fileName: 'clusters_export.zip',
                           type: FileType.custom,

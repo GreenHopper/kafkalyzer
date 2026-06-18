@@ -33,7 +33,7 @@ class MessageExportService {
         final jsonContent = _serializeMessages(messagesByTopic[topic]!);
         
         final fileName = '${topic}_$timestampStr.json';
-        final outputFile = await FilePicker.platform.saveFile(
+        final outputFile = await FilePicker.saveFile(
           dialogTitle: 'Export Messages',
           fileName: fileName,
           type: FileType.custom,
@@ -64,7 +64,7 @@ class MessageExportService {
         final zipBytes = zipEncoder.encode(archive);
 
         final fileName = 'messages_export_$timestampStr.zip';
-        final outputFile = await FilePicker.platform.saveFile(
+        final outputFile = await FilePicker.saveFile(
           dialogTitle: 'Export Messages',
           fileName: fileName,
           type: FileType.custom,
