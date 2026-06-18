@@ -2,14 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class HexViewer extends StatelessWidget {
+import 'package:kafkalyzer/src/utils/payload_processing_isolate.dart';
+
+class HexViewer extends StatefulWidget {
   final List<int> bytes;
 
   const HexViewer({super.key, required this.bytes});
 
   @override
+  State<HexViewer> createState() => _HexViewerState();
+}
+
+class _HexViewerState extends State<HexViewer> {
+  bool _isGenerating = true;
+  String _hexOutput = "";
+  bool _isTruncated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _generateHexAsync();
+  }
+
+  @override
+  void didUpdateWidget(covariant HexViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bytes != widget.bytes) {
+      _generateHexAsync();
+    }
+  }
+
+  Future<void> _generateHexAsync() async {
+    setState(() {
+      _isGenerating = true;
+      _isTruncated = false;
+    });
+
+    // Generate hex dump in background isolate
+    String fullHex = await generateHexDumpInIsolate(widget.bytes);
+
+    if (mounted) {
+      const maxLength = 500000;
+      if (fullHex.length > maxLength) {
+        _hexOutput = fullHex.substring(0, maxLength);
+        _isTruncated = true;
+      } else {
+        _hexOutput = fullHex;
+      }
+
+      setState(() {
+        _isGenerating = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (bytes.isEmpty) {
+    if (widget.bytes.isEmpty) {
       return const Center(child: Text("Empty binary data"));
     }
 
@@ -20,41 +69,6 @@ class HexViewer extends StatelessWidget {
       color: colorScheme.onSurface,
     );
 
-    // Build the hex dump string
-    final buffer = StringBuffer();
-    for (var i = 0; i < bytes.length; i += 16) {
-      // Address
-      buffer.write('${i.toRadixString(16).padLeft(8, '0')}  ');
-
-      // Hex bytes
-      for (var j = 0; j < 16; j++) {
-        if (i + j < bytes.length) {
-          buffer.write('${bytes[i + j].toRadixString(16).padLeft(2, '0')} ');
-        } else {
-          buffer.write('   ');
-        }
-        if (j == 7) {
-          buffer.write(' '); // Extra space after 8 bytes
-        }
-      }
-
-      buffer.write(' |');
-
-      // ASCII
-      for (var j = 0; j < 16; j++) {
-        if (i + j < bytes.length) {
-          final byte = bytes[i + j];
-          if (byte >= 32 && byte <= 126) {
-            buffer.writeCharCode(byte);
-          } else {
-            buffer.write('.');
-          }
-        }
-      }
-
-      buffer.write('|\n');
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -63,16 +77,58 @@ class HexViewer extends StatelessWidget {
           children: [
             OutlinedButton.icon(
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: buffer.toString()));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Hex dump copied to clipboard")),
+                // If it's too large to generate quickly on main thread, we could spawn another isolate to generate it again for copy.
+                // But clipboard might crash on 8MB anyway.
+                // We will let it be slow for copy if user REALLY wants it.
+                // Wait, generateHexDumpInIsolate returns the full string, but we discarded it from memory.
+                // Let's just generate it again for clipboard.
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text("Preparing hex dump for clipboard..."),
+                  ),
                 );
+                generateHexDumpInIsolate(widget.bytes).then((fullHex) {
+                  Clipboard.setData(ClipboardData(text: fullHex));
+                  if (mounted) {
+                    scaffoldMessenger.showSnackBar(
+                      const SnackBar(
+                        content: Text("Hex dump copied to clipboard"),
+                      ),
+                    );
+                  }
+                });
               },
               icon: const Icon(Icons.copy, size: 16),
-              label: const Text("Copy Hex Dump"),
+              label: const Text("Copy Full Hex Dump"),
             ),
           ],
         ),
+        if (_isTruncated)
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.all(8),
+            color: colorScheme.errorContainer,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning,
+                  color: colorScheme.onErrorContainer,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Display truncated to 500k characters for performance. Use 'Copy Full Hex Dump' to extract the complete data.",
+                    style: TextStyle(
+                      color: colorScheme.onErrorContainer,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         const SizedBox(height: 8),
         Expanded(
           child: Container(
@@ -82,9 +138,11 @@ class HexViewer extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: colorScheme.outlineVariant),
             ),
-            child: SingleChildScrollView(
-              child: SelectableText(buffer.toString(), style: textStyle),
-            ),
+            child: _isGenerating
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    child: SelectableText(_hexOutput, style: textStyle),
+                  ),
           ),
         ),
       ],

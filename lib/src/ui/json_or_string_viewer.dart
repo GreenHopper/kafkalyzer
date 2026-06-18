@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:json_explorer/json_explorer.dart';
@@ -8,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kafkalyzer/src/ui/json_card_viewer.dart';
 import 'package:kafkalyzer/src/ui/hex_viewer.dart';
+import 'package:kafkalyzer/src/utils/payload_processing_isolate.dart';
 
 class MatchRegistry {
   final List<GlobalKey> _keys = [];
@@ -54,6 +54,7 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
   int _viewMode = 0; // 0: Raw, 1: JSON, 2: Cards
   dynamic _parsedJson;
   bool _isValidJson = false;
+  bool _isParsing = true;
 
   final JsonExplorerStore _store = JsonExplorerStore();
   final MatchRegistry _matchRegistry = MatchRegistry();
@@ -62,26 +63,10 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
   bool _isBinaryHex = false;
   List<int> _binaryBytes = [];
 
-  List<int> _hexToBytes(String hex) {
-    List<int> bytes = [];
-    try {
-      for (int i = 0; i < hex.length; i += 2) {
-        if (i + 1 < hex.length) {
-          bytes.add(int.parse(hex.substring(i, i + 2), radix: 16));
-        }
-      }
-    } catch (_) {
-      // Ignore parsing errors for partial hex
-    }
-    return bytes;
-  }
-
   @override
   void initState() {
     super.initState();
-    _parseContent();
-    _restorePersistence();
-    _updateMatchCount();
+    _parseContentAsync();
   }
 
   void jumpToMatch(int index) {
@@ -202,10 +187,8 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.rawContent != widget.rawContent ||
         oldWidget.preParsedJson != widget.preParsedJson) {
-      _parseContent();
-      _updateMatchCount();
-    }
-    if (oldWidget.searchQuery != widget.searchQuery) {
+      _parseContentAsync();
+    } else if (oldWidget.searchQuery != widget.searchQuery) {
       if (_isValidJson && _viewMode == 1) {
         _store.search(widget.searchQuery ?? '');
         if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
@@ -216,22 +199,24 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
     }
   }
 
-  void _parseContent() {
+  Future<void> _parseContentAsync() async {
+    setState(() {
+      _isParsing = true;
+    });
+
     if (widget.preParsedJson != null) {
       _parsedJson = widget.preParsedJson;
       _isValidJson = true;
       _viewMode = widget.initialViewMode ?? 2; // Default to Cards
       _store.buildNodes(_parsedJson);
-      if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
-        _store.search(widget.searchQuery!);
-        _store.expandSearchResults();
-      }
+      _finalizeParsing();
       return;
     }
 
     if (widget.rawContent.isEmpty) {
       _isValidJson = false;
       _viewMode = 0;
+      _finalizeParsing();
       return;
     }
 
@@ -243,8 +228,9 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
       final parts = widget.rawContent.split(':');
       if (parts.length >= 2) {
         final hexStr = parts.sublist(1).join(':').trim();
-        _binaryBytes = _hexToBytes(hexStr);
+        _binaryBytes = await parseHexToBytesInIsolate(hexStr);
       }
+      _finalizeParsing();
       return;
     }
 
@@ -252,16 +238,12 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
     _binaryBytes = [];
 
     try {
-      final decoded = json.decode(widget.rawContent);
+      final decoded = await parseJsonInIsolate(widget.rawContent);
       if (decoded is Map || decoded is List) {
         _parsedJson = decoded;
         _isValidJson = true;
         _viewMode = widget.initialViewMode ?? 2; // Default to Cards
         _store.buildNodes(_parsedJson);
-        if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
-          _store.search(widget.searchQuery!);
-          _store.expandSearchResults();
-        }
       } else {
         _isValidJson = false;
         _viewMode = 0;
@@ -270,6 +252,23 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
       _isValidJson = false;
       _viewMode = 0;
     }
+
+    _finalizeParsing();
+  }
+
+  Future<void> _finalizeParsing() async {
+    if (!mounted) return;
+    if (_isValidJson &&
+        widget.searchQuery != null &&
+        widget.searchQuery!.isNotEmpty) {
+      _store.search(widget.searchQuery!);
+      _store.expandSearchResults();
+    }
+    await _restorePersistence();
+    setState(() {
+      _isParsing = false;
+    });
+    _updateMatchCount();
   }
 
   @override
@@ -366,10 +365,48 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
       );
     } else {
       // _viewMode == 0 or not valid JSON
-      contentWidget = _buildHighlightedRawText(
-        widget.rawContent,
-        GoogleFonts.robotoMono(fontSize: 13, color: colorScheme.onSurface),
-        context,
+      String textToHighlight = widget.rawContent;
+      bool isTruncated = false;
+      const maxLength = 500000;
+      if (textToHighlight.length > maxLength) {
+        textToHighlight = textToHighlight.substring(0, maxLength);
+        isTruncated = true;
+      }
+
+      contentWidget = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isTruncated)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(8),
+              color: colorScheme.errorContainer,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning,
+                    color: colorScheme.onErrorContainer,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Display truncated to 500k characters for performance. Use 'Copy' to extract the complete data.",
+                      style: TextStyle(
+                        color: colorScheme.onErrorContainer,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          _buildHighlightedRawText(
+            textToHighlight,
+            GoogleFonts.robotoMono(fontSize: 13, color: colorScheme.onSurface),
+            context,
+          ),
+        ],
       );
     }
 
@@ -469,11 +506,11 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: colorScheme.outlineVariant),
             ),
-            // For Tree view (viewMode 1), JsonExplorer is already scrollable.
-            // For others (Raw/Cards/HexViewer), we need to ensure they are scrollable.
-            child: (_viewMode == 1 || _isBinaryHex)
-                ? contentWidget
-                : SingleChildScrollView(child: contentWidget),
+            child: _isParsing
+                ? const Center(child: CircularProgressIndicator())
+                : ((_viewMode == 1 || _isBinaryHex)
+                      ? contentWidget
+                      : SingleChildScrollView(child: contentWidget)),
           ),
         ),
       ],

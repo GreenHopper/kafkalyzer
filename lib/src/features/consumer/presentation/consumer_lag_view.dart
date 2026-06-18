@@ -261,14 +261,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return lags.fold(0, (sum, item) => sum + item.lag.toInt());
   }
 
-  int get _stableGroupsCount => _lags.where((group) {
-    final s = group.state.toLowerCase();
-    return s.contains('stable') || s.contains('active');
-  }).length;
-
-  int get _totalLag {
-    return _lags.fold(0, (sum, group) => sum + _calculateGroupLag(group));
-  }
 
   Color _getStateColor(String state) {
     final s = state.toLowerCase();

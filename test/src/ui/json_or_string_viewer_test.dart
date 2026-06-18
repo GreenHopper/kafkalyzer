@@ -4,6 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Future<void> awaitIsolates(WidgetTester tester) async {
+  await tester.runAsync(() async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  });
+  await tester.pump();
+  await tester.runAsync(() async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  });
+  await tester.pump();
+}
+
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -23,6 +34,7 @@ void main() {
           ),
         ),
       );
+      await awaitIsolates(tester);
 
       expect(find.text('Test Viewer'), findsOneWidget);
       expect(find.text('Not a JSON string'), findsOneWidget);
@@ -38,6 +50,7 @@ void main() {
           ),
         ),
       );
+      await awaitIsolates(tester);
 
       expect(find.text('KEY'), findsOneWidget); // Card view uppercases keys
       expect(find.text('value'), findsOneWidget);
@@ -60,7 +73,7 @@ void main() {
       );
 
       await tester.tap(find.text('Raw'));
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       expect(find.text(jsonStr), findsOneWidget);
     });
@@ -82,7 +95,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       final toggleButtons = tester.widget<ToggleButtons>(
         find.byType(ToggleButtons),
@@ -108,7 +121,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       expect(find.text('user'), findsOneWidget);
       expect(find.text('name'), findsOneWidget);
@@ -118,7 +131,7 @@ void main() {
         find.byType(JsonOrStringViewer),
       );
       state.jumpToMatch(0);
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
     });
 
     testWidgets('renders Binary/Hex view mode', (tester) async {
@@ -133,7 +146,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       expect(find.byType(HexViewer), findsOneWidget);
       final selectableTextFinder = find.byType(SelectableText);
@@ -150,12 +163,12 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       final copyButton = find.byTooltip('Copy content');
       expect(copyButton, findsOneWidget);
       await tester.tap(copyButton);
-      await tester.pump();
+      await awaitIsolates(tester);
       expect(find.text('Content copied to clipboard'), findsOneWidget);
     });
 
@@ -172,7 +185,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
       expect(find.text('DIRECT'), findsOneWidget);
     });
 
@@ -184,13 +197,12 @@ void main() {
           home: Scaffold(
             body: JsonOrStringViewer(
               rawContent: '{"a": 1}',
-              onMatchCountChanged: (count) {
-              },
+              onMatchCountChanged: (count) {},
             ),
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       // Change content
       await tester.pumpWidget(
@@ -198,13 +210,12 @@ void main() {
           home: Scaffold(
             body: JsonOrStringViewer(
               rawContent: '{"b": 2}',
-              onMatchCountChanged: (count) {
-              },
+              onMatchCountChanged: (count) {},
             ),
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
       expect(find.text('B'), findsOneWidget);
     });
   });

@@ -2,6 +2,17 @@ import 'package:kafkalyzer/src/ui/hex_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+Future<void> awaitIsolates(WidgetTester tester) async {
+  await tester.runAsync(() async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  });
+  await tester.pump();
+  await tester.runAsync(() async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  });
+  await tester.pump();
+}
+
 void main() {
   group('HexViewer', () {
     testWidgets('renders empty binary data placeholder', (tester) async {
@@ -10,6 +21,7 @@ void main() {
           home: Scaffold(body: HexViewer(bytes: [])),
         ),
       );
+      await awaitIsolates(tester);
 
       expect(find.text('Empty binary data'), findsOneWidget);
     });
@@ -25,6 +37,7 @@ void main() {
             home: Scaffold(body: HexViewer(bytes: bytes)),
           ),
         );
+        await awaitIsolates(tester);
 
         final selectableTextFinder = find.byType(SelectableText);
         expect(selectableTextFinder, findsOneWidget);
@@ -44,12 +57,13 @@ void main() {
           home: Scaffold(body: HexViewer(bytes: bytes)),
         ),
       );
+      await awaitIsolates(tester);
 
       final copyButton = find.byType(OutlinedButton);
       expect(copyButton, findsOneWidget);
 
       await tester.tap(copyButton);
-      await tester.pump();
+      await awaitIsolates(tester);
 
       expect(find.text('Hex dump copied to clipboard'), findsOneWidget);
     });
