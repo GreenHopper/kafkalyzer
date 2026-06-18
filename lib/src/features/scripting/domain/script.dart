@@ -9,10 +9,13 @@ enum ScriptVariableType { string, numeric, timestamp, date }
 
 @freezed
 abstract class ScriptVariable with _$ScriptVariable {
-  const factory ScriptVariable({required String name, @Default(ScriptVariableType.string) ScriptVariableType type}) =
-      _ScriptVariable;
+  const factory ScriptVariable({
+    required String name,
+    @Default(ScriptVariableType.string) ScriptVariableType type,
+  }) = _ScriptVariable;
 
-  factory ScriptVariable.fromJson(Map<String, dynamic> json) => _$ScriptVariableFromJson(json);
+  factory ScriptVariable.fromJson(Map<String, dynamic> json) =>
+      _$ScriptVariableFromJson(json);
 }
 
 @freezed
@@ -40,7 +43,8 @@ abstract class ScriptExtraction with _$ScriptExtraction {
     @Default(ScriptExtractionSource.value) ScriptExtractionSource source,
   }) = _ScriptExtraction;
 
-  factory ScriptExtraction.fromJson(Map<String, dynamic> json) => _$ScriptExtractionFromJson(json);
+  factory ScriptExtraction.fromJson(Map<String, dynamic> json) =>
+      _$ScriptExtractionFromJson(json);
 }
 
 @freezed
@@ -55,7 +59,8 @@ abstract class ScriptStep with _$ScriptStep {
     @Default(SearchScope.both) SearchScope scope,
 
     // Configuration strategies
-    @Default(MultiSearchStartStrategy.earliest) MultiSearchStartStrategy startStrategy,
+    @Default(MultiSearchStartStrategy.earliest)
+    MultiSearchStartStrategy startStrategy,
     @Default(MultiSearchEndStrategy.latest) MultiSearchEndStrategy endStrategy,
 
     // Stringified for variable support
@@ -70,7 +75,8 @@ abstract class ScriptStep with _$ScriptStep {
     @Default([]) List<ScriptExtraction> extractions,
   }) = _ScriptStep;
 
-  factory ScriptStep.fromJson(Map<String, dynamic> json) => _$ScriptStepFromJson(json);
+  factory ScriptStep.fromJson(Map<String, dynamic> json) =>
+      _$ScriptStepFromJson(json);
 }
 
 extension ScriptStepX on ScriptStep {

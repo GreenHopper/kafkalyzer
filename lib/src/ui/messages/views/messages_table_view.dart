@@ -74,7 +74,11 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     // 1. Map to wrapper class to evaluate strings exactly once
     final mappedData = messages.map((msg) {
       final date = DateTime.fromMillisecondsSinceEpoch(msg.timestamp.toInt());
-      final dateStr = DateFormatUtils.formatDateTime(context, date, withMilliseconds: true);
+      final dateStr = DateFormatUtils.formatDateTime(
+        context,
+        date,
+        withMilliseconds: true,
+      );
       final stepStr = msg is ScriptResultMessage ? msg.stepName : 'Global';
       final contentPreview = TextPreviewUtils.getPayloadPreview(msg.payload);
       final keyString = msg.key ?? "";
@@ -241,13 +245,17 @@ class _MessagesTableViewState extends State<MessagesTableView> {
   void _showMessageDetails(KafkaMessage msg) {
     showDialog(
       context: context,
-      builder: (context) => MessageDetailsDialog(message: msg, initialSearchPhrase: widget.searchPhrase),
+      builder: (context) => MessageDetailsDialog(
+        message: msg,
+        initialSearchPhrase: widget.searchPhrase,
+      ),
     );
   }
 
   TableViewCell _buildSortableHeader(String title, int index) {
     final bool isSorted = _sortColumnIndex == index;
-    bool isFiltered = _columnFilters.containsKey(index) && _columnFilters[index]!.isNotEmpty;
+    bool isFiltered =
+        _columnFilters.containsKey(index) && _columnFilters[index]!.isNotEmpty;
 
     return TableViewCell(
       child: InkWell(
@@ -275,7 +283,9 @@ class _MessagesTableViewState extends State<MessagesTableView> {
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
-                    color: isFiltered ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+                    color: isFiltered
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -295,7 +305,11 @@ class _MessagesTableViewState extends State<MessagesTableView> {
                   ),
                 ),
               ),
-              if (isSorted) Icon(_sortAscending ? Icons.arrow_upward : Icons.arrow_downward, size: 14),
+              if (isSorted)
+                Icon(
+                  _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 14,
+                ),
             ],
           ),
         ),
@@ -319,9 +333,13 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       case 4: // Offset
         return const TableSpan(extent: FixedTableSpanExtent(110));
       case 5: // Key
-        return const TableSpan(extent: FractionalTableSpanExtent(0.33)); // Like flex: 1
+        return const TableSpan(
+          extent: FractionalTableSpanExtent(0.33),
+        ); // Like flex: 1
       case 6: // Content
-        return const TableSpan(extent: FractionalTableSpanExtent(0.67)); // Like flex: 2
+        return const TableSpan(
+          extent: FractionalTableSpanExtent(0.67),
+        ); // Like flex: 2
       default:
         return const TableSpan(extent: FixedTableSpanExtent(100));
     }
@@ -376,7 +394,9 @@ class _MessagesTableViewState extends State<MessagesTableView> {
 
     final data = _cachedData[dataIndex];
     final msg = data.message;
-    final dividerColor = Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5);
+    final dividerColor = Theme.of(
+      context,
+    ).colorScheme.outlineVariant.withValues(alpha: 0.5);
 
     // Search match logic
     bool isMatch = true;
@@ -395,14 +415,21 @@ class _MessagesTableViewState extends State<MessagesTableView> {
         cellContent = Text(data.dateStr, style: const TextStyle(fontSize: 12));
         break;
       case 1: // Step
-        cellContent = Text(data.stepStr, style: monoStyle, overflow: TextOverflow.ellipsis);
+        cellContent = Text(
+          data.stepStr,
+          style: monoStyle,
+          overflow: TextOverflow.ellipsis,
+        );
         break;
       case 2: // Topic
         cellContent = Tooltip(
           message: msg.topic,
           child: Text(
             msg.topic,
-            style: TextStyle(fontWeight: FontWeight.bold, color: ColorUtils.getColorForString(msg.topic)),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: ColorUtils.getColorForString(msg.topic),
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         );
@@ -485,7 +512,10 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       _needsRebuildRows = false;
     }
 
-    final monoStyle = GoogleFonts.robotoMono(fontSize: 12, color: Theme.of(context).colorScheme.onSurface);
+    final monoStyle = GoogleFonts.robotoMono(
+      fontSize: 12,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
     final highlightStyle = monoStyle.copyWith(
       backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
       color: Theme.of(context).colorScheme.onTertiaryContainer,
@@ -500,7 +530,8 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       rowCount: _cachedData.length + 1, // +1 for Header
       columnBuilder: _buildColumnSpan,
       rowBuilder: _buildRowSpan,
-      cellBuilder: (context, vicinity) => _buildCell(context, vicinity, monoStyle, highlightStyle),
+      cellBuilder: (context, vicinity) =>
+          _buildCell(context, vicinity, monoStyle, highlightStyle),
       diagonalDragBehavior: DiagonalDragBehavior.free,
     );
   }

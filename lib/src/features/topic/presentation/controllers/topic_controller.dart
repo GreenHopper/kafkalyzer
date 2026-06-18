@@ -10,9 +10,11 @@ class TopicController extends ChangeNotifier {
   final Map<String, List<api.TopicMetadata>> _cache = {};
   final Map<String, bool> _isLoading = {};
 
-  List<api.TopicMetadata>? getTopics(ClusterProfile cluster) => _cache[cluster.name];
+  List<api.TopicMetadata>? getTopics(ClusterProfile cluster) =>
+      _cache[cluster.name];
 
-  bool hasCachedTopics(ClusterProfile cluster) => _cache.containsKey(cluster.name);
+  bool hasCachedTopics(ClusterProfile cluster) =>
+      _cache.containsKey(cluster.name);
 
   bool isLoading(ClusterProfile cluster) => _isLoading[cluster.name] ?? false;
 

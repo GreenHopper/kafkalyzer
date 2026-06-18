@@ -11,6 +11,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dial
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
+import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 
 class SettingsView extends WatchingStatefulWidget {
   const SettingsView({super.key});
@@ -148,6 +149,7 @@ class _SettingsViewState extends State<SettingsView> {
                                   selected,
                                 );
                                 controller.text = selected;
+                                getIt<MultiSearchController>().loadDirectory();
                               }
                             },
                           ),

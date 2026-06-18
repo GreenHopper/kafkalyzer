@@ -44,7 +44,8 @@ class _ScriptHistoryViewState extends State<ScriptHistoryView> {
   @override
   void didUpdateWidget(covariant ScriptHistoryView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialRun != null && widget.initialRun != oldWidget.initialRun) {
+    if (widget.initialRun != null &&
+        widget.initialRun != oldWidget.initialRun) {
       setState(() {
         _selectedRun = widget.initialRun;
       });

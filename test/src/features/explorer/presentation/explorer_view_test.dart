@@ -13,7 +13,12 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 
-@GenerateMocks([ClusterListController, ActiveConnectionController, TopicController, SchemaController])
+@GenerateMocks([
+  ClusterListController,
+  ActiveConnectionController,
+  TopicController,
+  SchemaController,
+])
 import 'explorer_view_test.mocks.dart';
 
 void main() {
@@ -40,7 +45,9 @@ void main() {
     final getIt = GetIt.instance;
     getIt.reset();
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
-    getIt.registerSingleton<ActiveConnectionController>(mockActiveConnectionController);
+    getIt.registerSingleton<ActiveConnectionController>(
+      mockActiveConnectionController,
+    );
     getIt.registerSingleton<TopicController>(mockTopicController);
     getIt.registerSingleton<SchemaController>(mockSchemaController);
 
@@ -98,7 +105,10 @@ void main() {
 
       expect(find.text('CLUSTERS'), findsOneWidget); // Sidebar header
       expect(find.text('test-cluster'), findsOneWidget);
-      expect(find.text('Select a cluster to view topics'), findsOneWidget); // Empty state
+      expect(
+        find.text('Select a cluster to view topics'),
+        findsOneWidget,
+      ); // Empty state
     });
 
     testWidgets('shows topics when cluster is active', (tester) async {
@@ -108,16 +118,30 @@ void main() {
 
       when(mockClusterListController.isLoading).thenReturn(false);
       when(mockClusterListController.clusters).thenReturn([testProfile]);
-      when(mockActiveConnectionController.activeProfile).thenReturn(testProfile);
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
-      when(mockActiveConnectionController.topics).thenReturn([const TopicMetadata(name: 'test-topic', partitionCount: 1, replicationFactor: 1)]);
+      when(mockActiveConnectionController.topics).thenReturn([
+        const TopicMetadata(
+          name: 'test-topic',
+          partitionCount: 1,
+          replicationFactor: 1,
+        ),
+      ]);
       when(mockActiveConnectionController.openTopics).thenReturn([]);
       when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
-      when(mockTopicController.getTopics(testProfile)).thenReturn([const TopicMetadata(name: 'test-topic', partitionCount: 1, replicationFactor: 1)]);
+      when(mockTopicController.getTopics(testProfile)).thenReturn([
+        const TopicMetadata(
+          name: 'test-topic',
+          partitionCount: 1,
+          replicationFactor: 1,
+        ),
+      ]);
       when(mockTopicController.isLoading(testProfile)).thenReturn(false);
 
       await tester.pumpWidget(createWidgetUnderTest());
@@ -145,7 +169,7 @@ void main() {
 
       await tester.tap(find.text('test-cluster'));
       await tester.pump();
-      
+
       verify(mockActiveConnectionController.connect(testProfile)).called(1);
       verify(mockSchemaController.fetchSchemas(testProfile)).called(1);
     });
@@ -157,7 +181,9 @@ void main() {
 
       when(mockClusterListController.isLoading).thenReturn(false);
       when(mockClusterListController.clusters).thenReturn([testProfile]);
-      when(mockActiveConnectionController.activeProfile).thenReturn(testProfile);
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
@@ -168,14 +194,16 @@ void main() {
       when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
       when(mockTopicController.isLoading(testProfile)).thenReturn(false);
       when(mockTopicController.getTopics(testProfile)).thenReturn([]);
-      
+
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pump();
 
       await tester.enterText(find.byType(TextField), 'filter');
       await tester.pump();
 
-      verify(mockActiveConnectionController.updateTopicFilter('filter')).called(1);
+      verify(
+        mockActiveConnectionController.updateTopicFilter('filter'),
+      ).called(1);
     });
 
     testWidgets('toggle internal topics', (tester) async {
@@ -185,7 +213,9 @@ void main() {
 
       when(mockClusterListController.isLoading).thenReturn(false);
       when(mockClusterListController.clusters).thenReturn([testProfile]);
-      when(mockActiveConnectionController.activeProfile).thenReturn(testProfile);
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
@@ -205,7 +235,9 @@ void main() {
       await tester.tap(switches.first);
       await tester.pump();
 
-      verify(mockActiveConnectionController.toggleShowInternalTopics(true)).called(1);
+      verify(
+        mockActiveConnectionController.toggleShowInternalTopics(true),
+      ).called(1);
     });
   });
 }

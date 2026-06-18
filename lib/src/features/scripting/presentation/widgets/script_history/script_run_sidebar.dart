@@ -39,7 +39,9 @@ class ScriptRunSidebar extends StatelessWidget {
       width: 300,
       child: Container(
         decoration: BoxDecoration(
-          border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+          border: Border(
+            right: BorderSide(color: Theme.of(context).dividerColor),
+          ),
           color: Theme.of(context).colorScheme.surface,
         ),
         child: ListView(
@@ -70,20 +72,33 @@ class ScriptRunSidebar extends StatelessWidget {
         final count = msgs.length;
         final key = "${step.id}_$topic";
         final examined = run.topicExamined[key] ?? 0;
-        return TopicSelectionTopicNode(topic: topic, count: count, examined: examined);
+        return TopicSelectionTopicNode(
+          topic: topic,
+          count: count,
+          examined: examined,
+        );
       }).toList();
 
-      return TopicSelectionStepNode(id: step.id, name: step.name, totalMatches: stepTotal, topics: topics);
+      return TopicSelectionStepNode(
+        id: step.id,
+        name: step.name,
+        totalMatches: stepTotal,
+        topics: topics,
+      );
     }).toList();
   }
 
   Widget? _buildOtherResultsNode(BuildContext context) {
     if (!groupedResults.containsKey("global") &&
-        !groupedResults.keys.any((k) => !scriptSteps.any((s) => s.id == k) && k != "global")) {
+        !groupedResults.keys.any(
+          (k) => !scriptSteps.any((s) => s.id == k) && k != "global",
+        )) {
       return null;
     }
 
-    final otherSteps = groupedResults.entries.where((e) => !scriptSteps.any((s) => s.id == e.key)).toList();
+    final otherSteps = groupedResults.entries
+        .where((e) => !scriptSteps.any((s) => s.id == e.key))
+        .toList();
 
     return ExpansionTile(
       initiallyExpanded: true,
@@ -105,7 +120,12 @@ class ScriptRunSidebar extends StatelessWidget {
                 id: e.key,
                 name: e.key,
                 topics: [
-                  TopicSelectionTopicNode(topic: tEntry.key, count: count, examined: examined, isGlobal: isGlobal),
+                  TopicSelectionTopicNode(
+                    topic: tEntry.key,
+                    count: count,
+                    examined: examined,
+                    isGlobal: isGlobal,
+                  ),
                 ],
                 totalMatches: count,
               ),
@@ -136,14 +156,23 @@ class ScriptRunSidebar extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).primaryColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    AppLocalizations.of(context)!.matchesCount(totalMessages, run.totalExamined ?? 0),
-                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    AppLocalizations.of(
+                      context,
+                    )!.matchesCount(totalMessages, run.totalExamined ?? 0),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -151,10 +180,15 @@ class ScriptRunSidebar extends StatelessWidget {
             const SizedBox(height: 8),
             if (run.totalExamined != null)
               Text(
-                AppLocalizations.of(context)!.examinedMessages(run.totalExamined!),
+                AppLocalizations.of(
+                  context,
+                )!.examinedMessages(run.totalExamined!),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-            Text("Cluster: ${run.clusterName ?? 'Default'}", style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              "Cluster: ${run.clusterName ?? 'Default'}",
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             if (run.startTime != null && run.endTime != null) ...[
               const SizedBox(height: 4),
               Text(
@@ -177,11 +211,17 @@ class ScriptRunSidebar extends StatelessWidget {
               const Divider(height: 16),
               Text(
                 AppLocalizations.of(context)!.parameters,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               ...run.parameters.entries.map((e) {
-                final values = e.value.split(',').map((v) => v.trim()).where((v) => v.isNotEmpty).toList();
+                final values = e.value
+                    .split(',')
+                    .map((v) => v.trim())
+                    .where((v) => v.isNotEmpty)
+                    .toList();
                 final isLong = e.value.length > 50 || values.length > 1;
                 final activeFilters = parameterFilters[e.key];
 
@@ -195,7 +235,8 @@ class ScriptRunSidebar extends StatelessWidget {
                               builder: (context) => ParameterValuesDialog(
                                 parameterName: e.key,
                                 values: values,
-                                initiallySelected: parameterFilters[e.key] ?? {},
+                                initiallySelected:
+                                    parameterFilters[e.key] ?? {},
                               ),
                             );
 
@@ -206,7 +247,10 @@ class ScriptRunSidebar extends StatelessWidget {
                         : null,
                     borderRadius: BorderRadius.circular(4),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 2,
+                        horizontal: 4,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -214,27 +258,38 @@ class ScriptRunSidebar extends StatelessWidget {
                             children: [
                               Text(
                                 "${e.key}:",
-                                style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                               ),
-                              if (activeFilters != null && activeFilters.isNotEmpty)
+                              if (activeFilters != null &&
+                                  activeFilters.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(left: 8.0),
-                                  child: Icon(Icons.filter_list, size: 14, color: Theme.of(context).primaryColor),
+                                  child: Icon(
+                                    Icons.filter_list,
+                                    size: 14,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
                                 ),
                             ],
                           ),
                           if (isLong)
                             Text(
-                              values.take(3).join(", ") + (values.length > 3 ? ", ..." : ""),
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Colors.blue,
-                                decoration: TextDecoration.underline,
-                              ),
+                              values.take(3).join(", ") +
+                                  (values.length > 3 ? ", ..." : ""),
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: Colors.blue,
+                                    decoration: TextDecoration.underline,
+                                  ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             )
                           else
-                            Text(e.value, style: Theme.of(context).textTheme.labelSmall),
+                            Text(
+                              e.value,
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
                         ],
                       ),
                     ),

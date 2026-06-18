@@ -6,7 +6,13 @@ class TopicTag extends StatelessWidget {
   final bool isSchema;
   final VoidCallback? onTap;
 
-  const TopicTag(this.text, {super.key, this.isConfig = false, this.isSchema = false, this.onTap});
+  const TopicTag(
+    this.text, {
+    super.key,
+    this.isConfig = false,
+    this.isSchema = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,15 +20,25 @@ class TopicTag extends StatelessWidget {
 
     final widget = Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: colors.backgroundColor, borderRadius: BorderRadius.circular(4)),
+      decoration: BoxDecoration(
+        color: colors.backgroundColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.textColor, fontWeight: FontWeight.w500),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colors.textColor,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
 
     if (onTap != null) {
-      return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(4), child: widget);
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: widget,
+      );
     }
     return widget;
   }

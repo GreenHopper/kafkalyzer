@@ -86,16 +86,23 @@ class SearchStreamConfiguration extends StatelessWidget {
         const SizedBox(height: 4),
         GroupButton(
           isRadio: true,
-          onSelected: (val, i, selected) => onFilterTypeChanged(FilterType.values[i]),
+          onSelected: (val, i, selected) =>
+              onFilterTypeChanged(FilterType.values[i]),
           buttons: [l10n.contains, l10n.regex, l10n.exact],
           controller: GroupButtonController(selectedIndex: filterType.index),
           options: GroupButtonOptions(
             borderRadius: BorderRadius.circular(8),
             buttonHeight: 28,
             selectedColor: Theme.of(context).colorScheme.secondaryContainer,
-            selectedTextStyle: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer, fontSize: 11),
+            selectedTextStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+              fontSize: 11,
+            ),
             unselectedColor: Theme.of(context).colorScheme.surface,
-            unselectedTextStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11),
+            unselectedTextStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 11,
+            ),
             mainGroupAlignment: MainGroupAlignment.start,
           ),
         ),
@@ -104,16 +111,23 @@ class SearchStreamConfiguration extends StatelessWidget {
         const SizedBox(height: 4),
         GroupButton(
           isRadio: true,
-          onSelected: (val, i, selected) => onSearchScopeChanged(SearchScope.values[i]),
+          onSelected: (val, i, selected) =>
+              onSearchScopeChanged(SearchScope.values[i]),
           buttons: [l10n.key, l10n.value, l10n.both],
           controller: GroupButtonController(selectedIndex: searchScope.index),
           options: GroupButtonOptions(
             borderRadius: BorderRadius.circular(8),
             buttonHeight: 28,
             selectedColor: Theme.of(context).colorScheme.tertiaryContainer,
-            selectedTextStyle: TextStyle(color: Theme.of(context).colorScheme.onTertiaryContainer, fontSize: 11),
+            selectedTextStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onTertiaryContainer,
+              fontSize: 11,
+            ),
             unselectedColor: Theme.of(context).colorScheme.surface,
-            unselectedTextStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11),
+            unselectedTextStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 11,
+            ),
             mainGroupAlignment: MainGroupAlignment.start,
           ),
         ),

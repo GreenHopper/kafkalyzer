@@ -36,11 +36,17 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
         padding: const EdgeInsets.all(8.0),
         child: Text(
           AppLocalizations.of(context)!.noDifferencesFound,
-          style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+          style: const TextStyle(
+            fontStyle: FontStyle.italic,
+            color: Colors.grey,
+          ),
         ),
       );
     }
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: _nodes.map((n) => _buildNode(n)).toList());
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _nodes.map((n) => _buildNode(n)).toList(),
+    );
   }
 
   Widget _buildNode(DiffViewNode node) {
@@ -100,7 +106,9 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
             child: Row(
               children: [
                 Icon(
-                  node.isExpanded ? (icon == Icons.folder ? Icons.folder_open : icon) : icon,
+                  node.isExpanded
+                      ? (icon == Icons.folder ? Icons.folder_open : icon)
+                      : icon,
                   size: 14,
                   color: iconColor,
                 ),
@@ -145,7 +153,11 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
     return Padding(
       padding: EdgeInsets.only(left: node.depth * indentSize),
       child: DefaultTextStyle(
-        style: const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough, fontFamily: 'monospace'),
+        style: const TextStyle(
+          color: Colors.red,
+          decoration: TextDecoration.lineThrough,
+          fontFamily: 'monospace',
+        ),
         child: Row(
           children: [
             const Icon(Icons.remove, size: 12, color: Colors.red),
@@ -169,16 +181,25 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
           const SizedBox(width: 4),
           Text(
             "${node.key}: ",
-            style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+            ),
           ),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: const TextStyle(fontFamily: 'monospace', color: Colors.black87),
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  color: Colors.black87,
+                ),
                 children: [
                   TextSpan(
                     text: "${node.oldValue}",
-                    style: const TextStyle(color: Colors.red, decoration: TextDecoration.lineThrough),
+                    style: const TextStyle(
+                      color: Colors.red,
+                      decoration: TextDecoration.lineThrough,
+                    ),
                   ),
                   const TextSpan(
                     text: "  ➔  ",

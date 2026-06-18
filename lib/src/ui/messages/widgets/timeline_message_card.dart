@@ -39,15 +39,20 @@ class TimelineMessageCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (extractedValues != null && extractedValues!.isNotEmpty) _buildExtractedValues(context),
+              if (extractedValues != null && extractedValues!.isNotEmpty)
+                _buildExtractedValues(context),
               if (message.key != null) ...[
                 _buildKey(context),
-                if (customContent != null || showPayloadPreview) const SizedBox(height: 8),
+                if (customContent != null || showPayloadPreview)
+                  const SizedBox(height: 8),
               ],
               if (customContent != null)
                 customContent!
               else if (showPayloadPreview)
-                if (message.payload == null) const TombstoneWidget() else _buildPayloadPreview(context),
+                if (message.payload == null)
+                  const TombstoneWidget()
+                else
+                  _buildPayloadPreview(context),
             ],
           ),
         ),
@@ -60,7 +65,11 @@ class TimelineMessageCard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.vpn_key, size: 16, color: Theme.of(context).colorScheme.primary),
+        Icon(
+          Icons.vpn_key,
+          size: 16,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         const SizedBox(width: 8),
         Flexible(
           child: RichText(
@@ -79,7 +88,9 @@ class TimelineMessageCard extends StatelessWidget {
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 TextStyle(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
                 ),
               ),
@@ -107,7 +118,10 @@ class TimelineMessageCard extends StatelessWidget {
               ),
               child: RichText(
                 text: TextSpan(
-                  style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onTertiaryContainer),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onTertiaryContainer,
+                  ),
                   children: [
                     TextSpan(
                       text: "${e.key}: ",
@@ -132,11 +146,15 @@ class TimelineMessageCard extends StatelessWidget {
       maxLines: 3,
       overflow: TextOverflow.ellipsis,
       text: TextSpan(
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
         children: HighlightTextUtils.buildHighlightedSpans(
           payloadPreview,
           searchPhrase ?? "",
-          Theme.of(context).textTheme.bodyMedium!.copyWith(fontFamily: 'monospace'),
+          Theme.of(
+            context,
+          ).textTheme.bodyMedium!.copyWith(fontFamily: 'monospace'),
           TextStyle(
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             color: Theme.of(context).colorScheme.onPrimaryContainer,

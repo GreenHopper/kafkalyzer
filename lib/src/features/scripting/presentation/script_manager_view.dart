@@ -18,7 +18,8 @@ class ScriptManagerView extends StatefulWidget {
   State<ScriptManagerView> createState() => _ScriptManagerViewState();
 }
 
-class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProviderStateMixin {
+class _ScriptManagerViewState extends State<ScriptManagerView>
+    with TickerProviderStateMixin {
   Script? _selectedScript;
   late TabController _tabController;
   Map<String, String>? _rerunParams;
@@ -101,11 +102,17 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
     );
   }
 
-  Widget _buildSidebar(BuildContext context, AppLocalizations l10n, ScriptController controller) {
+  Widget _buildSidebar(
+    BuildContext context,
+    AppLocalizations l10n,
+    ScriptController controller,
+  ) {
     return Container(
       width: 300,
       decoration: BoxDecoration(
-        border: Border(right: BorderSide(color: Theme.of(context).dividerColor)),
+        border: Border(
+          right: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Column(
         children: [
@@ -150,7 +157,11 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
     );
   }
 
-  Widget _buildSidebarHeader(BuildContext context, AppLocalizations l10n, ScriptController controller) {
+  Widget _buildSidebarHeader(
+    BuildContext context,
+    AppLocalizations l10n,
+    ScriptController controller,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -163,7 +174,11 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
     );
   }
 
-  Widget _buildHeaderActions(BuildContext context, AppLocalizations l10n, ScriptController controller) {
+  Widget _buildHeaderActions(
+    BuildContext context,
+    AppLocalizations l10n,
+    ScriptController controller,
+  ) {
     return Row(
       children: [
         // Import Button
@@ -176,7 +191,9 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
         IconButton(
           tooltip: l10n.exportSelectedScript,
           icon: const Icon(Icons.file_download),
-          onPressed: _selectedScript == null ? null : () => _exportScript(context, l10n, controller),
+          onPressed: _selectedScript == null
+              ? null
+              : () => _exportScript(context, l10n, controller),
         ),
         const SizedBox(width: 8),
         IconButton(
@@ -192,7 +209,11 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
     );
   }
 
-  Future<void> _importScripts(BuildContext context, AppLocalizations l10n, ScriptController controller) async {
+  Future<void> _importScripts(
+    BuildContext context,
+    AppLocalizations l10n,
+    ScriptController controller,
+  ) async {
     try {
       FilePickerResult? result = await FilePicker.pickFiles(
         type: FileType.custom,
@@ -204,17 +225,25 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
         final jsonString = await file.readAsString();
         await controller.importScripts(jsonString);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.scriptsImportedSuccessfully)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.scriptsImportedSuccessfully)),
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.failedToImport(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToImport(e.toString()))),
+        );
       }
     }
   }
 
-  Future<void> _exportScript(BuildContext context, AppLocalizations l10n, ScriptController controller) async {
+  Future<void> _exportScript(
+    BuildContext context,
+    AppLocalizations l10n,
+    ScriptController controller,
+  ) async {
     try {
       final jsonString = controller.exportScript(_selectedScript!);
       String? outputFile = await FilePicker.saveFile(
@@ -228,12 +257,16 @@ class _ScriptManagerViewState extends State<ScriptManagerView> with TickerProvid
         final file = File(outputFile);
         await file.writeAsString(jsonString);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.scriptExportedSuccessfully)));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.scriptExportedSuccessfully)),
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.failedToExport(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToExport(e.toString()))),
+        );
       }
     }
   }

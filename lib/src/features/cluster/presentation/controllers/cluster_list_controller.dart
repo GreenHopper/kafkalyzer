@@ -101,7 +101,9 @@ class ClusterListController extends ChangeNotifier {
 
         final newClusters = List<ClusterProfile>.from(_clusters);
         for (var imported in importedClusters) {
-          final existingIndex = newClusters.indexWhere((c) => c.name == imported.name);
+          final existingIndex = newClusters.indexWhere(
+            (c) => c.name == imported.name,
+          );
           if (existingIndex != -1) {
             newClusters[existingIndex] = imported;
           } else {
@@ -125,11 +127,15 @@ class ClusterListController extends ChangeNotifier {
     // ... existing implementation ...
     try {
       final List<dynamic> jsonList = jsonDecode(jsonString);
-      final List<ClusterProfile> importedClusters = jsonList.map((e) => ClusterProfileExtension.fromJson(e)).toList();
+      final List<ClusterProfile> importedClusters = jsonList
+          .map((e) => ClusterProfileExtension.fromJson(e))
+          .toList();
 
       final newClusters = List<ClusterProfile>.from(_clusters);
       for (var imported in importedClusters) {
-        final existingIndex = newClusters.indexWhere((c) => c.name == imported.name);
+        final existingIndex = newClusters.indexWhere(
+          (c) => c.name == imported.name,
+        );
         if (existingIndex != -1) {
           newClusters[existingIndex] = imported;
         } else {
@@ -145,7 +151,9 @@ class ClusterListController extends ChangeNotifier {
     }
   }
 
-  Future<List<int>> exportClustersZip(List<ClusterProfile> clustersToExport) async {
+  Future<List<int>> exportClustersZip(
+    List<ClusterProfile> clustersToExport,
+  ) async {
     final archive = Archive();
 
     // Create a modified list of clusters for the JSON where paths are relative filenames

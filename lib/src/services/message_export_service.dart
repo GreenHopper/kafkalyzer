@@ -31,7 +31,7 @@ class MessageExportService {
         // Single topic export (JSON)
         final topic = messagesByTopic.keys.first;
         final jsonContent = _serializeMessages(messagesByTopic[topic]!);
-        
+
         final fileName = '${topic}_$timestampStr.json';
         final outputFile = await FilePicker.saveFile(
           dialogTitle: 'Export Messages',
@@ -48,14 +48,14 @@ class MessageExportService {
       } else {
         // Multi-topic export (ZIP)
         final archive = Archive();
-        
+
         for (final entry in messagesByTopic.entries) {
           final topic = entry.key;
           final topicMessages = entry.value;
-          
+
           final jsonContent = _serializeMessages(topicMessages);
           final bytes = utf8.encode(jsonContent);
-          
+
           final archiveFile = ArchiveFile('$topic.json', bytes.length, bytes);
           archive.addFile(archiveFile);
         }
@@ -84,14 +84,18 @@ class MessageExportService {
   }
 
   String _serializeMessages(List<KafkaMessage> messages) {
-    final list = messages.map((msg) => {
-      'topic': msg.topic,
-      'partition': msg.partition,
-      'offset': msg.offset.toString(),
-      'timestamp': msg.timestamp.toString(),
-      'key': msg.key,
-      'payload': msg.payload != null ? _tryParseJson(msg.payload!) : null,
-    }).toList();
+    final list = messages
+        .map(
+          (msg) => {
+            'topic': msg.topic,
+            'partition': msg.partition,
+            'offset': msg.offset.toString(),
+            'timestamp': msg.timestamp.toString(),
+            'key': msg.key,
+            'payload': msg.payload != null ? _tryParseJson(msg.payload!) : null,
+          },
+        )
+        .toList();
 
     return const JsonEncoder.withIndent('  ').convert(list);
   }

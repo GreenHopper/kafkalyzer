@@ -8,12 +8,23 @@ void main() {
     const topic = 'test-topic';
 
     KafkaMessage createMessage({required String key, required String payload}) {
-      return KafkaMessage(topic: topic, partition: 0, offset: 0, timestamp: 0, key: key, payload: payload);
+      return KafkaMessage(
+        topic: topic,
+        partition: 0,
+        offset: 0,
+        timestamp: 0,
+        key: key,
+        payload: payload,
+      );
     }
 
     test('extracts null if topic does not match', () {
       final msg = createMessage(key: 'key', payload: 'payload');
-      final extraction = ScriptExtraction(jsonPath: '', variableName: 'var', topic: 'other-topic');
+      final extraction = ScriptExtraction(
+        jsonPath: '',
+        variableName: 'var',
+        topic: 'other-topic',
+      );
 
       final result = ExtractionUtils.extract(extraction, msg);
       expect(result, isNull);
@@ -29,23 +40,39 @@ void main() {
 
     test('extracts full key when source is key and jsonPath is empty', () {
       final msg = createMessage(key: 'my-key', payload: 'payload');
-      final extraction = ScriptExtraction(jsonPath: '', variableName: 'var', source: ScriptExtractionSource.key);
+      final extraction = ScriptExtraction(
+        jsonPath: '',
+        variableName: 'var',
+        source: ScriptExtractionSource.key,
+      );
 
       final result = ExtractionUtils.extract(extraction, msg);
       expect(result, 'my-key');
     });
 
     test('extracts simple value from payload JSON', () {
-      final msg = createMessage(key: 'key', payload: '{"id": 123, "name": "foo"}');
-      final extraction = ScriptExtraction(jsonPath: 'name', variableName: 'var');
+      final msg = createMessage(
+        key: 'key',
+        payload: '{"id": 123, "name": "foo"}',
+      );
+      final extraction = ScriptExtraction(
+        jsonPath: 'name',
+        variableName: 'var',
+      );
 
       final result = ExtractionUtils.extract(extraction, msg);
       expect(result, 'foo');
     });
 
     test('extracts nested value from payload JSON', () {
-      final msg = createMessage(key: 'key', payload: '{"user": {"address": {"city": "Berlin"}}}');
-      final extraction = ScriptExtraction(jsonPath: 'user.address.city', variableName: 'var');
+      final msg = createMessage(
+        key: 'key',
+        payload: '{"user": {"address": {"city": "Berlin"}}}',
+      );
+      final extraction = ScriptExtraction(
+        jsonPath: 'user.address.city',
+        variableName: 'var',
+      );
 
       final result = ExtractionUtils.extract(extraction, msg);
       expect(result, 'Berlin');
@@ -69,7 +96,11 @@ void main() {
 
     test('extracts value from key JSON', () {
       final msg = createMessage(key: '{"id": 999}', payload: 'payload');
-      final extraction = ScriptExtraction(jsonPath: 'id', variableName: 'var', source: ScriptExtractionSource.key);
+      final extraction = ScriptExtraction(
+        jsonPath: 'id',
+        variableName: 'var',
+        source: ScriptExtractionSource.key,
+      );
 
       final result = ExtractionUtils.extract(extraction, msg);
       expect(result, '999');
@@ -77,7 +108,10 @@ void main() {
 
     test('extracts integer value as string', () {
       final msg = createMessage(key: 'key', payload: '{"count": 42}');
-      final extraction = ScriptExtraction(jsonPath: 'count', variableName: 'var');
+      final extraction = ScriptExtraction(
+        jsonPath: 'count',
+        variableName: 'var',
+      );
 
       final result = ExtractionUtils.extract(extraction, msg);
       expect(result, '42');

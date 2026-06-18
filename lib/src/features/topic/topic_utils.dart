@@ -1,10 +1,15 @@
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
-bool hasSchema(SchemaController controller, ClusterProfile cluster, String topicName) {
+bool hasSchema(
+  SchemaController controller,
+  ClusterProfile cluster,
+  String topicName,
+) {
   final schemas = controller.getSchemas(cluster);
   if (schemas == null) return false;
-  return schemas.contains("$topicName-key") || schemas.contains("$topicName-value");
+  return schemas.contains("$topicName-key") ||
+      schemas.contains("$topicName-value");
 }
 
 String splitPolicy(String policy) {

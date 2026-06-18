@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/active_streams_list.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/search_results_view.dart';
@@ -31,7 +30,11 @@ class _MultiSearchViewState extends State<MultiSearchView> {
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             border: Border(
-              right: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+              right: BorderSide(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
             ),
           ),
           child: Column(
@@ -39,31 +42,12 @@ class _MultiSearchViewState extends State<MultiSearchView> {
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       l10n.multiStreamConfig,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    ListenableBuilder(
-                      listenable: searchController,
-                      builder: (context, _) {
-                        return IconButton(
-                          icon: Icon(
-                            Icons.folder_open,
-                            color: searchController.outputDirectory != null
-                                ? Theme.of(context).colorScheme.primary
-                                : null,
-                          ),
-                          tooltip: searchController.outputDirectory ?? l10n.selectOutputDirectory,
-                          onPressed: () async {
-                            String? selectedDirectory = await FilePicker.getDirectoryPath();
-                            if (selectedDirectory != null) {
-                              searchController.setDirectory(selectedDirectory);
-                            }
-                          },
-                        );
-                      },
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -79,13 +63,18 @@ class _MultiSearchViewState extends State<MultiSearchView> {
                         for (final target in targets) {
                           searchController.addTarget(target);
                         }
-                        setState(() => _selectedViewTargets = targets.length == 1 ? [targets.first] : null);
+                        setState(
+                          () => _selectedViewTargets = targets.length == 1
+                              ? [targets.first]
+                              : null,
+                        );
                       },
                     ),
                     const SizedBox(height: 24),
                     ActiveStreamsList(
                       selectedTargets: _selectedViewTargets,
-                      onSelectTargets: (targets) => setState(() => _selectedViewTargets = targets),
+                      onSelectTargets: (targets) =>
+                          setState(() => _selectedViewTargets = targets),
                     ),
                   ],
                 ),

@@ -97,8 +97,14 @@ class SearchDiscoverySidebar extends StatelessWidget {
     }
     return DropdownButtonFormField<String>(
       initialValue: selectedCluster,
-      decoration: InputDecoration(labelText: l10n.cluster, border: const OutlineInputBorder(), isDense: true),
-      items: clusters.map((c) => DropdownMenuItem<String>(value: c, child: Text(c))).toList(),
+      decoration: InputDecoration(
+        labelText: l10n.cluster,
+        border: const OutlineInputBorder(),
+        isDense: true,
+      ),
+      items: clusters
+          .map((c) => DropdownMenuItem<String>(value: c, child: Text(c)))
+          .toList(),
       onChanged: onClusterChanged,
     );
   }
@@ -106,8 +112,12 @@ class SearchDiscoverySidebar extends StatelessWidget {
   Widget _buildScriptSelector(AppLocalizations l10n) {
     return ScriptSelector(
       selectedScriptName: selectedScriptName,
-      errorText: isScriptMissing ? l10n.scriptNotFound(selectedScriptName) : null,
-      filter: idFilterActive ? (script) => script.variables.any((v) => v.name == 'id') : null,
+      errorText: isScriptMissing
+          ? l10n.scriptNotFound(selectedScriptName)
+          : null,
+      filter: idFilterActive
+          ? (script) => script.variables.any((v) => v.name == 'id')
+          : null,
       onSelected: onScriptSelected,
     );
   }
@@ -127,7 +137,10 @@ class SearchDiscoverySidebar extends StatelessWidget {
   Widget _buildLimitToggle(AppLocalizations l10n) {
     return Row(
       children: [
-        Checkbox(value: limitEnabled, onChanged: (v) => onLimitEnabledChanged(v ?? true)),
+        Checkbox(
+          value: limitEnabled,
+          onChanged: (v) => onLimitEnabledChanged(v ?? true),
+        ),
         Expanded(child: Text(l10n.limitResults)),
       ],
     );
@@ -137,7 +150,11 @@ class SearchDiscoverySidebar extends StatelessWidget {
     return TextFormField(
       initialValue: maxResults.toString(),
       enabled: limitEnabled,
-      decoration: InputDecoration(labelText: l10n.maxResults, border: const OutlineInputBorder(), isDense: true),
+      decoration: InputDecoration(
+        labelText: l10n.maxResults,
+        border: const OutlineInputBorder(),
+        isDense: true,
+      ),
       keyboardType: TextInputType.number,
       onChanged: (value) {
         final val = int.tryParse(value);
@@ -171,14 +188,25 @@ class SearchDiscoverySidebar extends StatelessWidget {
       return FilledButton.icon(
         onPressed: onCancel,
         icon: const Icon(Icons.stop),
-        label: Text(l10n.cancel), // Using default cancel translation, or we could add stop
-        style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+        label: Text(
+          l10n.cancel,
+        ), // Using default cancel translation, or we could add stop
+        style: FilledButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
     return FilledButton.icon(
       onPressed: isLoading ? null : onLoad,
       icon: isLoading
-          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
           : const Icon(Icons.refresh),
       label: Text(l10n.load),
     );

@@ -7,7 +7,12 @@ class TopicSelectionTopicNode {
   final int examined;
   final bool isGlobal;
 
-  const TopicSelectionTopicNode({required this.topic, required this.count, this.examined = 0, this.isGlobal = false});
+  const TopicSelectionTopicNode({
+    required this.topic,
+    required this.count,
+    this.examined = 0,
+    this.isGlobal = false,
+  });
 }
 
 class TopicSelectionStepNode {
@@ -60,7 +65,10 @@ class TopicSelectionTree extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0, left: 8.0, right: 8.0),
       child: ListTile(
-        leading: Icon(Icons.dashboard, color: isSelected ? Theme.of(context).colorScheme.primary : null),
+        leading: Icon(
+          Icons.dashboard,
+          color: isSelected ? Theme.of(context).colorScheme.primary : null,
+        ),
         title: Text(
           AppLocalizations.of(context)?.allMessages ?? "All Messages",
           style: TextStyle(
@@ -69,7 +77,9 @@ class TopicSelectionTree extends StatelessWidget {
           ),
         ),
         selected: isSelected,
-        selectedTileColor: Theme.of(context).colorScheme.primaryContainer.withAlpha(50),
+        selectedTileColor: Theme.of(
+          context,
+        ).colorScheme.primaryContainer.withAlpha(50),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         onTap: onClearSelection,
       ),
@@ -99,7 +109,9 @@ class TopicSelectionTree extends StatelessWidget {
     }
 
     final l10n = AppLocalizations.of(context);
-    final subtitleText = l10n != null ? l10n.stepMatches(step.totalMatches) : "${step.totalMatches} matches";
+    final subtitleText = l10n != null
+        ? l10n.stepMatches(step.totalMatches)
+        : "${step.totalMatches} matches";
 
     return ExpansionTile(
       key: ValueKey(step.id),
@@ -110,10 +122,15 @@ class TopicSelectionTree extends StatelessWidget {
         icon: Icon(icon, size: 22, color: iconColor),
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints(),
-        style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+        style: IconButton.styleFrom(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
         onPressed: () => onStepToggle(step.id, !isAllSelected),
       ),
-      title: Text(step.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+      title: Text(
+        step.name,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+      ),
       subtitle: Text(subtitleText, style: const TextStyle(fontSize: 12)),
       children: step.topics.map((topicNode) {
         return _buildTopicTile(context, step.id, topicNode);
@@ -121,7 +138,11 @@ class TopicSelectionTree extends StatelessWidget {
     );
   }
 
-  Widget _buildTopicTile(BuildContext context, String stepId, TopicSelectionTopicNode node) {
+  Widget _buildTopicTile(
+    BuildContext context,
+    String stepId,
+    TopicSelectionTopicNode node,
+  ) {
     final isSelected = selectedTopics[stepId]?.contains(node.topic) ?? false;
     final title = node.isGlobal ? "${node.topic} (Global)" : node.topic;
     final l10n = AppLocalizations.of(context);
@@ -139,14 +160,23 @@ class TopicSelectionTree extends StatelessWidget {
             : const Icon(Icons.circle_outlined, size: 20, color: Colors.grey),
         title: Text(
           title,
-          style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
         subtitle: node.examined > 0
             ? Text(
-                l10n != null ? l10n.scanned(node.examined) : "${node.examined} scanned",
+                l10n != null
+                    ? l10n.scanned(node.examined)
+                    : "${node.examined} scanned",
                 style: TextStyle(
                   fontSize: 11,
-                  color: isSelected ? Theme.of(context).colorScheme.onPrimaryContainer.withAlpha(200) : null,
+                  color: isSelected
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer.withAlpha(200)
+                      : null,
                 ),
               )
             : null,
@@ -164,7 +194,9 @@ class TopicSelectionTree extends StatelessWidget {
             "${node.count}",
             style: TextStyle(
               color: node.count > 0
-                  ? (isSelected ? Theme.of(context).colorScheme.onPrimaryContainer : Theme.of(context).primaryColor)
+                  ? (isSelected
+                        ? Theme.of(context).colorScheme.onPrimaryContainer
+                        : Theme.of(context).primaryColor)
                   : Colors.grey,
               fontWeight: node.count > 0 ? FontWeight.bold : FontWeight.normal,
               fontSize: 11,

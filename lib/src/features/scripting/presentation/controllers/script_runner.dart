@@ -26,7 +26,8 @@ class ScriptRunner extends ChangeNotifier {
   final MultiSearchController _multiSearchController;
 
   ScriptRunner({MultiSearchController? multiSearchController})
-    : _multiSearchController = multiSearchController ?? getIt<MultiSearchController>();
+    : _multiSearchController =
+          multiSearchController ?? getIt<MultiSearchController>();
 
   /// Executes the given [script] with the provided [variableValues].
   ///
@@ -41,7 +42,8 @@ class ScriptRunner extends ChangeNotifier {
   /// 3. **Decoupling**: This runner is UI-agnostic. It relies on [MultiSearchController] for Kafka interactions.
   ///    It does not depend on BuildContext or specific UI widgets.
   MultiSearchController get multiSearchController => _multiSearchController;
-  final ClusterListController _clusterController = getIt<ClusterListController>();
+  final ClusterListController _clusterController =
+      getIt<ClusterListController>();
   final TopicController _topicController = getIt<TopicController>();
 
   Map<String, String> _variableValues = {};
@@ -50,7 +52,8 @@ class ScriptRunner extends ChangeNotifier {
   Map<String, StepStatus> get stepStatuses => Map.unmodifiable(_stepStatuses);
 
   final Map<String, String> _stepErrorMessages = {};
-  Map<String, String> get stepErrorMessages => Map.unmodifiable(_stepErrorMessages);
+  Map<String, String> get stepErrorMessages =>
+      Map.unmodifiable(_stepErrorMessages);
 
   final Map<String, StepStatus> _topicStatuses = {}; // Key: "stepId_topicName"
   Map<String, StepStatus> get topicStatuses => Map.unmodifiable(_topicStatuses);
@@ -59,7 +62,8 @@ class ScriptRunner extends ChangeNotifier {
 
   int get totalTopics => _topicStatuses.length;
 
-  int get completedTopics => _topicStatuses.values.where((s) => s == StepStatus.completed).length;
+  int get completedTopics =>
+      _topicStatuses.values.where((s) => s == StepStatus.completed).length;
 
   List<(String topic, SearchProgress? progress)> get activeSearches {
     final active = <(String, SearchProgress?)>[];
@@ -77,7 +81,8 @@ class ScriptRunner extends ChangeNotifier {
   }
 
   // Deprecated: use activeSearches instead
-  List<String> get activeTopics => activeSearches.map((e) => e.$1).toSet().toList();
+  List<String> get activeTopics =>
+      activeSearches.map((e) => e.$1).toSet().toList();
 
   SearchProgress? getProgress(String stepId, String topic) {
     final key = "${stepId}_$topic";
@@ -101,7 +106,10 @@ class ScriptRunner extends ChangeNotifier {
 
   // Resolve dependencies
   ClusterProfile? _resolveCluster(String name) {
-    return _clusterController.clusters.cast<ClusterProfile?>().firstWhere((c) => c?.name == name, orElse: () => null);
+    return _clusterController.clusters.cast<ClusterProfile?>().firstWhere(
+      (c) => c?.name == name,
+      orElse: () => null,
+    );
   }
 
   // Helper to replace template variables
@@ -185,7 +193,15 @@ class ScriptRunner extends ChangeNotifier {
     ScriptRun? currentRun;
 
     try {
-      final baseDir = script.outputDirectory ?? previousDir;
+      String? baseDir = script.outputDirectory;
+      if (baseDir == null) {
+        final globalDir = previousDir;
+        if (globalDir != null) {
+          final safeName = script.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+          baseDir = "$globalDir/$safeName";
+        }
+      }
+
       if (baseDir != null) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final runId = "${script.name}_$timestamp";
@@ -209,7 +225,9 @@ class ScriptRunner extends ChangeNotifier {
           startTime: timestamp,
         );
         _currentRun = currentRun;
-        await File("$runDir/run_manifest.json").writeAsString(jsonEncode(currentRun.toJson()));
+        await File(
+          "$runDir/run_manifest.json",
+        ).writeAsString(jsonEncode(currentRun.toJson()));
       }
     } catch (e) {
       _logger.e("Failed to setup run directory", error: e);
@@ -238,9 +256,12 @@ class ScriptRunner extends ChangeNotifier {
       final activeFutures = <String, Future<void>>{};
 
       // Main execution loop
-      while ((workQueue.isNotEmpty || activeFutures.isNotEmpty) && !_isCancelled) {
+      while ((workQueue.isNotEmpty || activeFutures.isNotEmpty) &&
+          !_isCancelled) {
         // Fill active slots
-        while (activeFutures.length < script.concurrencyLimit && workQueue.isNotEmpty && !_isCancelled) {
+        while (activeFutures.length < script.concurrencyLimit &&
+            workQueue.isNotEmpty &&
+            !_isCancelled) {
           // Find first runnable item (dependencies met)
           int? runnableIndex;
           for (int i = 0; i < workQueue.length; i++) {
@@ -263,37 +284,48 @@ class ScriptRunner extends ChangeNotifier {
           final topicName = item.value;
           final key = "${step.id}_$topicName";
 
-          _logger.i("Starting execution for Step '${step.name}' on topic '$topicName' (key: $key)");
+          _logger.i(
+            "Starting execution for Step '${step.name}' on topic '$topicName' (key: $key)",
+          );
           _stepStatuses[step.id] = StepStatus.running;
           _topicStatuses[key] = StepStatus.running;
           notifyListeners();
 
-          final future = _runSearchForTopic(step, overrideCluster ?? _resolveCluster(step.clusterName), topicName)
-              .then((_) {
-                _logger.i("Execution completed for Step '${step.name}' on topic '$topicName' (key: $key)");
-                final target = _activeTargets[key];
-                if (target != null) {
-                  totalFound += _multiSearchController.getMessagesFor(target).length;
-                  final prog = _multiSearchController.progress[target];
-                  if (prog != null) {
-                    topicExamined[key] = prog.scanned;
-                    totalExamined += prog.scanned;
-                  }
-                }
-                _topicStatuses[key] = StepStatus.completed;
-                notifyListeners();
-              })
-              .catchError((e) {
-                _logger.e("Topic $topicName failed", error: e);
-                _topicStatuses[key] = StepStatus.error;
-                _stepErrorMessages[step.id] = e.toString();
-                notifyListeners();
-              })
-              .whenComplete(() {
-                activeFutures.remove(key);
-                _updateStepStatus(step);
-                notifyListeners();
-              });
+          final future =
+              _runSearchForTopic(
+                    step,
+                    overrideCluster ?? _resolveCluster(step.clusterName),
+                    topicName,
+                  )
+                  .then((_) {
+                    _logger.i(
+                      "Execution completed for Step '${step.name}' on topic '$topicName' (key: $key)",
+                    );
+                    final target = _activeTargets[key];
+                    if (target != null) {
+                      totalFound += _multiSearchController
+                          .getMessagesFor(target)
+                          .length;
+                      final prog = _multiSearchController.progress[target];
+                      if (prog != null) {
+                        topicExamined[key] = prog.scanned;
+                        totalExamined += prog.scanned;
+                      }
+                    }
+                    _topicStatuses[key] = StepStatus.completed;
+                    notifyListeners();
+                  })
+                  .catchError((e) {
+                    _logger.e("Topic $topicName failed", error: e);
+                    _topicStatuses[key] = StepStatus.error;
+                    _stepErrorMessages[step.id] = e.toString();
+                    notifyListeners();
+                  })
+                  .whenComplete(() {
+                    activeFutures.remove(key);
+                    _updateStepStatus(step);
+                    notifyListeners();
+                  });
 
           activeFutures[key] = future;
         }
@@ -306,7 +338,9 @@ class ScriptRunner extends ChangeNotifier {
           // activeFutures is empty, but workQueue is not empty.
           // This means we have items in queue but they are blocked by missing dependencies.
           // Since no tasks are running, these dependencies will never be met.
-          _logger.w("Script execution stalled: dependencies not met for remaining steps.");
+          _logger.w(
+            "Script execution stalled: dependencies not met for remaining steps.",
+          );
 
           for (final item in workQueue) {
             final step = item.key;
@@ -314,7 +348,9 @@ class ScriptRunner extends ChangeNotifier {
             final key = "${step.id}_$topicName";
 
             final required = _getRequiredVariables(step);
-            final missing = required.where((v) => !_variableValues.containsKey(v)).toList();
+            final missing = required
+                .where((v) => !_variableValues.containsKey(v))
+                .toList();
 
             final errorMsg = "Missing variables: ${missing.join(', ')}";
             _stepErrorMessages[step.id] = errorMsg;
@@ -340,7 +376,9 @@ class ScriptRunner extends ChangeNotifier {
       }
       if (currentRun != null && runDir != null) {
         // Update manifest
-        final status = _isCancelled ? ScriptRunStatus.cancelled : ScriptRunStatus.completed; // Simplified
+        final status = _isCancelled
+            ? ScriptRunStatus.cancelled
+            : ScriptRunStatus.completed; // Simplified
         // A more accurate status would check if any errors occurred
         final hasError = _stepStatuses.values.any((s) => s == StepStatus.error);
         final finalStatus = hasError ? ScriptRunStatus.error : status;
@@ -361,7 +399,9 @@ class ScriptRunner extends ChangeNotifier {
           startTime: currentRun.startTime,
           endTime: DateTime.now().millisecondsSinceEpoch,
         );
-        await File("$runDir/run_manifest.json").writeAsString(jsonEncode(updatedRun.toJson()));
+        await File(
+          "$runDir/run_manifest.json",
+        ).writeAsString(jsonEncode(updatedRun.toJson()));
         currentRun = updatedRun;
         _currentRun = currentRun;
       }
@@ -386,7 +426,9 @@ class ScriptRunner extends ChangeNotifier {
             startTime: currentRun.startTime,
             endTime: DateTime.now().millisecondsSinceEpoch,
           );
-          await File("$runDir/run_manifest.json").writeAsString(jsonEncode(updatedRun.toJson()));
+          await File(
+            "$runDir/run_manifest.json",
+          ).writeAsString(jsonEncode(updatedRun.toJson()));
           currentRun = updatedRun;
           _currentRun = currentRun;
         } catch (_) {}
@@ -404,36 +446,58 @@ class ScriptRunner extends ChangeNotifier {
   }
 
   Future<List<ScriptRun>> getPastRuns(Script script) async {
-    final baseDir = script.outputDirectory ?? _multiSearchController.outputDirectory;
-    if (baseDir == null) return [];
+    final dirsToCheck = <String>[];
 
-    final dir = Directory(baseDir);
-    if (!dir.existsSync()) return [];
+    if (script.outputDirectory != null) {
+      dirsToCheck.add(script.outputDirectory!);
+    } else {
+      final globalDir = _multiSearchController.outputDirectory;
+      if (globalDir != null) {
+        final safeName = script.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+        dirsToCheck.add("$globalDir/$safeName");
+        dirsToCheck.add(globalDir); // Backwards compatibility
+      }
+    }
 
     final runs = <ScriptRun>[];
-    try {
-      await for (var entity in dir.list()) {
-        if (entity is Directory) {
-          final manifestFile = File("${entity.path}/run_manifest.json");
-          if (await manifestFile.exists()) {
-            try {
-              final json = jsonDecode(await manifestFile.readAsString());
-              // Override path with actual current location
-              final run = ScriptRun.fromJson(json).copyWith(path: entity.path);
-              runs.add(run);
-            } catch (e) {
-              _logger.w("Failed to parse run manifest at ${entity.path}", error: e);
+    for (final dirPath in dirsToCheck.toSet()) {
+      final dir = Directory(dirPath);
+      if (!dir.existsSync()) continue;
+
+      try {
+        await for (var entity in dir.list()) {
+          if (entity is Directory) {
+            final manifestFile = File("${entity.path}/run_manifest.json");
+            if (await manifestFile.exists()) {
+              try {
+                final json = jsonDecode(await manifestFile.readAsString());
+                // Override path with actual current location
+                final run = ScriptRun.fromJson(
+                  json,
+                ).copyWith(path: entity.path);
+                // Deduplicate by ID across directories
+                if (!runs.any((r) => r.id == run.id)) {
+                  runs.add(run);
+                }
+              } catch (e) {
+                _logger.w(
+                  "Failed to parse run manifest at ${entity.path}",
+                  error: e,
+                );
+              }
             }
           }
         }
+      } catch (e) {
+        _logger.e("Error scanning past runs in $dirPath", error: e);
       }
-    } catch (e) {
-      _logger.e("Error scanning past runs", error: e);
     }
 
     // Filter by script name to ensure we don't show runs from other scripts
     // that might share the same output directory.
-    final filteredRuns = runs.where((r) => r.scriptName == script.name).toList();
+    final filteredRuns = runs
+        .where((r) => r.scriptName == script.name)
+        .toList();
 
     // Sort by timestamp desc
     filteredRuns.sort((a, b) => b.timestamp.compareTo(a.timestamp));
@@ -441,7 +505,9 @@ class ScriptRunner extends ChangeNotifier {
   }
 
   void _updateStepStatus(ScriptStep step) {
-    final statuses = step.topicNames.map((t) => _topicStatuses["${step.id}_$t"]).toList();
+    final statuses = step.topicNames
+        .map((t) => _topicStatuses["${step.id}_$t"])
+        .toList();
     if (statuses.any((s) => s == StepStatus.running)) {
       _stepStatuses[step.id] = StepStatus.running;
     } else if (statuses.any((s) => s == StepStatus.error)) {
@@ -551,7 +617,11 @@ class ScriptRunner extends ChangeNotifier {
   }
 
   @visibleForTesting
-  static int compareScriptResultMessages(ScriptResultMessage a, ScriptResultMessage b, Map<String, int> stepOrder) {
+  static int compareScriptResultMessages(
+    ScriptResultMessage a,
+    ScriptResultMessage b,
+    Map<String, int> stepOrder,
+  ) {
     int cmp = a.timestamp.compareTo(b.timestamp); // Timestamp ASC
     if (cmp != 0) return cmp;
 
@@ -589,7 +659,9 @@ class ScriptRunner extends ChangeNotifier {
       final files = sourceDir.listSync(recursive: true);
       for (final file in files) {
         if (file is File) {
-          final fileName = file.path.substring(sourceDir.path.length + 1); // Relative path
+          final fileName = file.path.substring(
+            sourceDir.path.length + 1,
+          ); // Relative path
           final data = file.readAsBytesSync();
           archive.addFile(ArchiveFile(fileName, data.length, data));
         }
@@ -641,18 +713,18 @@ class ScriptRunner extends ChangeNotifier {
 
       if (baseDir == null) {
         // Fallback: Check global default settings
-        final prefs = await SharedPreferences.getInstance();
-        final defaultGlobal = prefs.getString('general_default_output_dir');
+        final defaultGlobal =
+            _multiSearchController.outputDirectory ??
+            (await SharedPreferences.getInstance()).getString(
+              'general_default_output_dir',
+            ) ??
+            (await getApplicationDocumentsDirectory()).path;
 
-        if (defaultGlobal != null && Directory(defaultGlobal).existsSync()) {
-          // Use defaultGlobal/scriptName
-          final safeName = script.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-          baseDir = "$defaultGlobal/$safeName";
-          if (!Directory(baseDir).existsSync()) {
-            Directory(baseDir).createSync(recursive: true);
-          }
-        } else {
-          baseDir = _multiSearchController.outputDirectory ?? (await getApplicationDocumentsDirectory()).path;
+        // Use defaultGlobal/scriptName
+        final safeName = script.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+        baseDir = "$defaultGlobal/$safeName";
+        if (!Directory(baseDir).existsSync()) {
+          Directory(baseDir).createSync(recursive: true);
         }
       }
 
@@ -671,7 +743,9 @@ class ScriptRunner extends ChangeNotifier {
       // Use zip filename without extension as fallback ID
       if (runId == null) {
         final filename = archivePath.split(Platform.pathSeparator).last;
-        runId = filename.endsWith('.zip') ? filename.substring(0, filename.length - 4) : filename;
+        runId = filename.endsWith('.zip')
+            ? filename.substring(0, filename.length - 4)
+            : filename;
       }
 
       final targetDir = Directory('$baseDir/$runId');
@@ -694,16 +768,26 @@ class ScriptRunner extends ChangeNotifier {
     }
   }
 
-  Future<void> _runSearchForTopic(ScriptStep step, ClusterProfile? cluster, String topicName) async {
+  Future<void> _runSearchForTopic(
+    ScriptStep step,
+    ClusterProfile? cluster,
+    String topicName,
+  ) async {
     if (cluster == null) {
-      throw Exception("Cluster '${step.clusterName}' not found or not connected");
+      throw Exception(
+        "Cluster '${step.clusterName}' not found or not connected",
+      );
     }
 
     final topic = _topicController
         .getTopics(cluster)
         ?.firstWhere(
           (t) => t.name == topicName,
-          orElse: () => TopicMetadata(name: topicName, partitionCount: 0, replicationFactor: 1),
+          orElse: () => TopicMetadata(
+            name: topicName,
+            partitionCount: 0,
+            replicationFactor: 1,
+          ),
         );
 
     final startConfig = _resolveStartStrategy(step);
@@ -712,7 +796,13 @@ class ScriptRunner extends ChangeNotifier {
 
     final target = SearchTarget(
       profile: cluster,
-      topic: topic ?? TopicMetadata(name: topicName, partitionCount: 0, replicationFactor: 1),
+      topic:
+          topic ??
+          TopicMetadata(
+            name: topicName,
+            partitionCount: 0,
+            replicationFactor: 1,
+          ),
       filterTerm: filterConfig.filterTerm,
       filterTerms: filterConfig.expandedTerms,
       filterType: filterConfig.filterType,
@@ -789,24 +879,28 @@ class ScriptRunner extends ChangeNotifier {
     return (offset: startOffset, timestamp: startTimestamp);
   }
 
-  ({MultiSearchEndStrategy strategy, int? offset, int? timestamp}) _resolveEndStrategy(ScriptStep step) {
+  ({MultiSearchEndStrategy strategy, int? offset, int? timestamp})
+  _resolveEndStrategy(ScriptStep step) {
     var endStrategy = step.endStrategy;
     int? endOffset = _resolveInt(step.endOffset);
     int? endTimestamp = _resolveInt(step.endTimestamp);
 
-    if (endStrategy == MultiSearchEndStrategy.customOffset && endOffset == null) {
+    if (endStrategy == MultiSearchEndStrategy.customOffset &&
+        endOffset == null) {
       endStrategy = MultiSearchEndStrategy.latest;
     }
-    if (endStrategy == MultiSearchEndStrategy.customTimestamp && endTimestamp == null) {
-      _logger.w("endTimestamp variable '${step.endTimestamp}' could not be resolved. Defaulting to Latest.");
+    if (endStrategy == MultiSearchEndStrategy.customTimestamp &&
+        endTimestamp == null) {
+      _logger.w(
+        "endTimestamp variable '${step.endTimestamp}' could not be resolved. Defaulting to Latest.",
+      );
       endStrategy = MultiSearchEndStrategy.latest;
     }
     return (strategy: endStrategy, offset: endOffset, timestamp: endTimestamp);
   }
 
-  ({String? filterTerm, List<String>? expandedTerms, FilterType filterType}) _resolveFilterConfiguration(
-    ScriptStep step,
-  ) {
+  ({String? filterTerm, List<String>? expandedTerms, FilterType filterType})
+  _resolveFilterConfiguration(ScriptStep step) {
     String? filterTerm;
     List<String>? expandedFilterTerms;
     var filterType = step.filterType;
@@ -832,7 +926,11 @@ class ScriptRunner extends ChangeNotifier {
         filterTerm = _applyTemplate(template);
       }
     }
-    return (filterTerm: filterTerm, expandedTerms: expandedFilterTerms, filterType: filterType);
+    return (
+      filterTerm: filterTerm,
+      expandedTerms: expandedFilterTerms,
+      filterType: filterType,
+    );
   }
 
   List<String> _expandMultiValueFilter(String template, RegExp varRegex) {
@@ -845,7 +943,11 @@ class ScriptRunner extends ChangeNotifier {
       final key = match.group(1)!.trim();
       final val = _variableValues[key] ?? match.group(0)!;
       if (val.contains(',')) {
-        multiVars[key] = val.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        multiVars[key] = val
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
       } else {
         baseTemplate = baseTemplate.replaceAll(match.group(0)!, val.trim());
       }
@@ -974,7 +1076,8 @@ class ScriptRunner extends ChangeNotifier {
   Future<void> cleanupHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final maxRuns = prefs.getInt('scripting_max_run_history') ?? 30; // Default 30
+      final maxRuns =
+          prefs.getInt('scripting_max_run_history') ?? 30; // Default 30
 
       if (maxRuns <= 0) {
         return; // Disable cleanup if <= 0
@@ -995,15 +1098,27 @@ class ScriptRunner extends ChangeNotifier {
         final scriptRepo = getIt<ScriptRepository>();
         final scripts = await scriptRepo.getScripts();
         for (final script in scripts) {
-          if (script.outputDirectory != null && script.outputDirectory!.isNotEmpty) {
+          if (script.outputDirectory != null &&
+              script.outputDirectory!.isNotEmpty) {
             directoriesToClean.add(script.outputDirectory!);
+          } else {
+            final safeName = script.name.replaceAll(
+              RegExp(r'[<>:"/\\|?*]'),
+              '_',
+            );
+            directoriesToClean.add("$defaultDir/$safeName");
           }
         }
       } catch (e) {
-        _logger.w("Failed to resolve custom script directories during cleanup", error: e);
+        _logger.w(
+          "Failed to resolve custom script directories during cleanup",
+          error: e,
+        );
       }
 
-      _logger.i("Running cleanup on ${directoriesToClean.length} directories. Max runs: $maxRuns");
+      _logger.i(
+        "Running cleanup on ${directoriesToClean.length} directories. Max runs: $maxRuns",
+      );
 
       for (final dirPath in directoriesToClean) {
         await _cleanupDirectory(dirPath, maxRuns);
@@ -1042,7 +1157,9 @@ class ScriptRunner extends ChangeNotifier {
 
     if (runs.length > maxRuns) {
       final toDelete = runs.sublist(maxRuns);
-      _logger.i("[$path] Cleanup: Deleting ${toDelete.length} old runs (Total: ${runs.length}, Limit: $maxRuns)");
+      _logger.i(
+        "[$path] Cleanup: Deleting ${toDelete.length} old runs (Total: ${runs.length}, Limit: $maxRuns)",
+      );
       for (final run in toDelete) {
         try {
           await deleteRun(run);

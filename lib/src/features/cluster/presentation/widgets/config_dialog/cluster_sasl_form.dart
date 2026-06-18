@@ -23,8 +23,14 @@ class ClusterSaslForm extends StatelessWidget {
           decoration: const InputDecoration(labelText: 'SASL Mechanism'),
           items: const [
             DropdownMenuItem(value: "PLAIN", child: Text("PLAIN")),
-            DropdownMenuItem(value: "SCRAM-SHA-256", child: Text("SCRAM-SHA-256")),
-            DropdownMenuItem(value: "SCRAM-SHA-512", child: Text("SCRAM-SHA-512")),
+            DropdownMenuItem(
+              value: "SCRAM-SHA-256",
+              child: Text("SCRAM-SHA-256"),
+            ),
+            DropdownMenuItem(
+              value: "SCRAM-SHA-512",
+              child: Text("SCRAM-SHA-512"),
+            ),
             DropdownMenuItem(value: "GSSAPI", child: Text("GSSAPI")),
           ],
           onChanged: onMechanismChanged,

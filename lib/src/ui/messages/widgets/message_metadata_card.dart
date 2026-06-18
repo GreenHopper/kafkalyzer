@@ -8,12 +8,20 @@ class MessageMetadataCard extends StatelessWidget {
   final KafkaMessage message;
   final KafkaMessage? prevMessage;
 
-  const MessageMetadataCard({super.key, required this.message, this.prevMessage});
+  const MessageMetadataCard({
+    super.key,
+    required this.message,
+    this.prevMessage,
+  });
 
   @override
   Widget build(BuildContext context) {
     final date = DateTime.fromMillisecondsSinceEpoch(message.timestamp.toInt());
-    final dateStr = DateFormatUtils.formatDateTime(context, date, withMilliseconds: true);
+    final dateStr = DateFormatUtils.formatDateTime(
+      context,
+      date,
+      withMilliseconds: true,
+    );
 
     String durationStr = "";
     if (prevMessage != null) {
@@ -43,7 +51,10 @@ class MessageMetadataCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant, width: 1),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 1,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
@@ -55,7 +66,11 @@ class MessageMetadataCard extends StatelessWidget {
             // Time & Duration
             Text(
               durationStr,
-              style: TextStyle(fontSize: 10, color: Colors.grey[700], fontStyle: FontStyle.italic),
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[700],
+                fontStyle: FontStyle.italic,
+              ),
               textAlign: TextAlign.right,
             ),
             Text(
@@ -68,7 +83,11 @@ class MessageMetadataCard extends StatelessWidget {
             // Topic & Step
             Text(
               message.topic,
-              style: TextStyle(fontSize: 11, color: topicColor, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 11,
+                color: topicColor,
+                fontWeight: FontWeight.w600,
+              ),
               textAlign: TextAlign.right,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

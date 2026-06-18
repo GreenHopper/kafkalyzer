@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_step_editor.dart';
 import 'package:uuid/uuid.dart';
@@ -35,7 +34,6 @@ class ScriptEditor extends StatefulWidget {
 class _ScriptEditorState extends State<ScriptEditor> {
   late TextEditingController _nameController;
   late TextEditingController _concurrencyController;
-  late TextEditingController _outputDirController;
   late TextEditingController _variableController;
   ScriptVariableType _newVariableType = ScriptVariableType.string;
 
@@ -48,9 +46,6 @@ class _ScriptEditorState extends State<ScriptEditor> {
     _nameController = TextEditingController(text: widget.script.name);
     _concurrencyController = TextEditingController(
       text: widget.script.concurrencyLimit.toString(),
-    );
-    _outputDirController = TextEditingController(
-      text: widget.script.outputDirectory,
     );
     _variableController = TextEditingController();
 
@@ -69,17 +64,6 @@ class _ScriptEditorState extends State<ScriptEditor> {
           widget.script.concurrencyLimit.toString()) {
         _concurrencyController.text = widget.script.concurrencyLimit.toString();
       }
-      if ((_outputDirController.text.isEmpty &&
-              widget.script.outputDirectory != null) ||
-          (_outputDirController.text.isNotEmpty &&
-              _outputDirController.text != widget.script.outputDirectory)) {
-        // More complex check for null/empty vs string
-        // Only update if substantively different to avoid focus loss if possible, though directory picker usually handles this.
-        if ((widget.script.outputDirectory ?? "") !=
-            _outputDirController.text) {
-          _outputDirController.text = widget.script.outputDirectory ?? "";
-        }
-      }
 
       _variables = List.from(widget.script.variables);
       _steps = List.from(widget.script.steps);
@@ -91,9 +75,7 @@ class _ScriptEditorState extends State<ScriptEditor> {
     final updated = widget.script.copyWith(
       name: _nameController.text,
       concurrencyLimit: int.tryParse(_concurrencyController.text) ?? 2,
-      outputDirectory: _outputDirController.text.isEmpty
-          ? null
-          : _outputDirController.text,
+      outputDirectory: widget.script.outputDirectory,
       variables: _variables,
       steps: _steps,
     );
@@ -470,7 +452,7 @@ class _ScriptEditorState extends State<ScriptEditor> {
             Row(
               children: [
                 SizedBox(
-                  width: 150,
+                  width: 180,
                   child: TextField(
                     controller: _concurrencyController,
                     decoration: const InputDecoration(
@@ -479,29 +461,6 @@ class _ScriptEditorState extends State<ScriptEditor> {
                       isDense: true,
                     ),
                     keyboardType: TextInputType.number,
-                    onChanged: (_) => _save(),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    controller: _outputDirController,
-                    decoration: InputDecoration(
-                      labelText: "Output Directory",
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.folder_open),
-                        onPressed: () async {
-                          String? selected = await FilePicker
-                              .getDirectoryPath();
-                          if (selected != null) {
-                            _outputDirController.text = selected;
-                            _save();
-                          }
-                        },
-                      ),
-                    ),
                     onChanged: (_) => _save(),
                   ),
                 ),

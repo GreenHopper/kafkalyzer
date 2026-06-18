@@ -32,14 +32,30 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.cluster?.name ?? "");
-    _bootstrapServersController = TextEditingController(text: widget.cluster?.bootstrapServers ?? "");
-    _saslUsernameController = TextEditingController(text: widget.cluster?.saslUsername ?? "");
-    _saslPasswordController = TextEditingController(text: widget.cluster?.saslPassword ?? "");
-    _schemaRegistryUrlController = TextEditingController(text: widget.cluster?.schemaRegistryUrl ?? "");
-    _sslKeystoreLocationController = TextEditingController(text: widget.cluster?.sslKeystoreLocation ?? "");
-    _sslKeystorePasswordController = TextEditingController(text: widget.cluster?.sslKeystorePassword ?? "");
-    _sslTruststoreLocationController = TextEditingController(text: widget.cluster?.sslTruststoreLocation ?? "");
-    _sslTruststorePasswordController = TextEditingController(text: widget.cluster?.sslTruststorePassword ?? "");
+    _bootstrapServersController = TextEditingController(
+      text: widget.cluster?.bootstrapServers ?? "",
+    );
+    _saslUsernameController = TextEditingController(
+      text: widget.cluster?.saslUsername ?? "",
+    );
+    _saslPasswordController = TextEditingController(
+      text: widget.cluster?.saslPassword ?? "",
+    );
+    _schemaRegistryUrlController = TextEditingController(
+      text: widget.cluster?.schemaRegistryUrl ?? "",
+    );
+    _sslKeystoreLocationController = TextEditingController(
+      text: widget.cluster?.sslKeystoreLocation ?? "",
+    );
+    _sslKeystorePasswordController = TextEditingController(
+      text: widget.cluster?.sslKeystorePassword ?? "",
+    );
+    _sslTruststoreLocationController = TextEditingController(
+      text: widget.cluster?.sslTruststoreLocation ?? "",
+    );
+    _sslTruststorePasswordController = TextEditingController(
+      text: widget.cluster?.sslTruststorePassword ?? "",
+    );
 
     if (widget.cluster != null) {
       if (widget.cluster!.securityProtocol != null) {
@@ -86,11 +102,22 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   initialValue: _securityProtocol,
-                  decoration: const InputDecoration(labelText: 'Security Protocol'),
+                  decoration: const InputDecoration(
+                    labelText: 'Security Protocol',
+                  ),
                   items: const [
-                    DropdownMenuItem(value: "PLAINTEXT", child: Text("PLAINTEXT")),
-                    DropdownMenuItem(value: "SASL_PLAINTEXT", child: Text("SASL_PLAINTEXT")),
-                    DropdownMenuItem(value: "SASL_SSL", child: Text("SASL_SSL")),
+                    DropdownMenuItem(
+                      value: "PLAINTEXT",
+                      child: Text("PLAINTEXT"),
+                    ),
+                    DropdownMenuItem(
+                      value: "SASL_PLAINTEXT",
+                      child: Text("SASL_PLAINTEXT"),
+                    ),
+                    DropdownMenuItem(
+                      value: "SASL_SSL",
+                      child: Text("SASL_SSL"),
+                    ),
                     DropdownMenuItem(value: "SSL", child: Text("SSL")),
                   ],
                   onChanged: (value) {
@@ -102,17 +129,21 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                 if (_securityProtocol.startsWith("SASL")) ...[
                   ClusterSaslForm(
                     mechanism: _mechanism,
-                    onMechanismChanged: (value) => setState(() => _mechanism = value),
+                    onMechanismChanged: (value) =>
+                        setState(() => _mechanism = value),
                     usernameController: _saslUsernameController,
                     passwordController: _saslPasswordController,
                   ),
                 ],
-                if (_securityProtocol == "SSL" || _securityProtocol == "SASL_SSL") ...[
+                if (_securityProtocol == "SSL" ||
+                    _securityProtocol == "SASL_SSL") ...[
                   ClusterSslForm(
                     keystoreLocationController: _sslKeystoreLocationController,
                     keystorePasswordController: _sslKeystorePasswordController,
-                    truststoreLocationController: _sslTruststoreLocationController,
-                    truststorePasswordController: _sslTruststorePasswordController,
+                    truststoreLocationController:
+                        _sslTruststoreLocationController,
+                    truststorePasswordController:
+                        _sslTruststorePasswordController,
                   ),
                 ],
               ],
@@ -121,30 +152,43 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         ElevatedButton(
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               final profile = ClusterProfile(
                 name: _nameController.text,
                 bootstrapServers: _bootstrapServersController.text,
-                saslUsername: _saslUsernameController.text.isNotEmpty ? _saslUsernameController.text : null,
-                saslPassword: _saslPasswordController.text.isNotEmpty ? _saslPasswordController.text : null,
-                mechanism: _securityProtocol.startsWith("SASL") ? _mechanism : null,
+                saslUsername: _saslUsernameController.text.isNotEmpty
+                    ? _saslUsernameController.text
+                    : null,
+                saslPassword: _saslPasswordController.text.isNotEmpty
+                    ? _saslPasswordController.text
+                    : null,
+                mechanism: _securityProtocol.startsWith("SASL")
+                    ? _mechanism
+                    : null,
                 securityProtocol: _securityProtocol,
                 schemaRegistryUrl: _schemaRegistryUrlController.text.isNotEmpty
                     ? _schemaRegistryUrlController.text
                     : null,
-                sslKeystoreLocation: _sslKeystoreLocationController.text.isNotEmpty
+                sslKeystoreLocation:
+                    _sslKeystoreLocationController.text.isNotEmpty
                     ? _sslKeystoreLocationController.text
                     : null,
-                sslKeystorePassword: _sslKeystorePasswordController.text.isNotEmpty
+                sslKeystorePassword:
+                    _sslKeystorePasswordController.text.isNotEmpty
                     ? _sslKeystorePasswordController.text
                     : null,
-                sslTruststoreLocation: _sslTruststoreLocationController.text.isNotEmpty
+                sslTruststoreLocation:
+                    _sslTruststoreLocationController.text.isNotEmpty
                     ? _sslTruststoreLocationController.text
                     : null,
-                sslTruststorePassword: _sslTruststorePasswordController.text.isNotEmpty
+                sslTruststorePassword:
+                    _sslTruststorePasswordController.text.isNotEmpty
                     ? _sslTruststorePasswordController.text
                     : null,
               );

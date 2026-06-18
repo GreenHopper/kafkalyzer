@@ -109,7 +109,8 @@ ProcessResult runCommand(
   log.finer('Running command $executable ${arguments.join(' ')}');
   final forcedEnv = {
     'CARGO_HTTP_CHECK_REVOKE': 'false',
-    'CARGO_HTTP_SSL_VERIFY': 'false', // Kept for safety, though check-revoke is the specific error
+    'CARGO_HTTP_SSL_VERIFY':
+        'false', // Kept for safety, though check-revoke is the specific error
     'RUSTUP_USE_CURL': '1',
   };
   final effectiveEnv = {
@@ -151,7 +152,8 @@ class RustupNotFoundException implements Exception {
       if (hasHomebrewRustInPath()) ...[
         '\$ brew unlink rust # Unlink homebrew Rust from PATH',
       ],
-      if (!Platform.isWindows) "\$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh",
+      if (!Platform.isWindows)
+        "\$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh",
       ' ',
     ].join('\n');
   }

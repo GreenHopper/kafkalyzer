@@ -83,10 +83,7 @@ class HexViewer extends StatelessWidget {
               border: Border.all(color: colorScheme.outlineVariant),
             ),
             child: SingleChildScrollView(
-              child: SelectableText(
-                buffer.toString(),
-                style: textStyle,
-              ),
+              child: SelectableText(buffer.toString(), style: textStyle),
             ),
           ),
         ),

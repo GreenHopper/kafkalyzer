@@ -38,7 +38,9 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
     if (widget.searchPhrase != oldWidget.searchPhrase) {
       if (_controller.text != widget.searchPhrase) {
         _controller.text = widget.searchPhrase;
-        _controller.selection = TextSelection.collapsed(offset: widget.searchPhrase.length);
+        _controller.selection = TextSelection.collapsed(
+          offset: widget.searchPhrase.length,
+        );
       }
     }
   }
@@ -67,9 +69,9 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
             padding: const EdgeInsets.only(right: 12.0),
             child: Text(
               AppLocalizations.of(context)!.stepMatches(widget.matchCount),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         SizedBox(
@@ -80,10 +82,18 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
             decoration: InputDecoration(
               hintText: AppLocalizations.of(context)!.searchResults,
               prefixIcon: const Icon(Icons.search, size: 16),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(18), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 0,
+                horizontal: 8,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: BorderSide.none,
+              ),
               filled: true,
-              fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              fillColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
               suffixIcon: IntrinsicWidth(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -99,13 +109,21 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
                         padding: const EdgeInsets.all(8),
                       ),
                     IconButton(
-                      tooltip: widget.showNonMatches ? "Hide non-matching messages" : "Show non-matches as dimmed",
+                      tooltip: widget.showNonMatches
+                          ? "Hide non-matching messages"
+                          : "Show non-matches as dimmed",
                       icon: Icon(
-                        widget.showNonMatches ? Icons.visibility : Icons.visibility_off,
+                        widget.showNonMatches
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                         size: 16,
-                        color: widget.showNonMatches ? Theme.of(context).primaryColor : Colors.grey,
+                        color: widget.showNonMatches
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey,
                       ),
-                      onPressed: () => widget.onShowNonMatchesChanged(!widget.showNonMatches),
+                      onPressed: () => widget.onShowNonMatchesChanged(
+                        !widget.showNonMatches,
+                      ),
                       constraints: const BoxConstraints(),
                       padding: const EdgeInsets.all(8),
                     ),

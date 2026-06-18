@@ -51,10 +51,16 @@ class ScriptRunHeader extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(AppLocalizations.of(context)!.runDetails, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    AppLocalizations.of(context)!.runDetails,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   Text(
                     run != null
-                        ? DateFormatUtils.formatDateTime(context, DateTime.fromMillisecondsSinceEpoch(run!.timestamp))
+                        ? DateFormatUtils.formatDateTime(
+                            context,
+                            DateTime.fromMillisecondsSinceEpoch(run!.timestamp),
+                          )
                         : "Running...",
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
@@ -64,9 +70,18 @@ class ScriptRunHeader extends StatelessWidget {
               // View Mode Toggles
               SegmentedButton<String>(
                 segments: [
-                  ButtonSegment(value: 'topic', label: Text(AppLocalizations.of(context)!.byTopic)),
-                  ButtonSegment(value: 'chronological', label: Text(AppLocalizations.of(context)!.chronological)),
-                  ButtonSegment(value: 'step', label: Text(AppLocalizations.of(context)!.byStep)),
+                  ButtonSegment(
+                    value: 'topic',
+                    label: Text(AppLocalizations.of(context)!.byTopic),
+                  ),
+                  ButtonSegment(
+                    value: 'chronological',
+                    label: Text(AppLocalizations.of(context)!.chronological),
+                  ),
+                  ButtonSegment(
+                    value: 'step',
+                    label: Text(AppLocalizations.of(context)!.byStep),
+                  ),
                 ],
                 selected: {timelineMode},
                 onSelectionChanged: (Set<String> newSelection) {
@@ -74,12 +89,17 @@ class ScriptRunHeader extends StatelessWidget {
                 },
                 style: ButtonStyle(
                   visualDensity: VisualDensity.compact,
-                  textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 12)),
+                  textStyle: WidgetStateProperty.all(
+                    const TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               const SizedBox(width: 8),
-              ViewModeSwitcher(activeView: activeView, onViewChanged: onActiveViewChanged),
+              ViewModeSwitcher(
+                activeView: activeView,
+                onViewChanged: onActiveViewChanged,
+              ),
             ],
           ),
 

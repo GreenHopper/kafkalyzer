@@ -14,7 +14,12 @@ class ScriptRunView extends StatefulWidget {
   final Map<String, String>? initialValues;
   final void Function(ScriptRun)? onRunFinished;
 
-  const ScriptRunView({super.key, required this.script, this.initialValues, this.onRunFinished});
+  const ScriptRunView({
+    super.key,
+    required this.script,
+    this.initialValues,
+    this.onRunFinished,
+  });
 
   @override
   State<ScriptRunView> createState() => _ScriptRunViewState();
@@ -36,7 +41,9 @@ class _ScriptRunViewState extends State<ScriptRunView> {
     final clusters = getIt<ClusterListController>().clusters;
     if (clusters.isNotEmpty) {
       // Try to find the one used in the first step as default, or just the first one
-      final defaultName = widget.script.steps.isNotEmpty ? widget.script.steps.first.clusterName : null;
+      final defaultName = widget.script.steps.isNotEmpty
+          ? widget.script.steps.first.clusterName
+          : null;
       _selectedCluster = clusters.cast<ClusterProfile?>().firstWhere(
         (c) => c?.name == defaultName,
         orElse: () => clusters.first,
@@ -45,7 +52,8 @@ class _ScriptRunViewState extends State<ScriptRunView> {
 
     // Check if valid run is already in progress
     final runner = getIt<ScriptRunner>();
-    if (runner.isRunning && runner.currentRun?.scriptName == widget.script.name) {
+    if (runner.isRunning &&
+        runner.currentRun?.scriptName == widget.script.name) {
       _isMonitoring = true;
       // Restore values
       if (runner.currentRun?.parameters != null) {
@@ -100,7 +108,11 @@ class _ScriptRunViewState extends State<ScriptRunView> {
       _isMonitoring = true;
     });
 
-    final run = await getIt<ScriptRunner>().runScript(widget.script, values, overrideCluster: _selectedCluster);
+    final run = await getIt<ScriptRunner>().runScript(
+      widget.script,
+      values,
+      overrideCluster: _selectedCluster,
+    );
 
     if (run != null && widget.onRunFinished != null) {
       widget.onRunFinished!(run);
@@ -125,8 +137,15 @@ class _ScriptRunViewState extends State<ScriptRunView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Configuration", style: Theme.of(context).textTheme.headlineSmall),
-              FilledButton.icon(onPressed: _runScript, icon: const Icon(Icons.play_arrow), label: const Text("Run")),
+              Text(
+                "Configuration",
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              FilledButton.icon(
+                onPressed: _runScript,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text("Run"),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -159,7 +178,10 @@ class _ScriptRunViewState extends State<ScriptRunView> {
     return Column(
       children: [
         if (widget.script.variables.isEmpty)
-          const Padding(padding: EdgeInsets.all(8.0), child: Text("No variables required.")),
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text("No variables required."),
+          ),
 
         ...widget.script.variables.map(
           (v) => Padding(
@@ -192,7 +214,11 @@ class _ScriptRunViewState extends State<ScriptRunView> {
         children: [
           Expanded(
             child: SingleChildScrollView(
-              child: ScriptProgressWidget(script: widget.script, runner: runner, title: "Execution Progress"),
+              child: ScriptProgressWidget(
+                script: widget.script,
+                runner: runner,
+                title: "Execution Progress",
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -207,7 +233,10 @@ class _ScriptRunViewState extends State<ScriptRunView> {
                       onPressed: () {
                         runner.cancelScript();
                       },
-                      child: const Text("Stop", style: TextStyle(color: Colors.red)),
+                      child: const Text(
+                        "Stop",
+                        style: TextStyle(color: Colors.red),
+                      ),
                     )
                   else
                     FilledButton(

@@ -76,7 +76,6 @@ class FakeTopicController extends ChangeNotifier implements TopicController {
 class FakeSchemaController extends ChangeNotifier implements SchemaController {
   @override
   bool isLoading(ClusterProfile profile) => false;
-  @override
   List<String> get schemas => [];
 
   @override
@@ -89,7 +88,6 @@ class FakeMultiSearchController extends ChangeNotifier
   String? get outputDirectory => null;
   @override
   List<SearchTarget> get targets => [];
-  @override
   bool get isSearching => false;
 
   @override

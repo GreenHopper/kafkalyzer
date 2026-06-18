@@ -28,7 +28,9 @@ class ClusterBasicInfoForm extends StatelessWidget {
           padding: const EdgeInsets.all(8.0),
           child: TextFormField(
             controller: bootstrapServersController,
-            decoration: const InputDecoration(labelText: 'Bootstrap Servers (e.g. localhost:9092)'),
+            decoration: const InputDecoration(
+              labelText: 'Bootstrap Servers (e.g. localhost:9092)',
+            ),
             validator: (value) => value!.isEmpty ? 'Required' : null,
           ),
         ),
@@ -50,7 +52,8 @@ class ClusterBasicInfoForm extends StatelessWidget {
                 return "Likely typo: use ':' for port instead of '.'";
               }
 
-              if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+              if (!trimmed.startsWith("http://") &&
+                  !trimmed.startsWith("https://")) {
                 return "Missing protocol (http:// or https://)";
               }
 

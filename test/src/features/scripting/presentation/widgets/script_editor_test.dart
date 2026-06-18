@@ -4,13 +4,23 @@ import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_editor.dart';
 
 void main() {
-  testWidgets('ScriptEditor adds new variable with selected type', (WidgetTester tester) async {
+  testWidgets('ScriptEditor adds new variable with selected type', (
+    WidgetTester tester,
+  ) async {
     Script? savedScript;
-    final script = Script(id: '1', name: 'Test Script', variables: [], steps: []);
+    final script = Script(
+      id: '1',
+      name: 'Test Script',
+      variables: [],
+      steps: [],
+    );
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
         home: Scaffold(
           body: ScriptEditor(
             script: script,
@@ -62,18 +72,37 @@ void main() {
 
     // Verify chip shows up (In DataTable now)
     final dataTableFinder = find.byType(DataTable);
-    expect(find.descendant(of: dataTableFinder, matching: find.text('myVar')), findsOneWidget);
-    expect(find.descendant(of: dataTableFinder, matching: find.text('numeric')), findsOneWidget);
+    expect(
+      find.descendant(of: dataTableFinder, matching: find.text('myVar')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dataTableFinder, matching: find.text('numeric')),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('ScriptEditor edits existing variable type', (WidgetTester tester) async {
+  testWidgets('ScriptEditor edits existing variable type', (
+    WidgetTester tester,
+  ) async {
     Script? savedScript;
-    final variable = ScriptVariable(name: 'oldVar', type: ScriptVariableType.string);
-    final script = Script(id: '1', name: 'Test Script', variables: [variable], steps: []);
+    final variable = ScriptVariable(
+      name: 'oldVar',
+      type: ScriptVariableType.string,
+    );
+    final script = Script(
+      id: '1',
+      name: 'Test Script',
+      variables: [variable],
+      steps: [],
+    );
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
         home: Scaffold(
           body: ScriptEditor(
             script: script,
@@ -87,18 +116,30 @@ void main() {
 
     // Find variable in table
     final dataTableFinder = find.byType(DataTable);
-    expect(find.descendant(of: dataTableFinder, matching: find.text('oldVar')), findsOneWidget);
-    expect(find.descendant(of: dataTableFinder, matching: find.text('string')), findsOneWidget);
+    expect(
+      find.descendant(of: dataTableFinder, matching: find.text('oldVar')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: dataTableFinder, matching: find.text('string')),
+      findsOneWidget,
+    );
 
     // Find edit button for this row
-    final editButtonFinder = find.descendant(of: dataTableFinder, matching: find.byIcon(Icons.edit));
+    final editButtonFinder = find.descendant(
+      of: dataTableFinder,
+      matching: find.byIcon(Icons.edit),
+    );
     expect(editButtonFinder, findsOneWidget);
 
     await tester.tap(editButtonFinder);
     await tester.pumpAndSettle(); // Open dialog
 
     // Change type to timestamp
-    final dropdownFinder = find.widgetWithText(DropdownButtonFormField<ScriptVariableType>, 'Type');
+    final dropdownFinder = find.widgetWithText(
+      DropdownButtonFormField<ScriptVariableType>,
+      'Type',
+    );
     await tester.tap(dropdownFinder);
     await tester.pumpAndSettle();
 
@@ -116,6 +157,9 @@ void main() {
     expect(savedScript!.variables.first.type, ScriptVariableType.timestamp);
 
     // Verify chip updated
-    expect(find.descendant(of: dataTableFinder, matching: find.text('timestamp')), findsOneWidget);
+    expect(
+      find.descendant(of: dataTableFinder, matching: find.text('timestamp')),
+      findsOneWidget,
+    );
   });
 }

@@ -26,7 +26,9 @@ class HighlightTextUtils {
       }
 
       if (index > start) {
-        matches.add(TextSpan(text: text.substring(start, index), style: baseStyle));
+        matches.add(
+          TextSpan(text: text.substring(start, index), style: baseStyle),
+        );
       }
 
       final match = text.substring(index, index + query.length);

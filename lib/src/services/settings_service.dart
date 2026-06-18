@@ -15,11 +15,39 @@ import 'package:path/path.dart' as p;
 class SettingsService {
   static const _gcsKeyFileName = 'wgs-kaenup-data-test-6d6c17c275e1.json';
 
+  Future<void> initializeSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final defaultDir = prefs.getString('general_default_output_dir');
+    if (defaultDir == null ||
+        defaultDir.isEmpty ||
+        !await Directory(defaultDir).exists()) {
+      debugPrint('⚠️ Invalid or missing default output dir: $defaultDir');
+      String? newDefaultDir;
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        final docsDir = await getApplicationDocumentsDirectory();
+        newDefaultDir = p.join(docsDir.path, 'Kafkalyzer', 'Output');
+      }
+
+      if (newDefaultDir != null) {
+        debugPrint('✅ Setting new default output dir: $newDefaultDir');
+        await prefs.setString('general_default_output_dir', newDefaultDir);
+        // Ensure it exists
+        try {
+          await Directory(newDefaultDir).create(recursive: true);
+        } catch (e) {
+          debugPrint('❌ Failed to create default dir: $e');
+        }
+      }
+    }
+  }
+
   Future<void> exportConfiguration() async {
     debugPrint('DEBUG: Starting Configuration Export...');
     try {
       final prefs = await SharedPreferences.getInstance();
-      debugPrint('DEBUG: SharedPreferences loaded. Keys: ${prefs.getKeys().length}');
+      debugPrint(
+        'DEBUG: SharedPreferences loaded. Keys: ${prefs.getKeys().length}',
+      );
       final allPrefs = <String, dynamic>{};
       final keys = prefs.getKeys();
 
@@ -46,13 +74,16 @@ class SettingsService {
 
           // Process Keystore
           if (exportedCluster['sslKeystoreLocation'] != null) {
-            String path = (exportedCluster['sslKeystoreLocation'] as String).trim();
+            String path = (exportedCluster['sslKeystoreLocation'] as String)
+                .trim();
             debugPrint('DEBUG: Found keystore at $path');
             final filename = _addFileToArchive(archive, path);
             if (filename != null) {
               exportedCluster['sslKeystoreLocation'] = 'files/$filename';
             } else {
-              debugPrint('DEBUG: ⚠️ Keystore file failed to archive, keeping original path: $path');
+              debugPrint(
+                'DEBUG: ⚠️ Keystore file failed to archive, keeping original path: $path',
+              );
             }
           } else {
             debugPrint('DEBUG: No keystore configured for this cluster');
@@ -60,13 +91,16 @@ class SettingsService {
 
           // Process Truststore
           if (exportedCluster['sslTruststoreLocation'] != null) {
-            String path = (exportedCluster['sslTruststoreLocation'] as String).trim();
+            String path = (exportedCluster['sslTruststoreLocation'] as String)
+                .trim();
             debugPrint('DEBUG: Found truststore at $path');
             final filename = _addFileToArchive(archive, path);
             if (filename != null) {
               exportedCluster['sslTruststoreLocation'] = 'files/$filename';
             } else {
-              debugPrint('DEBUG: ⚠️ Truststore file failed to archive, keeping original path: $path');
+              debugPrint(
+                'DEBUG: ⚠️ Truststore file failed to archive, keeping original path: $path',
+              );
             }
           }
 
@@ -81,13 +115,17 @@ class SettingsService {
       final gcsKeyFile = await _findGcsKeyFile();
       if (gcsKeyFile != null) {
         final bytes = await gcsKeyFile.readAsBytes();
-        archive.addFile(ArchiveFile('files/$_gcsKeyFileName', bytes.length, bytes));
+        archive.addFile(
+          ArchiveFile('files/$_gcsKeyFileName', bytes.length, bytes),
+        );
       }
 
       // 3. Add Preferences JSON
       final prefsJson = jsonEncode(allPrefs);
       final prefsBytes = utf8.encode(prefsJson);
-      archive.addFile(ArchiveFile('preferences.json', prefsBytes.length, prefsBytes));
+      archive.addFile(
+        ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+      );
 
       // 4. Save Zip
       final zipBytes = ZipEncoder().encode(archive);
@@ -126,7 +164,9 @@ class SettingsService {
 
       final fileBytes =
           result.files.single.bytes ??
-          (result.files.single.path != null ? File(result.files.single.path!).readAsBytesSync() : null);
+          (result.files.single.path != null
+              ? File(result.files.single.path!).readAsBytesSync()
+              : null);
 
       if (fileBytes == null) throw Exception('Could not read imported file');
 
@@ -134,12 +174,16 @@ class SettingsService {
       // Changed to getApplicationSupportDirectory to match documentation (AppData on Windows)
       final appSupportDir = await getApplicationSupportDirectory();
       // Use platform-aware path construction
-      final sharedPrefsDir = Directory(p.join(appSupportDir.path, 'shared_preferences'));
+      final sharedPrefsDir = Directory(
+        p.join(appSupportDir.path, 'shared_preferences'),
+      );
 
       debugPrint('📂 Import Target Directory: ${sharedPrefsDir.path}');
 
       if (!await sharedPrefsDir.exists()) {
-        debugPrint('⚠️ Directory does not exist, creating: ${sharedPrefsDir.path}');
+        debugPrint(
+          '⚠️ Directory does not exist, creating: ${sharedPrefsDir.path}',
+        );
         await sharedPrefsDir.create(recursive: true);
       } else {
         debugPrint('✅ Directory exists: ${sharedPrefsDir.path}');
@@ -186,7 +230,9 @@ class SettingsService {
               final List<dynamic> importedClustersList = [];
 
               for (final clusterJson in clustersList) {
-                final Map<String, dynamic> importedCluster = Map.from(clusterJson);
+                final Map<String, dynamic> importedCluster = Map.from(
+                  clusterJson,
+                );
 
                 String? fixPath(String? path) {
                   if (path != null && path.startsWith('files/')) {
@@ -197,8 +243,12 @@ class SettingsService {
                   return path;
                 }
 
-                importedCluster['sslKeystoreLocation'] = fixPath(importedCluster['sslKeystoreLocation']);
-                importedCluster['sslTruststoreLocation'] = fixPath(importedCluster['sslTruststoreLocation']);
+                importedCluster['sslKeystoreLocation'] = fixPath(
+                  importedCluster['sslKeystoreLocation'],
+                );
+                importedCluster['sslTruststoreLocation'] = fixPath(
+                  importedCluster['sslTruststoreLocation'],
+                );
 
                 importedClustersList.add(importedCluster);
               }
@@ -253,7 +303,9 @@ class SettingsService {
     try {
       final normalizedPath = p.normalize(path);
       final file = File(normalizedPath);
-      debugPrint('DEBUG: 📦 Attempting to add file to archive: $normalizedPath (Original: $path)');
+      debugPrint(
+        'DEBUG: 📦 Attempting to add file to archive: $normalizedPath (Original: $path)',
+      );
 
       if (file.existsSync()) {
         final filename = p.basename(normalizedPath);
@@ -276,23 +328,33 @@ class SettingsService {
     try {
       // Changed to getApplicationSupportDirectory to search in AppData (Windows) or .local/share (Linux)
       final appSupportDir = await getApplicationSupportDirectory();
-      candidates.add(p.join(appSupportDir.path, 'shared_preferences', _gcsKeyFileName));
+      candidates.add(
+        p.join(appSupportDir.path, 'shared_preferences', _gcsKeyFileName),
+      );
 
       // Keep checking Documents for backward compatibility
       final appDocDir = await getApplicationDocumentsDirectory();
-      candidates.add(p.join(appDocDir.path, 'shared_preferences', _gcsKeyFileName));
+      candidates.add(
+        p.join(appDocDir.path, 'shared_preferences', _gcsKeyFileName),
+      );
     } catch (_) {}
 
     if (Platform.isLinux) {
       final home = Platform.environment['HOME'];
       if (home != null) {
-        candidates.add(p.join(home, '.local/share/com.example.kafkalyzer', _gcsKeyFileName));
-        candidates.add(p.join(home, '.local/share/kafkalyzer', _gcsKeyFileName));
+        candidates.add(
+          p.join(home, '.local/share/com.example.kafkalyzer', _gcsKeyFileName),
+        );
+        candidates.add(
+          p.join(home, '.local/share/kafkalyzer', _gcsKeyFileName),
+        );
       }
     } else if (Platform.isWindows) {
       final appData = Platform.environment['APPDATA'];
       if (appData != null) {
-        candidates.add(p.join(appData, 'com.example', 'kafkalyzer', _gcsKeyFileName));
+        candidates.add(
+          p.join(appData, 'com.example', 'kafkalyzer', _gcsKeyFileName),
+        );
       }
     } else if (Platform.isMacOS) {
       final home = Platform.environment['HOME'];
@@ -352,32 +414,9 @@ class SettingsService {
 
           for (final scriptJson in scriptsList) {
             final Map<String, dynamic> scriptCode = Map.from(scriptJson);
-            String? outputDir = scriptCode['outputDirectory'];
-            final scriptName = scriptCode['name'] ?? 'Unnamed Script';
-
-            // Check validity
-            if (outputDir != null && !await Directory(outputDir).exists()) {
-              debugPrint('⚠️ Invalid script output dir for "$scriptName": $outputDir');
-
-              if (defaultDir != null) {
-                // safe script name
-                final safeName = scriptName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-                final newScriptDir = p.join(defaultDir, safeName);
-
-                debugPrint('✅ Reparenting to: $newScriptDir');
-                scriptCode['outputDirectory'] = newScriptDir;
-                scriptsUpdated = true;
-
-                // Create it
-                try {
-                  await Directory(newScriptDir).create(recursive: true);
-                } catch (e) {
-                  debugPrint('❌ Failed to create script dir: $e');
-                }
-              } else {
-                // Cannot fix if no default dir available
-                // scriptCode['outputDirectory'] = null; // Option: Clear it?
-              }
+            if (scriptCode.containsKey('outputDirectory')) {
+              scriptCode['outputDirectory'] = null;
+              scriptsUpdated = true;
             }
             updatedScriptsList.add(scriptCode);
           }

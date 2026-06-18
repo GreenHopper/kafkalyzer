@@ -17,7 +17,12 @@ class ScriptStepEditor extends StatefulWidget {
   final List<ScriptVariable> variables;
   final Function(ScriptStep) onSave;
 
-  const ScriptStepEditor({super.key, required this.step, required this.variables, required this.onSave});
+  const ScriptStepEditor({
+    super.key,
+    required this.step,
+    required this.variables,
+    required this.onSave,
+  });
 
   @override
   State<ScriptStepEditor> createState() => _ScriptStepEditorState();
@@ -25,14 +30,18 @@ class ScriptStepEditor extends StatefulWidget {
 
 class _ScriptStepEditorState extends State<ScriptStepEditor> {
   late TextEditingController _nameController;
-  late TextEditingController _filterTemplateController; // Renamed from _filterController
+  late TextEditingController
+  _filterTemplateController; // Renamed from _filterController
 
   ClusterProfile? _selectedCluster;
-  List<String> _selectedTopics = []; // Changed from _selectedTopicName to _selectedTopics
+  List<String> _selectedTopics =
+      []; // Changed from _selectedTopicName to _selectedTopics
 
   // Filter
-  FilterType _selectedFilterType = FilterType.contains; // Renamed from _filterType
-  SearchScope _selectedSearchScope = SearchScope.both; // Renamed from _searchScope
+  FilterType _selectedFilterType =
+      FilterType.contains; // Renamed from _filterType
+  SearchScope _selectedSearchScope =
+      SearchScope.both; // Renamed from _searchScope
 
   late TextEditingController _startOffsetController;
   late TextEditingController _startTimestampController;
@@ -52,7 +61,9 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.step.name);
-    _selectedTopics = List.from(widget.step.topicNames); // Initialize with topicNames
+    _selectedTopics = List.from(
+      widget.step.topicNames,
+    ); // Initialize with topicNames
     _filterTemplateController = TextEditingController(
       text: widget.step.filterTemplate,
     ); // Initialize renamed controller
@@ -65,19 +76,31 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     _fastTraceEnabled = widget.step.fastTraceEnabled;
 
     // Controllers
-    _startOffsetController = TextEditingController(text: widget.step.startOffset);
-    _startTimestampController = TextEditingController(text: widget.step.startTimestamp);
-    _startPartitionController = TextEditingController(text: widget.step.startPartition);
+    _startOffsetController = TextEditingController(
+      text: widget.step.startOffset,
+    );
+    _startTimestampController = TextEditingController(
+      text: widget.step.startTimestamp,
+    );
+    _startPartitionController = TextEditingController(
+      text: widget.step.startPartition,
+    );
     _endOffsetController = TextEditingController(text: widget.step.endOffset);
-    _endTimestampController = TextEditingController(text: widget.step.endTimestamp);
+    _endTimestampController = TextEditingController(
+      text: widget.step.endTimestamp,
+    );
 
     _limitResults = widget.step.maxResults != null;
-    _maxResultsController = TextEditingController(text: widget.step.maxResults ?? "200");
+    _maxResultsController = TextEditingController(
+      text: widget.step.maxResults ?? "200",
+    );
 
     // Resolve cluster object if possible
     final clusters = getIt<ClusterListController>().clusters;
     try {
-      _selectedCluster = clusters.firstWhere((c) => c.name == widget.step.clusterName);
+      _selectedCluster = clusters.firstWhere(
+        (c) => c.name == widget.step.clusterName,
+      );
     } catch (_) {}
 
     // _selectedTopicName = widget.step.topicName.isNotEmpty ? widget.step.topicName : null; // Removed
@@ -134,7 +157,10 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   Widget _buildStepNameField() {
     return TextField(
       controller: _nameController,
-      decoration: const InputDecoration(labelText: "Step Name", border: OutlineInputBorder()),
+      decoration: const InputDecoration(
+        labelText: "Step Name",
+        border: OutlineInputBorder(),
+      ),
     );
   }
 
@@ -192,7 +218,11 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
             suffixIcon: topicController.isLoading(_selectedCluster!)
                 ? const Padding(
                     padding: EdgeInsets.all(12.0),
-                    child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   )
                 : const Icon(Icons.arrow_drop_down),
           ),
@@ -238,7 +268,11 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
 
   Widget _buildSearchConfiguration() {
     return SearchStreamConfiguration(
-      filterInput: _buildTextFieldWithVar("Filter Template", _filterTemplateController, icon: Icons.filter_alt),
+      filterInput: _buildTextFieldWithVar(
+        "Filter Template",
+        _filterTemplateController,
+        icon: Icons.filter_alt,
+      ),
       filterType: _selectedFilterType,
       onFilterTypeChanged: (v) => setState(() {
         _selectedFilterType = v;
@@ -281,9 +315,16 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Value Extractions", style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          "Value Extractions",
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
-        if (_extractions.isEmpty) const Text("No extractions defined", style: TextStyle(color: Colors.grey)),
+        if (_extractions.isEmpty)
+          const Text(
+            "No extractions defined",
+            style: TextStyle(color: Colors.grey),
+          ),
 
         ListView.separated(
           shrinkWrap: true,
@@ -296,7 +337,11 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
         OutlinedButton.icon(
           icon: const Icon(Icons.add),
           label: const Text("Add Extraction"),
-          onPressed: () => setState(() => _extractions.add(const ScriptExtraction(jsonPath: "", variableName: ""))),
+          onPressed: () => setState(
+            () => _extractions.add(
+              const ScriptExtraction(jsonPath: "", variableName: ""),
+            ),
+          ),
         ),
       ],
     );
@@ -311,7 +356,11 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [_buildExtractionHeader(index), const SizedBox(height: 8), _buildExtractionJsonPath(index)],
+        children: [
+          _buildExtractionHeader(index),
+          const SizedBox(height: 8),
+          _buildExtractionJsonPath(index),
+        ],
       ),
     );
   }
@@ -325,14 +374,19 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
             flex: 4,
             child: DropdownButtonFormField<String>(
               isExpanded: true,
-              initialValue: extraction.topic != null && _selectedTopics.contains(extraction.topic)
+              initialValue:
+                  extraction.topic != null &&
+                      _selectedTopics.contains(extraction.topic)
                   ? extraction.topic
                   : null,
               decoration: const InputDecoration(
                 labelText: "Topic",
                 isDense: true,
                 border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 12,
+                ),
               ),
               items: _selectedTopics
                   .map(
@@ -340,12 +394,18 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
                       value: t,
                       child: Tooltip(
                         message: t,
-                        child: Text(t, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                        child: Text(
+                          t,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13),
+                        ),
                       ),
                     ),
                   )
                   .toList(),
-              onChanged: (val) => setState(() => _extractions[index] = extraction.copyWith(topic: val)),
+              onChanged: (val) => setState(
+                () => _extractions[index] = extraction.copyWith(topic: val),
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -365,13 +425,18 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
                 .map(
                   (s) => DropdownMenuItem(
                     value: s,
-                    child: Text(s.name.toUpperCase(), style: const TextStyle(fontSize: 13)),
+                    child: Text(
+                      s.name.toUpperCase(),
+                      style: const TextStyle(fontSize: 13),
+                    ),
                   ),
                 )
                 .toList(),
             onChanged: (val) {
               if (val != null) {
-                setState(() => _extractions[index] = extraction.copyWith(source: val));
+                setState(
+                  () => _extractions[index] = extraction.copyWith(source: val),
+                );
               }
             },
           ),
@@ -387,8 +452,11 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
               contentPadding: EdgeInsets.all(12),
             ),
             controller: TextEditingController(text: extraction.variableName)
-              ..selection = TextSelection.collapsed(offset: extraction.variableName.length),
-            onChanged: (val) => _extractions[index] = extraction.copyWith(variableName: val),
+              ..selection = TextSelection.collapsed(
+                offset: extraction.variableName.length,
+              ),
+            onChanged: (val) =>
+                _extractions[index] = extraction.copyWith(variableName: val),
           ),
         ),
         IconButton(
@@ -412,15 +480,23 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
               return [];
             }
             final topic = extraction.topic ?? _selectedTopics.first;
-            final fields = await getIt<SchemaController>().fetchSchemaFields(_selectedCluster!, topic);
+            final fields = await getIt<SchemaController>().fetchSchemaFields(
+              _selectedCluster!,
+              topic,
+            );
             if (textEditingValue.text.isEmpty) {
               return fields;
             }
             return fields.where((option) {
-              return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+              return option.toLowerCase().contains(
+                textEditingValue.text.toLowerCase(),
+              );
             });
           },
-          onSelected: (selection) => setState(() => _extractions[index] = extraction.copyWith(jsonPath: selection)),
+          onSelected: (selection) => setState(
+            () =>
+                _extractions[index] = extraction.copyWith(jsonPath: selection),
+          ),
           fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
             return TextField(
               controller: controller,
@@ -432,7 +508,9 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.all(12),
               ),
-              onChanged: (val) => setState(() => _extractions[index] = extraction.copyWith(jsonPath: val)),
+              onChanged: (val) => setState(
+                () => _extractions[index] = extraction.copyWith(jsonPath: val),
+              ),
             );
           },
           optionsViewBuilder: (context, onSelected, options) {
@@ -469,7 +547,10 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
         const SizedBox(width: 8),
         FilledButton(
           onPressed: () {
@@ -486,16 +567,25 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
               scope: _selectedSearchScope,
               startStrategy: _startStrategy,
               endStrategy: _endStrategy,
-              startOffset: _startStrategy == MultiSearchStartStrategy.customOffset ? _startOffsetController.text : null,
-              startTimestamp: _startStrategy == MultiSearchStartStrategy.customTimestamp
+              startOffset:
+                  _startStrategy == MultiSearchStartStrategy.customOffset
+                  ? _startOffsetController.text
+                  : null,
+              startTimestamp:
+                  _startStrategy == MultiSearchStartStrategy.customTimestamp
                   ? _startTimestampController.text
                   : null,
-              startPartition: (!_fastTraceEnabled && _startPartitionController.text.isNotEmpty)
+              startPartition:
+                  (!_fastTraceEnabled &&
+                      _startPartitionController.text.isNotEmpty)
                   ? _startPartitionController.text
                   : null,
               fastTraceEnabled: _fastTraceEnabled,
-              endOffset: _endStrategy == MultiSearchEndStrategy.customOffset ? _endOffsetController.text : null,
-              endTimestamp: _endStrategy == MultiSearchEndStrategy.customTimestamp
+              endOffset: _endStrategy == MultiSearchEndStrategy.customOffset
+                  ? _endOffsetController.text
+                  : null,
+              endTimestamp:
+                  _endStrategy == MultiSearchEndStrategy.customTimestamp
                   ? _endTimestampController.text
                   : null,
               maxResults: _limitResults ? _maxResultsController.text : null,
@@ -509,7 +599,12 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     );
   }
 
-  Widget _buildTextFieldWithVar(String label, TextEditingController controller, {IconData? icon, bool enabled = true}) {
+  Widget _buildTextFieldWithVar(
+    String label,
+    TextEditingController controller, {
+    IconData? icon,
+    bool enabled = true,
+  }) {
     return TextField(
       controller: controller,
       enabled: enabled,
@@ -529,8 +624,9 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
             icon: const Icon(Icons.data_object, size: 18),
             tooltip: "Insert Variable",
             onSelected: (v) => _insertVariable(controller, v),
-            itemBuilder: (context) =>
-                widget.variables.map((v) => PopupMenuItem(value: v.name, child: Text(v.name))).toList(),
+            itemBuilder: (context) => widget.variables
+                .map((v) => PopupMenuItem(value: v.name, child: Text(v.name)))
+                .toList(),
           )
         : null;
   }

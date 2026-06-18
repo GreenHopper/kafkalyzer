@@ -17,7 +17,10 @@ class SchemaController extends ChangeNotifier {
 
   bool isLoading(ClusterProfile cluster) => _isLoading[cluster.name] ?? false;
 
-  Future<void> fetchSchemas(ClusterProfile cluster, {bool force = false}) async {
+  Future<void> fetchSchemas(
+    ClusterProfile cluster, {
+    bool force = false,
+  }) async {
     if (!force && _cache.containsKey(cluster.name)) return;
 
     _isLoading[cluster.name] = true;
@@ -43,7 +46,10 @@ class SchemaController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<String>> fetchSchemaFields(ClusterProfile cluster, String topic) async {
+  Future<List<String>> fetchSchemaFields(
+    ClusterProfile cluster,
+    String topic,
+  ) async {
     final cacheKey = "${cluster.name}_${topic}_value";
     if (_fieldsCache.containsKey(cacheKey)) {
       return _fieldsCache[cacheKey]!;
@@ -51,7 +57,10 @@ class SchemaController extends ChangeNotifier {
 
     try {
       // Try to fetch value schema first
-      final schemaJson = await _registryService.fetchSchema(profile: cluster, subject: "$topic-value");
+      final schemaJson = await _registryService.fetchSchema(
+        profile: cluster,
+        subject: "$topic-value",
+      );
       final schema = parseSchemaFields(schemaJson);
       _fieldsCache[cacheKey] = schema;
       return schema;
@@ -80,7 +89,9 @@ class SchemaController extends ChangeNotifier {
 
   Map<String, List> _collectNamedRecords(dynamic node, Map<String, List> map) {
     if (node is Map<String, dynamic>) {
-      if (node['type'] == 'record' && node['name'] != null && node['fields'] != null) {
+      if (node['type'] == 'record' &&
+          node['name'] != null &&
+          node['fields'] != null) {
         final name = node['name'].toString();
         map[name] = node['fields'] as List;
 
@@ -100,7 +111,12 @@ class SchemaController extends ChangeNotifier {
     return map;
   }
 
-  List<String> _extractFieldPaths(List fields, String prefix, Map<String, List> namedRecords, Set<String> visited) {
+  List<String> _extractFieldPaths(
+    List fields,
+    String prefix,
+    Map<String, List> namedRecords,
+    Set<String> visited,
+  ) {
     List<String> paths = [];
     for (var f in fields) {
       if (f is! Map<String, dynamic>) continue;
@@ -111,7 +127,9 @@ class SchemaController extends ChangeNotifier {
       paths.add(currentPath);
 
       if (f.containsKey('type')) {
-        paths.addAll(_extractPathsFromType(f['type'], currentPath, namedRecords, visited));
+        paths.addAll(
+          _extractPathsFromType(f['type'], currentPath, namedRecords, visited),
+        );
       }
     }
     return paths;
@@ -128,7 +146,14 @@ class SchemaController extends ChangeNotifier {
     if (typeObj is String) {
       if (namedRecords.containsKey(typeObj) && !visited.contains(typeObj)) {
         final newVisited = Set<String>.from(visited)..add(typeObj);
-        paths.addAll(_extractFieldPaths(namedRecords[typeObj]!, currentPath, namedRecords, newVisited));
+        paths.addAll(
+          _extractFieldPaths(
+            namedRecords[typeObj]!,
+            currentPath,
+            namedRecords,
+            newVisited,
+          ),
+        );
       }
     } else if (typeObj is Map<String, dynamic>) {
       final typeName = typeObj['name'] as String?;
@@ -140,13 +165,29 @@ class SchemaController extends ChangeNotifier {
       }
 
       if (typeObj['type'] == 'record' && typeObj.containsKey('fields')) {
-        paths.addAll(_extractFieldPaths(typeObj['fields'] as List, currentPath, namedRecords, currentVisited));
+        paths.addAll(
+          _extractFieldPaths(
+            typeObj['fields'] as List,
+            currentPath,
+            namedRecords,
+            currentVisited,
+          ),
+        );
       } else if (typeObj['type'] == 'array' && typeObj.containsKey('items')) {
-        paths.addAll(_extractPathsFromType(typeObj['items'], currentPath, namedRecords, currentVisited));
+        paths.addAll(
+          _extractPathsFromType(
+            typeObj['items'],
+            currentPath,
+            namedRecords,
+            currentVisited,
+          ),
+        );
       }
     } else if (typeObj is List) {
       for (var t in typeObj) {
-        paths.addAll(_extractPathsFromType(t, currentPath, namedRecords, visited));
+        paths.addAll(
+          _extractPathsFromType(t, currentPath, namedRecords, visited),
+        );
       }
     }
     return paths;

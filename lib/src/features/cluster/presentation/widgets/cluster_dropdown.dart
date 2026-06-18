@@ -49,13 +49,21 @@ class ClusterDropdown extends StatelessWidget {
                       if (topicController.hasCachedTopics(c))
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
-                          child: Icon(Icons.check_circle, size: 16, color: Theme.of(context).colorScheme.primary),
+                          child: Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
                       Text(
                         c.name,
                         style: TextStyle(
-                          color: topicController.hasCachedTopics(c) ? Theme.of(context).colorScheme.primary : null,
-                          fontWeight: topicController.hasCachedTopics(c) ? FontWeight.w600 : null,
+                          color: topicController.hasCachedTopics(c)
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
+                          fontWeight: topicController.hasCachedTopics(c)
+                              ? FontWeight.w600
+                              : null,
                         ),
                       ),
                     ],

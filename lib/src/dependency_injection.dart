@@ -20,11 +20,21 @@ final getIt = GetIt.instance;
 void setupDependencyInjection() {
   getIt.registerLazySingleton<Logger>(() => Logger());
   getIt.registerLazySingleton<ClusterService>(() => ClusterService());
-  getIt.registerLazySingleton<KafkaMetadataService>(() => KafkaMetadataService());
-  getIt.registerLazySingleton<SchemaRegistryService>(() => SchemaRegistryService());
-  getIt.registerLazySingleton<ClusterListController>(() => ClusterListController());
-  getIt.registerLazySingleton<ActiveConnectionController>(() => ActiveConnectionController());
-  getIt.registerLazySingleton<MultiSearchController>(() => MultiSearchController());
+  getIt.registerLazySingleton<KafkaMetadataService>(
+    () => KafkaMetadataService(),
+  );
+  getIt.registerLazySingleton<SchemaRegistryService>(
+    () => SchemaRegistryService(),
+  );
+  getIt.registerLazySingleton<ClusterListController>(
+    () => ClusterListController(),
+  );
+  getIt.registerLazySingleton<ActiveConnectionController>(
+    () => ActiveConnectionController(),
+  );
+  getIt.registerLazySingleton<MultiSearchController>(
+    () => MultiSearchController(),
+  );
   getIt.registerLazySingleton<TopicController>(() => TopicController());
   getIt.registerLazySingleton<SchemaController>(() => SchemaController());
   getIt.registerLazySingleton<ThemeController>(() => ThemeController());
@@ -33,7 +43,8 @@ void setupDependencyInjection() {
   getIt.registerLazySingleton<ScriptController>(() => ScriptController());
   getIt.registerLazySingleton<ScriptRunner>(() => ScriptRunner());
 
-
   getIt.registerLazySingleton<SettingsService>(() => SettingsService());
-  getIt.registerLazySingleton<MessageExportService>(() => MessageExportService());
+  getIt.registerLazySingleton<MessageExportService>(
+    () => MessageExportService(),
+  );
 }

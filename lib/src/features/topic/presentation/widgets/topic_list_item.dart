@@ -33,7 +33,11 @@ class TopicListItem extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
-          color: isSelected ? Colors.transparent : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+          color: isSelected
+              ? Colors.transparent
+              : Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -43,10 +47,15 @@ class TopicListItem extends StatelessWidget {
           topic.name,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: isSelected ? Theme.of(context).colorScheme.onSecondaryContainer : null,
+            color: isSelected
+                ? Theme.of(context).colorScheme.onSecondaryContainer
+                : null,
           ),
         ),
-        subtitle: Padding(padding: const EdgeInsets.only(top: 8.0), child: _buildSubtitle(context)),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: _buildSubtitle(context),
+        ),
         onTap: onTap,
         trailing: trailing,
       ),
@@ -62,10 +71,18 @@ class TopicListItem extends StatelessWidget {
         TopicTag("${topic.partitionCount} Partitions"),
         TopicTag("RF: ${topic.replicationFactor}"),
         if (topic.cleanupPolicy != null || topic.retentionMs != null) ...[
-          if (topic.cleanupPolicy != null) TopicTag(splitPolicy(topic.cleanupPolicy!), isConfig: true),
-          if (topic.retentionMs != null) ...[TopicTag(formatRetention(topic.retentionMs!), isConfig: true)],
+          if (topic.cleanupPolicy != null)
+            TopicTag(splitPolicy(topic.cleanupPolicy!), isConfig: true),
+          if (topic.retentionMs != null) ...[
+            TopicTag(formatRetention(topic.retentionMs!), isConfig: true),
+          ],
         ],
-        if (clusterProfile != null && hasSchema(getIt<SchemaController>(), clusterProfile!, topic.name)) ...[
+        if (clusterProfile != null &&
+            hasSchema(
+              getIt<SchemaController>(),
+              clusterProfile!,
+              topic.name,
+            )) ...[
           const TopicTag("Avro", isSchema: true),
           _buildSchemaButton(context),
         ],
@@ -91,14 +108,26 @@ class TopicListItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           minimumSize: const Size(0, 24),
           visualDensity: VisualDensity.compact,
-          side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.visibility, size: 14, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              Icons.visibility,
+              size: 14,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 4),
-            Text("Schema", style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary)),
+            Text(
+              "Schema",
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ],
         ),
       ),

@@ -105,11 +105,16 @@ class ScriptRun {
       scriptName: json['scriptName'] as String,
       timestamp: json['timestamp'] as int,
       parameters: Map<String, String>.from(json['parameters'] ?? {}),
-      status: ScriptRunStatus.values.firstWhere((e) => e.name == json['status'], orElse: () => ScriptRunStatus.error),
+      status: ScriptRunStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => ScriptRunStatus.error,
+      ),
       path: json['path'] as String,
       clusterName: json['clusterName'] as String?,
       error: json['error'] as String?,
-      scriptSnapshot: json['scriptSnapshot'] != null ? Script.fromJson(json['scriptSnapshot']) : null,
+      scriptSnapshot: json['scriptSnapshot'] != null
+          ? Script.fromJson(json['scriptSnapshot'])
+          : null,
       totalMessages: json['totalMessages'] as int?,
       totalExamined: json['totalExamined'] as int?,
       topicExamined: Map<String, int>.from(json['topicExamined'] ?? {}),

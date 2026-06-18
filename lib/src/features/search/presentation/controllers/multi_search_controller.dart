@@ -93,7 +93,12 @@ class SearchTarget {
       searchJobId.hashCode;
 }
 
-enum MultiSearchStartStrategy { latest, earliest, customOffset, customTimestamp }
+enum MultiSearchStartStrategy {
+  latest,
+  earliest,
+  customOffset,
+  customTimestamp,
+}
 
 enum MultiSearchEndStrategy { live, latest, customOffset, customTimestamp }
 
@@ -104,7 +109,8 @@ class SearchProgress {
   final int total;
   final DateTime startTime;
 
-  SearchProgress(this.scanned, this.total, {DateTime? startTime}) : startTime = startTime ?? DateTime.now();
+  SearchProgress(this.scanned, this.total, {DateTime? startTime})
+    : startTime = startTime ?? DateTime.now();
 
   double get fraction => total == 0 ? 0 : (scanned / total).clamp(0.0, 1.0);
   int get remaining => (total - scanned).clamp(0, total);
@@ -129,23 +135,17 @@ class MultiSearchController extends ChangeNotifier {
   String? get outputDirectory => _outputDirectory;
 
   MultiSearchController() {
-    _loadDirectory();
+    loadDirectory();
   }
 
-  Future<void> _loadDirectory() async {
+  Future<void> loadDirectory() async {
     final prefs = await SharedPreferences.getInstance();
-    _outputDirectory = prefs.getString('multi_search_output_dir');
+    _outputDirectory = prefs.getString('general_default_output_dir');
     notifyListeners();
   }
 
   Future<void> setDirectory(String? path) async {
     _outputDirectory = path;
-    final prefs = await SharedPreferences.getInstance();
-    if (path != null) {
-      await prefs.setString('multi_search_output_dir', path);
-    } else {
-      await prefs.remove('multi_search_output_dir');
-    }
     notifyListeners();
   }
 
@@ -183,7 +183,8 @@ class MultiSearchController extends ChangeNotifier {
     } else {
       // If it exists but is stopped, maybe restart it?
       // User can remove and add again, but let's handle "restart" logic if stopped.
-      if (_status[target] == SearchStatus.stopped || _status[target] == SearchStatus.error) {
+      if (_status[target] == SearchStatus.stopped ||
+          _status[target] == SearchStatus.error) {
         _startSubscription(target);
         notifyListeners();
       }
@@ -230,7 +231,8 @@ class MultiSearchController extends ChangeNotifier {
           if (dir.existsSync()) {
             final timestamp = DateTime.now().millisecondsSinceEpoch;
             final prefix = target.stepId != null ? "${target.stepId}_" : "";
-            final filename = "search_results_$prefix${target.topic.name}_$timestamp.json";
+            final filename =
+                "search_results_$prefix${target.topic.name}_$timestamp.json";
             final file = File('${dir.path}/$filename');
             final sink = file.openWrite();
             _fileSinks[target] = sink;
@@ -254,7 +256,9 @@ class MultiSearchController extends ChangeNotifier {
 
       final finalFilterTerms =
           target.filterTerms ??
-          (target.filterTerm != null && target.filterTerm!.isNotEmpty ? [target.filterTerm!] : null);
+          (target.filterTerm != null && target.filterTerm!.isNotEmpty
+              ? [target.filterTerm!]
+              : null);
 
       if (finalFilterTerms != null && finalFilterTerms.isNotEmpty) {
         _logger.i(
@@ -272,7 +276,9 @@ class MultiSearchController extends ChangeNotifier {
         startOffset: target.startOffset,
         startTimestamp: target.startTimestamp,
         startPartition: target.startPartition,
-        fastTraceKey: target.fastTraceEnabled ? (target.filterTerm ?? target.filterTerms?.firstOrNull) : null,
+        fastTraceKey: target.fastTraceEnabled
+            ? (target.filterTerm ?? target.filterTerms?.firstOrNull)
+            : null,
         endOffset: target.endOffset,
         endTimestamp: target.endTimestamp,
         maxResults: target.maxResults,
@@ -287,21 +293,29 @@ class MultiSearchController extends ChangeNotifier {
             if (_outputDirectory != null) {
               try {
                 final logFile = File('$_outputDirectory/consumer.log');
-                logFile.writeAsStringSync("${DateTime.now().toIso8601String()}: $logMsg\n", mode: FileMode.append);
+                logFile.writeAsStringSync(
+                  "${DateTime.now().toIso8601String()}: $logMsg\n",
+                  mode: FileMode.append,
+                );
               } catch (e) {
                 _logger.e("Failed to write to consumer.log", error: e);
               }
             }
             return;
           }
-          if (payload.startsWith("__HEARTBEAT__") || payload.startsWith("__PROGRESS__")) {
+          if (payload.startsWith("__HEARTBEAT__") ||
+              payload.startsWith("__PROGRESS__")) {
             // Parse progress: __PROGRESS__:scanned:total or __HEARTBEAT__:scanned:total
             final parts = payload.split(":");
             if (parts.length > 2) {
               final scanned = int.tryParse(parts[1]) ?? 0;
               final total = int.tryParse(parts[2]) ?? 0;
               if (total > 0) {
-                _progress[target] = SearchProgress(scanned, total, startTime: _progress[target]?.startTime);
+                _progress[target] = SearchProgress(
+                  scanned,
+                  total,
+                  startTime: _progress[target]?.startTime,
+                );
                 _throttleNotify(target);
               }
             }
@@ -313,7 +327,11 @@ class MultiSearchController extends ChangeNotifier {
               // Ensure progress shows 100% on completion
               final current = _progress[target];
               if (current != null && current.total > 0) {
-                _progress[target] = SearchProgress(current.total, current.total, startTime: current.startTime);
+                _progress[target] = SearchProgress(
+                  current.total,
+                  current.total,
+                  startTime: current.startTime,
+                );
               }
 
               _status[target] = SearchStatus.stopped;
@@ -335,7 +353,9 @@ class MultiSearchController extends ChangeNotifier {
             if (!isFirst) {
               sink.write(',\n');
             }
-            sink.write('    ${jsonEncode(SearchJsonSerializer.serializeMessage(message))}');
+            sink.write(
+              '    ${jsonEncode(SearchJsonSerializer.serializeMessage(message))}',
+            );
           }
         },
         onError: (e) {
@@ -390,7 +410,10 @@ class MultiSearchController extends ChangeNotifier {
     list.add(message);
 
     if (list.length > 2000) {
-      list.removeRange(0, list.length - 2000); // Remove oldest (assuming append order)
+      list.removeRange(
+        0,
+        list.length - 2000,
+      ); // Remove oldest (assuming append order)
     }
     _throttleNotify(target);
   }

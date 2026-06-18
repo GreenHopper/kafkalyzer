@@ -9,7 +9,13 @@ class ScriptSelector extends StatelessWidget {
   final String? errorText;
   final bool Function(Script)? filter;
 
-  const ScriptSelector({super.key, this.selectedScriptName, required this.onSelected, this.errorText, this.filter});
+  const ScriptSelector({
+    super.key,
+    this.selectedScriptName,
+    required this.onSelected,
+    this.errorText,
+    this.filter,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +32,9 @@ class ScriptSelector extends StatelessWidget {
         String? currentValue = selectedScriptName;
 
         // Ensure the current value exists in the scripts list
-        if (currentValue != null && currentValue.isNotEmpty && !scripts.any((s) => s.name == currentValue)) {
+        if (currentValue != null &&
+            currentValue.isNotEmpty &&
+            !scripts.any((s) => s.name == currentValue)) {
           // If not found, try to find "PMXCOR" or take the first one
           final fallback = scripts.any((s) => s.name == "PMXCOR")
               ? "PMXCOR"
@@ -41,7 +49,8 @@ class ScriptSelector extends StatelessWidget {
           } else {
             currentValue = null;
           }
-        } else if ((currentValue == null || currentValue.isEmpty) && scripts.isNotEmpty) {
+        } else if ((currentValue == null || currentValue.isEmpty) &&
+            scripts.isNotEmpty) {
           currentValue = scripts.first.name;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             onSelected(currentValue);

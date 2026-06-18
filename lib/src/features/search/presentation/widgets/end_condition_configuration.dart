@@ -28,7 +28,9 @@ class EndConditionConfiguration extends StatelessWidget {
       children: [
         Text(
           l10n.stopCondition,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -42,16 +44,27 @@ class EndConditionConfiguration extends StatelessWidget {
             children: [
               GroupButton(
                 isRadio: true,
-                onSelected: (val, i, selected) => onEndStrategyChanged(MultiSearchEndStrategy.values[i]),
+                onSelected: (val, i, selected) =>
+                    onEndStrategyChanged(MultiSearchEndStrategy.values[i]),
                 buttons: [l10n.stream, l10n.end, l10n.offset, l10n.timestamp],
-                controller: GroupButtonController(selectedIndex: endStrategy.index),
+                controller: GroupButtonController(
+                  selectedIndex: endStrategy.index,
+                ),
                 options: GroupButtonOptions(
                   borderRadius: BorderRadius.circular(8),
                   buttonHeight: 28,
-                  selectedColor: Theme.of(context).colorScheme.tertiaryContainer,
-                  selectedTextStyle: TextStyle(color: Theme.of(context).colorScheme.onTertiaryContainer, fontSize: 11),
+                  selectedColor: Theme.of(
+                    context,
+                  ).colorScheme.tertiaryContainer,
+                  selectedTextStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onTertiaryContainer,
+                    fontSize: 11,
+                  ),
                   unselectedColor: Theme.of(context).colorScheme.surface,
-                  unselectedTextStyle: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11),
+                  unselectedTextStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
                   mainGroupAlignment: MainGroupAlignment.start,
                   spacing: 8,
                   runSpacing: 8,
@@ -66,7 +79,9 @@ class EndConditionConfiguration extends StatelessWidget {
                     labelText: l10n.endOffset,
                     border: const OutlineInputBorder(),
                     isDense: true,
-                    suffixIcon: variableSuffixBuilder?.call(endOffsetController),
+                    suffixIcon: variableSuffixBuilder?.call(
+                      endOffsetController,
+                    ),
                   ),
                 ),
               ],
@@ -76,7 +91,9 @@ class EndConditionConfiguration extends StatelessWidget {
                   controller: endTimestampController,
                   label: l10n.endTimestamp,
                   showInlineChips: true,
-                  suffixIcon: variableSuffixBuilder?.call(endTimestampController),
+                  suffixIcon: variableSuffixBuilder?.call(
+                    endTimestampController,
+                  ),
                 ),
               ],
             ],

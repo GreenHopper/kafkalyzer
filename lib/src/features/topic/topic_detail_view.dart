@@ -26,13 +26,18 @@ enum StartStrategy { latest, earliest, customOffset, customTimestamp }
 class TopicDetailView extends StatefulWidget {
   final TopicMetadata topic;
   final ClusterProfile profile;
-  const TopicDetailView({super.key, required this.topic, required this.profile});
+  const TopicDetailView({
+    super.key,
+    required this.topic,
+    required this.profile,
+  });
 
   @override
   State<TopicDetailView> createState() => _TopicDetailViewState();
 }
 
-class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAliveClientMixin {
+class _TopicDetailViewState extends State<TopicDetailView>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   final TextEditingController _filterController = TextEditingController();
@@ -50,7 +55,10 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
   void initState() {
     super.initState();
     activeController = getIt<ActiveConnectionController>();
-    streamController = activeController.getStreamController(widget.topic.name, widget.profile.name);
+    streamController = activeController.getStreamController(
+      widget.topic.name,
+      widget.profile.name,
+    );
     schemaController = getIt<SchemaController>();
   }
 
@@ -71,14 +79,17 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
   FilterType _filterType = FilterType.contains;
   SearchScope _searchScope = SearchScope.both;
   bool _fastTraceEnabled = false;
-  final TextEditingController _partitionController = TextEditingController(); // ADDED
+  final TextEditingController _partitionController =
+      TextEditingController(); // ADDED
 
   MultiSearchEndStrategy _endStrategy = MultiSearchEndStrategy.latest;
   final TextEditingController _endOffsetController = TextEditingController();
   final TextEditingController _endTimestampController = TextEditingController();
 
   bool _limitResults = true; // ADDED
-  final TextEditingController _maxResultsController = TextEditingController(text: "200"); // ADDED
+  final TextEditingController _maxResultsController = TextEditingController(
+    text: "200",
+  ); // ADDED
 
   int? _convertToTimestamp(String text) {
     if (text.isEmpty) return null;
@@ -102,7 +113,11 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
-                border: Border(bottom: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
+                border: Border(
+                  bottom: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                ),
               ),
               child: _buildHeader(context),
             ),
@@ -132,19 +147,27 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
     return Row(
       children: [
         IconButton(
-          onPressed: () => activeController.closeTopic(widget.topic, widget.profile.name),
+          onPressed: () =>
+              activeController.closeTopic(widget.topic, widget.profile.name),
           icon: const Icon(Icons.close),
           tooltip: "Close Tab",
-          style: IconButton.styleFrom(backgroundColor: colorScheme.surfaceContainerHigh),
+          style: IconButton.styleFrom(
+            backgroundColor: colorScheme.surfaceContainerHigh,
+          ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [_buildTopicTitleRow(context), const SizedBox(height: 8), _buildTopicTags(context)],
+            children: [
+              _buildTopicTitleRow(context),
+              const SizedBox(height: 8),
+              _buildTopicTags(context),
+            ],
           ),
         ),
-        if (hasSchema(schemaController, widget.profile, widget.topic.name)) _buildSchemaButton(context),
+        if (hasSchema(schemaController, widget.profile, widget.topic.name))
+          _buildSchemaButton(context),
         const Spacer(),
         _buildProgressTile(context, colorScheme),
       ],
@@ -157,7 +180,9 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
         Flexible(
           child: Text(
             widget.topic.name,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -167,9 +192,12 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
           tooltip: "Copy Topic Name",
           onPressed: () {
             Clipboard.setData(ClipboardData(text: widget.topic.name));
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text("Topic name copied"), duration: Duration(seconds: 1)));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Topic name copied"),
+                duration: Duration(seconds: 1),
+              ),
+            );
           },
         ),
       ],
@@ -183,9 +211,12 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
       children: [
         TopicTag("${widget.topic.partitionCount} Partitions"),
         TopicTag("RF: ${widget.topic.replicationFactor}"),
-        if (widget.topic.cleanupPolicy != null) TopicTag(splitPolicy(widget.topic.cleanupPolicy!), isConfig: true),
-        if (widget.topic.retentionMs != null) TopicTag(formatRetention(widget.topic.retentionMs!), isConfig: true),
-        if (hasSchema(schemaController, widget.profile, widget.topic.name)) const TopicTag("Avro", isSchema: true),
+        if (widget.topic.cleanupPolicy != null)
+          TopicTag(splitPolicy(widget.topic.cleanupPolicy!), isConfig: true),
+        if (widget.topic.retentionMs != null)
+          TopicTag(formatRetention(widget.topic.retentionMs!), isConfig: true),
+        if (hasSchema(schemaController, widget.profile, widget.topic.name))
+          const TopicTag("Avro", isSchema: true),
       ],
     );
   }
@@ -197,8 +228,11 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
         onPressed: () {
           showDialog(
             context: context,
-            builder: (context) =>
-                SchemaViewerDialog(profile: widget.profile, topicName: widget.topic.name, controller: schemaController),
+            builder: (context) => SchemaViewerDialog(
+              profile: widget.profile,
+              topicName: widget.topic.name,
+              controller: schemaController,
+            ),
           );
         },
         style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
@@ -216,7 +250,9 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
           topic: "Scan Progress",
           status: streamController.isStreaming
               ? StepStatus.running
-              : (streamController.totalConsumed > 0 ? StepStatus.completed : StepStatus.pending),
+              : (streamController.totalConsumed > 0
+                    ? StepStatus.completed
+                    : StepStatus.pending),
           progress: SearchProgress(
             streamController.totalConsumed,
             streamController.totalToScan,
@@ -268,10 +304,17 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
     );
   }
 
-  Widget _buildSettings(BuildContext context, ColorScheme colorScheme, VoidCallback onStart) {
+  Widget _buildSettings(
+    BuildContext context,
+    ColorScheme colorScheme,
+    VoidCallback onStart,
+  ) {
     return ExpansionTile(
       initiallyExpanded: true,
-      title: const Text("Search Configuration", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+      title: const Text(
+        "Search Configuration",
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
       trailing: const Icon(Icons.tune, size: 20),
       childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       backgroundColor: colorScheme.surfaceContainerLowest,
@@ -280,7 +323,11 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
         LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 850;
-            final filterSection = _buildFilterSection(context, colorScheme, onStart);
+            final filterSection = _buildFilterSection(
+              context,
+              colorScheme,
+              onStart,
+            );
             final strategySection = _buildStrategySection(context);
 
             if (isWide) {
@@ -304,7 +351,10 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
                 children: [
                   filterSection,
                   const SizedBox(height: 16),
-                  Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                  Divider(
+                    height: 1,
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
                   const SizedBox(height: 16),
                   strategySection,
                 ],
@@ -316,7 +366,11 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
     );
   }
 
-  Widget _buildFilterSection(BuildContext context, ColorScheme colorScheme, VoidCallback onStart) {
+  Widget _buildFilterSection(
+    BuildContext context,
+    ColorScheme colorScheme,
+    VoidCallback onStart,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -337,7 +391,8 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
                   suffixIcon: _filterController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear),
-                          onPressed: () => setState(() => _filterController.clear()),
+                          onPressed: () =>
+                              setState(() => _filterController.clear()),
                         )
                       : null,
                 ),
@@ -352,7 +407,10 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
           spacing: 16,
           runSpacing: 12,
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: [_buildFilterTypeSelector(context, colorScheme), _buildSearchScopeSelector(context, colorScheme)],
+          children: [
+            _buildFilterTypeSelector(context, colorScheme),
+            _buildSearchScopeSelector(context, colorScheme),
+          ],
         ),
         const SizedBox(height: 12),
         _buildLimitAndPartitionRow(),
@@ -361,7 +419,9 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
           contentPadding: EdgeInsets.zero,
           title: Text(
             "Fast Trace (Hash Key)",
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           value: _fastTraceEnabled,
           onChanged: (val) => setState(() {
@@ -379,11 +439,16 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
   Widget _buildFieldAutocomplete(BuildContext context) {
     return Autocomplete<String>(
       optionsBuilder: (textEditingValue) async {
-        final fields = await schemaController.fetchSchemaFields(widget.profile, widget.topic.name);
+        final fields = await schemaController.fetchSchemaFields(
+          widget.profile,
+          widget.topic.name,
+        );
         if (textEditingValue.text.isEmpty) {
           return fields;
         }
-        return fields.where((f) => f.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+        return fields.where(
+          (f) => f.toLowerCase().contains(textEditingValue.text.toLowerCase()),
+        );
       },
       onSelected: (selection) => _filterFieldController.text = selection,
       fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
@@ -404,11 +469,19 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
     );
   }
 
-  Widget _buildFilterTypeSelector(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildFilterTypeSelector(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text("Type:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          "Type:",
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(width: 8),
         GroupButton(
           isRadio: true,
@@ -425,9 +498,15 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
             buttonHeight: 32,
             textPadding: const EdgeInsets.symmetric(horizontal: 12),
             selectedColor: colorScheme.primaryContainer,
-            selectedTextStyle: TextStyle(color: colorScheme.onPrimaryContainer, fontSize: 13),
+            selectedTextStyle: TextStyle(
+              color: colorScheme.onPrimaryContainer,
+              fontSize: 13,
+            ),
             unselectedColor: colorScheme.surfaceContainerHigh,
-            unselectedTextStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+            unselectedTextStyle: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
             mainGroupAlignment: MainGroupAlignment.start,
           ),
         ),
@@ -435,11 +514,19 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
     );
   }
 
-  Widget _buildSearchScopeSelector(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildSearchScopeSelector(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text("Scope:", style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          "Scope:",
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(width: 8),
         GroupButton(
           isRadio: true,
@@ -456,9 +543,15 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
             buttonHeight: 32,
             textPadding: const EdgeInsets.symmetric(horizontal: 12),
             selectedColor: colorScheme.primaryContainer,
-            selectedTextStyle: TextStyle(color: colorScheme.onPrimaryContainer, fontSize: 13),
+            selectedTextStyle: TextStyle(
+              color: colorScheme.onPrimaryContainer,
+              fontSize: 13,
+            ),
             unselectedColor: colorScheme.surfaceContainerHigh,
-            unselectedTextStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+            unselectedTextStyle: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
             mainGroupAlignment: MainGroupAlignment.start,
           ),
         ),
@@ -491,7 +584,10 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
           child: TextField(
             controller: _partitionController,
             enabled: !_fastTraceEnabled,
-            decoration: const InputDecoration(labelText: "Partition (Opt.)", isDense: true),
+            decoration: const InputDecoration(
+              labelText: "Partition (Opt.)",
+              isDense: true,
+            ),
           ),
         ),
       ],
@@ -509,7 +605,8 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
               flex: 3,
               child: StartConditionConfiguration(
                 startStrategy: _startStrategy,
-                onStartStrategyChanged: (val) => setState(() => _startStrategy = val),
+                onStartStrategyChanged: (val) =>
+                    setState(() => _startStrategy = val),
                 startOffsetController: _offsetController,
                 startTimestampController: _timestampController,
               ),
@@ -519,7 +616,8 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
               flex: 3,
               child: EndConditionConfiguration(
                 endStrategy: _endStrategy,
-                onEndStrategyChanged: (val) => setState(() => _endStrategy = val),
+                onEndStrategyChanged: (val) =>
+                    setState(() => _endStrategy = val),
                 endOffsetController: _endOffsetController,
                 endTimestampController: _endTimestampController,
               ),
@@ -538,7 +636,10 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
       if (_startStrategy == MultiSearchStartStrategy.customOffset) {
         startOffset = int.tryParse(_offsetController.text);
       } else if (_startStrategy == MultiSearchStartStrategy.customTimestamp) {
-        final date = DateFormatUtils.parseDateTime(context, _timestampController.text);
+        final date = DateFormatUtils.parseDateTime(
+          context,
+          _timestampController.text,
+        );
         if (date != null) {
           startTimestamp = date.millisecondsSinceEpoch;
         } else {
@@ -561,16 +662,26 @@ class _TopicDetailViewState extends State<TopicDetailView> with AutomaticKeepAli
         widget.profile,
         widget.topic.name,
         filterTerms: _filterController.text.isNotEmpty
-            ? _filterController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList()
+            ? _filterController.text
+                  .split(',')
+                  .map((e) => e.trim())
+                  .where((e) => e.isNotEmpty)
+                  .toList()
             : null,
-        filterField: _filterFieldController.text.isNotEmpty ? _filterFieldController.text : null,
+        filterField: _filterFieldController.text.isNotEmpty
+            ? _filterFieldController.text
+            : null,
         filterType: _filterType,
         searchScope: _searchScope,
         fastTraceEnabled: _fastTraceEnabled,
         startOffset: startOffset,
         startTimestamp: startTimestamp,
-        startPartition: _fastTraceEnabled ? null : int.tryParse(_partitionController.text),
-        maxResults: _limitResults ? int.tryParse(_maxResultsController.text) : null,
+        startPartition: _fastTraceEnabled
+            ? null
+            : int.tryParse(_partitionController.text),
+        maxResults: _limitResults
+            ? int.tryParse(_maxResultsController.text)
+            : null,
         endOffset: endOffset,
         endTimestamp: endTimestamp,
         runForever: _endStrategy == MultiSearchEndStrategy.live,

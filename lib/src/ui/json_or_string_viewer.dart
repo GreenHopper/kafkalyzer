@@ -13,7 +13,8 @@ class MatchRegistry {
   final List<GlobalKey> _keys = [];
   int get count => _keys.length;
   void register(GlobalKey key) => _keys.add(key);
-  GlobalKey? getKey(int index) => (index >= 0 && index < _keys.length) ? _keys[index] : null;
+  GlobalKey? getKey(int index) =>
+      (index >= 0 && index < _keys.length) ? _keys[index] : null;
   void clear() => _keys.clear();
 }
 
@@ -131,7 +132,8 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
 
     // Safety break to prevent infinite loops if something is wrong
     int attempts = 0;
-    while (_store.focusedSearchResultIndex != targetIndex && attempts < _store.searchResults.length * 2) {
+    while (_store.focusedSearchResultIndex != targetIndex &&
+        attempts < _store.searchResults.length * 2) {
       // Decide direction?
       // focusedSearchResultIndex is 0..N
       // We can just loop next.
@@ -184,7 +186,9 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
         setState(() {
           _viewMode = savedMode;
           // Re-trigger search if needed if mode switched to Tree
-          if (_viewMode == 1 && widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
+          if (_viewMode == 1 &&
+              widget.searchQuery != null &&
+              widget.searchQuery!.isNotEmpty) {
             _store.search(widget.searchQuery!);
           }
           _updateMatchCount();
@@ -196,7 +200,8 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
   @override
   void didUpdateWidget(covariant JsonOrStringViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.rawContent != widget.rawContent || oldWidget.preParsedJson != widget.preParsedJson) {
+    if (oldWidget.rawContent != widget.rawContent ||
+        oldWidget.preParsedJson != widget.preParsedJson) {
       _parseContent();
       _updateMatchCount();
     }
@@ -230,7 +235,8 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
       return;
     }
 
-    if (widget.rawContent.startsWith('<Binary Data>:') || widget.rawContent.startsWith('<Binary Key>:')) {
+    if (widget.rawContent.startsWith('<Binary Data>:') ||
+        widget.rawContent.startsWith('<Binary Key>:')) {
       _isValidJson = false;
       _viewMode = 3;
       _isBinaryHex = true;
@@ -305,9 +311,14 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
-                  valueTextStyle: GoogleFonts.robotoMono(color: colorScheme.onSurface, fontSize: 13),
+                  valueTextStyle: GoogleFonts.robotoMono(
+                    color: colorScheme.onSurface,
+                    fontSize: 13,
+                  ),
                   indentationLineColor: colorScheme.outlineVariant,
-                  highlightColor: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                  highlightColor: colorScheme.secondaryContainer.withValues(
+                    alpha: 0.5,
+                  ),
                   keySearchHighlightTextStyle: GoogleFonts.robotoMono(
                     color: colorScheme.onTertiaryContainer,
                     backgroundColor: colorScheme.tertiaryContainer,
@@ -334,11 +345,17 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                 ),
                 valueStyleBuilder: (value, style) {
                   if (value is num) {
-                    return PropertyOverrides(style: style.copyWith(color: colorScheme.secondary));
+                    return PropertyOverrides(
+                      style: style.copyWith(color: colorScheme.secondary),
+                    );
                   } else if (value is bool) {
-                    return PropertyOverrides(style: style.copyWith(color: colorScheme.tertiary));
+                    return PropertyOverrides(
+                      style: style.copyWith(color: colorScheme.tertiary),
+                    );
                   } else if (value is String) {
-                    return PropertyOverrides(style: style.copyWith(color: colorScheme.primary));
+                    return PropertyOverrides(
+                      style: style.copyWith(color: colorScheme.primary),
+                    );
                   }
                   return PropertyOverrides(style: style);
                 },
@@ -386,9 +403,11 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                   tooltip: "Copy content",
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: widget.rawContent));
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text("Content copied to clipboard")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Content copied to clipboard"),
+                      ),
+                    );
                   },
                 ),
                 if (_isValidJson) ...[
@@ -397,7 +416,11 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                     height: 32,
                     child: ToggleButtons(
                       borderRadius: BorderRadius.circular(8),
-                      isSelected: [_viewMode == 0, _viewMode == 1, _viewMode == 2],
+                      isSelected: [
+                        _viewMode == 0,
+                        _viewMode == 1,
+                        _viewMode == 2,
+                      ],
                       onPressed: (index) async {
                         setState(() {
                           _viewMode = index;
@@ -408,7 +431,10 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                         });
                         if (widget.persistenceKey != null) {
                           final prefs = await SharedPreferences.getInstance();
-                          prefs.setInt('json_view_mode_${widget.persistenceKey}', index);
+                          prefs.setInt(
+                            'json_view_mode_${widget.persistenceKey}',
+                            index,
+                          );
                         }
                       },
                       children: const [
@@ -445,14 +471,20 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
             ),
             // For Tree view (viewMode 1), JsonExplorer is already scrollable.
             // For others (Raw/Cards/HexViewer), we need to ensure they are scrollable.
-            child: (_viewMode == 1 || _isBinaryHex) ? contentWidget : SingleChildScrollView(child: contentWidget),
+            child: (_viewMode == 1 || _isBinaryHex)
+                ? contentWidget
+                : SingleChildScrollView(child: contentWidget),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHighlightedRawText(String text, TextStyle? style, BuildContext context) {
+  Widget _buildHighlightedRawText(
+    String text,
+    TextStyle? style,
+    BuildContext context,
+  ) {
     if (widget.searchQuery == null || widget.searchQuery!.isEmpty) {
       return SelectableText(text, style: style);
     }
@@ -483,8 +515,12 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
         TextSpan(
           text: match,
           style: style?.copyWith(
-            backgroundColor: isFocused ? Colors.orange : Theme.of(context).colorScheme.tertiaryContainer,
-            color: isFocused ? Colors.black : Theme.of(context).colorScheme.onTertiaryContainer,
+            backgroundColor: isFocused
+                ? Colors.orange
+                : Theme.of(context).colorScheme.tertiaryContainer,
+            color: isFocused
+                ? Colors.black
+                : Theme.of(context).colorScheme.onTertiaryContainer,
             fontWeight: isFocused ? FontWeight.bold : null,
           ),
         ),

@@ -15,7 +15,11 @@ class ActiveStreamsList extends StatelessWidget {
   final List<SearchTarget>? selectedTargets;
   final Function(List<SearchTarget>?) onSelectTargets;
 
-  const ActiveStreamsList({super.key, required this.selectedTargets, required this.onSelectTargets});
+  const ActiveStreamsList({
+    super.key,
+    required this.selectedTargets,
+    required this.onSelectTargets,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +32,10 @@ class ActiveStreamsList extends StatelessWidget {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 32.0),
             child: Center(
-              child: Text("No active streams", style: TextStyle(color: Colors.grey)),
+              child: Text(
+                "No active streams",
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           );
         }
@@ -47,7 +54,10 @@ class ActiveStreamsList extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: searchController.clear,
-                  child: const Text("Clear All", style: TextStyle(fontSize: 12)),
+                  child: const Text(
+                    "Clear All",
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ],
             ),
@@ -59,7 +69,10 @@ class ActiveStreamsList extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildJobTiles(BuildContext context, MultiSearchController searchController) {
+  List<Widget> _buildJobTiles(
+    BuildContext context,
+    MultiSearchController searchController,
+  ) {
     // Group targets by searchJobId
     final Map<String, List<SearchTarget>> grouped = {};
     final List<SearchTarget> ungrouped = [];
@@ -116,9 +129,13 @@ class ActiveStreamsList extends StatelessWidget {
         jobStatus = StepStatus.error;
       }
 
-      SearchProgress? jobProgress = hasTotal ? SearchProgress(totalScanned, totalCount) : null;
+      SearchProgress? jobProgress = hasTotal
+          ? SearchProgress(totalScanned, totalCount)
+          : null;
 
-      final titleText = job.targets.length == 1 ? job.targets.first.topic.name : "${job.targets.length} Topics";
+      final titleText = job.targets.length == 1
+          ? job.targets.first.topic.name
+          : "${job.targets.length} Topics";
       final subtitleText = job.targets.length == 1
           ? "${job.targets.first.profile.name} • ${job.targets.first.filterTerm ?? 'All'} • ${_getStrategyText(job.targets.first)}"
           : "${job.targets.first.profile.name} • ${job.targets.first.filterTerm ?? 'All'}";
@@ -138,17 +155,27 @@ class ActiveStreamsList extends StatelessWidget {
               status: jobStatus,
               progress: jobProgress,
               matchCount: totalMatches,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12.0,
+                vertical: 4.0,
+              ),
               extraSubtitle: Text(
                 subtitleText,
-                style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.outline),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (isRunning)
                     IconButton(
-                      icon: const Icon(Icons.stop_circle_outlined, color: Colors.orange, size: 20),
+                      icon: const Icon(
+                        Icons.stop_circle_outlined,
+                        color: Colors.orange,
+                        size: 20,
+                      ),
                       onPressed: () {
                         for (final target in job.targets) {
                           searchController.stopTarget(target);
@@ -158,16 +185,26 @@ class ActiveStreamsList extends StatelessWidget {
                     )
                   else
                     IconButton(
-                      icon: const Icon(Icons.play_circle_outline, color: Colors.green, size: 20),
+                      icon: const Icon(
+                        Icons.play_circle_outline,
+                        color: Colors.green,
+                        size: 20,
+                      ),
                       onPressed: () {
                         for (final target in job.targets) {
-                          searchController.addTarget(target); // This implicitly restarts if stopped
+                          searchController.addTarget(
+                            target,
+                          ); // This implicitly restarts if stopped
                         }
                       },
                       tooltip: "Restart Stream",
                     ),
                   IconButton(
-                    icon: Icon(Icons.close, size: 18, color: Theme.of(context).colorScheme.outline),
+                    icon: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                     onPressed: () {
                       if (isSelected) {
                         onSelectTargets(null);

@@ -318,9 +318,8 @@ void main() {
 
       final importedScriptsJson = prefs.getString('saved_scripts_v1')!;
       final List<dynamic> importedScripts = jsonDecode(importedScriptsJson);
-      final scriptOutputDir =
-          importedScripts.first['outputDirectory'] as String;
-      expect(scriptOutputDir, contains('script1'));
+      final scriptOutputDir = importedScripts.first['outputDirectory'];
+      expect(scriptOutputDir, isNull);
     });
 
     test(

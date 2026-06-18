@@ -43,7 +43,9 @@ class MessagesTimelineView extends StatelessWidget {
         itemCount: messages.length,
         contentsBuilder: (context, index) {
           final message = messages[index];
-          final stepName = message is ScriptResultMessage ? message.stepName : 'Global (No Step)';
+          final stepName = message is ScriptResultMessage
+              ? message.stepName
+              : 'Global (No Step)';
           final extractedValues = _getExtractedValues(message);
           final isMatch = _isMatch(message, stepName);
 
@@ -63,16 +65,24 @@ class MessagesTimelineView extends StatelessWidget {
         oppositeContentsBuilder: (context, index) {
           final message = messages[index];
           final prevMessage = index > 0 ? messages[index - 1] : null;
-          return Padding(padding: const EdgeInsets.all(8.0), child: _buildMetadata(context, message, prevMessage));
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: _buildMetadata(context, message, prevMessage),
+          );
         },
         indicatorBuilder: (context, index) {
           final message = messages[index];
-          return DotIndicator(color: ColorUtils.getColorForString(message.topic), size: 15.0);
+          return DotIndicator(
+            color: ColorUtils.getColorForString(message.topic),
+            size: 15.0,
+          );
         },
         connectorBuilder: (context, index, type) {
           final message = messages[index];
           return SolidLineConnector(
-            color: ColorUtils.getColorForString(message.topic), // Use topic color for line
+            color: ColorUtils.getColorForString(
+              message.topic,
+            ), // Use topic color for line
           );
         },
       ),
@@ -81,7 +91,9 @@ class MessagesTimelineView extends StatelessWidget {
 
   List<MapEntry<String, String>> _getExtractedValues(KafkaMessage message) {
     List<MapEntry<String, String>> extractedValues = [];
-    if (message is ScriptResultMessage && stepExtractions != null && stepExtractions!.containsKey(message.stepId)) {
+    if (message is ScriptResultMessage &&
+        stepExtractions != null &&
+        stepExtractions!.containsKey(message.stepId)) {
       final extractions = stepExtractions![message.stepId]!;
       for (final ext in extractions) {
         final val = ExtractionUtils.extract(ext, message);
@@ -105,7 +117,11 @@ class MessagesTimelineView extends StatelessWidget {
     return keyMatch || payloadMatch || topicMatch || stepMatch;
   }
 
-  Widget _buildMetadata(BuildContext context, KafkaMessage message, KafkaMessage? prevMessage) {
+  Widget _buildMetadata(
+    BuildContext context,
+    KafkaMessage message,
+    KafkaMessage? prevMessage,
+  ) {
     return MessageMetadataCard(message: message, prevMessage: prevMessage);
   }
 }
@@ -158,10 +174,15 @@ class _LazyTimelineCardState extends State<_LazyTimelineCard> {
   @override
   Widget build(BuildContext context) {
     if (!_isReady) {
-      return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator(strokeWidth: 2.0)));
+      return const SizedBox(
+        height: 100,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2.0)),
+      );
     }
 
-    final double opacity = (widget.showNonMatches && !widget.isMatch) ? 0.4 : 1.0;
+    final double opacity = (widget.showNonMatches && !widget.isMatch)
+        ? 0.4
+        : 1.0;
 
     return Opacity(
       opacity: opacity,

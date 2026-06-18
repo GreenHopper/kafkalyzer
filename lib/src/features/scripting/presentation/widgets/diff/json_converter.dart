@@ -45,7 +45,14 @@ class JsonConverter {
         // It's recursive structure being added as a whole
         nodes.add(_processRawNode(k.toString(), v, NodeType.add, depth));
       } else {
-        nodes.add(DiffViewNode(key: k.toString(), newValue: v, type: NodeType.add, depth: depth));
+        nodes.add(
+          DiffViewNode(
+            key: k.toString(),
+            newValue: v,
+            type: NodeType.add,
+            depth: depth,
+          ),
+        );
       }
     });
 
@@ -55,7 +62,14 @@ class JsonConverter {
         // It's recursive structure being removed as a whole
         nodes.add(_processRawNode(k.toString(), v, NodeType.remove, depth));
       } else {
-        nodes.add(DiffViewNode(key: k.toString(), oldValue: v, type: NodeType.remove, depth: depth));
+        nodes.add(
+          DiffViewNode(
+            key: k.toString(),
+            oldValue: v,
+            type: NodeType.remove,
+            depth: depth,
+          ),
+        );
       }
     });
 
@@ -63,7 +77,15 @@ class JsonConverter {
     diff.changed.forEach((k, v) {
       // v is a list [old, new]
       if (v.length == 2) {
-        nodes.add(DiffViewNode(key: k.toString(), oldValue: v[0], newValue: v[1], type: NodeType.change, depth: depth));
+        nodes.add(
+          DiffViewNode(
+            key: k.toString(),
+            oldValue: v[0],
+            newValue: v[1],
+            type: NodeType.change,
+            depth: depth,
+          ),
+        );
       }
     });
 
@@ -75,14 +97,26 @@ class JsonConverter {
       // Only add if there are actual diffs below, or if we want to show structure
       // A DiffNode always implies some difference below, or at least structure to traverse.
       if (children.isNotEmpty) {
-        nodes.add(DiffViewNode(key: k.toString(), type: NodeType.node, children: children, depth: depth));
+        nodes.add(
+          DiffViewNode(
+            key: k.toString(),
+            type: NodeType.node,
+            children: children,
+            depth: depth,
+          ),
+        );
       }
     });
 
     return nodes;
   }
 
-  static DiffViewNode _processRawNode(String key, dynamic value, NodeType type, int depth) {
+  static DiffViewNode _processRawNode(
+    String key,
+    dynamic value,
+    NodeType type,
+    int depth,
+  ) {
     if (value is Map) {
       List<DiffViewNode> children = [];
       value.forEach((k, v) {

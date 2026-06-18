@@ -48,7 +48,9 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
 
         // Filter stream topics if not shown
         if (!_showStreamTopics &&
-            (name.endsWith("-topic") || name.endsWith("-changelog") || name.endsWith("-repartition"))) {
+            (name.endsWith("-topic") ||
+                name.endsWith("-changelog") ||
+                name.endsWith("-repartition"))) {
           return false;
         }
 
@@ -215,13 +217,18 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
           if (widget.multiSelect) ...[
             const SizedBox(width: 8),
             FilledButton(
               onPressed: () {
                 // Find full metadata objects for selected names
-                final selected = widget.topics.where((t) => _selectedTopics.contains(t.name)).toList();
+                final selected = widget.topics
+                    .where((t) => _selectedTopics.contains(t.name))
+                    .toList();
                 Navigator.pop(context, selected);
               },
               child: Text("Select (${_selectedTopics.length})"),

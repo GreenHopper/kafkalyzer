@@ -39,7 +39,9 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredValues = widget.values.where((v) => v.toLowerCase().contains(query)).toList();
+      _filteredValues = widget.values
+          .where((v) => v.toLowerCase().contains(query))
+          .toList();
     });
   }
 
@@ -53,7 +55,10 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Filter by ${widget.parameterName}", style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                "Filter by ${widget.parameterName}",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: _searchController,
@@ -61,7 +66,10 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
                   labelText: "Search values",
                   prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -69,10 +77,14 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: () => setState(() => _selected.addAll(_filteredValues)),
+                    onPressed: () =>
+                        setState(() => _selected.addAll(_filteredValues)),
                     child: const Text("Select All Matches"),
                   ),
-                  TextButton(onPressed: () => setState(() => _selected.clear()), child: const Text("Clear Selection")),
+                  TextButton(
+                    onPressed: () => setState(() => _selected.clear()),
+                    child: const Text("Clear Selection"),
+                  ),
                 ],
               ),
               const Divider(),
@@ -118,7 +130,10 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Cancel")),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text("Cancel"),
+                  ),
                   const SizedBox(width: 8),
                   FilledButton(
                     onPressed: () => Navigator.of(context).pop(_selected),

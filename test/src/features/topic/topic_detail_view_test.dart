@@ -15,19 +15,26 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 
-class FakeActiveConnectionController extends ChangeNotifier implements ActiveConnectionController {
+class FakeActiveConnectionController extends ChangeNotifier
+    implements ActiveConnectionController {
   @override
-  OpenTopicRecord? get activeTopic =>
-      topic != null && activeProfile != null ? OpenTopicRecord(topic!, activeProfile!) : null;
+  OpenTopicRecord? get activeTopic => topic != null && activeProfile != null
+      ? OpenTopicRecord(topic!, activeProfile!)
+      : null;
   TopicMetadata? topic;
-  final FakeMessageStreamController mockStreamController = FakeMessageStreamController();
+  final FakeMessageStreamController mockStreamController =
+      FakeMessageStreamController();
 
   @override
-  MessageStreamController getStreamController(String topicName, String clusterName) => mockStreamController;
+  MessageStreamController getStreamController(
+    String topicName,
+    String clusterName,
+  ) => mockStreamController;
 
   @override
-  List<OpenTopicRecord> get openTopics =>
-      topic != null && activeProfile != null ? [OpenTopicRecord(topic!, activeProfile!)] : [];
+  List<OpenTopicRecord> get openTopics => topic != null && activeProfile != null
+      ? [OpenTopicRecord(topic!, activeProfile!)]
+      : [];
 
   @override
   ClusterProfile? activeProfile;
@@ -60,7 +67,8 @@ class FakeActiveConnectionController extends ChangeNotifier implements ActiveCon
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class FakeMessageStreamController extends ChangeNotifier implements MessageStreamController {
+class FakeMessageStreamController extends ChangeNotifier
+    implements MessageStreamController {
   bool clearMessagesCalled = false;
 
   @override
@@ -96,10 +104,16 @@ class FakeSchemaController extends ChangeNotifier implements SchemaController {
   List<String>? getSchemas(ClusterProfile profile) => [];
 
   @override
-  Future<void> fetchSchemas(ClusterProfile profile, {bool force = false}) async {}
+  Future<void> fetchSchemas(
+    ClusterProfile profile, {
+    bool force = false,
+  }) async {}
 
   @override
-  Future<List<String>> fetchSchemaFields(ClusterProfile profile, String topic) async => [];
+  Future<List<String>> fetchSchemaFields(
+    ClusterProfile profile,
+    String topic,
+  ) async => [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -114,7 +128,8 @@ class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class FakeMultiSearchController extends ChangeNotifier implements MultiSearchController {
+class FakeMultiSearchController extends ChangeNotifier
+    implements MultiSearchController {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -142,65 +157,72 @@ void main() {
     getIt.reset();
   });
 
-  testWidgets('TopicDetailView clears messages on init and renders topic details', (WidgetTester tester) async {
-    // Setup data
-    const topic = TopicMetadata(name: 'test-topic', partitionCount: 3, replicationFactor: 2);
-    fakeActiveController.topic = topic;
-    fakeActiveController.activeProfile = const ClusterProfile(
-      name: 'Test Cluster',
-      bootstrapServers: 'localhost:9092',
-      schemaRegistryUrl: 'http://localhost:8081',
-      securityProtocol: 'plaintext',
-      mechanism: 'plain',
-    );
+  testWidgets(
+    'TopicDetailView clears messages on init and renders topic details',
+    (WidgetTester tester) async {
+      // Setup data
+      const topic = TopicMetadata(
+        name: 'test-topic',
+        partitionCount: 3,
+        replicationFactor: 2,
+      );
+      fakeActiveController.topic = topic;
+      fakeActiveController.activeProfile = const ClusterProfile(
+        name: 'Test Cluster',
+        bootstrapServers: 'localhost:9092',
+        schemaRegistryUrl: 'http://localhost:8081',
+        securityProtocol: 'plaintext',
+        mechanism: 'plain',
+      );
 
-    tester.view.physicalSize = const Size(1200, 800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('en')],
-        home: Scaffold(
-          body: SizedBox(
-            width: 1200,
-            height: 800,
-            child: TopicDetailView(
-              topic: topic,
-              profile: const ClusterProfile(
-                name: 'Test Cluster',
-                bootstrapServers: 'localhost:9092',
-                schemaRegistryUrl: 'http://localhost:8081',
-                securityProtocol: 'plaintext',
-                mechanism: 'plain',
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en')],
+          home: Scaffold(
+            body: SizedBox(
+              width: 1200,
+              height: 800,
+              child: TopicDetailView(
+                topic: topic,
+                profile: const ClusterProfile(
+                  name: 'Test Cluster',
+                  bootstrapServers: 'localhost:9092',
+                  schemaRegistryUrl: 'http://localhost:8081',
+                  securityProtocol: 'plaintext',
+                  mechanism: 'plain',
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    // Test the view renders, since we don't mock getIt for stream_controller anymore we can't test clearMessages easily
+      // Test the view renders, since we don't mock getIt for stream_controller anymore we can't test clearMessages easily
 
-    debugDumpApp();
+      debugDumpApp();
 
-    final exception = tester.takeException();
-    if (exception != null) {
-      getIt<Logger>().e("Caught rendering exception: $exception");
-    }
+      final exception = tester.takeException();
+      if (exception != null) {
+        getIt<Logger>().e("Caught rendering exception: $exception");
+      }
 
-    // Verify UI renders topic details
-    expect(exception, isNull);
-    expect(find.text('test-topic'), findsOneWidget);
-    expect(find.text('3 Partitions'), findsOneWidget);
-    expect(find.text('RF: 2'), findsOneWidget);
-  });
+      // Verify UI renders topic details
+      expect(exception, isNull);
+      expect(find.text('test-topic'), findsOneWidget);
+      expect(find.text('3 Partitions'), findsOneWidget);
+      expect(find.text('RF: 2'), findsOneWidget);
+    },
+  );
 }

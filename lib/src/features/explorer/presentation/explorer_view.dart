@@ -28,7 +28,9 @@ class _ExplorerViewState extends State<ExplorerView> {
   @override
   void initState() {
     super.initState();
-    _filterController = TextEditingController(text: getIt<ActiveConnectionController>().topicFilter);
+    _filterController = TextEditingController(
+      text: getIt<ActiveConnectionController>().topicFilter,
+    );
   }
 
   @override
@@ -49,10 +51,30 @@ class _ExplorerViewState extends State<ExplorerView> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSidebar(context, l10n, clusterController, activeController, topicController, schemaController),
-        VerticalDivider(width: 1, color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        _buildSidebar(
+          context,
+          l10n,
+          clusterController,
+          activeController,
+          topicController,
+          schemaController,
+        ),
+        VerticalDivider(
+          width: 1,
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
         // Main Content
-        Expanded(child: _buildContent(context, l10n, activeController, topicController, schemaController)),
+        Expanded(
+          child: _buildContent(
+            context,
+            l10n,
+            activeController,
+            topicController,
+            schemaController,
+          ),
+        ),
       ],
     );
   }
@@ -73,14 +95,30 @@ class _ExplorerViewState extends State<ExplorerView> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSidebarHeader(context, l10n),
-            _buildSidebarClusterList(context, clusterController, activeController, topicController),
+            _buildSidebarClusterList(
+              context,
+              clusterController,
+              activeController,
+              topicController,
+            ),
             if (activeController.activeProfile != null) ...[
               const Divider(height: 1),
-              _buildSidebarTopicsControls(context, l10n, activeController, topicController, schemaController),
+              _buildSidebarTopicsControls(
+                context,
+                l10n,
+                activeController,
+                topicController,
+                schemaController,
+              ),
               _buildSidebarTopicFilter(context, l10n, activeController),
-              _buildSidebarTopicList(context, activeController, topicController),
+              _buildSidebarTopicList(
+                context,
+                activeController,
+                topicController,
+              ),
             ],
-            if (activeController.error != null) _buildErrorBox(context, activeController),
+            if (activeController.error != null)
+              _buildErrorBox(context, activeController),
           ],
         ),
       ),
@@ -113,7 +151,12 @@ class _ExplorerViewState extends State<ExplorerView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: clusterController.clusters.map((cluster) {
-            return _buildClusterListItem(context, cluster, activeController, topicController);
+            return _buildClusterListItem(
+              context,
+              cluster,
+              activeController,
+              topicController,
+            );
           }).toList(),
         ),
       ),
@@ -138,13 +181,22 @@ class _ExplorerViewState extends State<ExplorerView> {
         selected: isActive,
         selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
         selectedColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        title: _buildClusterListTitle(context, cluster, isActive, topicController),
+        title: _buildClusterListTitle(
+          context,
+          cluster,
+          isActive,
+          topicController,
+        ),
         onTap: () {
           getIt<ActiveConnectionController>().connect(cluster);
           getIt<SchemaController>().fetchSchemas(cluster);
         },
         trailing: isActive && activeController.isConnecting
-            ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+            ? const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
             : null,
       ),
     );
@@ -161,7 +213,11 @@ class _ExplorerViewState extends State<ExplorerView> {
         if (topicController.hasCachedTopics(cluster))
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: Icon(Icons.check_circle, size: 16, color: Theme.of(context).colorScheme.primary),
+            child: Icon(
+              Icons.check_circle,
+              size: 16,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         Text(
           cluster.name,
@@ -169,7 +225,9 @@ class _ExplorerViewState extends State<ExplorerView> {
             fontWeight: FontWeight.w600,
             color: isActive
                 ? Theme.of(context).colorScheme.onPrimaryContainer
-                : (topicController.hasCachedTopics(cluster) ? Theme.of(context).colorScheme.primary : null),
+                : (topicController.hasCachedTopics(cluster)
+                      ? Theme.of(context).colorScheme.primary
+                      : null),
           ),
         ),
       ],
@@ -203,12 +261,20 @@ class _ExplorerViewState extends State<ExplorerView> {
             constraints: const BoxConstraints(),
             onPressed:
                 activeController.isConnecting ||
-                    topicController.isLoading(activeController.activeProfile!) ||
+                    topicController.isLoading(
+                      activeController.activeProfile!,
+                    ) ||
                     schemaController.isLoading(activeController.activeProfile!)
                 ? null
                 : () {
-                    topicController.fetchTopics(activeController.activeProfile!, force: true);
-                    schemaController.fetchSchemas(activeController.activeProfile!, force: true);
+                    topicController.fetchTopics(
+                      activeController.activeProfile!,
+                      force: true,
+                    );
+                    schemaController.fetchSchemas(
+                      activeController.activeProfile!,
+                      force: true,
+                    );
                   },
           ),
         ],
@@ -229,12 +295,16 @@ class _ExplorerViewState extends State<ExplorerView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Internal Topics", style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                "Internal Topics",
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               Transform.scale(
                 scale: 0.8,
                 child: Switch(
                   value: activeController.showInternalTopics,
-                  onChanged: (val) => activeController.toggleShowInternalTopics(val),
+                  onChanged: (val) =>
+                      activeController.toggleShowInternalTopics(val),
                 ),
               ),
             ],
@@ -242,12 +312,16 @@ class _ExplorerViewState extends State<ExplorerView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Kafka Stream Topics", style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                "Kafka Stream Topics",
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
               Transform.scale(
                 scale: 0.8,
                 child: Switch(
                   value: activeController.showStreamTopics,
-                  onChanged: (val) => activeController.toggleShowStreamTopics(val),
+                  onChanged: (val) =>
+                      activeController.toggleShowStreamTopics(val),
                 ),
               ),
             ],
@@ -268,10 +342,15 @@ class _ExplorerViewState extends State<ExplorerView> {
                       },
                     )
                   : null,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
               ),
               isDense: true,
             ),
@@ -291,7 +370,9 @@ class _ExplorerViewState extends State<ExplorerView> {
     TopicController topicController,
   ) {
     return Expanded(
-      child: (activeController.isConnecting || topicController.isLoading(activeController.activeProfile!))
+      child:
+          (activeController.isConnecting ||
+              topicController.isLoading(activeController.activeProfile!))
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -299,13 +380,20 @@ class _ExplorerViewState extends State<ExplorerView> {
               itemBuilder: (context, index) {
                 final topic = activeController.topics[index];
                 final isSelected = activeController.openTopics.any(
-                  (t) => t.topic.name == topic.name && t.profile.name == activeController.activeProfile?.name,
+                  (t) =>
+                      t.topic.name == topic.name &&
+                      t.profile.name == activeController.activeProfile?.name,
                 );
                 return TopicListItem(
                   topic: topic,
                   isSelected: isSelected,
-                  onTap: () => activeController.setActiveTopic(topic, activeController.activeProfile),
-                  trailing: isSelected ? const Icon(Icons.check, size: 16) : null,
+                  onTap: () => activeController.setActiveTopic(
+                    topic,
+                    activeController.activeProfile,
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, size: 16)
+                      : null,
                   clusterProfile: activeController.activeProfile,
                 );
               },
@@ -313,7 +401,10 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
   }
 
-  Widget _buildErrorBox(BuildContext context, ActiveConnectionController activeController) {
+  Widget _buildErrorBox(
+    BuildContext context,
+    ActiveConnectionController activeController,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Theme.of(context).colorScheme.errorContainer,
@@ -346,7 +437,12 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
     final safeIndex = activeIndex >= 0 ? activeIndex : 0;
 
-    return Column(children: [_buildTabBar(context, activeController), _buildTabViews(activeController, safeIndex)]);
+    return Column(
+      children: [
+        _buildTabBar(context, activeController),
+        _buildTabViews(activeController, safeIndex),
+      ],
+    );
   }
 
   Widget _buildNoClusterSelected(BuildContext context, AppLocalizations l10n) {
@@ -354,11 +450,17 @@ class _ExplorerViewState extends State<ExplorerView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.hub_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
+          Icon(
+            Icons.hub_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.outline,
+          ),
           const SizedBox(height: 16),
           Text(
             l10n.selectClusterToViewTopics,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.outline),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
           ),
         ],
       ),
@@ -370,23 +472,36 @@ class _ExplorerViewState extends State<ExplorerView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.library_books_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
+          Icon(
+            Icons.library_books_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.outline,
+          ),
           const SizedBox(height: 16),
           Text(
             "Select a topic from the sidebar to start",
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.outline),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTabBar(BuildContext context, ActiveConnectionController activeController) {
+  Widget _buildTabBar(
+    BuildContext context,
+    ActiveConnectionController activeController,
+  ) {
     return Container(
       height: 48,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant)),
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
       ),
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(
@@ -400,8 +515,14 @@ class _ExplorerViewState extends State<ExplorerView> {
         child: Listener(
           onPointerSignal: (pointerSignal) {
             if (pointerSignal is PointerScrollEvent) {
-              final offset = _tabScrollController.offset + pointerSignal.scrollDelta.dy;
-              _tabScrollController.jumpTo(offset.clamp(0.0, _tabScrollController.position.maxScrollExtent));
+              final offset =
+                  _tabScrollController.offset + pointerSignal.scrollDelta.dy;
+              _tabScrollController.jumpTo(
+                offset.clamp(
+                  0.0,
+                  _tabScrollController.position.maxScrollExtent,
+                ),
+              );
             }
           },
           child: Scrollbar(
@@ -412,7 +533,11 @@ class _ExplorerViewState extends State<ExplorerView> {
               scrollDirection: Axis.horizontal,
               itemCount: activeController.openTopics.length,
               itemBuilder: (context, index) {
-                return _buildTabItem(context, activeController, activeController.openTopics[index]);
+                return _buildTabItem(
+                  context,
+                  activeController,
+                  activeController.openTopics[index],
+                );
               },
             ),
           ),
@@ -421,30 +546,49 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
   }
 
-  Widget _buildTabItem(BuildContext context, ActiveConnectionController activeController, OpenTopicRecord record) {
+  Widget _buildTabItem(
+    BuildContext context,
+    ActiveConnectionController activeController,
+    OpenTopicRecord record,
+  ) {
     final topic = record.topic;
     final isSelected =
         activeController.activeTopic?.topic.name == topic.name &&
         activeController.activeTopic?.profile.name == record.profile.name;
-    final streamCtrl = activeController.getStreamController(topic.name, record.profile.name);
+    final streamCtrl = activeController.getStreamController(
+      topic.name,
+      record.profile.name,
+    );
 
     return InkWell(
       onTap: () => activeController.setActiveTopic(topic, record.profile),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).colorScheme.surface : Colors.transparent,
+          color: isSelected
+              ? Theme.of(context).colorScheme.surface
+              : Colors.transparent,
           border: Border(
             bottom: BorderSide(
-              color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.transparent,
               width: 2,
             ),
-            right: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            right: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
         ),
         child: ListenableBuilder(
           listenable: streamCtrl,
-          builder: (context, _) => _buildTabItemContent(context, activeController, record, streamCtrl, isSelected),
+          builder: (context, _) => _buildTabItemContent(
+            context,
+            activeController,
+            record,
+            streamCtrl,
+            isSelected,
+          ),
         ),
       ),
     );
@@ -477,7 +621,9 @@ class _ExplorerViewState extends State<ExplorerView> {
             Text(
               record.profile.name,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 fontSize: 10,
               ),
             ),
@@ -492,14 +638,22 @@ class _ExplorerViewState extends State<ExplorerView> {
         ],
         const SizedBox(width: 8),
         InkWell(
-          onTap: () => activeController.closeTopic(record.topic, record.profile.name),
-          child: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          onTap: () =>
+              activeController.closeTopic(record.topic, record.profile.name),
+          child: Icon(
+            Icons.close,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildTabProgressIndicator(BuildContext context, MessageStreamController streamCtrl) {
+  Widget _buildTabProgressIndicator(
+    BuildContext context,
+    MessageStreamController streamCtrl,
+  ) {
     return SizedBox(
       width: 80,
       child: Column(
@@ -509,16 +663,24 @@ class _ExplorerViewState extends State<ExplorerView> {
           LinearProgressIndicator(
             value: streamCtrl.progress > 0 ? streamCtrl.progress : null,
             minHeight: 2,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
           ),
           const SizedBox(height: 4),
           Builder(
             builder: (context) {
               String etaText = "Scanning...";
-              if (streamCtrl.progress > 0 && streamCtrl.startTime != null && streamCtrl.progress < 1.0) {
-                final elapsedSeconds = DateTime.now().difference(streamCtrl.startTime!).inSeconds;
-                final totalEstimatedSeconds = elapsedSeconds / streamCtrl.progress;
-                final remainingSeconds = (totalEstimatedSeconds - elapsedSeconds).round();
+              if (streamCtrl.progress > 0 &&
+                  streamCtrl.startTime != null &&
+                  streamCtrl.progress < 1.0) {
+                final elapsedSeconds = DateTime.now()
+                    .difference(streamCtrl.startTime!)
+                    .inSeconds;
+                final totalEstimatedSeconds =
+                    elapsedSeconds / streamCtrl.progress;
+                final remainingSeconds =
+                    (totalEstimatedSeconds - elapsedSeconds).round();
                 if (remainingSeconds > 0) {
                   if (remainingSeconds < 60) {
                     etaText = "~$remainingSeconds s";
@@ -529,7 +691,10 @@ class _ExplorerViewState extends State<ExplorerView> {
               }
               return Text(
                 etaText,
-                style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               );
             },
           ),
@@ -538,7 +703,10 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
   }
 
-  Widget _buildTabMessageCount(BuildContext context, MessageStreamController streamCtrl) {
+  Widget _buildTabMessageCount(
+    BuildContext context,
+    MessageStreamController streamCtrl,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -556,7 +724,10 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
   }
 
-  Widget _buildTabViews(ActiveConnectionController activeController, int safeIndex) {
+  Widget _buildTabViews(
+    ActiveConnectionController activeController,
+    int safeIndex,
+  ) {
     return Expanded(
       child: IndexedStack(
         index: safeIndex,

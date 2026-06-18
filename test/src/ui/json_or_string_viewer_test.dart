@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:kafkalyzer/src/ui/hex_viewer.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
 import 'package:flutter/material.dart';
@@ -180,14 +179,12 @@ void main() {
     testWidgets('updates when rawContent or searchQuery changes', (
       tester,
     ) async {
-      int matchCount = 0;
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: JsonOrStringViewer(
               rawContent: '{"a": 1}',
               onMatchCountChanged: (count) {
-                matchCount = count;
               },
             ),
           ),
@@ -202,7 +199,6 @@ void main() {
             body: JsonOrStringViewer(
               rawContent: '{"b": 2}',
               onMatchCountChanged: (count) {
-                matchCount = count;
               },
             ),
           ),

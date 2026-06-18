@@ -130,8 +130,8 @@ void main() {
       createWidgetUnderTest(
         steps: stepsWithGlobal,
         selectedTopics: {},
-        onTopicToggle: (_, __) {},
-        onStepToggle: (_, __) {},
+        onTopicToggle: (_, _) {},
+        onStepToggle: (_, _) {},
         onClearSelection: () {},
         otherResultsNode: const Text('OTHER RESULTS CONTAINER'),
       ),

@@ -42,31 +42,43 @@ void main() {
     await Future.delayed(Duration.zero);
   });
 
-  test('duplicateScript duplicates the script with new ID and name suffix', () async {
-    final originalScript = Script(id: 'original-id', name: 'Test Script', steps: []);
+  test(
+    'duplicateScript duplicates the script with new ID and name suffix',
+    () async {
+      final originalScript = Script(
+        id: 'original-id',
+        name: 'Test Script',
+        steps: [],
+      );
 
-    // Setup initial state
-    await mockRepository.saveScript(originalScript);
-    await controller.loadScripts();
+      // Setup initial state
+      await mockRepository.saveScript(originalScript);
+      await controller.loadScripts();
 
-    expect(controller.scripts.length, 1);
+      expect(controller.scripts.length, 1);
 
-    await controller.duplicateScript(originalScript);
+      await controller.duplicateScript(originalScript);
 
-    // Verify
-    final scripts = await mockRepository.getScripts();
-    expect(scripts.length, 2);
+      // Verify
+      final scripts = await mockRepository.getScripts();
+      expect(scripts.length, 2);
 
-    final duplicatedScript = scripts.firstWhere((s) => s.id != originalScript.id);
+      final duplicatedScript = scripts.firstWhere(
+        (s) => s.id != originalScript.id,
+      );
 
-    expect(duplicatedScript.id, isNot(equals(originalScript.id)));
-    expect(duplicatedScript.name, equals('Test Script (Copy)'));
-    expect(duplicatedScript.steps, equals(originalScript.steps));
+      expect(duplicatedScript.id, isNot(equals(originalScript.id)));
+      expect(duplicatedScript.name, equals('Test Script (Copy)'));
+      expect(duplicatedScript.steps, equals(originalScript.steps));
 
-    // Also check controller state updated
-    expect(controller.scripts.length, 2);
-    expect(controller.scripts.any((s) => s.name == 'Test Script (Copy)'), isTrue);
-  });
+      // Also check controller state updated
+      expect(controller.scripts.length, 2);
+      expect(
+        controller.scripts.any((s) => s.name == 'Test Script (Copy)'),
+        isTrue,
+      );
+    },
+  );
 
   test('loadScripts sorts scripts alphabetically by name', () async {
     final scripts = [

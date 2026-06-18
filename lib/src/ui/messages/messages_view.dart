@@ -130,7 +130,10 @@ class _MessagesViewState extends State<MessagesView> {
       children: [
         if (widget.showHeader) ...[
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -164,18 +167,32 @@ class _MessagesViewState extends State<MessagesView> {
                     icon: const Icon(Icons.download),
                     onPressed: () async {
                       try {
-                        await getIt<MessageExportService>().exportMessages(_cachedFilteredMessages);
+                        await getIt<MessageExportService>().exportMessages(
+                          _cachedFilteredMessages,
+                        );
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(AppLocalizations.of(context)!.messagesExportedSuccessfully)),
+                            SnackBar(
+                              content: Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.messagesExportedSuccessfully,
+                              ),
+                            ),
                           );
                         }
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(AppLocalizations.of(context)!.messagesExportFailed(e.toString())),
-                              backgroundColor: Theme.of(context).colorScheme.error,
+                              content: Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.messagesExportFailed(e.toString()),
+                              ),
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
                             ),
                           );
                         }

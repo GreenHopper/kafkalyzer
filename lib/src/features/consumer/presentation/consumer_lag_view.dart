@@ -290,14 +290,17 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     final isGerman = Localizations.localeOf(context).languageCode == 'de';
     final totalGroups = _lags.length;
     final filteredCount = filteredLags.length;
-    final stableGroups = _stableGroupsCount;
-    final totalLag = _totalLag;
+    final stableGroups = filteredLags.where((g) {
+      final s = g.state.toLowerCase();
+      return s.contains('stable') || s.contains('active');
+    }).length;
+    final totalLag = filteredLags.fold(0, (sum, group) => sum + _calculateGroupLag(group));
     final activeQueries = _activeLagQueries;
     final queuedQueries = _lagQueryQueue.length;
 
-    final totalDelta = _groupDeltas.values.fold<int>(
+    final totalDelta = filteredLags.fold<int>(
       0,
-      (sum, val) => sum + val,
+      (sum, group) => sum + (_groupDeltas[group.groupId] ?? 0),
     );
     final String? lagSubtitle;
     if (_groupDeltas.isNotEmpty) {
@@ -340,8 +343,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                     title: isGerman ? 'Aktiv / Stabil' : 'Active / Stable',
                     value: _formatNum(stableGroups),
                     subtitle: isGerman
-                        ? '${_formatNum(totalGroups - stableGroups)} Inaktiv/Leer'
-                        : '${_formatNum(totalGroups - stableGroups)} Idle/Empty',
+                        ? '${_formatNum(filteredCount - stableGroups)} Inaktiv/Leer'
+                        : '${_formatNum(filteredCount - stableGroups)} Idle/Empty',
                     icon: Icons.check_circle_outline,
                     iconColor: Colors.green,
                   ),

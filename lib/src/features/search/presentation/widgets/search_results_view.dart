@@ -9,7 +9,11 @@ class SearchResultsView extends StatelessWidget {
   final List<SearchTarget>? selectedTargets;
   final VoidCallback onClearSelection;
 
-  const SearchResultsView({super.key, required this.selectedTargets, required this.onClearSelection});
+  const SearchResultsView({
+    super.key,
+    required this.selectedTargets,
+    required this.onClearSelection,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +32,8 @@ class SearchResultsView extends StatelessWidget {
           messages = searchController.getMessagesFor(null);
         }
 
-        final bool hasSelection = selectedTargets != null && selectedTargets!.isNotEmpty;
+        final bool hasSelection =
+            selectedTargets != null && selectedTargets!.isNotEmpty;
         final String titleText = hasSelection
             ? (selectedTargets!.length == 1
                   ? "Results: ${selectedTargets!.first.topic.name}"
@@ -36,29 +41,50 @@ class SearchResultsView extends StatelessWidget {
             : "Combined Results";
 
         return Column(
-          children: [_buildHeader(context, titleText, hasSelection, messages.length), _buildMessageList(messages)],
+          children: [
+            _buildHeader(context, titleText, hasSelection, messages.length),
+            _buildMessageList(messages),
+          ],
         );
       },
     );
   }
 
-  Widget _buildHeader(BuildContext context, String titleText, bool hasSelection, int messagesCount) {
+  Widget _buildHeader(
+    BuildContext context,
+    String titleText,
+    bool hasSelection,
+    int messagesCount,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.5))),
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
       ),
       child: Row(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(titleText, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                titleText,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               if (hasSelection)
                 Text(
                   "Source: ${selectedTargets!.first.profile.name}",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.outline),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
             ],
           ),
@@ -71,7 +97,10 @@ class SearchResultsView extends StatelessWidget {
             ),
             child: Text(
               "$messagesCount Messages",
-              style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSecondaryContainer),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
+              ),
             ),
           ),
           if (hasSelection) ...[

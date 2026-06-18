@@ -15,7 +15,12 @@ class MessagesDiffView extends StatefulWidget {
   final Function(KafkaMessage) onMessageTap;
   final String? searchPhrase;
 
-  const MessagesDiffView({super.key, required this.messages, required this.onMessageTap, this.searchPhrase});
+  const MessagesDiffView({
+    super.key,
+    required this.messages,
+    required this.onMessageTap,
+    this.searchPhrase,
+  });
 
   @override
   State<MessagesDiffView> createState() => _MessagesDiffViewState();
@@ -81,7 +86,10 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
     return _diffCache[msgId];
   }
 
-  Future<MessageDiff> _computeAndCacheDiff(KafkaMessage current, KafkaMessage? previous) {
+  Future<MessageDiff> _computeAndCacheDiff(
+    KafkaMessage current,
+    KafkaMessage? previous,
+  ) {
     final msgId = _getMessageId(current);
     if (_diffCache.containsKey(msgId)) {
       return _diffCache[msgId]!;
@@ -110,26 +118,41 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
           final message = widget.messages[index];
           final previousMessage = _findPreviousMessage(message);
 
-          return Padding(padding: const EdgeInsets.all(8.0), child: _buildDiffCard(context, message, previousMessage));
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: _buildDiffCard(context, message, previousMessage),
+          );
         },
         oppositeContentsBuilder: (context, index) {
           final message = widget.messages[index];
           final previousMessage = _findPreviousMessage(message);
-          return Padding(padding: const EdgeInsets.all(8.0), child: _buildMetadata(context, message, previousMessage));
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: _buildMetadata(context, message, previousMessage),
+          );
         },
         indicatorBuilder: (context, index) {
           final message = widget.messages[index];
-          return DotIndicator(color: ColorUtils.getColorForString(message.topic), size: 15.0);
+          return DotIndicator(
+            color: ColorUtils.getColorForString(message.topic),
+            size: 15.0,
+          );
         },
         connectorBuilder: (context, index, type) {
           final message = widget.messages[index];
-          return SolidLineConnector(color: ColorUtils.getColorForString(message.topic));
+          return SolidLineConnector(
+            color: ColorUtils.getColorForString(message.topic),
+          );
         },
       ),
     );
   }
 
-  Widget _buildDiffCard(BuildContext context, KafkaMessage current, KafkaMessage? previous) {
+  Widget _buildDiffCard(
+    BuildContext context,
+    KafkaMessage current,
+    KafkaMessage? previous,
+  ) {
     final isInitial = previous == null;
 
     return TimelineMessageCard(
@@ -142,12 +165,17 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
           : _LazyDiffViewer(
               current: current,
               getCachedDiff: () => _getCachedDiff(current),
-              computeAndCacheDiff: () => _computeAndCacheDiff(current, previous),
+              computeAndCacheDiff: () =>
+                  _computeAndCacheDiff(current, previous),
             ),
     );
   }
 
-  Widget _buildMetadata(BuildContext context, KafkaMessage message, KafkaMessage? prevMessage) {
+  Widget _buildMetadata(
+    BuildContext context,
+    KafkaMessage message,
+    KafkaMessage? prevMessage,
+  ) {
     return MessageMetadataCard(message: message, prevMessage: prevMessage);
   }
 }
@@ -157,7 +185,11 @@ class _LazyDiffViewer extends StatefulWidget {
   final Future<MessageDiff>? Function() getCachedDiff;
   final Future<MessageDiff> Function() computeAndCacheDiff;
 
-  const _LazyDiffViewer({required this.current, required this.getCachedDiff, required this.computeAndCacheDiff});
+  const _LazyDiffViewer({
+    required this.current,
+    required this.getCachedDiff,
+    required this.computeAndCacheDiff,
+  });
 
   @override
   State<_LazyDiffViewer> createState() => _LazyDiffViewerState();
@@ -224,7 +256,10 @@ class _LazyDiffViewerState extends State<_LazyDiffViewer> {
           );
         }
         if (snapshot.hasError) {
-          return const Text("Error computing diff", style: TextStyle(color: Colors.red));
+          return const Text(
+            "Error computing diff",
+            style: TextStyle(color: Colors.red),
+          );
         }
         final diff = snapshot.data;
         if (diff == null) return const SizedBox.shrink();

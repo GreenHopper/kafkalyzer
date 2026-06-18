@@ -25,7 +25,8 @@ class MockTopicController extends TopicController {
   MockTopicController(this._cachedStatus);
 
   @override
-  bool hasCachedTopics(ClusterProfile cluster) => _cachedStatus[cluster.name] ?? false;
+  bool hasCachedTopics(ClusterProfile cluster) =>
+      _cachedStatus[cluster.name] ?? false;
 }
 
 class MockClusterService extends ClusterService {
@@ -38,15 +39,23 @@ class MockClusterService extends ClusterService {
 
 class MockKafkaMetadataService extends KafkaMetadataService {
   @override
-  Future<List<TopicMetadata>> fetchTopics({required ClusterProfile profile}) async => [];
+  Future<List<TopicMetadata>> fetchTopics({
+    required ClusterProfile profile,
+  }) async => [];
 }
 
 void main() {
   late MockClusterListController mockClusterListController;
   late MockTopicController mockTopicController;
 
-  final cluster1 = ClusterProfile(name: 'CachedCluster', bootstrapServers: 'localhost:9092');
-  final cluster2 = ClusterProfile(name: 'UncachedCluster', bootstrapServers: 'localhost:9093');
+  final cluster1 = ClusterProfile(
+    name: 'CachedCluster',
+    bootstrapServers: 'localhost:9092',
+  );
+  final cluster2 = ClusterProfile(
+    name: 'UncachedCluster',
+    bootstrapServers: 'localhost:9093',
+  );
 
   setUp(() async {
     await getIt.reset();
@@ -57,26 +66,42 @@ void main() {
     mockClusterListController = MockClusterListController([cluster1, cluster2]);
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
 
-    mockTopicController = MockTopicController({'CachedCluster': true, 'UncachedCluster': false});
+    mockTopicController = MockTopicController({
+      'CachedCluster': true,
+      'UncachedCluster': false,
+    });
     getIt.registerSingleton<TopicController>(mockTopicController);
   });
 
-  testWidgets('ClusterDropdown renders correctly with default label', (WidgetTester tester) async {
+  testWidgets('ClusterDropdown renders correctly with default label', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
         home: Scaffold(body: ClusterDropdown(value: null, onChanged: (_) {})),
       ),
     );
 
-    expect(find.byType(DropdownButtonFormField<ClusterProfile>), findsOneWidget);
+    expect(
+      find.byType(DropdownButtonFormField<ClusterProfile>),
+      findsOneWidget,
+    );
     expect(find.text('Cluster'), findsOneWidget);
   });
 
-  testWidgets('ClusterDropdown shows visual feedback for cached clusters', (WidgetTester tester) async {
+  testWidgets('ClusterDropdown shows visual feedback for cached clusters', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
         home: Scaffold(body: ClusterDropdown(value: null, onChanged: (_) {})),
       ),
     );
@@ -87,31 +112,48 @@ void main() {
 
     // Verify CachedCluster has check icon
     // We find the row containing the text "CachedCluster"
-    final cachedRowFinder = find.ancestor(of: find.text('CachedCluster'), matching: find.byType(Row));
+    final cachedRowFinder = find.ancestor(
+      of: find.text('CachedCluster'),
+      matching: find.byType(Row),
+    );
     expect(cachedRowFinder, findsOneWidget);
     expect(
-      find.descendant(of: cachedRowFinder, matching: find.byIcon(Icons.check_circle)),
+      find.descendant(
+        of: cachedRowFinder,
+        matching: find.byIcon(Icons.check_circle),
+      ),
       findsOneWidget,
       reason: 'Cached cluster should have a check circle icon',
     );
 
     // Verify UncachedCluster does NOT have check icon
     // The implementation wraps text in a Row regardless, but the if check for icon is inside.
-    final uncachedRowFinder = find.ancestor(of: find.text('UncachedCluster'), matching: find.byType(Row));
+    final uncachedRowFinder = find.ancestor(
+      of: find.text('UncachedCluster'),
+      matching: find.byType(Row),
+    );
     expect(uncachedRowFinder, findsOneWidget);
     expect(
-      find.descendant(of: uncachedRowFinder, matching: find.byIcon(Icons.check_circle)),
+      find.descendant(
+        of: uncachedRowFinder,
+        matching: find.byIcon(Icons.check_circle),
+      ),
       findsNothing,
       reason: 'Uncached cluster should NOT have a check circle icon',
     );
   });
 
-  testWidgets('ClusterDropdown notifies selection changes', (WidgetTester tester) async {
+  testWidgets('ClusterDropdown notifies selection changes', (
+    WidgetTester tester,
+  ) async {
     ClusterProfile? selectedValue;
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
         home: Scaffold(
           body: ClusterDropdown(
             value: null,
@@ -134,7 +176,9 @@ void main() {
     expect(selectedValue, equals(cluster1));
   });
 
-  testWidgets('ClusterDropdown updates when value changes externally', (WidgetTester tester) async {
+  testWidgets('ClusterDropdown updates when value changes externally', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -148,7 +192,10 @@ void main() {
     // Update with new value
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
         home: Scaffold(
           body: ClusterDropdown(value: cluster2, onChanged: (val) {}),
         ),

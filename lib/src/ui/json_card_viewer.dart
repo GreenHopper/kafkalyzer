@@ -6,7 +6,13 @@ class JsonCardViewer extends StatelessWidget {
   final ValueSetter<GlobalKey>? onMatchFound;
   final int? focusedMatchIndex;
 
-  const JsonCardViewer({super.key, required this.json, this.searchQuery, this.onMatchFound, this.focusedMatchIndex});
+  const JsonCardViewer({
+    super.key,
+    required this.json,
+    this.searchQuery,
+    this.onMatchFound,
+    this.focusedMatchIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +21,12 @@ class JsonCardViewer extends StatelessWidget {
     return _buildNode(context, json, null, matchCounter);
   }
 
-  Widget _buildNode(BuildContext context, dynamic content, Color? parentColor, ValueNotifier<int> matchCounter) {
+  Widget _buildNode(
+    BuildContext context,
+    dynamic content,
+    Color? parentColor,
+    ValueNotifier<int> matchCounter,
+  ) {
     if (content is Map<String, dynamic>) {
       if (content.isEmpty) return const Text("{}");
 
@@ -43,7 +54,13 @@ class JsonCardViewer extends StatelessWidget {
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.start,
                 children: primitives.map((e) {
-                  return _buildFieldCard(context, e.key, e.value, parentColor, matchCounter);
+                  return _buildFieldCard(
+                    context,
+                    e.key,
+                    e.value,
+                    parentColor,
+                    matchCounter,
+                  );
                 }).toList(),
               ),
             ),
@@ -67,14 +84,23 @@ class JsonCardViewer extends StatelessWidget {
                   }
 
                   // Distribute items into columns (Masonry style round-robin)
-                  final columns = List.generate(crossAxisCount, (_) => <Widget>[]);
+                  final columns = List.generate(
+                    crossAxisCount,
+                    (_) => <Widget>[],
+                  );
                   for (var i = 0; i < complex.length; i++) {
                     final entry = complex[i];
                     final colIndex = i % crossAxisCount;
                     columns[colIndex].add(
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
-                        child: _buildFieldCard(context, entry.key, entry.value, parentColor, matchCounter),
+                        child: _buildFieldCard(
+                          context,
+                          entry.key,
+                          entry.value,
+                          parentColor,
+                          matchCounter,
+                        ),
                       ),
                     );
                   }
@@ -85,7 +111,10 @@ class JsonCardViewer extends StatelessWidget {
                       for (var i = 0; i < crossAxisCount; i++) ...[
                         if (i > 0) const SizedBox(width: 12),
                         Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: columns[i]),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: columns[i],
+                          ),
                         ),
                       ],
                     ],
@@ -102,7 +131,13 @@ class JsonCardViewer extends StatelessWidget {
         children: content.asMap().entries.map((e) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
-            child: _buildFieldCard(context, "[${e.key}]", e.value, parentColor, matchCounter),
+            child: _buildFieldCard(
+              context,
+              "[${e.key}]",
+              e.value,
+              parentColor,
+              matchCounter,
+            ),
           );
         }).toList(),
       );
@@ -147,9 +182,13 @@ class JsonCardViewer extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: baseColor.withValues(alpha: 0.05), // Tinted background matching the header
+          color: baseColor.withValues(
+            alpha: 0.05,
+          ), // Tinted background matching the header
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: baseColor.withValues(alpha: 0.2)), // Subtle colored border
+          border: Border.all(
+            color: baseColor.withValues(alpha: 0.2),
+          ), // Subtle colored border
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -173,12 +212,16 @@ class JsonCardViewer extends StatelessWidget {
     } else {
       // Primitive Value Card (KeyValue Pair)
       return Container(
-        constraints: const BoxConstraints(minWidth: 100), // Min width for small values
+        constraints: const BoxConstraints(
+          minWidth: 100,
+        ), // Min width for small values
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          ),
           // No shadow for cleaner look
         ),
         child: Column(
@@ -200,7 +243,10 @@ class JsonCardViewer extends StatelessWidget {
             // Value
             _buildHighlightedText(
               value.toString(),
-              theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500, color: colorScheme.onSurface),
+              theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
               context,
               matchCounter,
               isSelectable: true,
@@ -253,8 +299,12 @@ class JsonCardViewer extends StatelessWidget {
         TextSpan(
           text: match,
           style: style?.copyWith(
-            backgroundColor: isFocused ? Colors.orange : Theme.of(context).colorScheme.tertiaryContainer,
-            color: isFocused ? Colors.black : Theme.of(context).colorScheme.onTertiaryContainer,
+            backgroundColor: isFocused
+                ? Colors.orange
+                : Theme.of(context).colorScheme.tertiaryContainer,
+            color: isFocused
+                ? Colors.black
+                : Theme.of(context).colorScheme.onTertiaryContainer,
             fontWeight: isFocused ? FontWeight.bold : null,
           ),
         ),

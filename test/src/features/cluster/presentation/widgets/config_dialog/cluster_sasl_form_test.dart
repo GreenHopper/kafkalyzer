@@ -22,13 +22,17 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) {
                 return ClusterSaslForm(
                   mechanism: selectedMechanism,
-                  onMechanismChanged: (val) => setState(() => selectedMechanism = val),
+                  onMechanismChanged: (val) =>
+                      setState(() => selectedMechanism = val),
                   usernameController: usernameController,
                   passwordController: passwordController,
                 );

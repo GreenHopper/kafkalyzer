@@ -67,14 +67,18 @@ class ActiveConnectionController extends ChangeNotifier {
     if (!_showStreamTopics) {
       filtered = filtered.where((t) {
         final name = t.name.toLowerCase();
-        return !name.endsWith("-topic") && !name.endsWith("-changelog") && !name.endsWith("-repartition");
+        return !name.endsWith("-topic") &&
+            !name.endsWith("-changelog") &&
+            !name.endsWith("-repartition");
       }).toList();
     }
 
     if (_topicFilter.isEmpty) {
       return filtered;
     }
-    return filtered.where((t) => t.name.toLowerCase().contains(_topicFilter.toLowerCase())).toList();
+    return filtered
+        .where((t) => t.name.toLowerCase().contains(_topicFilter.toLowerCase()))
+        .toList();
   }
 
   void updateTopicFilter(String filter) {
@@ -82,7 +86,9 @@ class ActiveConnectionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool get isConnecting => _isConnecting || (_activeProfile != null && _topicController.isLoading(_activeProfile!));
+  bool get isConnecting =>
+      _isConnecting ||
+      (_activeProfile != null && _topicController.isLoading(_activeProfile!));
   String? get error => _error;
 
   OpenTopicRecord? _activeTopic;
@@ -96,7 +102,9 @@ class ActiveConnectionController extends ChangeNotifier {
     if (topic != null) {
       final p = profile ?? _activeProfile;
       if (p != null) {
-        if (!_openTopics.any((t) => t.topic.name == topic.name && t.profile.name == p.name)) {
+        if (!_openTopics.any(
+          (t) => t.topic.name == topic.name && t.profile.name == p.name,
+        )) {
           _openTopics.add(OpenTopicRecord(topic, p));
         }
         _activeTopic = _openTopics.cast<OpenTopicRecord?>().firstWhere(
@@ -114,7 +122,10 @@ class ActiveConnectionController extends ChangeNotifier {
     return '$clusterName:$topicName';
   }
 
-  MessageStreamController getStreamController(String topicName, String clusterName) {
+  MessageStreamController getStreamController(
+    String topicName,
+    String clusterName,
+  ) {
     final key = _getTopicKey(topicName, clusterName);
     if (!_streamControllers.containsKey(key)) {
       _streamControllers[key] = MessageStreamController();
@@ -123,13 +134,16 @@ class ActiveConnectionController extends ChangeNotifier {
   }
 
   void closeTopic(TopicMetadata topic, String clusterName) {
-    _openTopics.removeWhere((t) => t.topic.name == topic.name && t.profile.name == clusterName);
+    _openTopics.removeWhere(
+      (t) => t.topic.name == topic.name && t.profile.name == clusterName,
+    );
 
     final key = _getTopicKey(topic.name, clusterName);
     _streamControllers[key]?.dispose();
     _streamControllers.remove(key);
 
-    if (_activeTopic?.topic.name == topic.name && _activeTopic?.profile.name == clusterName) {
+    if (_activeTopic?.topic.name == topic.name &&
+        _activeTopic?.profile.name == clusterName) {
       _activeTopic = _openTopics.isNotEmpty ? _openTopics.last : null;
     }
     notifyListeners();
@@ -169,7 +183,9 @@ class ActiveConnectionController extends ChangeNotifier {
       debugPrint('   Keystore Path: ${profile.sslKeystoreLocation}');
       debugPrint('   Truststore Path: ${profile.sslTruststoreLocation}');
 
-      final isValid = await _metadataService.validateConnection(profile: profile);
+      final isValid = await _metadataService.validateConnection(
+        profile: profile,
+      );
       if (isValid) {
         _activeProfile = profile;
         // Fetch topics via controller
@@ -182,13 +198,18 @@ class ActiveConnectionController extends ChangeNotifier {
       // Simplify error message for UI
       final errorString = e.toString();
       if (errorString.contains("BrokerTransportFailure")) {
-        _error = "Connection Failed: Broker Transport Failure. Check your address and network.";
+        _error =
+            "Connection Failed: Broker Transport Failure. Check your address and network.";
       } else if (errorString.contains("Connection refused")) {
         _error = "Connection Failed: Connection Refused.";
       } else if (errorString.contains("AnyhowException")) {
         // Extract the main message from AnyhowException
-        final match = RegExp(r"AnyhowException\((.*?)\)").firstMatch(errorString);
-        _error = match?.group(1) ?? "Connection Error: ${errorString.split('\n').first}";
+        final match = RegExp(
+          r"AnyhowException\((.*?)\)",
+        ).firstMatch(errorString);
+        _error =
+            match?.group(1) ??
+            "Connection Error: ${errorString.split('\n').first}";
       } else {
         _error = "Connection Failed: ${errorString.split('\n').first}";
       }

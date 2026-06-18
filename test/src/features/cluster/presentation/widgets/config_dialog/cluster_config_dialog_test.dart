@@ -8,7 +8,10 @@ void main() {
     testWidgets('renders in Add mode when no cluster provided', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Scaffold(body: ClusterConfigDialog()),
         ),
       );
@@ -37,7 +40,10 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Scaffold(body: ClusterConfigDialog(cluster: cluster)),
         ),
       );
@@ -53,10 +59,15 @@ void main() {
       expect(find.text('/path/to/keystore'), findsOneWidget);
     });
 
-    testWidgets('changes visible fields when security protocol changes', (tester) async {
+    testWidgets('changes visible fields when security protocol changes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Scaffold(body: ClusterConfigDialog()),
         ),
       );
@@ -88,7 +99,10 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
           home: Scaffold(
             body: Builder(
               builder: (context) {
@@ -117,11 +131,17 @@ void main() {
 
       // Fill forms
       await tester.enterText(
-        find.ancestor(of: find.text('Cluster Name'), matching: find.byType(TextFormField)),
+        find.ancestor(
+          of: find.text('Cluster Name'),
+          matching: find.byType(TextFormField),
+        ),
         'New Cluster',
       );
       await tester.enterText(
-        find.ancestor(of: find.text('Bootstrap Servers (e.g. localhost:9092)'), matching: find.byType(TextFormField)),
+        find.ancestor(
+          of: find.text('Bootstrap Servers (e.g. localhost:9092)'),
+          matching: find.byType(TextFormField),
+        ),
         'localhost:9092',
       );
 

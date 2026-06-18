@@ -26,7 +26,8 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
   List<TopicMetadata> _selectedTopics = [];
 
   final TextEditingController _filterController = TextEditingController();
-  final TextEditingController _filterFieldController = TextEditingController(); // ADDED
+  final TextEditingController _filterFieldController =
+      TextEditingController(); // ADDED
   FilterType _filterType = FilterType.contains;
   SearchScope _searchScope = SearchScope.both;
   bool _fastTraceEnabled = false;
@@ -41,7 +42,9 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
   final TextEditingController _endTimestampController = TextEditingController();
 
   bool _limitResults = true;
-  final TextEditingController _maxResultsController = TextEditingController(text: "200");
+  final TextEditingController _maxResultsController = TextEditingController(
+    text: "200",
+  );
 
   @override
   void dispose() {
@@ -76,21 +79,33 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           clipBehavior: Clip.antiAlias,
           child: ExpansionTile(
             initiallyExpanded: true,
-            title: Text(l10n.newSearchStream, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-            collapsedBackgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+            title: Text(
+              l10n.newSearchStream,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerLowest,
+            collapsedBackgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHigh,
             childrenPadding: const EdgeInsets.all(16),
             children: [
               _buildClusterSelection(l10n, topicController),
               if (_selectedCluster != null) ...[
                 const SizedBox(height: 12),
                 _buildTopicSelectionField(l10n, topicController),
-                if (_selectedTopics.isNotEmpty) ...[const SizedBox(height: 8), _buildSelectedTopicsChips()],
+                if (_selectedTopics.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildSelectedTopicsChips(),
+                ],
               ],
               const SizedBox(height: 12),
               _buildFilterFields(l10n),
@@ -105,7 +120,10 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
     );
   }
 
-  Widget _buildClusterSelection(AppLocalizations l10n, TopicController topicController) {
+  Widget _buildClusterSelection(
+    AppLocalizations l10n,
+    TopicController topicController,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -118,7 +136,9 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
                 _selectedCluster = val;
                 _selectedTopics = [];
               });
-              if (val != null && topicController.getTopics(val) == null) topicController.fetchTopics(val);
+              if (val != null && topicController.getTopics(val) == null) {
+                topicController.fetchTopics(val);
+              }
             },
           ),
         ),
@@ -128,7 +148,9 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
           child: IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: l10n.reloadTopics,
-            onPressed: (_selectedCluster == null || topicController.isLoading(_selectedCluster!))
+            onPressed:
+                (_selectedCluster == null ||
+                    topicController.isLoading(_selectedCluster!))
                 ? null
                 : () {
                     setState(() => _selectedTopics = []);
@@ -140,7 +162,10 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
     );
   }
 
-  Widget _buildTopicSelectionField(AppLocalizations l10n, TopicController topicController) {
+  Widget _buildTopicSelectionField(
+    AppLocalizations l10n,
+    TopicController topicController,
+  ) {
     return TextFormField(
       readOnly: true,
       enabled: !topicController.isLoading(_selectedCluster!),
@@ -157,7 +182,11 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
         suffixIcon: (topicController.isLoading(_selectedCluster!))
             ? const Padding(
                 padding: EdgeInsets.all(12.0),
-                child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
               )
             : const Icon(Icons.arrow_drop_down),
       ),
@@ -187,7 +216,10 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
       spacing: 8.0,
       runSpacing: 4.0,
       children: _selectedTopics.map((topic) {
-        return Chip(label: Text(topic.name), onDeleted: () => setState(() => _selectedTopics.remove(topic)));
+        return Chip(
+          label: Text(topic.name),
+          onDeleted: () => setState(() => _selectedTopics.remove(topic)),
+        );
       }).toList(),
     );
   }
@@ -203,25 +235,29 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
               _selectedTopics.first.name,
             );
             if (textEditingValue.text.isEmpty) return fields;
-            return fields.where((f) => f.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-          },
-          onSelected: (selection) => _filterFieldController.text = selection,
-          fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
-            if (textController.text != _filterFieldController.text) {
-              textController.text = _filterFieldController.text;
-            }
-            return TextField(
-              controller: textController,
-              focusNode: focusNode,
-              onChanged: (val) => _filterFieldController.text = val,
-              decoration: InputDecoration(
-                labelText: l10n.fieldOptional,
-                border: const OutlineInputBorder(),
-                isDense: true,
-                prefixIcon: const Icon(Icons.data_object, size: 18),
-              ),
+            return fields.where(
+              (f) =>
+                  f.toLowerCase().contains(textEditingValue.text.toLowerCase()),
             );
           },
+          onSelected: (selection) => _filterFieldController.text = selection,
+          fieldViewBuilder:
+              (context, textController, focusNode, onFieldSubmitted) {
+                if (textController.text != _filterFieldController.text) {
+                  textController.text = _filterFieldController.text;
+                }
+                return TextField(
+                  controller: textController,
+                  focusNode: focusNode,
+                  onChanged: (val) => _filterFieldController.text = val,
+                  decoration: InputDecoration(
+                    labelText: l10n.fieldOptional,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    prefixIcon: const Icon(Icons.data_object, size: 18),
+                  ),
+                );
+              },
         ),
         const SizedBox(height: 8),
         TextField(
@@ -243,12 +279,16 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
       filterType: _filterType,
       onFilterTypeChanged: (v) => setState(() {
         _filterType = v;
-        if (_fastTraceEnabled && _filterType != FilterType.exact) _fastTraceEnabled = false;
+        if (_fastTraceEnabled && _filterType != FilterType.exact) {
+          _fastTraceEnabled = false;
+        }
       }),
       searchScope: _searchScope,
       onSearchScopeChanged: (v) => setState(() {
         _searchScope = v;
-        if (_fastTraceEnabled && _searchScope != SearchScope.key) _fastTraceEnabled = false;
+        if (_fastTraceEnabled && _searchScope != SearchScope.key) {
+          _fastTraceEnabled = false;
+        }
       }),
       fastTraceEnabled: _fastTraceEnabled,
       onFastTraceChanged: (v) => setState(() {
@@ -275,10 +315,14 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
 
   Widget _buildStartSearchButton(AppLocalizations l10n) {
     return FilledButton.icon(
-      onPressed: (_selectedCluster != null && _selectedTopics.isNotEmpty) ? _handleSearch : null,
+      onPressed: (_selectedCluster != null && _selectedTopics.isNotEmpty)
+          ? _handleSearch
+          : null,
       icon: const Icon(Icons.play_arrow),
       label: Text(l10n.startSearch),
-      style: FilledButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(double.infinity, 48),
+      ),
     );
   }
 
@@ -293,7 +337,11 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
       startTimestamp = _convertToTimestamp(_timestampController.text);
     }
 
-    final terms = _filterController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    final terms = _filterController.text
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
 
     final targets = <SearchTarget>[];
     final searchJobId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -303,18 +351,24 @@ class _SearchStreamFormState extends State<SearchStreamForm> {
           profile: _selectedCluster!,
           topic: topic,
           filterTerms: terms.isNotEmpty ? terms : null,
-          filterField: _filterFieldController.text.isNotEmpty ? _filterFieldController.text : null,
+          filterField: _filterFieldController.text.isNotEmpty
+              ? _filterFieldController.text
+              : null,
           filterType: _filterType,
           filterTerm: terms.isNotEmpty ? terms.first : null, // Legacy support
           scope: _searchScope,
           startOffset: startOffset,
           startTimestamp: startTimestamp,
-          startPartition: _fastTraceEnabled ? null : int.tryParse(_partitionController.text),
+          startPartition: _fastTraceEnabled
+              ? null
+              : int.tryParse(_partitionController.text),
           fastTraceEnabled: _fastTraceEnabled,
           endStrategy: _endStrategy,
           endOffset: int.tryParse(_endOffsetController.text),
           endTimestamp: _convertToTimestamp(_endTimestampController.text),
-          maxResults: _limitResults ? int.tryParse(_maxResultsController.text) : null,
+          maxResults: _limitResults
+              ? int.tryParse(_maxResultsController.text)
+              : null,
           searchJobId: searchJobId,
         ),
       );

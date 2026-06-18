@@ -86,18 +86,21 @@ class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
   }
 
   @override
-  MultiSearchController get multiSearchController => FakeMultiSearchController();
+  MultiSearchController get multiSearchController =>
+      FakeMultiSearchController();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class FakeMultiSearchController extends ChangeNotifier implements MultiSearchController {
+class FakeMultiSearchController extends ChangeNotifier
+    implements MultiSearchController {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class FakeClusterListController extends ChangeNotifier implements ClusterListController {
+class FakeClusterListController extends ChangeNotifier
+    implements ClusterListController {
   @override
   List<ClusterProfile> get clusters => [];
 
@@ -126,14 +129,24 @@ void main() {
     id: '1',
     name: 'Test Script',
     steps: [
-      ScriptStep(id: 's1', name: 'Step 1', clusterName: 'c1', topicNames: ['t1']),
+      ScriptStep(
+        id: 's1',
+        name: 'Step 1',
+        clusterName: 'c1',
+        topicNames: ['t1'],
+      ),
     ],
   );
 
-  testWidgets('ScriptRunView switches to monitor on run', (WidgetTester tester) async {
+  testWidgets('ScriptRunView switches to monitor on run', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: ScriptRunView(script: script)),
@@ -160,7 +173,9 @@ void main() {
     // With the Key trick, it should be expanded now
     expect(find.text('t1'), findsOneWidget);
     expect(
-      find.text('RUNNING'), // Localization might change case? Check implementation.
+      find.text(
+        'RUNNING',
+      ), // Localization might change case? Check implementation.
       findsNWidgets(2),
     ); // One for step, one for topic
 
@@ -172,10 +187,15 @@ void main() {
     expect(find.text('New Run'), findsOneWidget);
   });
 
-  testWidgets('ScriptRunView displays match counts for completed steps', (WidgetTester tester) async {
+  testWidgets('ScriptRunView displays match counts for completed steps', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(useMaterial3: true, splashFactory: InkRipple.splashFactory),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: ScriptRunView(script: script)),

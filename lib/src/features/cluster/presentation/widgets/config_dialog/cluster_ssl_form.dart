@@ -21,7 +21,10 @@ class ClusterSslForm extends StatelessWidget {
         const Divider(),
         const Padding(
           padding: EdgeInsets.all(8.0),
-          child: Text("SSL Configuration", style: TextStyle(fontWeight: FontWeight.bold)),
+          child: Text(
+            "SSL Configuration",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),

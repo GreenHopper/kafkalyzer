@@ -40,10 +40,20 @@ class ViewModeSwitcher extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       constraints: const BoxConstraints(minWidth: 40, minHeight: 36),
       children: [
-        Tooltip(message: "Table View", child: Icon(Icons.table_chart, size: 20)),
-        Tooltip(message: "Timeline View", child: Icon(Icons.view_list, size: 20)),
+        Tooltip(
+          message: "Table View",
+          child: Icon(Icons.table_chart, size: 20),
+        ),
+        Tooltip(
+          message: "Timeline View",
+          child: Icon(Icons.view_list, size: 20),
+        ),
         Tooltip(message: "Diff View", child: Icon(Icons.difference, size: 20)),
-        if (showSchemaView) Tooltip(message: "Schema View", child: Icon(Icons.data_object, size: 20)),
+        if (showSchemaView)
+          Tooltip(
+            message: "Schema View",
+            child: Icon(Icons.data_object, size: 20),
+          ),
       ],
     );
   }

@@ -11,7 +11,11 @@ class MessageDetailsDialog extends StatefulWidget {
   final KafkaMessage message;
   final String? initialSearchPhrase;
 
-  const MessageDetailsDialog({super.key, required this.message, this.initialSearchPhrase});
+  const MessageDetailsDialog({
+    super.key,
+    required this.message,
+    this.initialSearchPhrase,
+  });
 
   @override
   State<MessageDetailsDialog> createState() => _MessageDetailsDialogState();
@@ -62,7 +66,8 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
   void _jumpToPreviousMatch() {
     if (_totalMatches == 0) return;
     setState(() {
-      _currentMatchIndex = (_currentMatchIndex - 1 + _totalMatches) % _totalMatches;
+      _currentMatchIndex =
+          (_currentMatchIndex - 1 + _totalMatches) % _totalMatches;
     });
     _jumpToCurrent();
   }
@@ -71,7 +76,9 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
     if (_currentMatchIndex < _keyMatchCount) {
       _keyViewerKey.currentState?.jumpToMatch(_currentMatchIndex);
     } else {
-      _contentViewerKey.currentState?.jumpToMatch(_currentMatchIndex - _keyMatchCount);
+      _contentViewerKey.currentState?.jumpToMatch(
+        _currentMatchIndex - _keyMatchCount,
+      );
     }
   }
 
@@ -104,12 +111,16 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text("Message Details", style: Theme.of(context).textTheme.titleLarge),
+                        Text(
+                          "Message Details",
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                         Text(
                           widget.message.topic,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.outline),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -121,9 +132,14 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                     width: 400, // Slightly wider for controls
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -136,7 +152,9 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                               hintText: "Search...",
                               border: InputBorder.none,
                               prefixIcon: Icon(Icons.search, size: 20),
-                              contentPadding: EdgeInsets.symmetric(vertical: -11),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: -11,
+                              ),
                             ),
                             style: const TextStyle(fontSize: 14),
                           ),
@@ -156,7 +174,10 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                           ),
                           const SizedBox(width: 4),
                           IconButton(
-                            icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 20,
+                            ),
                             onPressed: _jumpToNextMatch,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -168,7 +189,10 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
                 ],
               ),
             ),
@@ -179,7 +203,12 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildMetadataSection(context, widget.message.partition, widget.message.offset, dateStr),
+                    _buildMetadataSection(
+                      context,
+                      widget.message.partition,
+                      widget.message.offset,
+                      dateStr,
+                    ),
 
                     const SizedBox(height: 16),
                     SizedBox(
@@ -189,7 +218,9 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                         title: "Key",
                         rawContent: widget.message.key ?? "",
                         searchQuery: _searchQuery,
-                        focusedMatchIndex: (_totalMatches > 0 && _currentMatchIndex < _keyMatchCount)
+                        focusedMatchIndex:
+                            (_totalMatches > 0 &&
+                                _currentMatchIndex < _keyMatchCount)
                             ? _currentMatchIndex
                             : null,
                         persistenceKey: 'message_details_key',
@@ -210,7 +241,9 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                         rawContent: widget.message.payload ?? "",
                         searchQuery: _searchQuery,
                         expand: true,
-                        focusedMatchIndex: (_totalMatches > 0 && _currentMatchIndex >= _keyMatchCount)
+                        focusedMatchIndex:
+                            (_totalMatches > 0 &&
+                                _currentMatchIndex >= _keyMatchCount)
                             ? (_currentMatchIndex - _keyMatchCount)
                             : null,
                         persistenceKey: 'message_details_content',
@@ -244,11 +277,15 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
                         'key': _tryParseJson(widget.message.key),
                         'content': _tryParseJson(widget.message.payload),
                       };
-                      final jsonStr = const JsonEncoder.withIndent('  ').convert(data);
+                      final jsonStr = const JsonEncoder.withIndent(
+                        '  ',
+                      ).convert(data);
                       Clipboard.setData(ClipboardData(text: jsonStr));
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text("Full message copied to clipboard")));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Full message copied to clipboard"),
+                        ),
+                      );
                     },
                     icon: const Icon(Icons.copy, size: 16),
                     label: const Text("Copy message"),
@@ -262,7 +299,12 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
     );
   }
 
-  Widget _buildMetadataSection(BuildContext context, int partition, int offset, String timestamp) {
+  Widget _buildMetadataSection(
+    BuildContext context,
+    int partition,
+    int offset,
+    String timestamp,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -280,11 +322,12 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
               icon: const Icon(Icons.copy, size: 16),
               tooltip: "Copy metadata",
               onPressed: () {
-                final text = "Partition: $partition\nOffset: $offset\nTimestamp: $timestamp";
+                final text =
+                    "Partition: $partition\nOffset: $offset\nTimestamp: $timestamp";
                 Clipboard.setData(ClipboardData(text: text));
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("Metadata copied to clipboard")));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Metadata copied to clipboard")),
+                );
               },
             ),
           ],
@@ -292,25 +335,49 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
         const SizedBox(height: 8),
         Row(
           children: [
-            _buildMetadataCard(context, Icons.grid_view, "Partition", partition.toString()),
+            _buildMetadataCard(
+              context,
+              Icons.grid_view,
+              "Partition",
+              partition.toString(),
+            ),
             const SizedBox(width: 12),
-            _buildMetadataCard(context, Icons.numbers, "Offset", offset.toString()),
+            _buildMetadataCard(
+              context,
+              Icons.numbers,
+              "Offset",
+              offset.toString(),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildMetadataCard(context, Icons.access_time, "Timestamp", timestamp)),
+            Expanded(
+              child: _buildMetadataCard(
+                context,
+                Icons.access_time,
+                "Timestamp",
+                timestamp,
+              ),
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildMetadataCard(BuildContext context, IconData icon, String label, String value) {
+  Widget _buildMetadataCard(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -330,7 +397,11 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
               ),
               SelectableText(
                 value,
-                style: GoogleFonts.robotoMono(fontSize: 13, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
+                style: GoogleFonts.robotoMono(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ],
           ),

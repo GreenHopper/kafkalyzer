@@ -21,20 +21,29 @@ class MessageDiff {
 
   /// Computes the diff. Uses an isolate only for large payloads to prevent
   /// both UI thread blocking *and* isolate-spawn overhead flooding during rapid scrolling.
-  static Future<MessageDiff> computeDiff(KafkaMessage? older, KafkaMessage newer) async {
+  static Future<MessageDiff> computeDiff(
+    KafkaMessage? older,
+    KafkaMessage newer,
+  ) async {
     final payloadOlder = older?.payload;
     final payloadNewer = newer.payload;
 
-    final combinedLength = (payloadOlder?.length ?? 0) + (payloadNewer?.length ?? 0);
+    final combinedLength =
+        (payloadOlder?.length ?? 0) + (payloadNewer?.length ?? 0);
 
     // Spawning an isolate takes a few milliseconds of UI thread time. Doing this
     // concurrently for 20-50 list items during a heavy scroll completely locks the app.
     // For smaller payloads (< 30KB), synchronous calculation is typically faster than the isolate spawn.
     if (combinedLength < 30000) {
-      return _computeIsolate(_DiffArgs(payloadOlder, payloadNewer, older, newer));
+      return _computeIsolate(
+        _DiffArgs(payloadOlder, payloadNewer, older, newer),
+      );
     }
 
-    return compute(_computeIsolate, _DiffArgs(payloadOlder, payloadNewer, older, newer));
+    return compute(
+      _computeIsolate,
+      _DiffArgs(payloadOlder, payloadNewer, older, newer),
+    );
   }
 
   static MessageDiff _computeIsolate(_DiffArgs args) {

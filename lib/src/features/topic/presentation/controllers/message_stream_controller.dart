@@ -102,7 +102,8 @@ class MessageStreamController extends ChangeNotifier {
       _logger.d(payload);
       return;
     }
-    if (payload.startsWith("__HEARTBEAT__") || payload.startsWith("__PROGRESS__")) {
+    if (payload.startsWith("__HEARTBEAT__") ||
+        payload.startsWith("__PROGRESS__")) {
       _handleControlMessage(payload);
       return;
     }
@@ -131,7 +132,9 @@ class MessageStreamController extends ChangeNotifier {
     if (parts.length > 1) {
       _totalConsumed = int.tryParse(parts[1]) ?? _totalConsumed;
       if (parts.length > 2) {
-        _totalToScan = int.tryParse(parts[2]) ?? (payload.startsWith("__PROGRESS__") ? 0 : _totalToScan);
+        _totalToScan =
+            int.tryParse(parts[2]) ??
+            (payload.startsWith("__PROGRESS__") ? 0 : _totalToScan);
       }
       notifyListeners();
     }
