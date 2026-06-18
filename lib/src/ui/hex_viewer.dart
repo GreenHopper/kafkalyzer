@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:kafkalyzer/src/utils/payload_processing_isolate.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 
 class HexViewer extends StatefulWidget {
   final List<int> bytes;
@@ -64,7 +64,7 @@ class _HexViewerState extends State<HexViewer> {
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textStyle = GoogleFonts.robotoMono(
+    final textStyle = AppFonts.robotoMono(
       fontSize: 13,
       color: colorScheme.onSurface,
     );
@@ -91,6 +91,7 @@ class _HexViewerState extends State<HexViewer> {
                 generateHexDumpInIsolate(widget.bytes).then((fullHex) {
                   Clipboard.setData(ClipboardData(text: fullHex));
                   if (mounted) {
+                    scaffoldMessenger.hideCurrentSnackBar();
                     scaffoldMessenger.showSnackBar(
                       const SnackBar(
                         content: Text("Hex dump copied to clipboard"),

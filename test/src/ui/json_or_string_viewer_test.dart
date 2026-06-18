@@ -5,14 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> awaitIsolates(WidgetTester tester) async {
-  await tester.runAsync(() async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-  });
   await tester.pump();
-  await tester.runAsync(() async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-  });
-  await tester.pump();
+  int attempts = 0;
+  while (tester.any(find.byType(CircularProgressIndicator)) && attempts < 50) {
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pump();
+    attempts++;
+  }
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -72,8 +74,14 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Raw'));
       await awaitIsolates(tester);
+      try {
+        await tester.tap(find.text('Raw'));
+      } catch (e) {
+        debugDumpApp();
+        rethrow;
+      }
+      await tester.pumpAndSettle();
 
       expect(find.text(jsonStr), findsOneWidget);
     });

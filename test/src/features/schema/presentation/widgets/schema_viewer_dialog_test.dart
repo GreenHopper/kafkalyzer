@@ -6,11 +6,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 @GenerateMocks([SchemaController])
 import 'schema_viewer_dialog_test.mocks.dart';
 
+Future<void> awaitIsolates(WidgetTester tester) async {
+  await tester.pump();
+  int attempts = 0;
+  while (tester.any(find.byType(CircularProgressIndicator)) && attempts < 50) {
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pump();
+    attempts++;
+  }
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   late MockSchemaController mockController;
   final testProfile = ClusterProfile(
     name: 'test-cluster',
@@ -52,7 +70,7 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       // Let it finish
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
     });
 
     testWidgets('shows no schema message when none found', (tester) async {
@@ -71,7 +89,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       expect(find.text("No Avro schema found for this topic."), findsOneWidget);
     });
@@ -100,7 +118,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       expect(find.text("Key Schema"), findsOneWidget);
       expect(find.text("Value Schema"), findsOneWidget);
@@ -126,7 +144,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       expect(
         find.text('Error loading schema: Exception: Fetch failed'),
@@ -150,7 +168,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await awaitIsolates(tester);
 
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Search...'), findsOneWidget);

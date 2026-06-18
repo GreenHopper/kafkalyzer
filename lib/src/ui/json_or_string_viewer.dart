@@ -4,10 +4,10 @@ import 'package:json_explorer/json_explorer.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kafkalyzer/src/ui/json_card_viewer.dart';
 import 'package:kafkalyzer/src/ui/hex_viewer.dart';
 import 'package:kafkalyzer/src/utils/payload_processing_isolate.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 
 class MatchRegistry {
   final List<GlobalKey> _keys = [];
@@ -300,17 +300,17 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                 nodes: store.displayNodes,
                 itemScrollController: _itemScrollController,
                 theme: JsonExplorerTheme(
-                  rootKeyTextStyle: GoogleFonts.robotoMono(
+                  rootKeyTextStyle: AppFonts.robotoMono(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
-                  propertyKeyTextStyle: GoogleFonts.robotoMono(
+                  propertyKeyTextStyle: AppFonts.robotoMono(
                     color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
-                  valueTextStyle: GoogleFonts.robotoMono(
+                  valueTextStyle: AppFonts.robotoMono(
                     color: colorScheme.onSurface,
                     fontSize: 13,
                   ),
@@ -318,24 +318,24 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                   highlightColor: colorScheme.secondaryContainer.withValues(
                     alpha: 0.5,
                   ),
-                  keySearchHighlightTextStyle: GoogleFonts.robotoMono(
+                  keySearchHighlightTextStyle: AppFonts.robotoMono(
                     color: colorScheme.onTertiaryContainer,
                     backgroundColor: colorScheme.tertiaryContainer,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
-                  valueSearchHighlightTextStyle: GoogleFonts.robotoMono(
+                  valueSearchHighlightTextStyle: AppFonts.robotoMono(
                     color: colorScheme.onTertiaryContainer,
                     backgroundColor: colorScheme.tertiaryContainer,
                     fontSize: 13,
                   ),
-                  focusedKeySearchHighlightTextStyle: GoogleFonts.robotoMono(
+                  focusedKeySearchHighlightTextStyle: AppFonts.robotoMono(
                     color: Colors.black,
                     backgroundColor: Colors.orange,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
-                  focusedValueSearchHighlightTextStyle: GoogleFonts.robotoMono(
+                  focusedValueSearchHighlightTextStyle: AppFonts.robotoMono(
                     color: Colors.black,
                     backgroundColor: Colors.orange,
                     fontSize: 13,
@@ -403,7 +403,7 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
             ),
           _buildHighlightedRawText(
             textToHighlight,
-            GoogleFonts.robotoMono(fontSize: 13, color: colorScheme.onSurface),
+            AppFonts.robotoMono(fontSize: 13, color: colorScheme.onSurface),
             context,
           ),
         ],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
@@ -9,6 +8,7 @@ import 'package:kafkalyzer/src/ui/color_utils.dart';
 import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
 import 'package:kafkalyzer/src/ui/highlight_text_utils.dart';
 import 'package:kafkalyzer/src/ui/text_preview_utils.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 
 class _TableRowData {
   final KafkaMessage message;
@@ -512,7 +512,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       _needsRebuildRows = false;
     }
 
-    final monoStyle = GoogleFonts.robotoMono(
+    final monoStyle = AppFonts.robotoMono(
       fontSize: 12,
       color: Theme.of(context).colorScheme.onSurface,
     );

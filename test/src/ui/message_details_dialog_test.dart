@@ -4,8 +4,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+Future<void> awaitIsolates(WidgetTester tester) async {
+  await tester.pump();
+  int attempts = 0;
+  while (tester.any(find.byType(CircularProgressIndicator)) && attempts < 50) {
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pump();
+    attempts++;
+  }
+  await tester.pumpAndSettle();
+}
 
 void main() {
+  setUpAll(() {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    SharedPreferences.setMockInitialValues({});
+  });
+
   const testMessage = KafkaMessage(
     topic: 'test-topic',
     partition: 2,
@@ -60,7 +80,7 @@ void main() {
 
     await tester.pumpWidget(createWidgetUnderTest(testMessage));
     await tester.tap(find.text('Show Dialog'));
-    await tester.pumpAndSettle();
+    await awaitIsolates(tester);
 
     // Verify dialog title and topic
     expect(find.text('Message Details'), findsOneWidget);
@@ -92,10 +112,10 @@ void main() {
 
     await tester.pumpWidget(createWidgetUnderTest(testMessage));
     await tester.tap(find.text('Show Dialog'));
-    await tester.pumpAndSettle();
+    await awaitIsolates(tester);
 
     await tester.tap(find.text('Copy message'));
-    await tester.pumpAndSettle();
+    await awaitIsolates(tester);
 
     // Verification of copy snackbar
     expect(find.text('Full message copied to clipboard'), findsOneWidget);
@@ -114,18 +134,18 @@ void main() {
       createWidgetUnderTest(testMessage, initialSearchPhrase: 'Alice'),
     );
     await tester.tap(find.text('Show Dialog'));
-    await tester.pumpAndSettle();
+    await awaitIsolates(tester);
 
     // The textfield should have 'Alice'
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.controller?.text, 'Alice');
 
     // Wait for async match detection
-    await tester.pumpAndSettle();
+    await awaitIsolates(tester);
 
     // Clear search query
     await tester.enterText(find.byType(TextField), 'test');
-    await tester.pumpAndSettle();
+    await awaitIsolates(tester);
 
     final clearTextField = tester.widget<TextField>(find.byType(TextField));
     expect(clearTextField.controller?.text, 'test');

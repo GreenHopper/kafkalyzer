@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 
 class MessageDetailsDialog extends StatefulWidget {
   final KafkaMessage message;
@@ -389,7 +389,7 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
             children: [
               Text(
                 label.toUpperCase(),
-                style: GoogleFonts.roboto(
+                style: AppFonts.roboto(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurfaceVariant,
@@ -397,7 +397,7 @@ class _MessageDetailsDialogState extends State<MessageDetailsDialog> {
               ),
               SelectableText(
                 value,
-                style: GoogleFonts.robotoMono(
+                style: AppFonts.robotoMono(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: colorScheme.onSurface,

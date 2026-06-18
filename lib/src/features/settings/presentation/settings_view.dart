@@ -53,8 +53,7 @@ class _SettingsViewState extends State<SettingsView> {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
             Text(
               l10n.settings,
@@ -74,13 +73,11 @@ class _SettingsViewState extends State<SettingsView> {
             _buildClusterHeader(context, l10n, clusterController),
             const SizedBox(height: 16),
             const Divider(),
-            Expanded(
-              child: _buildClusterListContent(
-                context,
-                l10n,
-                clusterController,
-                activeController,
-              ),
+            _buildClusterListContent(
+              context,
+              l10n,
+              clusterController,
+              activeController,
             ),
             const SizedBox(height: 16),
             const Divider(),
@@ -448,6 +445,8 @@ class _SettingsViewState extends State<SettingsView> {
       return const Center(child: CircularProgressIndicator());
     }
     return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: clusterController.clusters.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {

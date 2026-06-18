@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Future<void> awaitIsolates(WidgetTester tester) async {
-  await tester.runAsync(() async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-  });
   await tester.pump();
-  await tester.runAsync(() async {
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-  });
-  await tester.pump();
+  int attempts = 0;
+  while (tester.any(find.byType(CircularProgressIndicator)) && attempts < 50) {
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pump();
+    attempts++;
+  }
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -63,7 +65,8 @@ void main() {
       expect(copyButton, findsOneWidget);
 
       await tester.tap(copyButton);
-      await awaitIsolates(tester);
+      await tester.pump(); // Start the SnackBar animation
+      await tester.pump(const Duration(milliseconds: 100)); // Let the SnackBar slide in
 
       expect(find.text('Hex dump copied to clipboard'), findsOneWidget);
     });

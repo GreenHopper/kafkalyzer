@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 
+final bool isTestMode = !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+
 /// Parses a JSON string in a background isolate.
-Future<dynamic> parseJsonInIsolate(String rawJson) {
+Future<dynamic> parseJsonInIsolate(String rawJson) async {
+  if (isTestMode) return _decodeJson(rawJson);
   return compute(_decodeJson, rawJson);
 }
 
@@ -11,7 +15,8 @@ dynamic _decodeJson(String rawJson) {
 }
 
 /// Parses a hex string into a list of bytes in a background isolate.
-Future<List<int>> parseHexToBytesInIsolate(String hexStr) {
+Future<List<int>> parseHexToBytesInIsolate(String hexStr) async {
+  if (isTestMode) return _hexToBytes(hexStr);
   return compute(_hexToBytes, hexStr);
 }
 
@@ -30,7 +35,8 @@ List<int> _hexToBytes(String hex) {
 }
 
 /// Generates a formatted hex dump string in a background isolate.
-Future<String> generateHexDumpInIsolate(List<int> bytes) {
+Future<String> generateHexDumpInIsolate(List<int> bytes) async {
+  if (isTestMode) return _generateHexDump(bytes);
   return compute(_generateHexDump, bytes);
 }
 

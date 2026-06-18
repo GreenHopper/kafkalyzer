@@ -1,6 +1,6 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 
 class AppTheme {
   static const FlexScheme _scheme = FlexScheme.indigo;
@@ -21,7 +21,7 @@ class AppTheme {
       inputDecoratorRadius: 12.0,
     ),
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    fontFamily: GoogleFonts.inter().fontFamily,
+    fontFamily: AppFonts.interFontFamily,
   ).copyWith(splashFactory: NoSplash.splashFactory);
 
   static ThemeData get dark => FlexThemeData.dark(
@@ -39,6 +39,6 @@ class AppTheme {
       inputDecoratorRadius: 12.0,
     ),
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    fontFamily: GoogleFonts.inter().fontFamily,
+    fontFamily: AppFonts.interFontFamily,
   ).copyWith(splashFactory: NoSplash.splashFactory);
 }
