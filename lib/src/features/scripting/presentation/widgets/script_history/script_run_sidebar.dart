@@ -37,25 +37,27 @@ class ScriptRunSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 300,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            right: BorderSide(color: Theme.of(context).dividerColor),
-          ),
-          color: Theme.of(context).colorScheme.surface,
-        ),
-        child: ListView(
-          children: [
-            _buildSummaryCard(context),
-            TopicSelectionTree(
-              steps: _buildStepNodes(),
-              selectedTopics: selectedTopics,
-              onTopicToggle: onTopicToggle,
-              onStepToggle: onStepToggle,
-              onClearSelection: onClearSelection,
-              otherResultsNode: _buildOtherResultsNode(context),
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: Theme.of(context).dividerColor),
             ),
-          ],
+          ),
+          child: ListView(
+            children: [
+              _buildSummaryCard(context),
+              TopicSelectionTree(
+                steps: _buildStepNodes(),
+                selectedTopics: selectedTopics,
+                onTopicToggle: onTopicToggle,
+                onStepToggle: onStepToggle,
+                onClearSelection: onClearSelection,
+                otherResultsNode: _buildOtherResultsNode(context),
+              ),
+            ],
+          ),
         ),
       ),
     );

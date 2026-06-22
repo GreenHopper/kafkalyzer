@@ -136,12 +136,15 @@ class SearchStreamConfiguration extends StatelessWidget {
   }
 
   Widget _buildFastTraceToggle(AppLocalizations l10n) {
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(l10n.fastTrace, style: const TextStyle(fontSize: 13)),
-      value: fastTraceEnabled,
-      onChanged: onFastTraceChanged,
-      dense: true,
+    return Material(
+      type: MaterialType.transparency,
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.fastTrace, style: const TextStyle(fontSize: 13)),
+        value: fastTraceEnabled,
+        onChanged: onFastTraceChanged,
+        dense: true,
+      ),
     );
   }
 

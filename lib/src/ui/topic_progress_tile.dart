@@ -26,89 +26,94 @@ class TopicProgressTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: dense,
-      contentPadding: contentPadding,
-      leading: Icon(
-        _getStatusIcon(status),
-        color: _getStatusColor(status),
-        size: 16,
-      ),
-      title: Text(topic, overflow: TextOverflow.ellipsis),
-      subtitle: Builder(
-        builder: (context) {
-          final children = <Widget>[];
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        dense: dense,
+        contentPadding: contentPadding,
+        leading: Icon(
+          _getStatusIcon(status),
+          color: _getStatusColor(status),
+          size: 16,
+        ),
+        title: Text(topic, overflow: TextOverflow.ellipsis),
+        subtitle: Builder(
+          builder: (context) {
+            final children = <Widget>[];
 
-          if (progress != null) {
-            if (status == StepStatus.running) {
-              final est = progress!.estimatedRemaining;
-              final estText = est != null ? " (~${_formatDuration(est)})" : "";
+            if (progress != null) {
+              if (status == StepStatus.running) {
+                final est = progress!.estimatedRemaining;
+                final estText = est != null
+                    ? " (~${_formatDuration(est)})"
+                    : "";
 
-              children.add(
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    LinearProgressIndicator(
-                      value: progress!.fraction,
-                      minHeight: 4,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "${_formatNumber(progress!.remaining)} remaining$estText",
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(fontSize: 10),
-                    ),
-                  ],
-                ),
-              );
-            } else if (status == StepStatus.completed) {
-              // Show result stats
-              final scanned = progress!.scanned;
-              final matches = matchCount ?? 0;
-
-              children.add(
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(
-                      "$matches matches found (${_formatNumber(scanned)} scanned)",
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontSize: 10,
-                        color: Colors.green,
+                children.add(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: progress!.fraction,
+                        minHeight: 4,
                       ),
-                    ),
-                  ],
-                ),
-              );
+                      const SizedBox(height: 2),
+                      Text(
+                        "${_formatNumber(progress!.remaining)} remaining$estText",
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(fontSize: 10),
+                      ),
+                    ],
+                  ),
+                );
+              } else if (status == StepStatus.completed) {
+                // Show result stats
+                final scanned = progress!.scanned;
+                final matches = matchCount ?? 0;
+
+                children.add(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        "$matches matches found (${_formatNumber(scanned)} scanned)",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: 10,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
             }
-          }
 
-          if (extraSubtitle != null) {
-            if (children.isNotEmpty) {
-              children.add(const SizedBox(height: 4));
+            if (extraSubtitle != null) {
+              if (children.isNotEmpty) {
+                children.add(const SizedBox(height: 4));
+              }
+              children.add(extraSubtitle!);
             }
-            children.add(extraSubtitle!);
-          }
 
-          if (children.isEmpty) {
-            return const SizedBox.shrink();
-          }
+            if (children.isEmpty) {
+              return const SizedBox.shrink();
+            }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
-          );
-        },
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            );
+          },
+        ),
+        trailing:
+            trailing ??
+            Text(
+              _getStatusText(status),
+              style: TextStyle(color: _getStatusColor(status), fontSize: 11),
+            ),
       ),
-      trailing:
-          trailing ??
-          Text(
-            _getStatusText(status),
-            style: TextStyle(color: _getStatusColor(status), fontSize: 11),
-          ),
     );
   }
 

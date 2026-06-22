@@ -128,23 +128,28 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
                   itemCount: controller.scripts.length,
                   itemBuilder: (context, index) {
                     final script = controller.scripts[index];
-                    return ListTile(
-                      title: Text(script.name),
-                      selected: _selectedScript == script,
-                      onTap: () => setState(() => _selectedScript = script),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.copy, size: 18),
-                            tooltip: l10n.duplicateScript,
-                            onPressed: () => controller.duplicateScript(script),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, size: 18),
-                            onPressed: () => controller.deleteScript(script.id),
-                          ),
-                        ],
+                    return Material(
+                      type: MaterialType.transparency,
+                      child: ListTile(
+                        title: Text(script.name),
+                        selected: _selectedScript == script,
+                        onTap: () => setState(() => _selectedScript = script),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.copy, size: 18),
+                              tooltip: l10n.duplicateScript,
+                              onPressed: () =>
+                                  controller.duplicateScript(script),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, size: 18),
+                              onPressed: () =>
+                                  controller.deleteScript(script.id),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },

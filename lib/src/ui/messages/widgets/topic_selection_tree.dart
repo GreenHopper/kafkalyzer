@@ -64,24 +64,27 @@ class TopicSelectionTree extends StatelessWidget {
     final isSelected = selectedTopics.isEmpty;
     return Padding(
       padding: const EdgeInsets.only(top: 8.0, left: 8.0, right: 8.0),
-      child: ListTile(
-        leading: Icon(
-          Icons.dashboard,
-          color: isSelected ? Theme.of(context).colorScheme.primary : null,
-        ),
-        title: Text(
-          AppLocalizations.of(context)?.allMessages ?? "All Messages",
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          leading: Icon(
+            Icons.dashboard,
             color: isSelected ? Theme.of(context).colorScheme.primary : null,
           ),
+          title: Text(
+            AppLocalizations.of(context)?.allMessages ?? "All Messages",
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? Theme.of(context).colorScheme.primary : null,
+            ),
+          ),
+          selected: isSelected,
+          selectedTileColor: Theme.of(
+            context,
+          ).colorScheme.primaryContainer.withAlpha(50),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          onTap: onClearSelection,
         ),
-        selected: isSelected,
-        selectedTileColor: Theme.of(
-          context,
-        ).colorScheme.primaryContainer.withAlpha(50),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        onTap: onClearSelection,
       ),
     );
   }
@@ -149,61 +152,66 @@ class TopicSelectionTree extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      child: ListTile(
-        dense: true,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        selected: isSelected,
-        selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-        selectedColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        leading: isSelected
-            ? const Icon(Icons.check_circle, size: 20)
-            : const Icon(Icons.circle_outlined, size: 20, color: Colors.grey),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        subtitle: node.examined > 0
-            ? Text(
-                l10n != null
-                    ? l10n.scanned(node.examined)
-                    : "${node.examined} scanned",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer.withAlpha(200)
-                      : null,
-                ),
-              )
-            : null,
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: node.count > 0
-                ? (isSelected
-                      ? Theme.of(context).colorScheme.surface.withAlpha(100)
-                      : Theme.of(context).primaryColor.withAlpha(25))
-                : Colors.grey.withAlpha(25),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            "${node.count}",
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          dense: true,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          selected: isSelected,
+          selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
+          selectedColor: Theme.of(context).colorScheme.onPrimaryContainer,
+          leading: isSelected
+              ? const Icon(Icons.check_circle, size: 20)
+              : const Icon(Icons.circle_outlined, size: 20, color: Colors.grey),
+          title: Text(
+            title,
             style: TextStyle(
-              color: node.count > 0
-                  ? (isSelected
-                        ? Theme.of(context).colorScheme.onPrimaryContainer
-                        : Theme.of(context).primaryColor)
-                  : Colors.grey,
-              fontWeight: node.count > 0 ? FontWeight.bold : FontWeight.normal,
-              fontSize: 11,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
+          subtitle: node.examined > 0
+              ? Text(
+                  l10n != null
+                      ? l10n.scanned(node.examined)
+                      : "${node.examined} scanned",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isSelected
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer.withAlpha(200)
+                        : null,
+                  ),
+                )
+              : null,
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: node.count > 0
+                  ? (isSelected
+                        ? Theme.of(context).colorScheme.surface.withAlpha(100)
+                        : Theme.of(context).primaryColor.withAlpha(25))
+                  : Colors.grey.withAlpha(25),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              "${node.count}",
+              style: TextStyle(
+                color: node.count > 0
+                    ? (isSelected
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Theme.of(context).primaryColor)
+                    : Colors.grey,
+                fontWeight: node.count > 0
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+                fontSize: 11,
+              ),
+            ),
+          ),
+          onTap: () => onTopicToggle(stepId, node.topic),
         ),
-        onTap: () => onTopicToggle(stepId, node.topic),
       ),
     );
   }

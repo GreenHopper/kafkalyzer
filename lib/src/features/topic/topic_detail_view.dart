@@ -109,17 +109,22 @@ class _TopicDetailViewState extends State<TopicDetailView>
 
         return Column(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            Material(
+              color: colorScheme.surface,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
                   ),
                 ),
+                child: _buildHeader(context),
               ),
-              child: _buildHeader(context),
             ),
             _buildSettings(context, colorScheme, startStreaming),
             const Divider(height: 1),
@@ -415,22 +420,25 @@ class _TopicDetailViewState extends State<TopicDetailView>
         const SizedBox(height: 12),
         _buildLimitAndPartitionRow(),
         const SizedBox(height: 12),
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            "Fast Trace (Hash Key)",
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+        Material(
+          type: MaterialType.transparency,
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              "Fast Trace (Hash Key)",
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            value: _fastTraceEnabled,
+            onChanged: (val) => setState(() {
+              _fastTraceEnabled = val;
+              if (_fastTraceEnabled) {
+                _filterType = FilterType.exact;
+                _searchScope = SearchScope.key;
+              }
+            }),
           ),
-          value: _fastTraceEnabled,
-          onChanged: (val) => setState(() {
-            _fastTraceEnabled = val;
-            if (_fastTraceEnabled) {
-              _filterType = FilterType.exact;
-              _searchScope = SearchScope.key;
-            }
-          }),
         ),
       ],
     );

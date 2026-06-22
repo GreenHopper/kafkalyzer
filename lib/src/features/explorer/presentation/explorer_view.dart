@@ -89,7 +89,7 @@ class _ExplorerViewState extends State<ExplorerView> {
   ) {
     return SizedBox(
       width: 360,
-      child: Container(
+      child: Material(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
