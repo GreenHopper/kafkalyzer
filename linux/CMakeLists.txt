@@ -7,7 +7,7 @@ project(kafkalyzer LANGUAGES CXX)
 set(BINARY_NAME "kafkalyzer")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "com.example.kafkalyzer")
+set(APPLICATION_ID "at.greenhopper.kafkalyzer")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

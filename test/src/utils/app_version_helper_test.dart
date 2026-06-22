@@ -9,7 +9,7 @@ void main() {
     test('version is initialized from package info', () async {
       PackageInfo.setMockInitialValues(
         appName: 'kafkalyzer',
-        packageName: 'com.example.kafkalyzer',
+        packageName: 'at.greenhopper.kafkalyzer',
         version: '1.2.3',
         buildNumber: '4',
         buildSignature: '',

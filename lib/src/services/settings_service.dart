@@ -343,7 +343,7 @@ class SettingsService {
       final home = Platform.environment['HOME'];
       if (home != null) {
         candidates.add(
-          p.join(home, '.local/share/com.example.kafkalyzer', _gcsKeyFileName),
+          p.join(home, '.local/share/at.greenhopper.kafkalyzer', _gcsKeyFileName),
         );
         candidates.add(
           p.join(home, '.local/share/kafkalyzer', _gcsKeyFileName),
@@ -353,7 +353,7 @@ class SettingsService {
       final appData = Platform.environment['APPDATA'];
       if (appData != null) {
         candidates.add(
-          p.join(appData, 'com.example', 'kafkalyzer', _gcsKeyFileName),
+          p.join(appData, 'at.greenhopper', 'kafkalyzer', _gcsKeyFileName),
         );
       }
     } else if (Platform.isMacOS) {

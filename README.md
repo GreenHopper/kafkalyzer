@@ -36,9 +36,9 @@ The application leverages the power of two ecosystems:
 
 The application uses the `shared_preferences` plugin to store local data. The files are located in the following standard paths based on your operating system:
 
-- **Linux**: `~/.local/share/com.example.kafkalyzer/shared_preferences.json`
-- **Windows**: `C:\Users\<User>\AppData\Roaming\com.example\kafkalyzer\shared_preferences.json`
-- **macOS**: `~/Library/Preferences/com.example.kafkalyzer.plist`
+- **Linux**: `~/.local/share/at.greenhopper.kafkalyzer/shared_preferences.json`
+- **Windows**: `C:\Users\<User>\AppData\Roaming\at.greenhopper\kafkalyzer\shared_preferences.json`
+- **macOS**: `~/Library/Preferences/at.greenhopper.kafkalyzer.plist`
 
 ## Getting Started
 
