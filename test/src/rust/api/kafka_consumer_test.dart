@@ -56,7 +56,7 @@ void main() {
       expect(msg.key, 'key');
       expect(msg.payload, 'value');
 
-      // Not equal to different type is handled by Dart's strong typing, 
+      // Not equal to different type is handled by Dart's strong typing,
       // testing it directly causes linter warnings.
 
       // Mutate each field to test operator == and hashCode changes

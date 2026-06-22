@@ -4,12 +4,16 @@ class ClusterBasicInfoForm extends StatelessWidget {
   final TextEditingController nameController;
   final TextEditingController bootstrapServersController;
   final TextEditingController schemaRegistryUrlController;
+  final TextEditingController schemaRegistryUsernameController;
+  final TextEditingController schemaRegistryPasswordController;
 
   const ClusterBasicInfoForm({
     super.key,
     required this.nameController,
     required this.bootstrapServersController,
     required this.schemaRegistryUrlController,
+    required this.schemaRegistryUsernameController,
+    required this.schemaRegistryPasswordController,
   });
 
   @override
@@ -59,6 +63,25 @@ class ClusterBasicInfoForm extends StatelessWidget {
 
               return null;
             },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextFormField(
+            controller: schemaRegistryUsernameController,
+            decoration: const InputDecoration(
+              labelText: 'Schema Registry Username (Optional)',
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextFormField(
+            controller: schemaRegistryPasswordController,
+            decoration: const InputDecoration(
+              labelText: 'Schema Registry Password (Optional)',
+            ),
+            obscureText: true,
           ),
         ),
       ],

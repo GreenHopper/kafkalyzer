@@ -21,6 +21,16 @@ class ClusterProfile {
   final String? sslKeystorePassword;
   final String? sslTruststoreLocation;
   final String? sslTruststorePassword;
+  final String? schemaRegistryUsername;
+  final String? schemaRegistryPassword;
+  final String? saslKerberosServiceName;
+  final String? saslKerberosKeytab;
+  final String? saslKerberosPrincipal;
+  final String? saslKerberosConf;
+  final String? saslOauthbearerToken;
+  final String? sslPemCertificateLocation;
+  final String? sslPemKeyLocation;
+  final String? sslPemKeyPassword;
 
   const ClusterProfile({
     required this.name,
@@ -34,6 +44,16 @@ class ClusterProfile {
     this.sslKeystorePassword,
     this.sslTruststoreLocation,
     this.sslTruststorePassword,
+    this.schemaRegistryUsername,
+    this.schemaRegistryPassword,
+    this.saslKerberosServiceName,
+    this.saslKerberosKeytab,
+    this.saslKerberosPrincipal,
+    this.saslKerberosConf,
+    this.saslOauthbearerToken,
+    this.sslPemCertificateLocation,
+    this.sslPemKeyLocation,
+    this.sslPemKeyPassword,
   });
 
   @override
@@ -48,7 +68,17 @@ class ClusterProfile {
       sslKeystoreLocation.hashCode ^
       sslKeystorePassword.hashCode ^
       sslTruststoreLocation.hashCode ^
-      sslTruststorePassword.hashCode;
+      sslTruststorePassword.hashCode ^
+      schemaRegistryUsername.hashCode ^
+      schemaRegistryPassword.hashCode ^
+      saslKerberosServiceName.hashCode ^
+      saslKerberosKeytab.hashCode ^
+      saslKerberosPrincipal.hashCode ^
+      saslKerberosConf.hashCode ^
+      saslOauthbearerToken.hashCode ^
+      sslPemCertificateLocation.hashCode ^
+      sslPemKeyLocation.hashCode ^
+      sslPemKeyPassword.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -65,7 +95,17 @@ class ClusterProfile {
           sslKeystoreLocation == other.sslKeystoreLocation &&
           sslKeystorePassword == other.sslKeystorePassword &&
           sslTruststoreLocation == other.sslTruststoreLocation &&
-          sslTruststorePassword == other.sslTruststorePassword;
+          sslTruststorePassword == other.sslTruststorePassword &&
+          schemaRegistryUsername == other.schemaRegistryUsername &&
+          schemaRegistryPassword == other.schemaRegistryPassword &&
+          saslKerberosServiceName == other.saslKerberosServiceName &&
+          saslKerberosKeytab == other.saslKerberosKeytab &&
+          saslKerberosPrincipal == other.saslKerberosPrincipal &&
+          saslKerberosConf == other.saslKerberosConf &&
+          saslOauthbearerToken == other.saslOauthbearerToken &&
+          sslPemCertificateLocation == other.sslPemCertificateLocation &&
+          sslPemKeyLocation == other.sslPemKeyLocation &&
+          sslPemKeyPassword == other.sslPemKeyPassword;
 }
 
 class ConsumerGroupLag {

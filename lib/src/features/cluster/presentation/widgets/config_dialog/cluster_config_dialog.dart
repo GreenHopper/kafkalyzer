@@ -24,6 +24,16 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
   late final TextEditingController _sslKeystorePasswordController;
   late final TextEditingController _sslTruststoreLocationController;
   late final TextEditingController _sslTruststorePasswordController;
+  late final TextEditingController _schemaRegistryUsernameController;
+  late final TextEditingController _schemaRegistryPasswordController;
+  late final TextEditingController _saslKerberosServiceNameController;
+  late final TextEditingController _saslKerberosKeytabController;
+  late final TextEditingController _saslKerberosPrincipalController;
+  late final TextEditingController _saslKerberosConfController;
+  late final TextEditingController _saslOauthbearerTokenController;
+  late final TextEditingController _sslPemCertificateLocationController;
+  late final TextEditingController _sslPemKeyLocationController;
+  late final TextEditingController _sslPemKeyPasswordController;
 
   String _securityProtocol = "PLAINTEXT";
   String? _mechanism = "PLAIN";
@@ -56,6 +66,36 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
     _sslTruststorePasswordController = TextEditingController(
       text: widget.cluster?.sslTruststorePassword ?? "",
     );
+    _schemaRegistryUsernameController = TextEditingController(
+      text: widget.cluster?.schemaRegistryUsername ?? "",
+    );
+    _schemaRegistryPasswordController = TextEditingController(
+      text: widget.cluster?.schemaRegistryPassword ?? "",
+    );
+    _saslKerberosServiceNameController = TextEditingController(
+      text: widget.cluster?.saslKerberosServiceName ?? "",
+    );
+    _saslKerberosKeytabController = TextEditingController(
+      text: widget.cluster?.saslKerberosKeytab ?? "",
+    );
+    _saslKerberosPrincipalController = TextEditingController(
+      text: widget.cluster?.saslKerberosPrincipal ?? "",
+    );
+    _saslKerberosConfController = TextEditingController(
+      text: widget.cluster?.saslKerberosConf ?? "",
+    );
+    _saslOauthbearerTokenController = TextEditingController(
+      text: widget.cluster?.saslOauthbearerToken ?? "",
+    );
+    _sslPemCertificateLocationController = TextEditingController(
+      text: widget.cluster?.sslPemCertificateLocation ?? "",
+    );
+    _sslPemKeyLocationController = TextEditingController(
+      text: widget.cluster?.sslPemKeyLocation ?? "",
+    );
+    _sslPemKeyPasswordController = TextEditingController(
+      text: widget.cluster?.sslPemKeyPassword ?? "",
+    );
 
     if (widget.cluster != null) {
       if (widget.cluster!.securityProtocol != null) {
@@ -64,7 +104,6 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
       if (widget.cluster!.mechanism != null) {
         _mechanism = widget.cluster!.mechanism;
       }
-      // Text controllers initialized above already handle null checks via defaults
     }
   }
 
@@ -79,6 +118,16 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
     _sslKeystorePasswordController.dispose();
     _sslTruststoreLocationController.dispose();
     _sslTruststorePasswordController.dispose();
+    _schemaRegistryUsernameController.dispose();
+    _schemaRegistryPasswordController.dispose();
+    _saslKerberosServiceNameController.dispose();
+    _saslKerberosKeytabController.dispose();
+    _saslKerberosPrincipalController.dispose();
+    _saslKerberosConfController.dispose();
+    _saslOauthbearerTokenController.dispose();
+    _sslPemCertificateLocationController.dispose();
+    _sslPemKeyLocationController.dispose();
+    _sslPemKeyPasswordController.dispose();
     super.dispose();
   }
 
@@ -98,33 +147,39 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                   nameController: _nameController,
                   bootstrapServersController: _bootstrapServersController,
                   schemaRegistryUrlController: _schemaRegistryUrlController,
+                  schemaRegistryUsernameController:
+                      _schemaRegistryUsernameController,
+                  schemaRegistryPasswordController:
+                      _schemaRegistryPasswordController,
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: _securityProtocol,
-                  decoration: const InputDecoration(
-                    labelText: 'Security Protocol',
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _securityProtocol,
+                    decoration: const InputDecoration(
+                      labelText: 'Security Protocol',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: "PLAINTEXT",
+                        child: Text("PLAINTEXT"),
+                      ),
+                      DropdownMenuItem(
+                        value: "SASL_PLAINTEXT",
+                        child: Text("SASL_PLAINTEXT"),
+                      ),
+                      DropdownMenuItem(
+                        value: "SASL_SSL",
+                        child: Text("SASL_SSL"),
+                      ),
+                      DropdownMenuItem(value: "SSL", child: Text("SSL")),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _securityProtocol = value!;
+                      });
+                    },
                   ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: "PLAINTEXT",
-                      child: Text("PLAINTEXT"),
-                    ),
-                    DropdownMenuItem(
-                      value: "SASL_PLAINTEXT",
-                      child: Text("SASL_PLAINTEXT"),
-                    ),
-                    DropdownMenuItem(
-                      value: "SASL_SSL",
-                      child: Text("SASL_SSL"),
-                    ),
-                    DropdownMenuItem(value: "SSL", child: Text("SSL")),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _securityProtocol = value!;
-                    });
-                  },
                 ),
                 if (_securityProtocol.startsWith("SASL")) ...[
                   ClusterSaslForm(
@@ -133,6 +188,13 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                         setState(() => _mechanism = value),
                     usernameController: _saslUsernameController,
                     passwordController: _saslPasswordController,
+                    kerberosServiceNameController:
+                        _saslKerberosServiceNameController,
+                    kerberosKeytabController: _saslKerberosKeytabController,
+                    kerberosPrincipalController:
+                        _saslKerberosPrincipalController,
+                    kerberosConfController: _saslKerberosConfController,
+                    oauthbearerTokenController: _saslOauthbearerTokenController,
                   ),
                 ],
                 if (_securityProtocol == "SSL" ||
@@ -144,6 +206,10 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                         _sslTruststoreLocationController,
                     truststorePasswordController:
                         _sslTruststorePasswordController,
+                    pemCertificateLocationController:
+                        _sslPemCertificateLocationController,
+                    pemKeyLocationController: _sslPemKeyLocationController,
+                    pemKeyPasswordController: _sslPemKeyPasswordController,
                   ),
                 ],
               ],
@@ -190,6 +256,43 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                 sslTruststorePassword:
                     _sslTruststorePasswordController.text.isNotEmpty
                     ? _sslTruststorePasswordController.text
+                    : null,
+                schemaRegistryUsername:
+                    _schemaRegistryUsernameController.text.isNotEmpty
+                    ? _schemaRegistryUsernameController.text
+                    : null,
+                schemaRegistryPassword:
+                    _schemaRegistryPasswordController.text.isNotEmpty
+                    ? _schemaRegistryPasswordController.text
+                    : null,
+                saslKerberosServiceName:
+                    _saslKerberosServiceNameController.text.isNotEmpty
+                    ? _saslKerberosServiceNameController.text
+                    : null,
+                saslKerberosKeytab:
+                    _saslKerberosKeytabController.text.isNotEmpty
+                    ? _saslKerberosKeytabController.text
+                    : null,
+                saslKerberosPrincipal:
+                    _saslKerberosPrincipalController.text.isNotEmpty
+                    ? _saslKerberosPrincipalController.text
+                    : null,
+                saslKerberosConf: _saslKerberosConfController.text.isNotEmpty
+                    ? _saslKerberosConfController.text
+                    : null,
+                saslOauthbearerToken:
+                    _saslOauthbearerTokenController.text.isNotEmpty
+                    ? _saslOauthbearerTokenController.text
+                    : null,
+                sslPemCertificateLocation:
+                    _sslPemCertificateLocationController.text.isNotEmpty
+                    ? _sslPemCertificateLocationController.text
+                    : null,
+                sslPemKeyLocation: _sslPemKeyLocationController.text.isNotEmpty
+                    ? _sslPemKeyLocationController.text
+                    : null,
+                sslPemKeyPassword: _sslPemKeyPasswordController.text.isNotEmpty
+                    ? _sslPemKeyPasswordController.text
                     : null,
               );
               Navigator.pop(context, profile);

@@ -66,7 +66,9 @@ void main() {
 
       await tester.tap(copyButton);
       await tester.pump(); // Start the SnackBar animation
-      await tester.pump(const Duration(milliseconds: 100)); // Let the SnackBar slide in
+      await tester.pump(
+        const Duration(milliseconds: 100),
+      ); // Let the SnackBar slide in
 
       expect(find.text('Hex dump copied to clipboard'), findsOneWidget);
     });

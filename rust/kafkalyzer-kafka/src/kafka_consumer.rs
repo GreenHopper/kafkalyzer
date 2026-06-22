@@ -3,6 +3,8 @@ use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::Message as KafkaMessageTrait;
 use regex::Regex;
 use schema_registry_converter::async_impl::avro::AvroDecoder;
+use schema_registry_converter::async_impl::json::JsonDecoder;
+use schema_registry_converter::async_impl::proto_decoder::ProtoDecoder;
 use schema_registry_converter::async_impl::schema_registry::{get_all_subjects, SrSettings};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -24,6 +26,13 @@ impl<T> StreamSink<T> {
     pub fn add(&self, value: T) -> Result<(), String> {
         self.tx.send(value).map_err(|e| e.to_string())
     }
+}
+
+pub struct SrDecoders<'a> {
+    pub settings: SrSettings,
+    pub avro: AvroDecoder<'a>,
+    pub json: JsonDecoder<'a>,
+    pub proto: ProtoDecoder<'a>,
 }
 
 pub fn consume_with_filter(
@@ -48,7 +57,7 @@ pub fn consume_with_filter(
 
     // 2. Setup Schema Registry (Optional)
     let sr_settings = create_sr_settings(&profile);
-    let (decoder, key_is_avro, value_is_avro) = if let Some(ref settings) = sr_settings {
+    let (decoders, key_is_avro, value_is_avro) = if let Some(ref settings) = sr_settings {
         setup_schema_registry(&tokio_runtime, settings, &topic)?
     } else {
         (None, false, false)
@@ -88,7 +97,7 @@ pub fn consume_with_filter(
             timeout,
             &sink,
             &tokio_runtime,
-            &decoder,
+            &decoders,
             key_is_avro,
             value_is_avro,
             &filter_terms,
@@ -131,6 +140,7 @@ pub fn consume_with_filter(
         key: None,
         payload: Some(format!("__PROGRESS__:0:{}", total_to_scan)),
         timestamp: 0,
+        headers: None,
     };
     sink.add(initial_msg).ok();
 
@@ -148,7 +158,7 @@ pub fn consume_with_filter(
         run_forever,
         sink,
         tokio_runtime,
-        decoder,
+        decoders,
         key_is_avro,
         value_is_avro,
         total_to_scan,
@@ -164,7 +174,55 @@ fn create_sr_settings(profile: &ClusterProfile) -> Option<SrSettings> {
             sr_url = format!("http://{}", sr_url);
         }
         if !sr_url.is_empty() {
-            return Some(SrSettings::new(sr_url));
+            use std::io::Read;
+            let mut builder = SrSettings::new_builder(sr_url);
+
+            // 1. Basic Auth
+            if let (Some(u), Some(p)) = (&profile.schema_registry_username, &profile.schema_registry_password) {
+                builder.set_basic_authorization(u, Some(p));
+            }
+
+            // 2. Client builder for SSL/TLS configuration
+            let mut client_builder = reqwest::Client::builder();
+
+            // SSL Truststore
+            if let Some(truststore_path) = &profile.ssl_truststore_location {
+                if !truststore_path.trim().is_empty() {
+                    if let Ok(mut file) = std::fs::File::open(truststore_path) {
+                        let mut cert_bytes = vec![];
+                        if file.read_to_end(&mut cert_bytes).is_ok() {
+                            if let Ok(cert) = reqwest::Certificate::from_pem(&cert_bytes) {
+                                client_builder = client_builder.add_root_certificate(cert);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // SSL Keystore (mTLS)
+            if let Some(keystore_path) = &profile.ssl_keystore_location {
+                if !keystore_path.trim().is_empty() && (keystore_path.to_lowercase().ends_with(".p12") || keystore_path.to_lowercase().ends_with(".pfx")) {
+                    let password = profile.ssl_keystore_password.as_deref().unwrap_or("");
+                    if let Ok(mut file) = std::fs::File::open(keystore_path) {
+                        let mut pkcs12_bytes = vec![];
+                        if file.read_to_end(&mut pkcs12_bytes).is_ok() {
+                            if let Ok(identity) = reqwest::Identity::from_pkcs12_der(&pkcs12_bytes, password) {
+                                client_builder = client_builder.identity(identity);
+                            }
+                        }
+                    }
+                }
+            } else if let (Some(cert_path), Some(key_path)) = (&profile.ssl_pem_certificate_location, &profile.ssl_pem_key_location) {
+                if let (Ok(cert_bytes), Ok(key_bytes)) = (std::fs::read(cert_path), std::fs::read(key_path)) {
+                    if let Ok(identity) = reqwest::Identity::from_pkcs8_pem(&cert_bytes, &key_bytes) {
+                        client_builder = client_builder.identity(identity);
+                    }
+                }
+            }
+
+            if let Ok(settings) = builder.build_with(client_builder) {
+                return Some(settings);
+            }
         }
     }
     None
@@ -187,7 +245,7 @@ fn create_consumer(profile: &ClusterProfile, is_seeking: bool) -> Result<BaseCon
     Ok(consumer)
 }
 
-fn handle_seek_logic(
+fn handle_seek_logic<'a>(
     consumer: &BaseConsumer,
     metadata: &rdkafka::metadata::Metadata,
     topic: &str,
@@ -197,7 +255,7 @@ fn handle_seek_logic(
     timeout: std::time::Duration,
     sink: &StreamSink<KafkaMessage>,
     tokio_runtime: &Runtime,
-    decoder: &Option<AvroDecoder>,
+    decoder: &Option<SrDecoders<'a>>,
     key_is_avro: bool,
     value_is_avro: bool,
     filter_terms: &Option<Vec<String>>,
@@ -294,7 +352,7 @@ fn calculate_total_to_scan(
     total_to_scan
 }
 
-fn run_poll_loop(
+fn run_poll_loop<'a>(
     consumer: BaseConsumer,
     topic: String,
     start_offsets_map: std::collections::HashMap<i32, i64>,
@@ -307,7 +365,7 @@ fn run_poll_loop(
     run_forever: bool,
     sink: StreamSink<KafkaMessage>,
     tokio_runtime: Runtime,
-    decoder: Option<AvroDecoder>,
+    decoder: Option<SrDecoders<'a>>,
     key_is_avro: bool,
     value_is_avro: bool,
     total_to_scan: i64,
@@ -415,6 +473,7 @@ fn run_poll_loop(
                     key: None,
                     payload: Some(format!("__HEARTBEAT__:{}:{}", scanned_count, total_to_scan)),
                     timestamp: 0,
+                    headers: None,
                 };
                 if let Err(e) = sink.add(heartbeat_msg) {
                     log_to_dart(
@@ -442,15 +501,16 @@ fn send_progress(
         key: None,
         payload: Some(format!("__PROGRESS__:{}:{}", scanned, total)),
         timestamp: 0,
+        headers: None,
     };
     sink.add(progress_msg)
         .map_err(|e| anyhow::anyhow!("Sink Error: {:?}", e))
 }
 
-fn process_and_send_message<M: KafkaMessageTrait>(
+fn process_and_send_message<'a, M: KafkaMessageTrait>(
     msg: &M,
     tokio_runtime: &Runtime,
-    decoder: &Option<AvroDecoder>,
+    decoder: &Option<SrDecoders<'a>>,
     key_is_avro: bool,
     value_is_avro: bool,
     filter_terms: &Option<Vec<String>>,
@@ -489,6 +549,24 @@ fn process_and_send_message<M: KafkaMessageTrait>(
         return false;
     }
 
+    use rdkafka::message::Headers;
+    let headers = msg.headers().map(|headers| {
+        let mut list = Vec::new();
+        for i in 0..headers.count() {
+            let header = headers.get(i);
+            let key = header.key.to_string();
+            let value = match header.value {
+                Some(bytes) => match std::str::from_utf8(bytes) {
+                    Ok(val_str) => val_str.to_string(),
+                    Err(_) => format!("0x{}", hex::encode(bytes)),
+                },
+                None => "".to_string(),
+            };
+            list.push(kafkalyzer_core::kafka_types::KafkaHeader { key, value });
+        }
+        list
+    });
+
     let kafka_msg = KafkaMessage {
         topic: msg.topic().to_string(),
         partition: msg.partition(),
@@ -496,6 +574,7 @@ fn process_and_send_message<M: KafkaMessageTrait>(
         timestamp: msg.timestamp().to_millis().unwrap_or(0),
         key,
         payload,
+        headers,
     };
 
     if let Err(_e) = sink.add(kafka_msg) {
@@ -600,8 +679,13 @@ fn setup_schema_registry<'a>(
     tokio_runtime: &Runtime,
     sr_settings: &'a SrSettings,
     topic: &str,
-) -> Result<(Option<AvroDecoder<'a>>, bool, bool)> {
-    let decoder = Some(AvroDecoder::new(sr_settings.clone()));
+) -> Result<(Option<SrDecoders<'a>>, bool, bool)> {
+    let decoders = Some(SrDecoders {
+        settings: sr_settings.clone(),
+        avro: AvroDecoder::new(sr_settings.clone()),
+        json: JsonDecoder::new(sr_settings.clone()),
+        proto: ProtoDecoder::new(sr_settings.clone()),
+    });
 
     let (key_avro, value_avro) = match tokio_runtime.block_on(get_all_subjects(sr_settings)) {
         Ok(subjects) => {
@@ -621,7 +705,7 @@ fn setup_schema_registry<'a>(
             (false, false)
         }
     };
-    Ok((decoder, key_avro, value_avro))
+    Ok((decoders, key_avro, value_avro))
 }
 
 fn setup_topic_assignment(
@@ -958,47 +1042,64 @@ fn calculate_end_offsets(
 
 fn decode_message_component<'a>(
     tokio_runtime: &Runtime,
-    decoder: &Option<AvroDecoder<'a>>,
+    decoders: &Option<SrDecoders<'a>>,
     data: Option<&[u8]>,
-    is_avro: bool,
+    has_schema: bool,
     binary_placeholder: &str,
 ) -> Option<String> {
     let bytes = data?;
 
     let mut decoded_val = None;
-    if is_avro {
-        if let Some(avro_decoder) = decoder {
-            // Use decode_with_schema to get the schema alongside the value
-            let future = avro_decoder.decode_with_schema(Some(bytes));
-            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                // decoded_result has .value and .schema (Arc<AvroSchema>)
-                // AvroSchema wraps apache_avro::Schema in .parsed
-                let schema = &decoded_result.schema.parsed;
+    if has_schema {
+        if let Some(ref sr_decoders) = decoders {
+            if bytes.len() >= 5 && bytes[0] == 0 {
+                let mut id_bytes = [0u8; 4];
+                id_bytes.copy_from_slice(&bytes[1..5]);
+                let schema_id = u32::from_be_bytes(id_bytes);
 
-                let mut resolved_schemas = std::collections::HashMap::new();
-                kafkalyzer_core::avro_utils::extract_named_schemas(schema, &mut resolved_schemas);
-
-                match kafkalyzer_core::avro_utils::convert_avro_value(
-                    &decoded_result.value,
-                    Some(schema),
-                    &resolved_schemas,
-                ) {
-                    Ok(json_val) => match serde_json::to_string_pretty(&json_val) {
-                        Ok(json) => decoded_val = Some(json),
-                        Err(err) => {
-                            println!("Error serializing JSON: {}", err);
-                            decoded_val = Some(format!("{:?}", decoded_result.value));
+                let schema_future = schema_registry_converter::async_impl::schema_registry::get_schema_by_id(
+                    schema_id,
+                    &sr_decoders.settings,
+                );
+                if let Ok(registered_schema) = tokio_runtime.block_on(schema_future) {
+                    match registered_schema.schema_type {
+                        schema_registry_converter::schema_registry_common::SchemaType::Avro => {
+                            let future = sr_decoders.avro.decode_with_schema(Some(bytes));
+                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                                let schema = &decoded_result.schema.parsed;
+                                let mut resolved_schemas = std::collections::HashMap::new();
+                                kafkalyzer_core::avro_utils::extract_named_schemas(schema, &mut resolved_schemas);
+                                if let Ok(json_val) = kafkalyzer_core::avro_utils::convert_avro_value(
+                                    &decoded_result.value,
+                                    Some(schema),
+                                    &resolved_schemas,
+                                ) {
+                                    if let Ok(json) = serde_json::to_string_pretty(&json_val) {
+                                        decoded_val = Some(json);
+                                    }
+                                }
+                            }
                         }
-                    },
-                    Err(err) => {
-                        println!("Error converting Avro to JsonValue: {}", err);
-                        decoded_val = Some(format!("{:?}", decoded_result.value));
+                        schema_registry_converter::schema_registry_common::SchemaType::Json => {
+                            let future = sr_decoders.json.decode(Some(bytes));
+                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                                if let Ok(json) = serde_json::to_string_pretty(&decoded_result.value) {
+                                    decoded_val = Some(json);
+                                }
+                            }
+                        }
+                        schema_registry_converter::schema_registry_common::SchemaType::Protobuf => {
+                            let future = sr_decoders.proto.decode_with_context(Some(bytes));
+                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                                let json_val = convert_protofish_message(&decoded_result.value, &decoded_result.context.context);
+                                if let Ok(json) = serde_json::to_string_pretty(&json_val) {
+                                    decoded_val = Some(json);
+                                }
+                            }
+                        }
+                        _ => {}
                     }
                 }
-            } else {
-                // Fallback if decode_with_schema fails or returns None?
-                // Trying standard decode if needed, but decode_with_schema handles it.
-                // If it failed, let's treat as binary/fail.
             }
         }
     }
@@ -1325,6 +1426,7 @@ fn log_to_dart(sink: &StreamSink<KafkaMessage>, message: String) {
         key: None,
         payload: Some(format!("__LOG__:{}", message)),
         timestamp: 0,
+        headers: None,
     };
     sink.add(msg).ok();
 }
@@ -1367,6 +1469,80 @@ fn send_eof(sink: &StreamSink<KafkaMessage>, topic: &str) {
         key: None,
         payload: Some("__EOF__".to_string()),
         timestamp: 0,
+        headers: None,
     };
     let _ = sink.add(eof_msg);
+}
+
+fn convert_protofish_message(msg: &protofish::decode::MessageValue, context: &protofish::context::Context) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    let message_info = context.resolve_message(msg.msg_ref);
+
+    for field in &msg.fields {
+        let field_name = message_info.get_field(field.number)
+            .map(|f| f.name.clone())
+            .unwrap_or_else(|| format!("field_{}", field.number));
+
+        let json_val = convert_protofish_value(&field.value, context);
+        map.insert(field_name, json_val);
+    }
+    serde_json::Value::Object(map)
+}
+
+fn convert_protofish_value(val: &protofish::decode::Value, context: &protofish::context::Context) -> serde_json::Value {
+    use protofish::decode::Value;
+    match val {
+        Value::Double(v) => serde_json::json!(v),
+        Value::Float(v) => serde_json::json!(v),
+        Value::Int32(v) => serde_json::json!(v),
+        Value::Int64(v) => serde_json::json!(v),
+        Value::UInt32(v) => serde_json::json!(v),
+        Value::UInt64(v) => serde_json::json!(v),
+        Value::SInt32(v) => serde_json::json!(v),
+        Value::SInt64(v) => serde_json::json!(v),
+        Value::Fixed32(v) => serde_json::json!(v),
+        Value::Fixed64(v) => serde_json::json!(v),
+        Value::SFixed32(v) => serde_json::json!(v),
+        Value::SFixed64(v) => serde_json::json!(v),
+        Value::Bool(v) => serde_json::json!(v),
+        Value::String(v) => serde_json::Value::String(v.clone()),
+        Value::Bytes(v) => serde_json::Value::String(format!("0x{}", hex::encode(v))),
+        Value::Message(msg) => convert_protofish_message(msg, context),
+        Value::Enum(ev) => {
+            let enum_info = context.resolve_enum(ev.enum_ref);
+            let name = enum_info.get_field_by_value(ev.value)
+                .map(|f| f.name.clone())
+                .unwrap_or_else(|| ev.value.to_string());
+            serde_json::Value::String(name)
+        }
+        Value::Packed(arr) => {
+            use protofish::decode::PackedArray;
+            match arr {
+                PackedArray::Double(v) => serde_json::json!(v),
+                PackedArray::Float(v) => serde_json::json!(v),
+                PackedArray::Int32(v) => serde_json::json!(v),
+                PackedArray::Int64(v) => serde_json::json!(v),
+                PackedArray::UInt32(v) => serde_json::json!(v),
+                PackedArray::UInt64(v) => serde_json::json!(v),
+                PackedArray::SInt32(v) => serde_json::json!(v),
+                PackedArray::SInt64(v) => serde_json::json!(v),
+                PackedArray::Fixed32(v) => serde_json::json!(v),
+                PackedArray::Fixed64(v) => serde_json::json!(v),
+                PackedArray::SFixed32(v) => serde_json::json!(v),
+                PackedArray::SFixed64(v) => serde_json::json!(v),
+                PackedArray::Bool(v) => serde_json::json!(v),
+            }
+        }
+        Value::Incomplete(_, bytes) => serde_json::Value::String(format!("Incomplete: 0x{}", hex::encode(bytes))),
+        Value::Unknown(uk) => {
+            use protofish::decode::UnknownValue;
+            match uk {
+                UnknownValue::Varint(v) => serde_json::json!(v.to_string()),
+                UnknownValue::Fixed64(v) => serde_json::json!(v),
+                UnknownValue::VariableLength(v) => serde_json::Value::String(format!("0x{}", hex::encode(v))),
+                UnknownValue::Fixed32(v) => serde_json::json!(v),
+                UnknownValue::Invalid(_, bytes) => serde_json::Value::String(format!("Invalid: 0x{}", hex::encode(bytes))),
+            }
+        }
+    }
 }

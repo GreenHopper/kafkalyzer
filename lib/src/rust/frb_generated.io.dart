@@ -77,6 +77,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 dco_decode_i_64(dynamic raw);
 
   @protected
+  KafkaHeader dco_decode_kafka_header(dynamic raw);
+
+  @protected
   KafkaMessage dco_decode_kafka_message(dynamic raw);
 
   @protected
@@ -84,6 +87,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<ConsumerGroupLag> dco_decode_list_consumer_group_lag(dynamic raw);
+
+  @protected
+  List<KafkaHeader> dco_decode_list_kafka_header(dynamic raw);
 
   @protected
   List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
@@ -108,6 +114,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String>? dco_decode_opt_list_String(dynamic raw);
+
+  @protected
+  List<KafkaHeader>? dco_decode_opt_list_kafka_header(dynamic raw);
 
   @protected
   SearchScope dco_decode_search_scope(dynamic raw);
@@ -183,6 +192,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
+  KafkaHeader sse_decode_kafka_header(SseDeserializer deserializer);
+
+  @protected
   KafkaMessage sse_decode_kafka_message(SseDeserializer deserializer);
 
   @protected
@@ -192,6 +204,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<ConsumerGroupLag> sse_decode_list_consumer_group_lag(
     SseDeserializer deserializer,
   );
+
+  @protected
+  List<KafkaHeader> sse_decode_list_kafka_header(SseDeserializer deserializer);
 
   @protected
   List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
@@ -220,6 +235,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String>? sse_decode_opt_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<KafkaHeader>? sse_decode_opt_list_kafka_header(
+    SseDeserializer deserializer,
+  );
 
   @protected
   SearchScope sse_decode_search_scope(SseDeserializer deserializer);
@@ -313,6 +333,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
+  void sse_encode_kafka_header(KafkaHeader self, SseSerializer serializer);
+
+  @protected
   void sse_encode_kafka_message(KafkaMessage self, SseSerializer serializer);
 
   @protected
@@ -321,6 +344,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_consumer_group_lag(
     List<ConsumerGroupLag> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_kafka_header(
+    List<KafkaHeader> self,
     SseSerializer serializer,
   );
 
@@ -359,6 +388,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_list_String(List<String>? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_list_kafka_header(
+    List<KafkaHeader>? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_search_scope(SearchScope self, SseSerializer serializer);

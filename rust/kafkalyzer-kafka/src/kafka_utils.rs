@@ -177,14 +177,46 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
         }
     }
 
-    if let (Some(username), Some(password), Some(mechanism)) = (
-        &profile.sasl_username,
-        &profile.sasl_password,
-        &profile.mechanism,
-    ) {
-        config.set("sasl.username", username);
-        config.set("sasl.password", password);
+    if let Some(mechanism) = &profile.mechanism {
         config.set("sasl.mechanism", mechanism);
+
+        if mechanism.eq_ignore_ascii_case("GSSAPI") {
+            if let Some(service_name) = &profile.sasl_kerberos_service_name {
+                config.set("sasl.kerberos.service.name", service_name);
+            }
+            if let Some(keytab) = &profile.sasl_kerberos_keytab {
+                config.set("sasl.kerberos.keytab", keytab);
+            }
+            if let Some(principal) = &profile.sasl_kerberos_principal {
+                config.set("sasl.kerberos.principal", principal);
+            }
+            if let Some(krb5_conf) = &profile.sasl_kerberos_conf {
+                std::env::set_var("KRB5_CONFIG", krb5_conf);
+            }
+        } else if mechanism.eq_ignore_ascii_case("OAUTHBEARER") {
+            if let Some(token) = &profile.sasl_oauthbearer_token {
+                config.set("sasl.oauthbearer.config", token);
+            }
+        }
+    }
+
+    if let Some(username) = &profile.sasl_username {
+        config.set("sasl.username", username);
+    }
+
+    if let Some(password) = &profile.sasl_password {
+        config.set("sasl.password", password);
+    }
+
+    // PEM mTLS client certificate configuration
+    if let Some(cert_loc) = &profile.ssl_pem_certificate_location {
+        config.set("ssl.certificate.location", cert_loc);
+    }
+    if let Some(key_loc) = &profile.ssl_pem_key_location {
+        config.set("ssl.key.location", key_loc);
+    }
+    if let Some(key_pass) = &profile.ssl_pem_key_password {
+        config.set("ssl.key.password", key_pass);
     }
 
     if let Some(location) = &profile.ssl_keystore_location {

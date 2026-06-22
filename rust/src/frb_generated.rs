@@ -596,6 +596,16 @@ impl SseDecode for crate::api::kafka_types::ClusterProfile {
         let mut var_sslKeystorePassword = <Option<String>>::sse_decode(deserializer);
         let mut var_sslTruststoreLocation = <Option<String>>::sse_decode(deserializer);
         let mut var_sslTruststorePassword = <Option<String>>::sse_decode(deserializer);
+        let mut var_schemaRegistryUsername = <Option<String>>::sse_decode(deserializer);
+        let mut var_schemaRegistryPassword = <Option<String>>::sse_decode(deserializer);
+        let mut var_saslKerberosServiceName = <Option<String>>::sse_decode(deserializer);
+        let mut var_saslKerberosKeytab = <Option<String>>::sse_decode(deserializer);
+        let mut var_saslKerberosPrincipal = <Option<String>>::sse_decode(deserializer);
+        let mut var_saslKerberosConf = <Option<String>>::sse_decode(deserializer);
+        let mut var_saslOauthbearerToken = <Option<String>>::sse_decode(deserializer);
+        let mut var_sslPemCertificateLocation = <Option<String>>::sse_decode(deserializer);
+        let mut var_sslPemKeyLocation = <Option<String>>::sse_decode(deserializer);
+        let mut var_sslPemKeyPassword = <Option<String>>::sse_decode(deserializer);
         return crate::api::kafka_types::ClusterProfile {
             name: var_name,
             bootstrap_servers: var_bootstrapServers,
@@ -608,6 +618,16 @@ impl SseDecode for crate::api::kafka_types::ClusterProfile {
             ssl_keystore_password: var_sslKeystorePassword,
             ssl_truststore_location: var_sslTruststoreLocation,
             ssl_truststore_password: var_sslTruststorePassword,
+            schema_registry_username: var_schemaRegistryUsername,
+            schema_registry_password: var_schemaRegistryPassword,
+            sasl_kerberos_service_name: var_saslKerberosServiceName,
+            sasl_kerberos_keytab: var_saslKerberosKeytab,
+            sasl_kerberos_principal: var_saslKerberosPrincipal,
+            sasl_kerberos_conf: var_saslKerberosConf,
+            sasl_oauthbearer_token: var_saslOauthbearerToken,
+            ssl_pem_certificate_location: var_sslPemCertificateLocation,
+            ssl_pem_key_location: var_sslPemKeyLocation,
+            ssl_pem_key_password: var_sslPemKeyPassword,
         };
     }
 }
@@ -660,6 +680,18 @@ impl SseDecode for i64 {
     }
 }
 
+impl SseDecode for crate::api::kafka_consumer::KafkaHeader {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_key = <String>::sse_decode(deserializer);
+        let mut var_value = <String>::sse_decode(deserializer);
+        return crate::api::kafka_consumer::KafkaHeader {
+            key: var_key,
+            value: var_value,
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_consumer::KafkaMessage {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -669,6 +701,8 @@ impl SseDecode for crate::api::kafka_consumer::KafkaMessage {
         let mut var_key = <Option<String>>::sse_decode(deserializer);
         let mut var_payload = <Option<String>>::sse_decode(deserializer);
         let mut var_timestamp = <i64>::sse_decode(deserializer);
+        let mut var_headers =
+            <Option<Vec<crate::api::kafka_consumer::KafkaHeader>>>::sse_decode(deserializer);
         return crate::api::kafka_consumer::KafkaMessage {
             topic: var_topic,
             partition: var_partition,
@@ -676,6 +710,7 @@ impl SseDecode for crate::api::kafka_consumer::KafkaMessage {
             key: var_key,
             payload: var_payload,
             timestamp: var_timestamp,
+            headers: var_headers,
         };
     }
 }
@@ -699,6 +734,20 @@ impl SseDecode for Vec<crate::api::kafka_types::ConsumerGroupLag> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<crate::api::kafka_types::ConsumerGroupLag>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::kafka_consumer::KafkaHeader> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_consumer::KafkaHeader>::sse_decode(
                 deserializer,
             ));
         }
@@ -784,6 +833,19 @@ impl SseDecode for Option<Vec<String>> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<Vec<String>>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<Vec<crate::api::kafka_consumer::KafkaHeader>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<Vec<crate::api::kafka_consumer::KafkaHeader>>::sse_decode(
+                deserializer,
+            ));
         } else {
             return None;
         }
@@ -966,6 +1028,18 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ClusterProfile {
             self.ssl_keystore_password.into_into_dart().into_dart(),
             self.ssl_truststore_location.into_into_dart().into_dart(),
             self.ssl_truststore_password.into_into_dart().into_dart(),
+            self.schema_registry_username.into_into_dart().into_dart(),
+            self.schema_registry_password.into_into_dart().into_dart(),
+            self.sasl_kerberos_service_name.into_into_dart().into_dart(),
+            self.sasl_kerberos_keytab.into_into_dart().into_dart(),
+            self.sasl_kerberos_principal.into_into_dart().into_dart(),
+            self.sasl_kerberos_conf.into_into_dart().into_dart(),
+            self.sasl_oauthbearer_token.into_into_dart().into_dart(),
+            self.ssl_pem_certificate_location
+                .into_into_dart()
+                .into_dart(),
+            self.ssl_pem_key_location.into_into_dart().into_dart(),
+            self.ssl_pem_key_password.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1029,6 +1103,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::FilterType>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_consumer::KafkaHeader {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.key.into_into_dart().into_dart(),
+            self.value.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_consumer::KafkaHeader
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_consumer::KafkaHeader>
+    for crate::api::kafka_consumer::KafkaHeader
+{
+    fn into_into_dart(self) -> crate::api::kafka_consumer::KafkaHeader {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_consumer::KafkaMessage {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -1038,6 +1133,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_consumer::KafkaMessage 
             self.key.into_into_dart().into_dart(),
             self.payload.into_into_dart().into_dart(),
             self.timestamp.into_into_dart().into_dart(),
+            self.headers.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1189,6 +1285,16 @@ impl SseEncode for crate::api::kafka_types::ClusterProfile {
         <Option<String>>::sse_encode(self.ssl_keystore_password, serializer);
         <Option<String>>::sse_encode(self.ssl_truststore_location, serializer);
         <Option<String>>::sse_encode(self.ssl_truststore_password, serializer);
+        <Option<String>>::sse_encode(self.schema_registry_username, serializer);
+        <Option<String>>::sse_encode(self.schema_registry_password, serializer);
+        <Option<String>>::sse_encode(self.sasl_kerberos_service_name, serializer);
+        <Option<String>>::sse_encode(self.sasl_kerberos_keytab, serializer);
+        <Option<String>>::sse_encode(self.sasl_kerberos_principal, serializer);
+        <Option<String>>::sse_encode(self.sasl_kerberos_conf, serializer);
+        <Option<String>>::sse_encode(self.sasl_oauthbearer_token, serializer);
+        <Option<String>>::sse_encode(self.ssl_pem_certificate_location, serializer);
+        <Option<String>>::sse_encode(self.ssl_pem_key_location, serializer);
+        <Option<String>>::sse_encode(self.ssl_pem_key_password, serializer);
     }
 }
 
@@ -1238,6 +1344,14 @@ impl SseEncode for i64 {
     }
 }
 
+impl SseEncode for crate::api::kafka_consumer::KafkaHeader {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.key, serializer);
+        <String>::sse_encode(self.value, serializer);
+    }
+}
+
 impl SseEncode for crate::api::kafka_consumer::KafkaMessage {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1247,6 +1361,10 @@ impl SseEncode for crate::api::kafka_consumer::KafkaMessage {
         <Option<String>>::sse_encode(self.key, serializer);
         <Option<String>>::sse_encode(self.payload, serializer);
         <i64>::sse_encode(self.timestamp, serializer);
+        <Option<Vec<crate::api::kafka_consumer::KafkaHeader>>>::sse_encode(
+            self.headers,
+            serializer,
+        );
     }
 }
 
@@ -1266,6 +1384,16 @@ impl SseEncode for Vec<crate::api::kafka_types::ConsumerGroupLag> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::kafka_types::ConsumerGroupLag>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::kafka_consumer::KafkaHeader> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_consumer::KafkaHeader>::sse_encode(item, serializer);
         }
     }
 }
@@ -1336,6 +1464,16 @@ impl SseEncode for Option<Vec<String>> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <Vec<String>>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<Vec<crate::api::kafka_consumer::KafkaHeader>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <Vec<crate::api::kafka_consumer::KafkaHeader>>::sse_encode(value, serializer);
         }
     }
 }

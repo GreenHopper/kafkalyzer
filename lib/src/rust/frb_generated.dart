@@ -668,8 +668,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ClusterProfile dco_decode_cluster_profile(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 11)
-      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
+    if (arr.length != 21)
+      throw Exception('unexpected arr length: expect 21 but see ${arr.length}');
     return ClusterProfile(
       name: dco_decode_String(arr[0]),
       bootstrapServers: dco_decode_String(arr[1]),
@@ -682,6 +682,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       sslKeystorePassword: dco_decode_opt_String(arr[8]),
       sslTruststoreLocation: dco_decode_opt_String(arr[9]),
       sslTruststorePassword: dco_decode_opt_String(arr[10]),
+      schemaRegistryUsername: dco_decode_opt_String(arr[11]),
+      schemaRegistryPassword: dco_decode_opt_String(arr[12]),
+      saslKerberosServiceName: dco_decode_opt_String(arr[13]),
+      saslKerberosKeytab: dco_decode_opt_String(arr[14]),
+      saslKerberosPrincipal: dco_decode_opt_String(arr[15]),
+      saslKerberosConf: dco_decode_opt_String(arr[16]),
+      saslOauthbearerToken: dco_decode_opt_String(arr[17]),
+      sslPemCertificateLocation: dco_decode_opt_String(arr[18]),
+      sslPemKeyLocation: dco_decode_opt_String(arr[19]),
+      sslPemKeyPassword: dco_decode_opt_String(arr[20]),
     );
   }
 
@@ -720,11 +730,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  KafkaHeader dco_decode_kafka_header(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return KafkaHeader(
+      key: dco_decode_String(arr[0]),
+      value: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
   KafkaMessage dco_decode_kafka_message(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 6)
-      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return KafkaMessage(
       topic: dco_decode_String(arr[0]),
       partition: dco_decode_i_32(arr[1]),
@@ -732,6 +754,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       key: dco_decode_opt_String(arr[3]),
       payload: dco_decode_opt_String(arr[4]),
       timestamp: dco_decode_i_64(arr[5]),
+      headers: dco_decode_opt_list_kafka_header(arr[6]),
     );
   }
 
@@ -745,6 +768,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<ConsumerGroupLag> dco_decode_list_consumer_group_lag(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_consumer_group_lag).toList();
+  }
+
+  @protected
+  List<KafkaHeader> dco_decode_list_kafka_header(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_kafka_header).toList();
   }
 
   @protected
@@ -793,6 +822,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<String>? dco_decode_opt_list_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_list_String(raw);
+  }
+
+  @protected
+  List<KafkaHeader>? dco_decode_opt_list_kafka_header(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_list_kafka_header(raw);
   }
 
   @protected
@@ -941,6 +976,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_sslKeystorePassword = sse_decode_opt_String(deserializer);
     var var_sslTruststoreLocation = sse_decode_opt_String(deserializer);
     var var_sslTruststorePassword = sse_decode_opt_String(deserializer);
+    var var_schemaRegistryUsername = sse_decode_opt_String(deserializer);
+    var var_schemaRegistryPassword = sse_decode_opt_String(deserializer);
+    var var_saslKerberosServiceName = sse_decode_opt_String(deserializer);
+    var var_saslKerberosKeytab = sse_decode_opt_String(deserializer);
+    var var_saslKerberosPrincipal = sse_decode_opt_String(deserializer);
+    var var_saslKerberosConf = sse_decode_opt_String(deserializer);
+    var var_saslOauthbearerToken = sse_decode_opt_String(deserializer);
+    var var_sslPemCertificateLocation = sse_decode_opt_String(deserializer);
+    var var_sslPemKeyLocation = sse_decode_opt_String(deserializer);
+    var var_sslPemKeyPassword = sse_decode_opt_String(deserializer);
     return ClusterProfile(
       name: var_name,
       bootstrapServers: var_bootstrapServers,
@@ -953,6 +998,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       sslKeystorePassword: var_sslKeystorePassword,
       sslTruststoreLocation: var_sslTruststoreLocation,
       sslTruststorePassword: var_sslTruststorePassword,
+      schemaRegistryUsername: var_schemaRegistryUsername,
+      schemaRegistryPassword: var_schemaRegistryPassword,
+      saslKerberosServiceName: var_saslKerberosServiceName,
+      saslKerberosKeytab: var_saslKerberosKeytab,
+      saslKerberosPrincipal: var_saslKerberosPrincipal,
+      saslKerberosConf: var_saslKerberosConf,
+      saslOauthbearerToken: var_saslOauthbearerToken,
+      sslPemCertificateLocation: var_sslPemCertificateLocation,
+      sslPemKeyLocation: var_sslPemKeyLocation,
+      sslPemKeyPassword: var_sslPemKeyPassword,
     );
   }
 
@@ -995,6 +1050,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  KafkaHeader sse_decode_kafka_header(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_key = sse_decode_String(deserializer);
+    var var_value = sse_decode_String(deserializer);
+    return KafkaHeader(key: var_key, value: var_value);
+  }
+
+  @protected
   KafkaMessage sse_decode_kafka_message(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_topic = sse_decode_String(deserializer);
@@ -1003,6 +1066,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_key = sse_decode_opt_String(deserializer);
     var var_payload = sse_decode_opt_String(deserializer);
     var var_timestamp = sse_decode_i_64(deserializer);
+    var var_headers = sse_decode_opt_list_kafka_header(deserializer);
     return KafkaMessage(
       topic: var_topic,
       partition: var_partition,
@@ -1010,6 +1074,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       key: var_key,
       payload: var_payload,
       timestamp: var_timestamp,
+      headers: var_headers,
     );
   }
 
@@ -1035,6 +1100,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <ConsumerGroupLag>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_consumer_group_lag(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<KafkaHeader> sse_decode_list_kafka_header(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <KafkaHeader>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_kafka_header(deserializer));
     }
     return ans_;
   }
@@ -1120,6 +1197,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_list_String(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  List<KafkaHeader>? sse_decode_opt_list_kafka_header(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_list_kafka_header(deserializer));
     } else {
       return null;
     }
@@ -1296,6 +1386,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.sslKeystorePassword, serializer);
     sse_encode_opt_String(self.sslTruststoreLocation, serializer);
     sse_encode_opt_String(self.sslTruststorePassword, serializer);
+    sse_encode_opt_String(self.schemaRegistryUsername, serializer);
+    sse_encode_opt_String(self.schemaRegistryPassword, serializer);
+    sse_encode_opt_String(self.saslKerberosServiceName, serializer);
+    sse_encode_opt_String(self.saslKerberosKeytab, serializer);
+    sse_encode_opt_String(self.saslKerberosPrincipal, serializer);
+    sse_encode_opt_String(self.saslKerberosConf, serializer);
+    sse_encode_opt_String(self.saslOauthbearerToken, serializer);
+    sse_encode_opt_String(self.sslPemCertificateLocation, serializer);
+    sse_encode_opt_String(self.sslPemKeyLocation, serializer);
+    sse_encode_opt_String(self.sslPemKeyPassword, serializer);
   }
 
   @protected
@@ -1331,6 +1431,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_kafka_header(KafkaHeader self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.key, serializer);
+    sse_encode_String(self.value, serializer);
+  }
+
+  @protected
   void sse_encode_kafka_message(KafkaMessage self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.topic, serializer);
@@ -1339,6 +1446,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.key, serializer);
     sse_encode_opt_String(self.payload, serializer);
     sse_encode_i_64(self.timestamp, serializer);
+    sse_encode_opt_list_kafka_header(self.headers, serializer);
   }
 
   @protected
@@ -1359,6 +1467,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_consumer_group_lag(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_kafka_header(
+    List<KafkaHeader> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_kafka_header(item, serializer);
     }
   }
 
@@ -1451,6 +1571,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_list_String(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_list_kafka_header(
+    List<KafkaHeader>? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_list_kafka_header(self, serializer);
     }
   }
 

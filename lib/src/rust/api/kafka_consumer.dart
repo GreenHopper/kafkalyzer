@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`, `from`, `from`
 
 Stream<KafkaMessage> consumeWithFilter({
   required ClusterProfile profile,
@@ -41,6 +41,24 @@ Stream<KafkaMessage> consumeWithFilter({
   runForever: runForever,
 );
 
+class KafkaHeader {
+  final String key;
+  final String value;
+
+  const KafkaHeader({required this.key, required this.value});
+
+  @override
+  int get hashCode => key.hashCode ^ value.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is KafkaHeader &&
+          runtimeType == other.runtimeType &&
+          key == other.key &&
+          value == other.value;
+}
+
 class KafkaMessage {
   final String topic;
   final int partition;
@@ -48,6 +66,7 @@ class KafkaMessage {
   final String? key;
   final String? payload;
   final PlatformInt64 timestamp;
+  final List<KafkaHeader>? headers;
 
   const KafkaMessage({
     required this.topic,
@@ -56,6 +75,7 @@ class KafkaMessage {
     this.key,
     this.payload,
     required this.timestamp,
+    this.headers,
   });
 
   @override
@@ -65,7 +85,8 @@ class KafkaMessage {
       offset.hashCode ^
       key.hashCode ^
       payload.hashCode ^
-      timestamp.hashCode;
+      timestamp.hashCode ^
+      headers.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -77,5 +98,6 @@ class KafkaMessage {
           offset == other.offset &&
           key == other.key &&
           payload == other.payload &&
-          timestamp == other.timestamp;
+          timestamp == other.timestamp &&
+          headers == other.headers;
 }

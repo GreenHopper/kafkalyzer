@@ -35,7 +35,7 @@ void main() {
       expect(profile1 == profile1, isTrue);
       expect(profile1, equals(profile2));
       expect(profile1.hashCode, equals(profile2.hashCode));
-      // Not equal to different type is handled by Dart's strong typing, 
+      // Not equal to different type is handled by Dart's strong typing,
       // testing it directly causes linter warnings.
 
       // Mutate each field
@@ -260,7 +260,7 @@ void main() {
       expect(lag1 == lag1, isTrue);
       expect(lag1, equals(lag2));
       expect(lag1.hashCode, equals(lag2.hashCode));
-      // Not equal to different type is handled by Dart's strong typing, 
+      // Not equal to different type is handled by Dart's strong typing,
       // testing it directly causes linter warnings.
 
       expect(
@@ -356,7 +356,7 @@ void main() {
       expect(groupLag1 == groupLag1, isTrue);
       expect(groupLag1, equals(groupLag2));
       expect(groupLag1.hashCode, equals(groupLag2.hashCode));
-      // Not equal to different type is handled by Dart's strong typing, 
+      // Not equal to different type is handled by Dart's strong typing,
       // testing it directly causes linter warnings.
 
       expect(

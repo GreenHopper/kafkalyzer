@@ -6,7 +6,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   setUpAll(() {
     SharedPreferences.setMockInitialValues({});
   });
-  
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });

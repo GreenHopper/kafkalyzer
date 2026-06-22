@@ -6,15 +6,30 @@ void main() {
   group('ClusterSaslForm', () {
     late TextEditingController usernameController;
     late TextEditingController passwordController;
+    late TextEditingController kerberosServiceNameController;
+    late TextEditingController kerberosKeytabController;
+    late TextEditingController kerberosPrincipalController;
+    late TextEditingController kerberosConfController;
+    late TextEditingController oauthbearerTokenController;
 
     setUp(() {
       usernameController = TextEditingController();
       passwordController = TextEditingController();
+      kerberosServiceNameController = TextEditingController();
+      kerberosKeytabController = TextEditingController();
+      kerberosPrincipalController = TextEditingController();
+      kerberosConfController = TextEditingController();
+      oauthbearerTokenController = TextEditingController();
     });
 
     tearDown(() {
       usernameController.dispose();
       passwordController.dispose();
+      kerberosServiceNameController.dispose();
+      kerberosKeytabController.dispose();
+      kerberosPrincipalController.dispose();
+      kerberosConfController.dispose();
+      oauthbearerTokenController.dispose();
     });
 
     testWidgets('renders fields and handles mechanism change', (tester) async {
@@ -35,6 +50,11 @@ void main() {
                       setState(() => selectedMechanism = val),
                   usernameController: usernameController,
                   passwordController: passwordController,
+                  kerberosServiceNameController: kerberosServiceNameController,
+                  kerberosKeytabController: kerberosKeytabController,
+                  kerberosPrincipalController: kerberosPrincipalController,
+                  kerberosConfController: kerberosConfController,
+                  oauthbearerTokenController: oauthbearerTokenController,
                 );
               },
             ),

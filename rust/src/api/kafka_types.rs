@@ -13,6 +13,19 @@ pub struct ClusterProfile {
     pub ssl_keystore_password: Option<String>,
     pub ssl_truststore_location: Option<String>,
     pub ssl_truststore_password: Option<String>,
+    // Schema Registry Auth
+    pub schema_registry_username: Option<String>,
+    pub schema_registry_password: Option<String>,
+    // Advanced SASL
+    pub sasl_kerberos_service_name: Option<String>,
+    pub sasl_kerberos_keytab: Option<String>,
+    pub sasl_kerberos_principal: Option<String>,
+    pub sasl_kerberos_conf: Option<String>,
+    pub sasl_oauthbearer_token: Option<String>,
+    // PEM mTLS
+    pub ssl_pem_certificate_location: Option<String>,
+    pub ssl_pem_key_location: Option<String>,
+    pub ssl_pem_key_password: Option<String>,
 }
 
 impl ClusterProfile {
@@ -29,6 +42,16 @@ impl ClusterProfile {
             ssl_keystore_password: self.ssl_keystore_password.clone(),
             ssl_truststore_location: self.ssl_truststore_location.clone(),
             ssl_truststore_password: self.ssl_truststore_password.clone(),
+            schema_registry_username: self.schema_registry_username.clone(),
+            schema_registry_password: self.schema_registry_password.clone(),
+            sasl_kerberos_service_name: self.sasl_kerberos_service_name.clone(),
+            sasl_kerberos_keytab: self.sasl_kerberos_keytab.clone(),
+            sasl_kerberos_principal: self.sasl_kerberos_principal.clone(),
+            sasl_kerberos_conf: self.sasl_kerberos_conf.clone(),
+            sasl_oauthbearer_token: self.sasl_oauthbearer_token.clone(),
+            ssl_pem_certificate_location: self.ssl_pem_certificate_location.clone(),
+            ssl_pem_key_location: self.ssl_pem_key_location.clone(),
+            ssl_pem_key_password: self.ssl_pem_key_password.clone(),
         }
     }
 }

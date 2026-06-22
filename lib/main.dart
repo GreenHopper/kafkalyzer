@@ -17,7 +17,7 @@ Future<void> main() async {
 
   // Initialize settings (like default output directory)
   await getIt<SettingsService>().initializeSettings();
-  
+
   await AppVersionHelper.init();
 
   // Clean up old script runs in background

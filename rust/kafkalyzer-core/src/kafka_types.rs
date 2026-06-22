@@ -13,6 +13,19 @@ pub struct ClusterProfile {
     pub ssl_keystore_password: Option<String>,
     pub ssl_truststore_location: Option<String>,
     pub ssl_truststore_password: Option<String>,
+    // Schema Registry Auth
+    pub schema_registry_username: Option<String>,
+    pub schema_registry_password: Option<String>,
+    // Advanced SASL (Kerberos, OAuth, MSK)
+    pub sasl_kerberos_service_name: Option<String>,
+    pub sasl_kerberos_keytab: Option<String>,
+    pub sasl_kerberos_principal: Option<String>,
+    pub sasl_kerberos_conf: Option<String>,
+    pub sasl_oauthbearer_token: Option<String>,
+    // PEM mTLS
+    pub ssl_pem_certificate_location: Option<String>,
+    pub ssl_pem_key_location: Option<String>,
+    pub ssl_pem_key_password: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -30,6 +43,12 @@ pub enum SearchScope {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KafkaHeader {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KafkaMessage {
     pub topic: String,
     pub partition: i32,
@@ -37,6 +56,7 @@ pub struct KafkaMessage {
     pub key: Option<String>,
     pub payload: Option<String>,
     pub timestamp: i64,
+    pub headers: Option<Vec<KafkaHeader>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,3 +77,4 @@ pub struct ConsumerGroupLag {
     pub members_count: i32,
     pub topics_count: i32,
 }
+

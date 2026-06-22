@@ -8,12 +8,18 @@ void main() {
     late TextEditingController keystorePasswordController;
     late TextEditingController truststoreLocationController;
     late TextEditingController truststorePasswordController;
+    late TextEditingController pemCertificateLocationController;
+    late TextEditingController pemKeyLocationController;
+    late TextEditingController pemKeyPasswordController;
 
     setUp(() {
       keystoreLocationController = TextEditingController();
       keystorePasswordController = TextEditingController();
       truststoreLocationController = TextEditingController();
       truststorePasswordController = TextEditingController();
+      pemCertificateLocationController = TextEditingController();
+      pemKeyLocationController = TextEditingController();
+      pemKeyPasswordController = TextEditingController();
     });
 
     tearDown(() {
@@ -21,6 +27,9 @@ void main() {
       keystorePasswordController.dispose();
       truststoreLocationController.dispose();
       truststorePasswordController.dispose();
+      pemCertificateLocationController.dispose();
+      pemKeyLocationController.dispose();
+      pemKeyPasswordController.dispose();
     });
 
     testWidgets('renders all SSL fields', (tester) async {
@@ -33,6 +42,10 @@ void main() {
                 keystorePasswordController: keystorePasswordController,
                 truststoreLocationController: truststoreLocationController,
                 truststorePasswordController: truststorePasswordController,
+                pemCertificateLocationController:
+                    pemCertificateLocationController,
+                pemKeyLocationController: pemKeyLocationController,
+                pemKeyPasswordController: pemKeyPasswordController,
               ),
             ),
           ),
@@ -40,10 +53,13 @@ void main() {
       );
 
       expect(find.text('SSL Configuration'), findsOneWidget);
-      expect(find.text('Keystore Location'), findsOneWidget);
+      expect(find.text('Keystore Location (.p12/.pfx)'), findsOneWidget);
       expect(find.text('Keystore Password'), findsOneWidget);
-      expect(find.text('Truststore Location'), findsOneWidget);
+      expect(find.text('Truststore Location (PEM or JKS)'), findsOneWidget);
       expect(find.text('Truststore Password'), findsOneWidget);
+      expect(find.text('Client Certificate PEM Location'), findsOneWidget);
+      expect(find.text('Client Private Key PEM Location'), findsOneWidget);
+      expect(find.text('Client Private Key Password'), findsOneWidget);
     });
   });
 }

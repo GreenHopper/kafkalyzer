@@ -7,13 +7,14 @@ edition = "2021"
 anyhow = "1.0.100"
 log = "0.4"
 reqwest = { version = "0.12", features = ["json"] }
-schema_registry_converter = { version = "=4.2.0", features = ["avro", "json"] }
+schema_registry_converter = { version = "=4.2.0", features = ["avro", "json", "proto_decoder"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.148"
 tokio = { version = "1.48.0", features = ["full"] }
 regex = "1.12.2"
 hex = "0.4"
 apache-avro = "0.17.0"
+protofish = "0.5.3"
 kafkalyzer-core = { path = "../kafkalyzer-core" }
 
 # --- WINDOWS KONFIGURATION (vcpkg) ---

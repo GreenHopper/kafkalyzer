@@ -54,7 +54,7 @@ void main() {
       expect(topic.cleanupPolicy, 'delete');
       expect(topic.retentionMs, '604800000');
 
-      // Not equal to different type is handled by Dart's strong typing, 
+      // Not equal to different type is handled by Dart's strong typing,
       // testing it directly causes linter warnings.
 
       // Mutate each field

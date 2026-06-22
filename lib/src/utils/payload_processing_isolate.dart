@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-final bool isTestMode = !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
+final bool isTestMode =
+    !kIsWeb && Platform.environment.containsKey('FLUTTER_TEST');
 
 /// Parses a JSON string in a background isolate.
 Future<dynamic> parseJsonInIsolate(String rawJson) async {

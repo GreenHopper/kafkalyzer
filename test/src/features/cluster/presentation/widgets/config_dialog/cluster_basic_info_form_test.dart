@@ -7,17 +7,23 @@ void main() {
     late TextEditingController nameController;
     late TextEditingController bootstrapServersController;
     late TextEditingController schemaRegistryUrlController;
+    late TextEditingController schemaRegistryUsernameController;
+    late TextEditingController schemaRegistryPasswordController;
 
     setUp(() {
       nameController = TextEditingController();
       bootstrapServersController = TextEditingController();
       schemaRegistryUrlController = TextEditingController();
+      schemaRegistryUsernameController = TextEditingController();
+      schemaRegistryPasswordController = TextEditingController();
     });
 
     tearDown(() {
       nameController.dispose();
       bootstrapServersController.dispose();
       schemaRegistryUrlController.dispose();
+      schemaRegistryUsernameController.dispose();
+      schemaRegistryPasswordController.dispose();
     });
 
     testWidgets('renders all fields', (tester) async {
@@ -28,6 +34,10 @@ void main() {
               nameController: nameController,
               bootstrapServersController: bootstrapServersController,
               schemaRegistryUrlController: schemaRegistryUrlController,
+              schemaRegistryUsernameController:
+                  schemaRegistryUsernameController,
+              schemaRegistryPasswordController:
+                  schemaRegistryPasswordController,
             ),
           ),
         ),
@@ -53,6 +63,10 @@ void main() {
                 nameController: nameController,
                 bootstrapServersController: bootstrapServersController,
                 schemaRegistryUrlController: schemaRegistryUrlController,
+                schemaRegistryUsernameController:
+                    schemaRegistryUsernameController,
+                schemaRegistryPasswordController:
+                    schemaRegistryPasswordController,
               ),
             ),
           ),

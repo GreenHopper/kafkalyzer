@@ -24,7 +24,7 @@ void main() {
       // Default protocol is PLAINTEXT, so SASL and SSL forms should optionally NOT be visible
       // or at least not strictly required. Based on implementation, specific fields appear conditionally.
       expect(find.text('SASL Mechanism'), findsNothing);
-      expect(find.text('Keystore Location'), findsNothing);
+      expect(find.textContaining('Keystore Location'), findsNothing);
     });
 
     testWidgets('renders in Edit mode with provided cluster', (tester) async {
@@ -55,7 +55,7 @@ void main() {
 
       // Since SASL_SSL, both forms should be visible
       expect(find.text('SASL Mechanism'), findsOneWidget);
-      expect(find.text('Keystore Location'), findsOneWidget);
+      expect(find.textContaining('Keystore Location'), findsOneWidget);
       expect(find.text('/path/to/keystore'), findsOneWidget);
     });
 
@@ -76,22 +76,24 @@ void main() {
       expect(find.text('SASL Mechanism'), findsNothing);
 
       // Change to SASL_PLAINTEXT
+      await tester.ensureVisible(find.text('PLAINTEXT'));
       await tester.tap(find.text('PLAINTEXT'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('SASL_PLAINTEXT').last);
       await tester.pumpAndSettle();
 
       expect(find.text('SASL Mechanism'), findsOneWidget);
-      expect(find.text('Keystore Location'), findsNothing);
+      expect(find.textContaining('Keystore Location'), findsNothing);
 
       // Change to SSL
+      await tester.ensureVisible(find.text('SASL_PLAINTEXT'));
       await tester.tap(find.text('SASL_PLAINTEXT'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('SSL').last);
       await tester.pumpAndSettle();
 
       expect(find.text('SASL Mechanism'), findsNothing);
-      expect(find.text('Keystore Location'), findsOneWidget);
+      expect(find.textContaining('Keystore Location'), findsOneWidget);
     });
 
     testWidgets('validates and returns profile on save', (tester) async {

@@ -261,7 +261,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return lags.fold(0, (sum, item) => sum + item.lag.toInt());
   }
 
-
   Color _getStateColor(String state) {
     final s = state.toLowerCase();
     if (s.contains('stable') || s.contains('active')) {
@@ -286,7 +285,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       final s = g.state.toLowerCase();
       return s.contains('stable') || s.contains('active');
     }).length;
-    final totalLag = filteredLags.fold(0, (sum, group) => sum + _calculateGroupLag(group));
+    final totalLag = filteredLags.fold(
+      0,
+      (sum, group) => sum + _calculateGroupLag(group),
+    );
     final activeQueries = _activeLagQueries;
     final queuedQueries = _lagQueryQueue.length;
 

@@ -4,6 +4,21 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KafkaHeader {
+    pub key: String,
+    pub value: String,
+}
+
+impl From<kafkalyzer_core::kafka_types::KafkaHeader> for KafkaHeader {
+    fn from(h: kafkalyzer_core::kafka_types::KafkaHeader) -> Self {
+        Self {
+            key: h.key,
+            value: h.value,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KafkaMessage {
     pub topic: String,
     pub partition: i32,
@@ -11,6 +26,7 @@ pub struct KafkaMessage {
     pub key: Option<String>,
     pub payload: Option<String>,
     pub timestamp: i64,
+    pub headers: Option<Vec<KafkaHeader>>,
 }
 
 impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
@@ -22,6 +38,7 @@ impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
             key: msg.key,
             payload: msg.payload,
             timestamp: msg.timestamp,
+            headers: msg.headers.map(|list| list.into_iter().map(KafkaHeader::from).collect()),
         }
     }
 }
