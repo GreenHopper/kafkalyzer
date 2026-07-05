@@ -11,9 +11,9 @@ The system SHALL extract message headers (metadata key-value pairs) from polled 
 - **THEN** the system SHALL extract the key and byte value of each header and pack them in the `KafkaMessage` structure
 
 ### Requirement: Message Headers UI Display
-The system SHALL render message headers in the message details/inspector panel of the Explorer View.
+The system SHALL render message headers in a reusable message details/inspector component that can be invoked from both the Explorer View and the Consumer Lag View.
 
-#### Scenario: Display headers list
-- **WHEN** the user inspects a message in the explorer view that contains headers
-- **THEN** the system SHALL display the headers in a structured key-value list (with UTF-8 decoding for string values, and hex fallback for binary values)
+#### Scenario: Display headers list in reusable inspector
+- **WHEN** the user inspects a message that contains headers (regardless of which view triggered the inspection)
+- **THEN** the system SHALL display the headers in a structured key-value list (with UTF-8 decoding for string values, and hex fallback for binary values).
 

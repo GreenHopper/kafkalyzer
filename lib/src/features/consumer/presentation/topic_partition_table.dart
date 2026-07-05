@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
+import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
 
 class TopicPartitionTable extends StatefulWidget {
+  final ClusterProfile profile;
   final List<TopicPartitionLag> partitionLags;
   final Map<String, int>? partitionDeltas;
   final AppLocalizations l10n;
 
   const TopicPartitionTable({
     super.key,
+    required this.profile,
     required this.partitionLags,
     this.partitionDeltas,
     required this.l10n,
@@ -22,6 +26,7 @@ class TopicPartitionTable extends StatefulWidget {
 class _TopicPartitionTableState extends State<TopicPartitionTable> {
   int _sortColumnIndex = 0;
   bool _sortAscending = true;
+  final Set<int> _loadingPartitions = {};
 
   String _formatNum(num value) {
     final locale = Localizations.localeOf(context).toString();
@@ -32,6 +37,56 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     if (widget.partitionDeltas == null) return null;
     final key = "${part.topic}-${part.partition}";
     return widget.partitionDeltas![key];
+  }
+
+  Future<void> _viewLaggingMessage(TopicPartitionLag part) async {
+    if (part.currentOffset.toInt() < 0) return;
+
+    setState(() {
+      _loadingPartitions.add(part.partition);
+    });
+
+    try {
+      final stream = consumer.consumeWithFilter(
+        profile: widget.profile,
+        topic: part.topic,
+        filterType: FilterType.contains,
+        searchScope: SearchScope.both,
+        startOffset: part.currentOffset,
+        startPartition: part.partition,
+        maxResults: 1,
+        runForever: false,
+      );
+
+      final message = await stream.firstWhere(
+        (m) => m.partition == part.partition && m.offset == part.currentOffset,
+      ).timeout(const Duration(seconds: 10));
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => MessageDetailsDialog(message: message),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Error: ${e.toString()}",
+              style: TextStyle(color: Theme.of(context).colorScheme.onError),
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loadingPartitions.remove(part.partition);
+        });
+      }
+    }
   }
 
   Widget _buildDeltaCell(TopicPartitionLag part, {required int flex}) {
@@ -176,7 +231,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.only(left: 24, right: 64, bottom: 8),
+            padding: const EdgeInsets.only(left: 24, right: 24, bottom: 8),
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
@@ -196,6 +251,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                   isGerman ? 'Abarbeitung' : 'Processed',
                   flex: 2,
                 ),
+                const SizedBox(width: 48), // Space for action
               ],
             ),
           ),
@@ -205,9 +261,10 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
             final committedStr = part.currentOffset.toInt() == -1
                 ? "-"
                 : _formatNum(part.currentOffset.toInt());
+            final isLoading = _loadingPartitions.contains(part.partition);
 
             return Container(
-              padding: const EdgeInsets.only(left: 24, right: 64),
+              padding: const EdgeInsets.only(left: 24, right: 24),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -234,6 +291,27 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                     isBold: isHighLag,
                   ),
                   _buildDeltaCell(part, flex: 2),
+                  SizedBox(
+                    width: 48,
+                    child: Center(
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.visibility_outlined),
+                              iconSize: 20,
+                              tooltip: isGerman
+                                  ? 'Message am Offset anzeigen'
+                                  : 'View message at offset',
+                              onPressed: part.currentOffset.toInt() >= 0
+                                  ? () => _viewLaggingMessage(part)
+                                  : null,
+                            ),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -243,3 +321,4 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     );
   }
 }
+

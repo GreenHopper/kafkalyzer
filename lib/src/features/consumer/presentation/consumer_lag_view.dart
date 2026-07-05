@@ -528,7 +528,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                         ? _buildNoClusterSelected(context, l10n)
                         : (_isLoading && _lags.isEmpty
                               ? _buildLoadingState(context)
-                              : _buildGroupList(context, l10n, filteredLags))),
+                              : _buildGroupList(context, l10n, filteredLags, activeProfile))),
             ),
           ],
         ),
@@ -780,6 +780,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     BuildContext context,
     AppLocalizations l10n,
     List<ConsumerGroupLag> groups,
+    ClusterProfile? activeProfile,
   ) {
     if (groups.isEmpty) {
       return Center(
@@ -937,6 +938,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                   children: [
                     const Divider(height: 1),
                     GroupDetailsView(
+                      profile: activeProfile!,
                       group: group,
                       partitionDeltas: _partitionDeltas[group.groupId],
                       l10n: l10n,

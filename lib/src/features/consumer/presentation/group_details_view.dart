@@ -5,12 +5,14 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'topic_partition_table.dart';
 
 class GroupDetailsView extends StatefulWidget {
+  final ClusterProfile profile;
   final ConsumerGroupLag group;
   final Map<String, int>? partitionDeltas;
   final AppLocalizations l10n;
 
   const GroupDetailsView({
     super.key,
+    required this.profile,
     required this.group,
     this.partitionDeltas,
     required this.l10n,
@@ -319,6 +321,7 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                 ),
                 children: [
                   TopicPartitionTable(
+                    profile: widget.profile,
                     partitionLags: parts,
                     partitionDeltas: widget.partitionDeltas,
                     l10n: widget.l10n,
