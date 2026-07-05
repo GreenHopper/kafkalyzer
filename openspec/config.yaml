@@ -26,6 +26,14 @@ context: |
       - Use structured logging (via Dart's `logger` or `developer.log`) instead of plain `print` statements.
       - Handle all potential exceptions and errors gracefully; do not let operations fail silently.
 
+    - UI & UX:
+        - All asynchronous UI actions (e.g., fetching Kafka messages, cluster connection) MUST provide visual feedback (e.g., CircularProgressIndicator or loading states).
+        - Errors during UI actions must be reported to the user via SnackBars or dialogs instead of failing silently in the logs.
+        - Reuse: Existing UI components like `MessageDetailsDialog` should be reused to maintain visual and functional consistency.
+
+    - Localization:
+        - All user-facing strings must be localized using `AppLocalizations` (via `.arb` files). Hardcoded strings in UI code are prohibited.
+
 # Per-artifact generation rules
 rules:
   proposal:
@@ -34,7 +42,10 @@ rules:
   design:
     - Do not modify existing Dart/Flutter UI code unless explicitly requested or necessary.
     - Maintain backwards compatibility of all existing Flutter/Dart integrations and Rust-Dart API signatures.
+    - Status Access: For accessing global state (like the active cluster or settings), prefer using `ActiveConnectionController` or `getIt` over deep prop-drilling unless a widget is purely presentational.
     - Detail design choices, state flow, and any alternatives considered.
+  specs:
+    - Delta Documentation: When modifying existing capabilities, clearly distinguish between `ADDED Requirements`, `MODIFIED Requirements`, and `DELETED Requirements`.
   tasks:
     - Break down execution steps logically by Rust workspace crates first, then bridge generation, and finally Dart/Flutter integration.
     - Verify compilation and run tests at each incremental step to avoid cumulative errors.

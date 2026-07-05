@@ -1,57 +1,67 @@
 # kafkalyzer
 
-kafkalyzer is a high-performance, cross-platform Desktop Client for Apache Kafka, built with **Flutter** for the UI and **Rust** for the backend logic and heavy lifting.
+kafkalyzer is a high-performance, cross-platform Desktop Client for Apache Kafka, built with **Flutter** for the UI and **Rust** for the backend logic and heavy lifting. It is designed to handle large-scale Kafka environments with a focus on developer productivity and performance.
 
-## Architecture
+## 🚀 Supported Platforms
+
+- **Linux**: Ubuntu, Debian, and other major distributions.
+- **macOS**: Native support for both Intel and Apple Silicon (M1/M2/M3).
+- **Windows**: Windows 10 and 11.
+
+## 🏗️ Architecture
 
 The application leverages the power of two ecosystems:
-- **Frontend (Flutter)**: Provides a responsive, beautiful, and native-feeling user interface. Handles state management and user interactions.
-- **Backend (Rust)**: Handles Kafka connectivity, message consumption, protocol deserialization (Avro/Protobuf), and high-performance filtering.
-- **Bridge**: Communication between Dart and Rust is seamlessly handled by `flutter_rust_bridge`.
+- **Frontend (Flutter)**: Provides a responsive, beautiful, and native-feeling user interface using Material 3. Handles state management and user interactions.
+- **Backend (Rust)**: Handles Kafka connectivity via `rdkafka`, message consumption, protocol deserialization (Avro/Protobuf), and high-performance filtering.
+- **Bridge**: Communication between Dart and Rust is seamlessly handled by `flutter_rust_bridge` v2.
 
-## Key Features
+## ✨ Key Features
 
 ### 🔌 Cluster Management
 - Manage connections to multiple Kafka clusters.
-- Support for various authentication mechanisms (Plain, SASL/SCRAM, etc.).
+- Support for various authentication mechanisms (Plain, SASL/SCRAM, SSL/mTLS).
+
+### 📈 Consumer Lag Monitoring
+- Real-time dashboard for consumer group offsets and total lag.
+- **Poison Pill Identification**: Directly inspect the message at the current consumer offset to identify records causing processing stalls.
 
 ### 📂 Topic Explorer
-- Browse topics and partitions.
-- Inspect schemas (Avro/Protobuf) integrated with Schema Registry.
+- Browse topics, partitions, and log-end offsets.
+- Inspect schemas (Avro/Protobuf) integrated with Confluent Schema Registry.
 
 ### 📨 Message Viewer
-- Real-time message consumption.
-- Automatic deserialization of Avro/JSON keys and values.
-- Advanced filtering and search capabilities.
+- Real-time message consumption with ad-hoc seeking.
+- Automatic deserialization of Avro, JSON, and Protobuf keys/values.
+- Advanced header inspection with UTF-8 decoding.
 
 ### 🔍 Multi-Search
-- Powerful search functionality across topics.
-- **Regex Support**: Filter messages based on complex patterns.
-- **Fast Trace**: Optimized partition verification for specific keys.
+- Powerful search functionality across multiple topics simultaneously.
+- **Regex Support**: Filter messages based on complex patterns in keys, values, or headers.
+- **Fast Trace**: Optimized partition verification for specific keys using hash-based routing.
 
 ### 📜 Scripting
-- Integrated scripting environment (using Dart/Lua) to transform messages or automate workflows directly within the client.
+- Integrated scripting environment to transform messages or automate workflows directly within the client.
 
-### 💾 Local Data Storage
+## 💾 Local Data Storage
 
-The application uses the `shared_preferences` plugin to store local data. The files are located in the following standard paths based on your operating system:
+The application uses `shared_preferences` to store local configurations and cluster profiles. The files are located in:
 
 - **Linux**: `~/.local/share/at.greenhopper.kafkalyzer/shared_preferences.json`
-- **Windows**: `C:\Users\<User>\AppData\Roaming\at.greenhopper\kafkalyzer\shared_preferences.json`
 - **macOS**: `~/Library/Preferences/at.greenhopper.kafkalyzer.plist`
+- **Windows**: `C:\Users\<User>\AppData\Roaming\at.greenhopper\kafkalyzer\shared_preferences.json`
 
-## Getting Started
+## 🛠️ Getting Started
 
 ### Prerequisites
 - **Flutter SDK**: [Install Flutter](https://flutter.dev/docs/get-started/install)
 - **Rust Toolchain**: [Install Rust](https://www.rust-lang.org/tools/install)
-- **Codegen Tools**: `flutter_rust_bridge_codegen` (if modifying the bridge).
+- **Codegen Tools**: `flutter_rust_bridge_codegen` v2 (only if modifying the bridge).
 
-### Installation (Linux)
+### Installation
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/greenhopper/sift_view.git
+    git clone https://github.com/greenhopper/kafkalyzer.git
     cd kafkalyzer
     ```
 
@@ -62,36 +72,25 @@ The application uses the `shared_preferences` plugin to store local data. The fi
 
 3.  Run the application:
     ```bash
+    # For Linux
     flutter run -d linux
+    # For macOS
+    flutter run -d macos
+    # For Windows
+    flutter run -d windows
     ```
 
-### Windows Development Environment (Docker)
+## 🏗️ Build & CI/CD
 
-To simplify Windows development (building native Windows apps) from a Linux host, we provide a complete Docker-based build environment.
+We use **GitHub Actions** to automatically build and package the application for all supported platforms (Linux, macOS, Windows).
 
-#### Quick Start
-Run the setup script:
-```bash
-./runDockerWin.sh
-```
-
-#### Features
-This headless Windows 11 environment includes:
-- **Automated Toolchain**: Git, Flutter, Rust, and Visual Studio Build Tools 2022 (with C++ & MSVC v142 components).
-- **German Locale**: Pre-configured language, region, and keyboard.
-- **Shared Filesystem**: Maps the local `windows_shared` folder to `C:\Shared` inside the VM.
-
-#### Access
-- **Web Console**: [http://localhost:8006](http://localhost:8006)
-- **RDP**: Connect to `localhost` with user `Docker` and password `admin`.
-
-#### Customization
-The installation script `windows_oem/install.ps1` is mounted into the container and runs on the first boot to provision the environment.
+- **CI/CD Pipeline**: Every push to the `main` branch triggers a build of the release artifacts.
+- **Artifacts**: You can find the latest binaries in the "Actions" tab or the "Releases" section of the repository.
 
 ### ⚠️ Windows SSL Requirements
 
-On Windows, the Kafka client (`librdkafka` with OpenSSL) **does not** automatically use the system's certificate store.
+On Windows, the Kafka client (`librdkafka` with OpenSSL) requires an explicit CA bundle for SSL connections.
 
-*   **Release Builds**: The `build_windows_release.bat` script automatically downloads a CA bundle (`cacert.pem`) and places it next to the executable.
-*   **Debug/Manual Runs**: If you run the executable manually or in debug mode, you **MUST** ensure a `cacert.pem` file is present in the same directory as `kafkalyzer.exe` (or `runner.exe`). Without this, you may encounter `Broker Transport Failure` errors even with SSL verification disabled.
+*   **Release Builds**: The automated build scripts bundle `cacert.pem` automatically.
+*   **Debug/Local Runs**: Ensure a `cacert.pem` file is present in the same directory as the executable. Without this, SSL verification will fail even if disabled in the cluster profile.
 
