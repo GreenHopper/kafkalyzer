@@ -218,6 +218,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
                 script: widget.script,
                 runner: runner,
                 title: "Execution Progress",
+                overrideClusterName: _selectedCluster?.name,
               ),
             ),
           ),
