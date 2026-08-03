@@ -11,36 +11,52 @@ kafkalyzer is a high-performance, cross-platform Desktop Client for Apache Kafka
 ## 🏗️ Architecture
 
 The application leverages the power of two ecosystems:
+
 - **Frontend (Flutter)**: Provides a responsive, beautiful, and native-feeling user interface using Material 3. Handles state management and user interactions.
 - **Backend (Rust)**: Handles Kafka connectivity via `rdkafka`, message consumption, protocol deserialization (Avro/Protobuf), and high-performance filtering.
 - **Bridge**: Communication between Dart and Rust is seamlessly handled by `flutter_rust_bridge` v2.
 
 ## ✨ Key Features
 
-### 🔌 Cluster Management
+### 🔌 Cluster Management & Enterprise Security
+
 - Manage connections to multiple Kafka clusters.
-- Support for various authentication mechanisms (Plain, SASL/SCRAM, SSL/mTLS).
+- **Authentication**: Support for PLAIN, SASL/SCRAM, Kerberos (GSSAPI), SASL OAuthBearer, AWS MSK IAM, and mTLS via PEM certificate/key pairs.
+- **Schema Registry**: Support for Basic Auth and HTTPS with TLS certificate inheritance.
 
 ### 📈 Consumer Lag Monitoring
-- Real-time dashboard for consumer group offsets and total lag.
-- **Poison Pill Identification**: Directly inspect the message at the current consumer offset to identify records causing processing stalls.
 
-### 📂 Topic Explorer
-- Browse topics, partitions, and log-end offsets.
-- Inspect schemas (Avro/Protobuf) integrated with Confluent Schema Registry.
+- Real-time KPI dashboard tracking active consumer groups, total lag, and lag rate deltas over time.
+- **Poison Pill Identification**: Directly inspect messages at current consumer offsets without advancing committed offsets.
+- **Query Throttling**: Configurable concurrency limits for background lag queries in Settings.
 
-### 📨 Message Viewer
-- Real-time message consumption with ad-hoc seeking.
-- Automatic deserialization of Avro, JSON, and Protobuf keys/values.
-- Advanced header inspection with UTF-8 decoding.
+### 📂 Topic Explorer & Schema Registry
+
+- Browse topics, partitions, log-end offsets, and partition details.
+- Schema integration with Confluent Schema Registry (Avro, Protobuf, and Confluent JSON Schema).
+
+### 📨 Message Viewer & Inspection
+
+- Real-time consumption with ad-hoc seeking and multiple inspection modes (Table, Diff, and Timeline views).
+- **Format Decoding**: Automatic deserialization of Avro, Protobuf, JSON, Hex, and UTF-8 decoded headers.
+- **Large Message Handling**: Non-blocking background processing in Dart Isolates with visual progress and safe output truncation (>500k chars) while preserving raw exports.
 
 ### 🔍 Multi-Search
-- Powerful search functionality across multiple topics simultaneously.
-- **Regex Support**: Filter messages based on complex patterns in keys, values, or headers.
-- **Fast Trace**: Optimized partition verification for specific keys using hash-based routing.
 
-### 📜 Scripting
-- Integrated scripting environment to transform messages or automate workflows directly within the client.
+- Powerful search functionality across multiple topics simultaneously with configurable stream start/end conditions.
+- **Regex Support**: Filter messages based on complex patterns in keys, values, or headers.
+- **Fast Trace**: Hash-based partition verification for targeted key lookup.
+
+### 📜 Scripting & Automated Outputs
+
+- Multi-step scripting environment with execution history, parameter prompts, and output diffing.
+- **Unified Output Directory**: Automatic structured file export under `Documents/kafkalyzer/<Script_Name>/<Run_ID>`.
+
+### 📦 Export, Import & Customization
+
+- **Data Export**: Export single-topic messages as `.json` or multi-topic selections as `.zip` archives.
+- **Profile Backup**: Export and import cluster profiles (including SSL certificates) and saved scripts for team sharing.
+- **Localization & Themes**: Built-in English and German (i18n) support with Dark and Light mode themes.
 
 ## 💾 Local Data Storage
 
@@ -53,24 +69,28 @@ The application uses `shared_preferences` to store local configurations and clus
 ## 🛠️ Getting Started
 
 ### Prerequisites
+
 - **Flutter SDK**: [Install Flutter](https://flutter.dev/docs/get-started/install)
 - **Rust Toolchain**: [Install Rust](https://www.rust-lang.org/tools/install)
 - **Codegen Tools**: `flutter_rust_bridge_codegen` v2 (only if modifying the bridge).
 
 ### Installation
 
-1.  Clone the repository:
+1. Clone the repository:
+
     ```bash
     git clone https://github.com/greenhopper/kafkalyzer.git
     cd kafkalyzer
     ```
 
-2.  Install dependencies:
+2. Install dependencies:
+
     ```bash
     flutter pub get
     ```
 
-3.  Run the application:
+3. Run the application:
+
     ```bash
     # For Linux
     flutter run -d linux
@@ -82,15 +102,15 @@ The application uses `shared_preferences` to store local configurations and clus
 
 ## 🏗️ Build & CI/CD
 
-We use **GitHub Actions** to automatically build and package the application for all supported platforms (Linux, macOS, Windows).
+We use **GitHub Actions** for continuous integration and automated release packaging across Linux, macOS, and Windows.
 
-- **CI/CD Pipeline**: Every push to the `main` branch triggers a build of the release artifacts.
+- **Selective CI**: Pull requests and main pushes execute unit tests (`flutter test` and `cargo test`).
+- **Automated Releases**: Pushing a version tag (`v*`) automatically builds release binaries for all target platforms and creates a GitHub Release.
 - **Artifacts**: You can find the latest binaries in the "Actions" tab or the "Releases" section of the repository.
 
 ### ⚠️ Windows SSL Requirements
 
 On Windows, the Kafka client (`librdkafka` with OpenSSL) requires an explicit CA bundle for SSL connections.
 
-*   **Release Builds**: The automated build scripts bundle `cacert.pem` automatically.
-*   **Debug/Local Runs**: Ensure a `cacert.pem` file is present in the same directory as the executable. Without this, SSL verification will fail even if disabled in the cluster profile.
-
+- **Release Builds**: The automated build scripts bundle `cacert.pem` automatically.
+- **Debug/Local Runs**: Ensure a `cacert.pem` file is present in the same directory as the executable. Without this, SSL verification will fail even if disabled in the cluster profile.
