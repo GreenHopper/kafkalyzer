@@ -52,3 +52,5 @@ app.*.map.json
 macos_storage/mac_hdd_ng.img
 /logs
 
+# Pi.dev / Pi Coding Agent local state
+.pi-glla/

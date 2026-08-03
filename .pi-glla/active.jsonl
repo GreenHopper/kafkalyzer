@@ -1,6 +1,0 @@
-{"type":"session_rebound","value":{"reason":"startup"},"at":"2026-08-03T13:50:14.653Z"}
-{"type":"session_waiting_for_load","value":{"reason":"startup"},"at":"2026-08-03T13:50:14.658Z"}
-{"type":"session_shutdown","value":{"reason":"quit"},"at":"2026-08-03T13:54:49.155Z"}
-{"type":"session_rebound","value":{"reason":"startup"},"at":"2026-08-03T13:55:19.062Z"}
-{"type":"session_waiting_for_load","value":{"reason":"startup"},"at":"2026-08-03T13:55:19.066Z"}
-{"type":"session_shutdown","value":{"reason":"quit"},"at":"2026-08-03T13:59:41.250Z"}
