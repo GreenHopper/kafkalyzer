@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/app.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';

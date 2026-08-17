@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:json_diff/json_diff.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_converter.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';

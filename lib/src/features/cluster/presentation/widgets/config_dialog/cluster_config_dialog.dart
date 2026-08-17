@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'cluster_basic_info_form.dart';
 import 'cluster_sasl_form.dart';

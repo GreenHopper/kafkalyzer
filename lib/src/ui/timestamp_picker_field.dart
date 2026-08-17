@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 
 class TimestampPickerField extends StatefulWidget {

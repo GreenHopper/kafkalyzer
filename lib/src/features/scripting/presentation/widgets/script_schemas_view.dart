@@ -8,7 +8,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_widget.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:json_diff/json_diff.dart';
 import 'package:logger/logger.dart';
 

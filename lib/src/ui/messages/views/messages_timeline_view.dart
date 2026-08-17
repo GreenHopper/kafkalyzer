@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:timelines_plus/timelines_plus.dart';

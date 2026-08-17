@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/highlight_text_utils.dart';
 import 'package:kafkalyzer/src/ui/text_preview_utils.dart';

@@ -1,6 +1,6 @@
 import 'package:kafkalyzer/src/ui/hex_viewer.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

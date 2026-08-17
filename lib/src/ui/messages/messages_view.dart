@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class MessagesView extends StatefulWidget {
   final List<KafkaMessage> messages;

@@ -4,7 +4,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history/script_history_list.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history/script_run_details_view.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:logger/logger.dart';
 
 class ScriptHistoryView extends StatefulWidget {

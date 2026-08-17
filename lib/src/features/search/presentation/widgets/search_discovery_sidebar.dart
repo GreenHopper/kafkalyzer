@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condition_configuration.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/end_condition_configuration.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';

@@ -1,5 +1,5 @@
 import 'package:kafkalyzer/src/ui/hex_viewer.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Future<void> awaitIsolates(WidgetTester tester) async {

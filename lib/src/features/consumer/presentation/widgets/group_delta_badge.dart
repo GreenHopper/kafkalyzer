@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class GroupDeltaBadge extends StatelessWidget {
   final int? delta;

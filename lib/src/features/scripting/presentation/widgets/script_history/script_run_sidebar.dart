@@ -5,7 +5,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/widgets/parameter
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/topic_selection_tree.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ScriptRunSidebar extends StatelessWidget {
   final ScriptRun run;

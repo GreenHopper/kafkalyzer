@@ -3,7 +3,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';

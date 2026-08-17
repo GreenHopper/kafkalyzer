@@ -2,7 +2,7 @@ import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
 import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
