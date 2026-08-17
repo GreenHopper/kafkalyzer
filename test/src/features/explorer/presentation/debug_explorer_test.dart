@@ -5,7 +5,6 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mockito/mockito.dart';
@@ -67,9 +66,7 @@ void main() {
     return MaterialApp(
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: const [Locale('en')],
       home: const Scaffold(body: ExplorerView()),

@@ -4,7 +4,6 @@ import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mockito/annotations.dart';
@@ -60,9 +59,7 @@ void main() {
       ),
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: const [Locale('en')],
       home: const SettingsView(),

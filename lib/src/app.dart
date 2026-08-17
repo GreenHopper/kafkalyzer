@@ -5,7 +5,6 @@ import 'package:kafkalyzer/src/theme.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
 
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 final _router = GoRouter(
@@ -31,9 +30,10 @@ class KafkalyzerApp extends StatelessWidget {
           routerConfig: _router,
           localizationsDelegates: const [
             AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+            // Flutter 3.47: flutter_localizations was unbundled into
+            // package:material_ui; `delegates` includes Material, Cupertino
+            // and Widgets delegates.
+            ...GlobalMaterialLocalizations.delegates,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
         );
