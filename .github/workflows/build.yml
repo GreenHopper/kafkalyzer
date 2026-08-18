@@ -8,14 +8,17 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CMAKE_POLICY_VERSION_MINIMUM: "3.5"
 
 jobs:
   run-tests:
     name: Run tests (Linux)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest # Keine if-Bedingung mehr: Tests sollen IMMER laufen (bei PRs, bei main-Pushes und vor Releases)
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -48,11 +51,22 @@ jobs:
 
   build-linux:
     name: Build Linux
+    needs: [run-tests] # Wartet zwingend auf erfolgreiche Tests
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Extract version
+        id: extract_version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            echo "VERSION=1.0.0-dev${{ github.run_number }}" >> $GITHUB_ENV
+          fi
 
       - name: Install system dependencies
         run: |
@@ -75,36 +89,47 @@ jobs:
         run: flutter pub get
 
       - name: Build Linux app
-        run: flutter build linux --release --dart-define=APP_VERSION="1.0.0+${{ github.run_number }}"
+        run: flutter build linux --release --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
-      - name: Post-build cleanup and packaging
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
+
+      - name: Post-build cleanup and Velopack packaging
         run: |
-          # Cleanup WASM assets from pdfrx package
           find build/linux/x64/release/bundle/ -name "pdfium.wasm" -delete || true
           find build/linux/x64/release/bundle/ -name "pdfium_worker.js" -delete || true
           find build/linux/x64/release/bundle/ -name "pdfium_client.js" -delete || true
-          
-          # Copy changelog.md if available
+
           if [ -f changelog.md ]; then
             cp changelog.md build/linux/x64/release/bundle/
           fi
-          
-          mkdir -p release
-          tar -czf release/kafkalyzer-linux.tar.gz -C build/linux/x64/release bundle
+
+          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/linux/x64/release/bundle -e kafkalyzer -o velopack_release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kafkalyzer-linux
-          path: release/kafkalyzer-linux.tar.gz
+          name: velopack-linux
+          path: velopack_release/*
 
   build-macos:
     name: Build macOS
+    needs: [run-tests] # Wartet zwingend auf erfolgreiche Tests
     runs-on: macos-latest
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Extract version
+        id: extract_version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            echo "VERSION=1.0.0-dev${{ github.run_number }}" >> $GITHUB_ENV
+          fi
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -133,31 +158,71 @@ jobs:
       - name: Disable Swift Package Manager integration
         run: flutter config --no-enable-swift-package-manager
 
-      - name: Build macOS app
-        run: flutter build macos --release --dart-define=APP_VERSION="1.0.0+${{ github.run_number }}"
+      # --- APPLE CODE SIGNING SETUP (Auskommentiert) ---
+      # - name: Install Apple Certificate
+      #   env:
+      #     BUILD_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+      #     P12_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      #     KEYCHAIN_PASSWORD: ${{ secrets.RUNNER_KEYCHAIN_PASSWORD }}
+      #   run: |
+      #     CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+      #     KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+      #
+      #     security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+      #     security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+      #     security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+      #
+      #     echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+      #     security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+      #     security list-keychain -d user -s $KEYCHAIN_PATH
+      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
-      - name: Post-build packaging
+      - name: Build macOS app
+        run: flutter build macos --release --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
+
+      - name: Post-build packaging with Velopack
         run: |
           if [ -f changelog.md ]; then
             cp changelog.md build/macos/Build/Products/Release/kafkalyzer.app/Contents/Resources/ || true
           fi
-          mkdir -p release
-          cd build/macos/Build/Products/Release
-          zip -r "$GITHUB_WORKSPACE/release/kafkalyzer-macos.zip" kafkalyzer.app
+
+          # Standard-Pack-Befehl OHNE Signierung
+          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/macos/Build/Products/Release/kafkalyzer.app -o velopack_release
+
+          # --- SIGNATUR UND NOTARISIERUNG MIT VELOPACK (Auskommentiert) ---
+          # vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/macos/Build/Products/Release/kafkalyzer.app -o velopack_release \
+          #   --signAppIdentity "Developer ID Application: YOUR NAME (TEAM_ID)" \
+          #   --notaryEmail "${{ secrets.APPLE_ID }}" \
+          #   --notaryPassword "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" \
+          #   --notaryTeamId "${{ secrets.APPLE_TEAM_ID }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kafkalyzer-macos
-          path: release/kafkalyzer-macos.zip
+          name: velopack-macos
+          path: velopack_release/*
 
   build-windows:
     name: Build Windows
+    needs: [run-tests] # Wartet zwingend auf erfolgreiche Tests
     runs-on: windows-latest
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Extract version
+        id: extract_version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          else
+            echo "VERSION=1.0.0-dev${{ github.run_number }}" >> $GITHUB_ENV
+          fi
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -211,54 +276,47 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows app
-        run: flutter build windows --release --dart-define=APP_VERSION="1.0.0+${{ github.run_number }}"
+        run: flutter build windows --release --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
-      - name: Post-build packaging
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
+
+      - name: Post-build packaging with Velopack
         shell: pwsh
         run: |
           $releaseDir = "build/windows/x64/runner/Release"
           $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
-          
-          # Delete unnecessary WASM assets from pdfrx package
+
           Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium.wasm" -ErrorAction SilentlyContinue
           Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium_worker.js" -ErrorAction SilentlyContinue
           Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium_client.js" -ErrorAction SilentlyContinue
-          
-          # Copy vcpkg dynamic runtime DLLs
+
           if (Test-Path $vcpkgBin) {
             Copy-Item "$vcpkgBin/*.dll" -Destination $releaseDir -Force -ErrorAction SilentlyContinue
           }
-          
-          # Create and copy ossl-modules for legacy provider (OpenSSL requirements)
+
           $osslModulesTarget = "$releaseDir/ossl-modules"
           New-Item -ItemType Directory -Force -Path $osslModulesTarget | Out-Null
-          
-          # Move legacy.dll to ossl-modules
+
           if (Test-Path "$releaseDir/legacy.dll") {
             Move-Item "$releaseDir/legacy.dll" "$osslModulesTarget/" -Force
           }
-          
-          # Sync other modules if available
           if (Test-Path "$vcpkgBin/ossl-modules") {
             Copy-Item "$vcpkgBin/ossl-modules/*.dll" -Destination $osslModulesTarget -Force -ErrorAction SilentlyContinue
           }
-          
-          # Copy CA Certificates
+
           Copy-Item "assets/cacert.pem" -Destination "$releaseDir/cacert.pem" -Force
-          
-          # Copy changelog.md if available
           if (Test-Path "changelog.md") {
             Copy-Item "changelog.md" "$releaseDir/" -Force
           }
-          
-          New-Item -ItemType Directory -Force -Path "release" | Out-Null
-          Compress-Archive -Path "$releaseDir/*" -DestinationPath "release/kafkalyzer-windows.zip" -Force
+
+          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe -o velopack_release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kafkalyzer-windows
-          path: release/kafkalyzer-windows.zip
+          name: velopack-windows
+          path: velopack_release/*
 
   create-release:
     name: Create GitHub Release
@@ -266,32 +324,32 @@ jobs:
     needs: [build-linux, build-macos, build-windows]
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     permissions:
-      contents: write
+      contents: write # WICHTIG: Explizite Berechtigung zum Erstellen des Releases
     steps:
       - name: Download Linux build
         uses: actions/download-artifact@v4
         with:
-          name: kafkalyzer-linux
-          path: release-artifacts
+          name: velopack-linux
+          path: release-artifacts/linux
 
       - name: Download macOS build
         uses: actions/download-artifact@v4
         with:
-          name: kafkalyzer-macos
-          path: release-artifacts
+          name: velopack-macos
+          path: release-artifacts/macos
 
       - name: Download Windows build
         uses: actions/download-artifact@v4
         with:
-          name: kafkalyzer-windows
-          path: release-artifacts
+          name: velopack-windows
+          path: release-artifacts/windows
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-artifacts/kafkalyzer-linux.tar.gz
-            release-artifacts/kafkalyzer-macos.zip
-            release-artifacts/kafkalyzer-windows.zip
+            release-artifacts/linux/*
+            release-artifacts/macos/*
+            release-artifacts/windows/*
           draft: true
           generate_release_notes: true
