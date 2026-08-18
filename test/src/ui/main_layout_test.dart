@@ -211,10 +211,13 @@ void main() {
     // Verify navigation rail exists
     expect(find.byType(NavigationRail), findsOneWidget);
 
+    // Multi-Search is no longer a standalone rail destination
+    expect(find.text('Multi-Search'), findsNothing);
+
     // Verify ExplorerView is loaded by default
     expect(find.text('Select a cluster to view topics'), findsOneWidget);
 
-    // Tap on settings rail item (Settings is the 5th destination, index 4)
+    // Tap on settings rail item (Settings is the 4th destination, index 3)
     await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
 

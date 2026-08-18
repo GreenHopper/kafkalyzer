@@ -3,7 +3,6 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
-import 'package:kafkalyzer/src/features/search/multi_search_view.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/script_manager_view.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
@@ -39,11 +38,6 @@ class _MainLayoutState extends State<MainLayout> {
                 icon: const Icon(Icons.explore_outlined),
                 selectedIcon: const Icon(Icons.explore),
                 label: Text(l10n.explorer),
-              ),
-              NavigationRailDestination(
-                icon: const Icon(Icons.search_outlined),
-                selectedIcon: const Icon(Icons.search),
-                label: Text(l10n.multiSearch),
               ),
               NavigationRailDestination(
                 icon: const Icon(Icons.speed_outlined),
@@ -100,10 +94,9 @@ class _MainLayoutState extends State<MainLayout> {
           Expanded(
             child: switch (_selectedIndex) {
               0 => const ExplorerView(),
-              1 => const MultiSearchView(),
-              2 => const ConsumerLagView(),
-              3 => const ScriptManagerView(),
-              4 => const SettingsView(),
+              1 => const ConsumerLagView(),
+              2 => const ScriptManagerView(),
+              3 => const SettingsView(),
               _ => Center(child: Text(l10n.unknownView)),
             },
           ),

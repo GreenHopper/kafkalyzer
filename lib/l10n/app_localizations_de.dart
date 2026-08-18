@@ -15,9 +15,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get explorer => 'Explorer';
 
   @override
-  String get multiSearch => 'Multi-Suche';
-
-  @override
   String get scripts => 'Skripte';
 
   @override
@@ -165,9 +162,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get clearAll => 'Alle leeren';
 
   @override
-  String get startSearch => 'Suche starten';
-
-  @override
   String get viewAll => 'Alle anzeigen';
 
   @override
@@ -294,9 +288,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get simulateOrder => 'Auftrag simulieren';
 
   @override
-  String get noClustersAvailable => 'Keine Cluster verfügbar';
-
-  @override
   String get cluster => 'Cluster';
 
   @override
@@ -309,9 +300,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get enterMessageIdToFilter =>
       'Nachrichten-ID, CORID oder PMXCOR-ID eingeben...';
-
-  @override
-  String get searchById => 'Nach ID, CORID oder PMXCOR-ID suchen';
 
   @override
   String showingOrders(int filtered, int total) {
@@ -363,31 +351,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get filterTopics => 'Topics filtern...';
 
   @override
-  String get multiStreamConfig => 'Multi-Stream Konfig';
-
-  @override
   String get selectOutputDirectory => 'Ausgabeverzeichnis wählen';
 
   @override
-  String get newSearchStream => 'Neuer Such-Stream';
-
-  @override
-  String get reloadTopics => 'Topics neu laden';
-
-  @override
   String get topic => 'Topic';
-
-  @override
-  String get selectTopic => 'Topic auswählen';
-
-  @override
-  String get loadingTopics => 'Topics werden geladen...';
-
-  @override
-  String get fieldOptional => 'Feld (opt.)';
-
-  @override
-  String get valuesCommaSeparated => 'Werte (Komma-getrennt)';
 
   @override
   String get scope => 'Bereich';
@@ -485,11 +452,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String scriptNotFound(String name) {
-    return 'Skript \'$name\' nicht gefunden';
-  }
-
-  @override
   String get selectValidScript =>
       'Bitte wählen Sie zuerst ein gültiges Skript aus.';
 
@@ -550,9 +512,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get duplicateScript => 'Skript duplizieren';
-
-  @override
-  String get load => 'Laden';
 
   @override
   String get searchingForOrders => 'Suche nach Aufträgen...';

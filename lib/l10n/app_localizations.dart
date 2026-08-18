@@ -110,12 +110,6 @@ abstract class AppLocalizations {
   /// **'Explorer'**
   String get explorer;
 
-  /// No description provided for @multiSearch.
-  ///
-  /// In en, this message translates to:
-  /// **'Multi-Search'**
-  String get multiSearch;
-
   /// No description provided for @scripts.
   ///
   /// In en, this message translates to:
@@ -398,12 +392,6 @@ abstract class AppLocalizations {
   /// **'Clear All'**
   String get clearAll;
 
-  /// No description provided for @startSearch.
-  ///
-  /// In en, this message translates to:
-  /// **'Start search'**
-  String get startSearch;
-
   /// No description provided for @viewAll.
   ///
   /// In en, this message translates to:
@@ -638,12 +626,6 @@ abstract class AppLocalizations {
   /// **'Simulate Order'**
   String get simulateOrder;
 
-  /// No description provided for @noClustersAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No clusters available'**
-  String get noClustersAvailable;
-
   /// No description provided for @cluster.
   ///
   /// In en, this message translates to:
@@ -667,12 +649,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter message ID, CORID or PMXCOR ID...'**
   String get enterMessageIdToFilter;
-
-  /// No description provided for @searchById.
-  ///
-  /// In en, this message translates to:
-  /// **'Search by ID, CORID or PMXCOR ID'**
-  String get searchById;
 
   /// No description provided for @showingOrders.
   ///
@@ -758,59 +734,17 @@ abstract class AppLocalizations {
   /// **'Filter topics...'**
   String get filterTopics;
 
-  /// No description provided for @multiStreamConfig.
-  ///
-  /// In en, this message translates to:
-  /// **'Multi-Stream Config'**
-  String get multiStreamConfig;
-
   /// No description provided for @selectOutputDirectory.
   ///
   /// In en, this message translates to:
   /// **'Select Output Directory'**
   String get selectOutputDirectory;
 
-  /// No description provided for @newSearchStream.
-  ///
-  /// In en, this message translates to:
-  /// **'New Search Stream'**
-  String get newSearchStream;
-
-  /// No description provided for @reloadTopics.
-  ///
-  /// In en, this message translates to:
-  /// **'Reload Topics'**
-  String get reloadTopics;
-
   /// No description provided for @topic.
   ///
   /// In en, this message translates to:
   /// **'Topic'**
   String get topic;
-
-  /// No description provided for @selectTopic.
-  ///
-  /// In en, this message translates to:
-  /// **'Select Topic'**
-  String get selectTopic;
-
-  /// No description provided for @loadingTopics.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading topics...'**
-  String get loadingTopics;
-
-  /// No description provided for @fieldOptional.
-  ///
-  /// In en, this message translates to:
-  /// **'Field (Opt.)'**
-  String get fieldOptional;
-
-  /// No description provided for @valuesCommaSeparated.
-  ///
-  /// In en, this message translates to:
-  /// **'Values (comma sep.)'**
-  String get valuesCommaSeparated;
 
   /// No description provided for @scope.
   ///
@@ -992,12 +926,6 @@ abstract class AppLocalizations {
   /// **'Script Execution: {name}'**
   String scriptExecution(String name);
 
-  /// No description provided for @scriptNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Script \'{name}\' not found'**
-  String scriptNotFound(String name);
-
   /// No description provided for @selectValidScript.
   ///
   /// In en, this message translates to:
@@ -1105,12 +1033,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Duplicate Script'**
   String get duplicateScript;
-
-  /// No description provided for @load.
-  ///
-  /// In en, this message translates to:
-  /// **'Load'**
-  String get load;
 
   /// No description provided for @searchingForOrders.
   ///

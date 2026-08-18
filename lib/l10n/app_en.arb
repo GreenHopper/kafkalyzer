@@ -2,7 +2,6 @@
   "@@locale": "en",
   "appTitle": "Kafkalyzer",
   "explorer": "Explorer",
-  "multiSearch": "Multi-Search",
   "scripts": "Scripts",
   "orders": "Orders",
   "settings": "Settings",
@@ -71,7 +70,6 @@
   },
   "noActiveStreams": "No active streams",
   "clearAll": "Clear All",
-  "startSearch": "Start search",
   "viewAll": "View All",
   "stop": "Stop",
   "stream": "Stream",
@@ -132,12 +130,10 @@
   "active": "Active",
   "edit": "Edit",
   "simulateOrder": "Simulate Order",
-  "noClustersAvailable": "No clusters available",
   "cluster": "Cluster",
   "maxOrders": "Max Orders",
   "filterByMessageId": "Filter by Message ID, CORID or PMXCOR ID",
   "enterMessageIdToFilter": "Enter message ID, CORID or PMXCOR ID...",
-  "searchById": "Search by ID, CORID or PMXCOR ID",
   "showingOrders": "Showing {filtered} of {total} orders",
   "@showingOrders": {
     "placeholders": {
@@ -176,15 +172,8 @@
   "showInternal": "Show internal",
   "reloadTopicsAndSchemas": "Reload Topics & Schemas",
   "filterTopics": "Filter topics...",
-  "multiStreamConfig": "Multi-Stream Config",
   "selectOutputDirectory": "Select Output Directory",
-  "newSearchStream": "New Search Stream",
-  "reloadTopics": "Reload Topics",
   "topic": "Topic",
-  "selectTopic": "Select Topic",
-  "loadingTopics": "Loading topics...",
-  "fieldOptional": "Field (Opt.)",
-  "valuesCommaSeparated": "Values (comma sep.)",
   "scope": "Scope",
   "contains": "Contains",
   "regex": "Regex",
@@ -222,14 +211,6 @@
       }
     }
   },
-  "scriptNotFound": "Script '{name}' not found",
-  "@scriptNotFound": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "selectValidScript": "Please select a valid script first.",
   "rerunNotIntegrated": "Rerun from history is not fully integrated in Orders View yet.",
   "kiError": "AI Error",
@@ -256,7 +237,6 @@
   "offset": "Offset",
   "timestamp": "Timestamp",
   "duplicateScript": "Duplicate Script",
-  "load": "Load",
   "searchingForOrders": "Searching for orders...",
   "searchingInTopic": "Searching in: {topic}",
   "@searchingInTopic": {
