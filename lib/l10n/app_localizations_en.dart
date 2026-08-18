@@ -611,4 +611,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String messagesExportFailed(String error) {
     return 'Failed to export messages: $error';
   }
+
+  @override
+  String get checkForUpdates => 'Check for Updates';
+
+  @override
+  String get checkingForUpdates => 'Checking for updates...';
+
+  @override
+  String get updateAvailable => 'Update Available';
+
+  @override
+  String get appUpToDate => 'Kafkalyzer is up to date';
+
+  @override
+  String get appUpToDateDescription =>
+      'You are running the latest version of Kafkalyzer.';
+
+  @override
+  String get downloadUpdate => 'Download Update';
+
+  @override
+  String get downloadingUpdate => 'Downloading update...';
+
+  @override
+  String get updateReadyRestart =>
+      'Update ready! Restart required to apply update.';
+
+  @override
+  String get restartNow => 'Restart Now';
+
+  @override
+  String updateError(String error) {
+    return 'Error checking or applying update: $error';
+  }
+
+  @override
+  String get releaseNotes => 'Release Notes';
+
+  @override
+  String get noReleaseNotes => 'No release notes available.';
+
+  @override
+  String get close => 'Close';
 }

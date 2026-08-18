@@ -332,5 +332,25 @@
         "type": "String"
       }
     }
-  }
+  },
+  "checkForUpdates": "Check for Updates",
+  "checkingForUpdates": "Checking for updates...",
+  "updateAvailable": "Update Available",
+  "appUpToDate": "Kafkalyzer is up to date",
+  "appUpToDateDescription": "You are running the latest version of Kafkalyzer.",
+  "downloadUpdate": "Download Update",
+  "downloadingUpdate": "Downloading update...",
+  "updateReadyRestart": "Update ready! Restart required to apply update.",
+  "restartNow": "Restart Now",
+  "updateError": "Error checking or applying update: {error}",
+  "@updateError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "releaseNotes": "Release Notes",
+  "noReleaseNotes": "No release notes available.",
+  "close": "Close"
 }

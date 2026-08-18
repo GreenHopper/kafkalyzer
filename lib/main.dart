@@ -4,6 +4,7 @@ import 'package:kafkalyzer/src/app.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
+import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
 
 Future<void> main() async {
@@ -19,6 +20,9 @@ Future<void> main() async {
   await getIt<SettingsService>().initializeSettings();
 
   await AppVersionHelper.init();
+
+  // Initialize update service in background / safely
+  await getIt<UpdateService>().initialize();
 
   // Clean up old script runs in background
   getIt<ScriptRunner>().cleanupHistory();

@@ -177,5 +177,18 @@
   "scanned": "{count} gescannt",
   "exportMessages": "Nachrichten exportieren",
   "messagesExportedSuccessfully": "Nachrichten erfolgreich exportiert",
-  "messagesExportFailed": "Nachrichten konnten nicht exportiert werden: {error}"
+  "messagesExportFailed": "Nachrichten konnten nicht exportiert werden: {error}",
+  "checkForUpdates": "Nach Updates suchen",
+  "checkingForUpdates": "Suche nach Updates...",
+  "updateAvailable": "Update verfügbar",
+  "appUpToDate": "Kafkalyzer ist auf dem neuesten Stand",
+  "appUpToDateDescription": "Sie verwenden die neueste Version von Kafkalyzer.",
+  "downloadUpdate": "Update herunterladen",
+  "downloadingUpdate": "Update wird heruntergeladen...",
+  "updateReadyRestart": "Update bereit! Neustart erforderlich, um das Update anzuwenden.",
+  "restartNow": "Jetzt neu starten",
+  "updateError": "Fehler beim Suchen oder Anwenden des Updates: {error}",
+  "releaseNotes": "Versionshinweise",
+  "noReleaseNotes": "Keine Versionshinweise verfügbar.",
+  "close": "Schließen"
 }

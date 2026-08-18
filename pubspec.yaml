@@ -70,6 +70,7 @@ dependencies:
   package_info_plus: ^9.0.1
 
   material_ui: ^1.0.0
+  velopack_flutter: ^0.3.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

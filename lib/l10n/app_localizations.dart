@@ -1159,6 +1159,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to export messages: {error}'**
   String messagesExportFailed(String error);
+
+  /// No description provided for @checkForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for Updates'**
+  String get checkForUpdates;
+
+  /// No description provided for @checkingForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking for updates...'**
+  String get checkingForUpdates;
+
+  /// No description provided for @updateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update Available'**
+  String get updateAvailable;
+
+  /// No description provided for @appUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Kafkalyzer is up to date'**
+  String get appUpToDate;
+
+  /// No description provided for @appUpToDateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You are running the latest version of Kafkalyzer.'**
+  String get appUpToDateDescription;
+
+  /// No description provided for @downloadUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Update'**
+  String get downloadUpdate;
+
+  /// No description provided for @downloadingUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading update...'**
+  String get downloadingUpdate;
+
+  /// No description provided for @updateReadyRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Update ready! Restart required to apply update.'**
+  String get updateReadyRestart;
+
+  /// No description provided for @restartNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart Now'**
+  String get restartNow;
+
+  /// No description provided for @updateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error checking or applying update: {error}'**
+  String updateError(String error);
+
+  /// No description provided for @releaseNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Release Notes'**
+  String get releaseNotes;
+
+  /// No description provided for @noReleaseNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'No release notes available.'**
+  String get noReleaseNotes;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
 }
 
 class _AppLocalizationsDelegate

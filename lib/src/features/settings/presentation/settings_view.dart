@@ -13,6 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
+
 class SettingsView extends WatchingStatefulWidget {
   const SettingsView({super.key});
 
@@ -81,16 +83,32 @@ class _SettingsViewState extends State<SettingsView> {
             ),
             const SizedBox(height: 16),
             const Divider(),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Kafkalyzer v${AppVersionHelper.version}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                ),
+            _buildAboutAndUpdates(context, l10n),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAboutAndUpdates(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Kafkalyzer v${AppVersionHelper.version}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.outline,
               ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => UpdateDialog.show(context),
+              icon: const Icon(Icons.system_update_alt, size: 18),
+              label: Text(l10n.checkForUpdates),
             ),
           ],
         ),
