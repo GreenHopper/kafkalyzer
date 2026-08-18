@@ -1,7 +1,7 @@
 use anyhow::Result;
 use kafkalyzer_core::kafka_types::ClusterProfile;
-use tokio::runtime::Runtime;
 use std::io::Read;
+use tokio::runtime::Runtime;
 
 fn build_schema_registry_client(profile: &ClusterProfile) -> Result<reqwest::Client> {
     let mut builder = reqwest::Client::builder();
@@ -22,19 +22,28 @@ fn build_schema_registry_client(profile: &ClusterProfile) -> Result<reqwest::Cli
 
     // 2. SSL Keystore Configuration (mTLS)
     if let Some(keystore_path) = &profile.ssl_keystore_location {
-        if !keystore_path.trim().is_empty() && (keystore_path.to_lowercase().ends_with(".p12") || keystore_path.to_lowercase().ends_with(".pfx")) {
+        if !keystore_path.trim().is_empty()
+            && (keystore_path.to_lowercase().ends_with(".p12")
+                || keystore_path.to_lowercase().ends_with(".pfx"))
+        {
             let password = profile.ssl_keystore_password.as_deref().unwrap_or("");
             if let Ok(mut file) = std::fs::File::open(keystore_path) {
                 let mut pkcs12_bytes = vec![];
                 if file.read_to_end(&mut pkcs12_bytes).is_ok() {
-                    if let Ok(identity) = reqwest::Identity::from_pkcs12_der(&pkcs12_bytes, password) {
+                    if let Ok(identity) =
+                        reqwest::Identity::from_pkcs12_der(&pkcs12_bytes, password)
+                    {
                         builder = builder.identity(identity);
                     }
                 }
             }
         }
-    } else if let (Some(cert_path), Some(key_path)) = (&profile.ssl_pem_certificate_location, &profile.ssl_pem_key_location) {
-        if let (Ok(cert_bytes), Ok(key_bytes)) = (std::fs::read(cert_path), std::fs::read(key_path)) {
+    } else if let (Some(cert_path), Some(key_path)) = (
+        &profile.ssl_pem_certificate_location,
+        &profile.ssl_pem_key_location,
+    ) {
+        if let (Ok(cert_bytes), Ok(key_bytes)) = (std::fs::read(cert_path), std::fs::read(key_path))
+        {
             if let Ok(identity) = reqwest::Identity::from_pkcs8_pem(&cert_bytes, &key_bytes) {
                 builder = builder.identity(identity);
             }
@@ -55,14 +64,13 @@ pub fn fetch_subjects(profile: ClusterProfile) -> Result<Vec<String>> {
     let subjects = rt.block_on(async {
         let client = build_schema_registry_client(&profile)?;
         let mut req = client.get(format!("{}/subjects", url));
-        if let (Some(username), Some(password)) = (&profile.schema_registry_username, &profile.schema_registry_password) {
+        if let (Some(username), Some(password)) = (
+            &profile.schema_registry_username,
+            &profile.schema_registry_password,
+        ) {
             req = req.basic_auth(username, Some(password));
         }
-        let resp = req
-            .send()
-            .await?
-            .json::<Vec<String>>()
-            .await?;
+        let resp = req.send().await?.json::<Vec<String>>().await?;
         Ok::<Vec<String>, anyhow::Error>(resp)
     })?;
 
@@ -80,14 +88,13 @@ pub fn fetch_schema(profile: ClusterProfile, subject: String) -> Result<String> 
     let schema_str = rt.block_on(async {
         let client = build_schema_registry_client(&profile)?;
         let mut req = client.get(format!("{}/subjects/{}/versions/latest", url, subject));
-        if let (Some(username), Some(password)) = (&profile.schema_registry_username, &profile.schema_registry_password) {
+        if let (Some(username), Some(password)) = (
+            &profile.schema_registry_username,
+            &profile.schema_registry_password,
+        ) {
             req = req.basic_auth(username, Some(password));
         }
-        let resp = req
-            .send()
-            .await?
-            .json::<serde_json::Value>()
-            .await?;
+        let resp = req.send().await?.json::<serde_json::Value>().await?;
 
         // Extract "schema" field
         if let Some(schema) = resp.get("schema") {

@@ -77,4 +77,3 @@ pub struct ConsumerGroupLag {
     pub members_count: i32,
     pub topics_count: i32,
 }
-

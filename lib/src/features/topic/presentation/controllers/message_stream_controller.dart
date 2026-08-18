@@ -54,6 +54,7 @@ class MessageStreamController extends ChangeNotifier {
 
     _messages.clear();
     _totalConsumed = 0;
+    _totalToScan = 0;
     _startTime = DateTime.now();
     _isStreaming = true;
     _maxResults = maxResults;

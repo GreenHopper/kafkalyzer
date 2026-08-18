@@ -307,9 +307,7 @@ pub fn fetch_consumer_lags(
         std::collections::HashMap::new();
 
     // 5. Query committed offsets and build results
-    for (group_id, state, protocol_type, group_topics, members_count) in
-        active_groups
-    {
+    for (group_id, state, protocol_type, group_topics, members_count) in active_groups {
         let mut partitions_to_query = rdkafka::TopicPartitionList::new();
         for topic_name in &group_topics {
             if let Some(partitions) = topic_partitions.get(topic_name) {
@@ -415,13 +413,9 @@ pub fn fetch_consumer_groups(
                 rdkafka::types::RDKafkaErrorCode::Partial,
             )) => {
                 if attempt == 3 {
-                    return Err(anyhow::anyhow!(
-                        "Group list fetch failed: Partial response"
-                    ));
+                    return Err(anyhow::anyhow!("Group list fetch failed: Partial response"));
                 }
-                std::thread::sleep(std::time::Duration::from_millis(
-                    500 * attempt,
-                ));
+                std::thread::sleep(std::time::Duration::from_millis(500 * attempt));
             }
             Err(e) => {
                 return Err(anyhow::Error::from(e));
@@ -448,18 +442,14 @@ pub fn fetch_consumer_groups(
             members_count = group.members().len() as i32;
             for member in group.members() {
                 if let Some(metadata) = member.metadata() {
-                    if let Some(topics) =
-                        parse_member_subscription(metadata)
-                    {
+                    if let Some(topics) = parse_member_subscription(metadata) {
                         for topic in topics {
                             group_topics.insert(topic);
                         }
                     }
                 }
                 if let Some(assignment) = member.assignment() {
-                    if let Some(topics) =
-                        parse_member_assignment(assignment)
-                    {
+                    if let Some(topics) = parse_member_assignment(assignment) {
                         for topic in topics {
                             group_topics.insert(topic);
                         }
@@ -490,8 +480,7 @@ pub fn fetch_consumer_group_lag(
     let main_consumer: BaseConsumer = config.create()?;
 
     // Fetch list filtering for requested group ID
-    let group_list =
-        main_consumer.fetch_group_list(Some(&group_id), timeout)?;
+    let group_list = main_consumer.fetch_group_list(Some(&group_id), timeout)?;
     let group = group_list
         .groups()
         .iter()
@@ -526,18 +515,10 @@ pub fn fetch_consumer_group_lag(
 
     let mut topic_partitions = std::collections::HashMap::new();
     for topic_name in &group_topics {
-        if let Ok(md) =
-            main_consumer.fetch_metadata(Some(topic_name), timeout)
-        {
+        if let Ok(md) = main_consumer.fetch_metadata(Some(topic_name), timeout) {
             for topic_meta in md.topics() {
-                if topic_meta.name() == topic_name
-                    && topic_meta.error().is_none()
-                {
-                    let parts: Vec<i32> = topic_meta
-                        .partitions()
-                        .iter()
-                        .map(|p| p.id())
-                        .collect();
+                if topic_meta.name() == topic_name && topic_meta.error().is_none() {
+                    let parts: Vec<i32> = topic_meta.partitions().iter().map(|p| p.id()).collect();
                     topic_partitions.insert(topic_name.clone(), parts);
                 }
             }
@@ -568,10 +549,7 @@ pub fn fetch_consumer_group_lag(
     group_config.set("group.id", &group_id);
     let group_consumer: BaseConsumer = group_config.create()?;
 
-    let committed_tpl = group_consumer.committed_offsets(
-        partitions_to_query,
-        timeout,
-    )?;
+    let committed_tpl = group_consumer.committed_offsets(partitions_to_query, timeout)?;
     let mut partition_lags = Vec::new();
 
     for elem in committed_tpl.elements() {
@@ -579,19 +557,16 @@ pub fn fetch_consumer_group_lag(
             let topic = elem.topic();
             let partition = elem.partition();
 
-            if let Ok((_, high_offset)) =
-                main_consumer.fetch_watermarks(topic, partition, timeout)
+            if let Ok((_, high_offset)) = main_consumer.fetch_watermarks(topic, partition, timeout)
             {
                 let lag = calculate_lag(high_offset, current_offset);
-                partition_lags.push(
-                    kafkalyzer_core::kafka_types::TopicPartitionLag {
-                        topic: topic.to_string(),
-                        partition,
-                        log_end_offset: high_offset,
-                        current_offset,
-                        lag,
-                    },
-                );
+                partition_lags.push(kafkalyzer_core::kafka_types::TopicPartitionLag {
+                    topic: topic.to_string(),
+                    partition,
+                    log_end_offset: high_offset,
+                    current_offset,
+                    lag,
+                });
             }
         }
     }

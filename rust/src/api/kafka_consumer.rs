@@ -38,7 +38,9 @@ impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
             key: msg.key,
             payload: msg.payload,
             timestamp: msg.timestamp,
-            headers: msg.headers.map(|list| list.into_iter().map(KafkaHeader::from).collect()),
+            headers: msg
+                .headers
+                .map(|list| list.into_iter().map(KafkaHeader::from).collect()),
         }
     }
 }

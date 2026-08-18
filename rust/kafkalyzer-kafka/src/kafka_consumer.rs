@@ -80,41 +80,38 @@ pub fn consume_with_filter(
         start_partition,
     )?;
 
-    // 5. Initial Poll to stabilize
-    for _ in 0..20 {
-        consumer.poll(std::time::Duration::from_millis(100));
-    }
+    // 5. Fetch watermarks in a single pass and reuse them for start/end bounds.
+    let assigned_partitions: Vec<i32> = topic_partition_list
+        .elements()
+        .iter()
+        .map(|e| e.partition())
+        .collect();
+    let watermarks = fetch_partition_watermarks(
+        &consumer,
+        &topic,
+        &assigned_partitions,
+        std::time::Duration::from_secs(5),
+        &sink,
+    );
 
-    // 6. Handle Seek (Start Offsets)
-    let start_offsets_map_result = if start_offset.is_some() || start_timestamp.is_some() {
-        handle_seek_logic(
-            &consumer,
-            &metadata,
-            &topic,
-            start_offset,
-            start_timestamp,
-            target_partition_id,
-            timeout,
-            &sink,
-            &tokio_runtime,
-            &decoders,
-            key_is_avro,
-            value_is_avro,
-            &filter_terms,
-            &filter_field,
-            &filter_type,
-            search_scope,
-        )?
-    } else {
-        std::collections::HashMap::new()
-    };
+    // 6. Resolve start offsets from the cached watermarks (no seek yet).
+    let start_offsets_map_result = resolve_start_offsets(
+        &consumer,
+        &topic,
+        &watermarks,
+        start_offset,
+        start_timestamp,
+        timeout,
+        &sink,
+    )?;
 
-    // 7. Calculate End Offsets
+    // 7. Calculate end offsets from the same watermark map.
     let end_offsets = calculate_end_offsets(
         &consumer,
         &metadata,
         &topic,
         &topic_partition_list,
+        &watermarks,
         run_forever,
         end_offset,
         end_timestamp,
@@ -123,9 +120,8 @@ pub fn consume_with_filter(
         &sink,
     )?;
 
-    // 8. Calculate Total to Scan
+    // 8. Calculate total to scan from the resolved bounds.
     let total_to_scan = calculate_total_to_scan(
-        &consumer,
         &topic_partition_list,
         &start_offsets_map_result,
         &end_offsets,
@@ -144,7 +140,18 @@ pub fn consume_with_filter(
     };
     sink.add(initial_msg).ok();
 
-    // 9. Run Main Loop
+    // Fast-path: empty topics and exhausted ranges skip seek + poll entirely.
+    if should_fast_path_empty(run_forever, total_to_scan) {
+        send_eof(&sink, &topic);
+        return Ok(());
+    }
+
+    // 9. Seek only after the fast-path check, and only when a start was requested.
+    if start_offset.is_some() || start_timestamp.is_some() {
+        apply_start_seeks(&consumer, &topic, &start_offsets_map_result, timeout, &sink);
+    }
+
+    // 10. Run Main Loop
     run_poll_loop(
         consumer,
         topic,
@@ -178,7 +185,10 @@ fn create_sr_settings(profile: &ClusterProfile) -> Option<SrSettings> {
             let mut builder = SrSettings::new_builder(sr_url);
 
             // 1. Basic Auth
-            if let (Some(u), Some(p)) = (&profile.schema_registry_username, &profile.schema_registry_password) {
+            if let (Some(u), Some(p)) = (
+                &profile.schema_registry_username,
+                &profile.schema_registry_password,
+            ) {
                 builder.set_basic_authorization(u, Some(p));
             }
 
@@ -201,20 +211,31 @@ fn create_sr_settings(profile: &ClusterProfile) -> Option<SrSettings> {
 
             // SSL Keystore (mTLS)
             if let Some(keystore_path) = &profile.ssl_keystore_location {
-                if !keystore_path.trim().is_empty() && (keystore_path.to_lowercase().ends_with(".p12") || keystore_path.to_lowercase().ends_with(".pfx")) {
+                if !keystore_path.trim().is_empty()
+                    && (keystore_path.to_lowercase().ends_with(".p12")
+                        || keystore_path.to_lowercase().ends_with(".pfx"))
+                {
                     let password = profile.ssl_keystore_password.as_deref().unwrap_or("");
                     if let Ok(mut file) = std::fs::File::open(keystore_path) {
                         let mut pkcs12_bytes = vec![];
                         if file.read_to_end(&mut pkcs12_bytes).is_ok() {
-                            if let Ok(identity) = reqwest::Identity::from_pkcs12_der(&pkcs12_bytes, password) {
+                            if let Ok(identity) =
+                                reqwest::Identity::from_pkcs12_der(&pkcs12_bytes, password)
+                            {
                                 client_builder = client_builder.identity(identity);
                             }
                         }
                     }
                 }
-            } else if let (Some(cert_path), Some(key_path)) = (&profile.ssl_pem_certificate_location, &profile.ssl_pem_key_location) {
-                if let (Ok(cert_bytes), Ok(key_bytes)) = (std::fs::read(cert_path), std::fs::read(key_path)) {
-                    if let Ok(identity) = reqwest::Identity::from_pkcs8_pem(&cert_bytes, &key_bytes) {
+            } else if let (Some(cert_path), Some(key_path)) = (
+                &profile.ssl_pem_certificate_location,
+                &profile.ssl_pem_key_location,
+            ) {
+                if let (Ok(cert_bytes), Ok(key_bytes)) =
+                    (std::fs::read(cert_path), std::fs::read(key_path))
+                {
+                    if let Ok(identity) = reqwest::Identity::from_pkcs8_pem(&cert_bytes, &key_bytes)
+                    {
                         client_builder = client_builder.identity(identity);
                     }
                 }
@@ -245,62 +266,52 @@ fn create_consumer(profile: &ClusterProfile, is_seeking: bool) -> Result<BaseCon
     Ok(consumer)
 }
 
-fn handle_seek_logic<'a>(
-    consumer: &BaseConsumer,
-    metadata: &rdkafka::metadata::Metadata,
-    topic: &str,
-    start_offset: Option<i64>,
-    start_timestamp: Option<i64>,
-    target_partition_id: Option<i32>,
-    timeout: std::time::Duration,
-    sink: &StreamSink<KafkaMessage>,
-    tokio_runtime: &Runtime,
-    decoder: &Option<SrDecoders<'a>>,
-    key_is_avro: bool,
-    value_is_avro: bool,
-    filter_terms: &Option<Vec<String>>,
-    filter_field: &Option<String>,
-    filter_type: &FilterType,
-    search_scope: SearchScope,
-) -> Result<std::collections::HashMap<i32, i64>> {
-    // We poll a bit more to ensure the assignment is settled
-    for _ in 0..5 {
-        consumer.poll(std::time::Duration::from_millis(100));
+fn should_fast_path_empty(run_forever: bool, total_to_scan: i64) -> bool {
+    !run_forever && total_to_scan == 0
+}
+
+fn clamp_start_offset(requested: i64, low: i64) -> i64 {
+    if requested < low {
+        low
+    } else {
+        requested
     }
+}
 
-    let (start_offsets_map, initial_messages) = perform_seek(
-        consumer,
-        metadata,
-        topic,
-        start_offset,
-        start_timestamp,
-        target_partition_id,
-        timeout,
-        sink,
-    )?;
-
-    // Process any messages consumed during stabilization
-    for msg in initial_messages {
-        process_and_send_message(
-            &msg,
-            tokio_runtime,
-            decoder,
-            key_is_avro,
-            value_is_avro,
-            filter_terms,
-            filter_field,
-            filter_type,
-            search_scope,
-            sink,
-            &mut 0,
-        );
+fn start_offset_from_watermarks(start_offset: Option<i64>, low: i64, high: i64) -> i64 {
+    match start_offset {
+        Some(offset) => clamp_start_offset(offset, low),
+        None => high,
     }
+}
 
-    Ok(start_offsets_map)
+fn range_to_scan(start: i64, end: i64) -> i64 {
+    if end > start {
+        end - start
+    } else {
+        0
+    }
+}
+
+fn should_skip_beyond_end(run_forever: bool, offset: i64, end_offset: i64) -> bool {
+    !run_forever && offset >= end_offset
+}
+
+fn should_stop_for_limit(matched_count: i32, max_results: Option<i32>) -> bool {
+    match max_results {
+        Some(limit) => matched_count >= limit,
+        None => false,
+    }
+}
+
+fn watermark_high(watermarks: &std::collections::HashMap<i32, (i64, i64)>, partition: i32) -> i64 {
+    watermarks
+        .get(&partition)
+        .map(|(_, high)| *high)
+        .unwrap_or(0)
 }
 
 fn calculate_total_to_scan(
-    consumer: &BaseConsumer,
     topic_partition_list: &rdkafka::TopicPartitionList,
     start_offsets_map: &std::collections::HashMap<i32, i64>,
     end_offsets: &std::collections::HashMap<i32, i64>,
@@ -308,13 +319,10 @@ fn calculate_total_to_scan(
 ) -> i64 {
     let mut total_to_scan: i64 = 0;
 
-    // Get unique partitions from assignment
     let mut all_partitions = std::collections::HashSet::new();
     for elem in topic_partition_list.elements() {
         all_partitions.insert(elem.partition());
     }
-
-    let current_positions = consumer.position().ok();
 
     for p in all_partitions {
         if let Some(target) = target_partition_id {
@@ -327,27 +335,8 @@ fn calculate_total_to_scan(
             Some(e) => *e,
             None => continue,
         };
-
-        let start = if let Some(s) = start_offsets_map.get(&p) {
-            *s
-        } else {
-            let mut pos = 0;
-            if let Some(ref list) = current_positions {
-                for elem in list.elements() {
-                    if elem.partition() == p {
-                        if let rdkafka::Offset::Offset(o) = elem.offset() {
-                            pos = o;
-                        }
-                        break;
-                    }
-                }
-            }
-            pos
-        };
-
-        if end > start {
-            total_to_scan += end - start;
-        }
+        let start = start_offsets_map.get(&p).copied().unwrap_or(0);
+        total_to_scan += range_to_scan(start, end);
     }
     total_to_scan
 }
@@ -379,16 +368,16 @@ fn run_poll_loop<'a>(
 
     loop {
         // Check Limit
-        if let Some(limit) = max_results {
-            if matched_count >= limit {
+        if should_stop_for_limit(matched_count, max_results) {
+            if let Some(limit) = max_results {
                 log_to_dart(
                     &sink,
                     format!("Max results limit ({}) reached. Stopping.", limit),
                 );
-                send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
-                send_eof(&sink, &topic);
-                break;
             }
+            send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
+            send_eof(&sink, &topic);
+            break;
         }
 
         // Log every 5000 messages
@@ -396,10 +385,10 @@ fn run_poll_loop<'a>(
             log_to_dart(&sink, format!("Scanned {} messages.", scanned_count));
         }
 
-        match consumer.poll(std::time::Duration::from_millis(200)) {
+        match consumer.poll(std::time::Duration::from_millis(100)) {
             Some(Ok(msg)) => {
                 if let Some(target_end_offset) = end_offsets.get(&msg.partition()) {
-                    if msg.offset() >= *target_end_offset {
+                    if should_skip_beyond_end(run_forever, msg.offset(), *target_end_offset) {
                         current_offsets.insert(msg.partition(), msg.offset() + 1);
                         continue; // Skip processing and emitting messages beyond boundary
                     }
@@ -408,7 +397,7 @@ fn run_poll_loop<'a>(
                 scanned_count += 1;
                 current_offsets.insert(msg.partition(), msg.offset() + 1);
 
-                if last_report_time.elapsed().as_millis() > 500 {
+                if last_report_time.elapsed().as_millis() > 250 {
                     if let Err(e) = send_progress(&sink, &topic, scanned_count, total_to_scan) {
                         log_to_dart(
                             &sink,
@@ -419,7 +408,7 @@ fn run_poll_loop<'a>(
                     last_report_time = std::time::Instant::now();
                 }
 
-                if !run_forever && last_eof_check_time.elapsed().as_secs() >= 1 {
+                if !run_forever && last_eof_check_time.elapsed().as_millis() >= 500 {
                     if check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
                         all_done_log(&topic);
                         send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
@@ -443,26 +432,32 @@ fn run_poll_loop<'a>(
                     &mut matched_count,
                 );
             }
-            Some(Err(e)) => {
-                match e {
-                    rdkafka::error::KafkaError::PartitionEOF(_) => {} // Handled by check_done
-                    rdkafka::error::KafkaError::MessageConsumption(
-                        rdkafka::types::RDKafkaErrorCode::OperationTimedOut,
-                    ) => {}
-                    _ => {
-                        log_to_dart(&sink, format!("Kafka error during poll: {}", e));
+            Some(Err(e)) => match e {
+                rdkafka::error::KafkaError::PartitionEOF(_) => {
+                    if !run_forever
+                        && check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink)
+                    {
+                        all_done_log(&topic);
+                        send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
+                        send_eof(&sink, &topic);
+                        break;
                     }
                 }
-            }
+                rdkafka::error::KafkaError::MessageConsumption(
+                    rdkafka::types::RDKafkaErrorCode::OperationTimedOut,
+                ) => {}
+                _ => {
+                    log_to_dart(&sink, format!("Kafka error during poll: {}", e));
+                }
+            },
             None => {
-                if !run_forever && last_eof_check_time.elapsed().as_secs() >= 1 {
+                if !run_forever {
                     if check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
                         all_done_log(&topic);
                         send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
                         send_eof(&sink, &topic);
                         break;
                     }
-                    last_eof_check_time = std::time::Instant::now();
                 }
 
                 // Heartbeat
@@ -762,186 +757,129 @@ fn setup_topic_assignment(
     Ok((topic_partition_list, target_partition_id))
 }
 
-fn perform_seek(
+fn fetch_partition_watermarks(
     consumer: &BaseConsumer,
-    metadata: &rdkafka::metadata::Metadata,
     topic: &str,
-    start_offset: Option<i64>,
-    start_timestamp: Option<i64>,
-    target_partition_id: Option<i32>,
+    partitions: &[i32],
     timeout: std::time::Duration,
     sink: &StreamSink<KafkaMessage>,
-) -> Result<(
-    std::collections::HashMap<i32, i64>,
-    Vec<rdkafka::message::OwnedMessage>,
-)> {
-    let mut actual_start_offsets = std::collections::HashMap::new();
-
-    if let Some(timestamp) = start_timestamp {
-        // log_to_dart(sink, format!("Seeking to timestamp: {}", timestamp));
-        let mut tpl_for_times = rdkafka::TopicPartitionList::new();
-        for topic_meta in metadata.topics() {
-            if topic_meta.name() == topic {
-                for partition_meta in topic_meta.partitions() {
-                    if let Some(target) = target_partition_id {
-                        if partition_meta.id() != target {
-                            continue;
-                        }
-                    }
-                    tpl_for_times.add_partition_offset(
-                        topic,
-                        partition_meta.id(),
-                        rdkafka::Offset::from_raw(timestamp),
-                    )?;
-                }
+) -> std::collections::HashMap<i32, (i64, i64)> {
+    let mut watermarks = std::collections::HashMap::new();
+    for &p in partitions {
+        match consumer.fetch_watermarks(topic, p, timeout) {
+            Ok((low, high)) => {
+                watermarks.insert(p, (low, high));
             }
-        }
-        match consumer.offsets_for_times(tpl_for_times, timeout) {
-            Ok(offsets) => {
-                let mut assigned_offsets = rdkafka::TopicPartitionList::new();
-
-                for elem in offsets.elements() {
-                    let p_topic = elem.topic();
-                    let p_id = elem.partition();
-                    let p_offset = elem.offset();
-
-                    let final_offset = match p_offset {
-                        rdkafka::Offset::Offset(raw) => {
-                            // log_to_dart(sink, format!("Resolved offset for timestamp {}: partition {}, offset {}", timestamp, p_id, raw));
-                            rdkafka::Offset::Offset(raw)
-                        }
-                        _ => {
-                            // Invalid/Not Found -> Assume Future -> Seek to End
-                            match consumer.fetch_watermarks(p_topic, p_id, timeout) {
-                                Ok((_low, high)) => {
-                                    // log_to_dart(sink, format!("Timestamp {} unresolved for partition {}-{} (likely in future). Defaulting to High Watermark: {}", timestamp, p_topic, p_id, high));
-                                    rdkafka::Offset::Offset(high)
-                                }
-                                Err(_e) => {
-                                    // log_to_dart(sink, format!("Failed to fetch watermarks for {}-{}: {}. Keeping original offset {:?}", p_topic, p_id, e, p_offset));
-                                    p_offset
-                                }
-                            }
-                        }
-                    };
-
-                    if let rdkafka::Offset::Offset(o) = final_offset {
-                        actual_start_offsets.insert(p_id, o);
-                    }
-
-                    assigned_offsets.add_partition_offset(p_topic, p_id, final_offset)?;
-                }
-
-                consumer
-                    .assign(&assigned_offsets)
-                    .map_err(|e| anyhow::anyhow!("Assign error after offsets_for_times: {}", e))?;
-
-                // CRITICAL: Poll to ensure assignment is active before seeking
-                let mut initial_messages = Vec::new();
-                match consumer.poll(std::time::Duration::from_millis(200)) {
-                    Some(Ok(m)) => {
-                        // log_to_dart(sink, format!("Consumed message during stabilization: Partition {} Offset {}", m.partition(), m.offset()));
-                        initial_messages.push(m.detach());
-                    }
-                    Some(Err(e)) => {
-                        log_to_dart(sink, format!("Error during stabilization poll: {}", e))
-                    }
-                    None => {}
-                }
-
-                for elem in assigned_offsets.elements() {
-                    if let rdkafka::Offset::Offset(offset) = elem.offset() {
-                        if let Err(error) = seek_with_retry(
-                            consumer,
-                            elem.topic(),
-                            elem.partition(),
-                            rdkafka::Offset::Offset(offset),
-                            timeout,
-                            sink,
-                        ) {
-                            log_to_dart(
-                                sink,
-                                format!(
-                                    "Error seeking to timestamp in partition {}: {}",
-                                    elem.partition(),
-                                    error
-                                ),
-                            );
-                        }
-                    }
-                }
-
-                return Ok((actual_start_offsets, initial_messages));
-            }
-            Err(error) => {
+            Err(e) => {
                 log_to_dart(
                     sink,
-                    format!("Error fetching start offsets for times: {}", error),
+                    format!("Error fetching watermarks for partition {}: {}", p, e),
                 );
-                return Err(anyhow::anyhow!("Error fetching start offsets: {}", error));
-            }
-        }
-    } else if let Some(offset) = start_offset {
-        // log_to_dart(sink, format!("Seeking to explicit offset: {}", offset));
-        for topic_meta in metadata.topics() {
-            if topic_meta.name() == topic {
-                for partition_meta in topic_meta.partitions() {
-                    if let Some(target) = target_partition_id {
-                        if partition_meta.id() != target {
-                            continue;
-                        }
-                    }
-                    let mut target_offset = offset;
-                    match consumer.fetch_watermarks(topic, partition_meta.id(), timeout) {
-                        Ok((low, _high)) => {
-                            if offset < low {
-                                log_to_dart(
-                                    sink,
-                                    format!(
-                                        "Offset {} is below low watermark {}, adjusting to {}",
-                                        offset, low, low
-                                    ),
-                                );
-                                target_offset = low;
-                            }
-                        }
-                        Err(error) => log_to_dart(
-                            sink,
-                            format!(
-                                "Error fetching watermarks for partition {}: {}",
-                                partition_meta.id(),
-                                error
-                            ),
-                        ),
-                    }
-
-                    actual_start_offsets.insert(partition_meta.id(), target_offset);
-
-                    if let Err(error) = seek_with_retry(
-                        consumer,
-                        topic,
-                        partition_meta.id(),
-                        rdkafka::Offset::Offset(target_offset),
-                        timeout,
-                        sink,
-                    ) {
-                        log_to_dart(
-                            sink,
-                            format!(
-                                "Error seeking to offset {} in partition {}: {}",
-                                target_offset,
-                                partition_meta.id(),
-                                error
-                            ),
-                        );
-                    } else {
-                        // log_to_dart(sink, format!("Successfully sought to offset {} in partition {}", target_offset, partition_meta.id()));
-                    }
-                }
             }
         }
     }
-    Ok((actual_start_offsets, Vec::new()))
+    watermarks
+}
+
+fn resolve_start_offsets(
+    consumer: &BaseConsumer,
+    topic: &str,
+    watermarks: &std::collections::HashMap<i32, (i64, i64)>,
+    start_offset: Option<i64>,
+    start_timestamp: Option<i64>,
+    timeout: std::time::Duration,
+    sink: &StreamSink<KafkaMessage>,
+) -> Result<std::collections::HashMap<i32, i64>> {
+    if let Some(timestamp) = start_timestamp {
+        return resolve_start_offsets_for_timestamp(
+            consumer, topic, watermarks, timestamp, timeout, sink,
+        );
+    }
+
+    let mut actual_start_offsets = std::collections::HashMap::new();
+    for (&partition, &(low, high)) in watermarks {
+        let resolved = start_offset_from_watermarks(start_offset, low, high);
+        if let Some(offset) = start_offset {
+            if offset < low {
+                log_to_dart(
+                    sink,
+                    format!(
+                        "Offset {} is below low watermark {}, adjusting to {}",
+                        offset, low, low
+                    ),
+                );
+            }
+        }
+        actual_start_offsets.insert(partition, resolved);
+    }
+    Ok(actual_start_offsets)
+}
+
+fn resolve_start_offsets_for_timestamp(
+    consumer: &BaseConsumer,
+    topic: &str,
+    watermarks: &std::collections::HashMap<i32, (i64, i64)>,
+    timestamp: i64,
+    timeout: std::time::Duration,
+    sink: &StreamSink<KafkaMessage>,
+) -> Result<std::collections::HashMap<i32, i64>> {
+    let mut tpl_for_times = rdkafka::TopicPartitionList::new();
+    for &partition in watermarks.keys() {
+        tpl_for_times.add_partition_offset(
+            topic,
+            partition,
+            rdkafka::Offset::from_raw(timestamp),
+        )?;
+    }
+
+    match consumer.offsets_for_times(tpl_for_times, timeout) {
+        Ok(offsets) => {
+            let mut actual_start_offsets = std::collections::HashMap::new();
+            for elem in offsets.elements() {
+                let p_id = elem.partition();
+                let resolved = match elem.offset() {
+                    rdkafka::Offset::Offset(raw) => raw,
+                    _ => watermark_high(watermarks, p_id),
+                };
+                actual_start_offsets.insert(p_id, resolved);
+            }
+            Ok(actual_start_offsets)
+        }
+        Err(error) => {
+            log_to_dart(
+                sink,
+                format!("Error fetching start offsets for times: {}", error),
+            );
+            Err(anyhow::anyhow!("Error fetching start offsets: {}", error))
+        }
+    }
+}
+
+fn apply_start_seeks(
+    consumer: &BaseConsumer,
+    topic: &str,
+    start_offsets: &std::collections::HashMap<i32, i64>,
+    timeout: std::time::Duration,
+    sink: &StreamSink<KafkaMessage>,
+) {
+    for (&partition, &offset) in start_offsets {
+        if let Err(error) = seek_with_retry(
+            consumer,
+            topic,
+            partition,
+            rdkafka::Offset::Offset(offset),
+            timeout,
+            sink,
+        ) {
+            log_to_dart(
+                sink,
+                format!(
+                    "Error seeking to offset {} in partition {}: {}",
+                    offset, partition, error
+                ),
+            );
+        }
+    }
 }
 
 fn calculate_end_offsets(
@@ -949,6 +887,7 @@ fn calculate_end_offsets(
     metadata: &rdkafka::metadata::Metadata,
     topic: &str,
     topic_partition_list: &rdkafka::TopicPartitionList,
+    watermarks: &std::collections::HashMap<i32, (i64, i64)>,
     _run_forever: bool,
     end_offset: Option<i64>,
     end_timestamp: Option<i64>,
@@ -983,22 +922,11 @@ fn calculate_end_offsets(
                         rdkafka::Offset::Offset(offset) => {
                             end_offsets.insert(elem.partition(), offset);
                         }
-                        rdkafka::Offset::End => {
-                            // The requested timestamp is beyond the latest message in this partition.
-                            // We should consume up to the High Watermark instead.
-                            if let Ok((_low, high)) =
-                                consumer.fetch_watermarks(elem.topic(), elem.partition(), timeout)
-                            {
-                                end_offsets.insert(elem.partition(), high);
-                            }
-                        }
                         _ => {
-                            // Invalid offset or not found, default to high watermark
-                            if let Ok((_low, high)) =
-                                consumer.fetch_watermarks(elem.topic(), elem.partition(), timeout)
-                            {
-                                end_offsets.insert(elem.partition(), high);
-                            }
+                            end_offsets.insert(
+                                elem.partition(),
+                                watermark_high(watermarks, elem.partition()),
+                            );
                         }
                     }
                 }
@@ -1019,21 +947,9 @@ fn calculate_end_offsets(
             }
         }
     } else {
-        let metadata_timeout = std::time::Duration::from_secs(5);
         for partition_item in topic_partition_list.elements() {
-            match consumer.fetch_watermarks(topic, partition_item.partition(), metadata_timeout) {
-                Ok((_low, high)) => {
-                    end_offsets.insert(partition_item.partition(), high);
-                }
-                Err(error) => log_to_dart(
-                    sink,
-                    format!(
-                        "Error fetching watermarks for partition {}: {}",
-                        partition_item.partition(),
-                        error
-                    ),
-                ),
-            }
+            let p_id = partition_item.partition();
+            end_offsets.insert(p_id, watermark_high(watermarks, p_id));
         }
     }
     log_to_dart(sink, format!("End Offsets: {:?}", end_offsets));
@@ -1057,10 +973,11 @@ fn decode_message_component<'a>(
                 id_bytes.copy_from_slice(&bytes[1..5]);
                 let schema_id = u32::from_be_bytes(id_bytes);
 
-                let schema_future = schema_registry_converter::async_impl::schema_registry::get_schema_by_id(
-                    schema_id,
-                    &sr_decoders.settings,
-                );
+                let schema_future =
+                    schema_registry_converter::async_impl::schema_registry::get_schema_by_id(
+                        schema_id,
+                        &sr_decoders.settings,
+                    );
                 if let Ok(registered_schema) = tokio_runtime.block_on(schema_future) {
                     match registered_schema.schema_type {
                         schema_registry_converter::schema_registry_common::SchemaType::Avro => {
@@ -1068,12 +985,17 @@ fn decode_message_component<'a>(
                             if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
                                 let schema = &decoded_result.schema.parsed;
                                 let mut resolved_schemas = std::collections::HashMap::new();
-                                kafkalyzer_core::avro_utils::extract_named_schemas(schema, &mut resolved_schemas);
-                                if let Ok(json_val) = kafkalyzer_core::avro_utils::convert_avro_value(
-                                    &decoded_result.value,
-                                    Some(schema),
-                                    &resolved_schemas,
-                                ) {
+                                kafkalyzer_core::avro_utils::extract_named_schemas(
+                                    schema,
+                                    &mut resolved_schemas,
+                                );
+                                if let Ok(json_val) =
+                                    kafkalyzer_core::avro_utils::convert_avro_value(
+                                        &decoded_result.value,
+                                        Some(schema),
+                                        &resolved_schemas,
+                                    )
+                                {
                                     if let Ok(json) = serde_json::to_string_pretty(&json_val) {
                                         decoded_val = Some(json);
                                     }
@@ -1083,7 +1005,9 @@ fn decode_message_component<'a>(
                         schema_registry_converter::schema_registry_common::SchemaType::Json => {
                             let future = sr_decoders.json.decode(Some(bytes));
                             if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                                if let Ok(json) = serde_json::to_string_pretty(&decoded_result.value) {
+                                if let Ok(json) =
+                                    serde_json::to_string_pretty(&decoded_result.value)
+                                {
                                     decoded_val = Some(json);
                                 }
                             }
@@ -1091,7 +1015,10 @@ fn decode_message_component<'a>(
                         schema_registry_converter::schema_registry_common::SchemaType::Protobuf => {
                             let future = sr_decoders.proto.decode_with_context(Some(bytes));
                             if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                                let json_val = convert_protofish_message(&decoded_result.value, &decoded_result.context.context);
+                                let json_val = convert_protofish_message(
+                                    &decoded_result.value,
+                                    &decoded_result.context.context,
+                                );
                                 if let Ok(json) = serde_json::to_string_pretty(&json_val) {
                                     decoded_val = Some(json);
                                 }
@@ -1415,6 +1342,117 @@ mod tests {
             ),
         }
     }
+
+    #[test]
+    fn test_calculate_total_to_scan_empty_and_bounded() {
+        let mut start_offsets = std::collections::HashMap::new();
+        start_offsets.insert(0, 0);
+        start_offsets.insert(1, 0);
+
+        let mut end_offsets = std::collections::HashMap::new();
+        end_offsets.insert(0, 0);
+        end_offsets.insert(1, 0);
+
+        let mut tpl = rdkafka::TopicPartitionList::new();
+        tpl.add_partition("test-topic", 0);
+        tpl.add_partition("test-topic", 1);
+
+        assert_eq!(
+            calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None),
+            0
+        );
+
+        end_offsets.insert(0, 150);
+        end_offsets.insert(1, 200);
+        assert_eq!(
+            calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None),
+            350
+        );
+
+        start_offsets.insert(0, 200);
+        start_offsets.insert(1, 250);
+        assert_eq!(
+            calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None),
+            0
+        );
+    }
+
+    #[test]
+    fn test_fast_path_empty_topic_earliest_start() {
+        let mut watermarks = std::collections::HashMap::new();
+        watermarks.insert(0, (0, 0));
+        watermarks.insert(1, (0, 0));
+
+        let mut start_offsets = std::collections::HashMap::new();
+        let mut end_offsets = std::collections::HashMap::new();
+        for (&partition, &(low, high)) in &watermarks {
+            start_offsets.insert(partition, start_offset_from_watermarks(Some(0), low, high));
+            end_offsets.insert(partition, high);
+        }
+
+        let mut tpl = rdkafka::TopicPartitionList::new();
+        tpl.add_partition("empty-topic", 0);
+        tpl.add_partition("empty-topic", 1);
+
+        let total = calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None);
+        assert_eq!(total, 0);
+        assert!(should_fast_path_empty(false, total));
+    }
+
+    #[test]
+    fn test_exhausted_offset_range_fast_path() {
+        let start = start_offset_from_watermarks(Some(500), 0, 200);
+        assert_eq!(start, 500);
+        assert_eq!(range_to_scan(start, 200), 0);
+        assert!(should_fast_path_empty(false, 0));
+    }
+
+    #[test]
+    fn test_populated_topic_oldest_200_does_not_fast_path() {
+        let mut watermarks = std::collections::HashMap::new();
+        watermarks.insert(0, (0, 600));
+        watermarks.insert(1, (0, 400));
+
+        let mut start_offsets = std::collections::HashMap::new();
+        let mut end_offsets = std::collections::HashMap::new();
+        for (&partition, &(low, high)) in &watermarks {
+            start_offsets.insert(partition, start_offset_from_watermarks(Some(0), low, high));
+            end_offsets.insert(partition, high);
+        }
+
+        let mut tpl = rdkafka::TopicPartitionList::new();
+        tpl.add_partition("populated-topic", 0);
+        tpl.add_partition("populated-topic", 1);
+
+        let total = calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None);
+        assert_eq!(total, 1000);
+        assert!(!should_fast_path_empty(false, total));
+        assert!(should_stop_for_limit(200, Some(200)));
+        assert!(!should_stop_for_limit(199, Some(200)));
+    }
+
+    #[test]
+    fn test_live_streaming_does_not_fast_path_or_skip_new_messages() {
+        assert!(!should_fast_path_empty(true, 0));
+        assert!(!should_skip_beyond_end(true, 100, 100));
+        assert!(should_skip_beyond_end(false, 100, 100));
+        assert!(!should_skip_beyond_end(false, 99, 100));
+    }
+
+    #[test]
+    fn test_start_offset_clamped_to_low_watermark() {
+        assert_eq!(start_offset_from_watermarks(Some(0), 150, 200), 150);
+        assert_eq!(start_offset_from_watermarks(Some(180), 150, 200), 180);
+        assert_eq!(start_offset_from_watermarks(None, 150, 200), 200);
+    }
+
+    #[test]
+    fn test_watermark_high_reuses_cached_map() {
+        let mut watermarks = std::collections::HashMap::new();
+        watermarks.insert(0, (10, 42));
+        assert_eq!(watermark_high(&watermarks, 0), 42);
+        assert_eq!(watermark_high(&watermarks, 7), 0);
+    }
 }
 
 fn log_to_dart(sink: &StreamSink<KafkaMessage>, message: String) {
@@ -1474,12 +1512,16 @@ fn send_eof(sink: &StreamSink<KafkaMessage>, topic: &str) {
     let _ = sink.add(eof_msg);
 }
 
-fn convert_protofish_message(msg: &protofish::decode::MessageValue, context: &protofish::context::Context) -> serde_json::Value {
+fn convert_protofish_message(
+    msg: &protofish::decode::MessageValue,
+    context: &protofish::context::Context,
+) -> serde_json::Value {
     let mut map = serde_json::Map::new();
     let message_info = context.resolve_message(msg.msg_ref);
 
     for field in &msg.fields {
-        let field_name = message_info.get_field(field.number)
+        let field_name = message_info
+            .get_field(field.number)
             .map(|f| f.name.clone())
             .unwrap_or_else(|| format!("field_{}", field.number));
 
@@ -1489,7 +1531,10 @@ fn convert_protofish_message(msg: &protofish::decode::MessageValue, context: &pr
     serde_json::Value::Object(map)
 }
 
-fn convert_protofish_value(val: &protofish::decode::Value, context: &protofish::context::Context) -> serde_json::Value {
+fn convert_protofish_value(
+    val: &protofish::decode::Value,
+    context: &protofish::context::Context,
+) -> serde_json::Value {
     use protofish::decode::Value;
     match val {
         Value::Double(v) => serde_json::json!(v),
@@ -1510,7 +1555,8 @@ fn convert_protofish_value(val: &protofish::decode::Value, context: &protofish::
         Value::Message(msg) => convert_protofish_message(msg, context),
         Value::Enum(ev) => {
             let enum_info = context.resolve_enum(ev.enum_ref);
-            let name = enum_info.get_field_by_value(ev.value)
+            let name = enum_info
+                .get_field_by_value(ev.value)
                 .map(|f| f.name.clone())
                 .unwrap_or_else(|| ev.value.to_string());
             serde_json::Value::String(name)
@@ -1533,15 +1579,21 @@ fn convert_protofish_value(val: &protofish::decode::Value, context: &protofish::
                 PackedArray::Bool(v) => serde_json::json!(v),
             }
         }
-        Value::Incomplete(_, bytes) => serde_json::Value::String(format!("Incomplete: 0x{}", hex::encode(bytes))),
+        Value::Incomplete(_, bytes) => {
+            serde_json::Value::String(format!("Incomplete: 0x{}", hex::encode(bytes)))
+        }
         Value::Unknown(uk) => {
             use protofish::decode::UnknownValue;
             match uk {
                 UnknownValue::Varint(v) => serde_json::json!(v.to_string()),
                 UnknownValue::Fixed64(v) => serde_json::json!(v),
-                UnknownValue::VariableLength(v) => serde_json::Value::String(format!("0x{}", hex::encode(v))),
+                UnknownValue::VariableLength(v) => {
+                    serde_json::Value::String(format!("0x{}", hex::encode(v)))
+                }
                 UnknownValue::Fixed32(v) => serde_json::json!(v),
-                UnknownValue::Invalid(_, bytes) => serde_json::Value::String(format!("Invalid: 0x{}", hex::encode(bytes))),
+                UnknownValue::Invalid(_, bytes) => {
+                    serde_json::Value::String(format!("Invalid: 0x{}", hex::encode(bytes)))
+                }
             }
         }
     }

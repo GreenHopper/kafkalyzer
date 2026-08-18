@@ -48,9 +48,7 @@ pub fn fetch_consumer_groups(
     profile: ClusterProfile,
 ) -> Result<Vec<crate::api::kafka_types::ConsumerGroupLag>> {
     let domain_profile = profile.to_domain();
-    let groups = kafkalyzer_kafka::kafka_metadata::fetch_consumer_groups(
-        domain_profile,
-    )?;
+    let groups = kafkalyzer_kafka::kafka_metadata::fetch_consumer_groups(domain_profile)?;
     Ok(groups
         .into_iter()
         .map(crate::api::kafka_types::ConsumerGroupLag::from)
@@ -62,9 +60,7 @@ pub fn fetch_consumer_group_lag(
     group_id: String,
 ) -> Result<crate::api::kafka_types::ConsumerGroupLag> {
     let domain_profile = profile.to_domain();
-    let group_lag = kafkalyzer_kafka::kafka_metadata::fetch_consumer_group_lag(
-        domain_profile,
-        group_id,
-    )?;
+    let group_lag =
+        kafkalyzer_kafka::kafka_metadata::fetch_consumer_group_lag(domain_profile, group_id)?;
     Ok(crate::api::kafka_types::ConsumerGroupLag::from(group_lag))
 }

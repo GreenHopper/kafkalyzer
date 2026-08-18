@@ -1156,10 +1156,11 @@ packages:
   velopack_flutter:
     dependency: "direct main"
     description:
-      name: velopack_flutter
-      sha256: b3c252fe183b10834d4229ca1ba9ff984281f1afd3d836381cb2694d5921c177
-      url: "https://pub.dev"
-    source: hosted
+      path: "."
+      ref: "87f1585f1c72a6be9758877dfca153c3ceb27def"
+      resolved-ref: "87f1585f1c72a6be9758877dfca153c3ceb27def"
+      url: "https://github.com/skillsgo/velopack_flutter.git"
+    source: git
     version: "0.3.2"
   vm_service:
     dependency: transitive

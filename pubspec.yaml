@@ -90,6 +90,14 @@ dev_dependencies:
   path_provider_platform_interface: ^2.1.2
   plugin_platform_interface: ^2.1.8
 
+# Temporary: velopack_flutter 0.3.2 crashes on Flutter 3.44+ `flutter run`
+# (https://github.com/GigaDroid/velopack_flutter/pull/17). Remove when 0.3.3 ships.
+dependency_overrides:
+  velopack_flutter:
+    git:
+      url: https://github.com/skillsgo/velopack_flutter.git
+      ref: 87f1585f1c72a6be9758877dfca153c3ceb27def
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
