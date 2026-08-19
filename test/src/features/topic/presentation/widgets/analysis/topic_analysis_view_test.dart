@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -7,6 +6,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_ana
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:material_ui/material_ui.dart';
 
 class MockLogger extends Logger {
   @override

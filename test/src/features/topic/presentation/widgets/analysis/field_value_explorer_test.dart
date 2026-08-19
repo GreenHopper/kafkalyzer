@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/field_value_explorer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('FieldValueExplorer renders empty state when no fields exist', (

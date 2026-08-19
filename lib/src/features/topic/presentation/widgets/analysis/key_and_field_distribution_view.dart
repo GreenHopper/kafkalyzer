@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/field_value_explorer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:material_ui/material_ui.dart';
 
 class KeyAndFieldDistributionView extends StatelessWidget {
   final List<KeyOccurrence> topKeys;
@@ -96,7 +96,7 @@ class _TopKeysCard extends StatelessWidget {
             const SizedBox(height: 12),
             if (topKeys.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: Center(
                   child: Text(
                     'No keyed messages found',
@@ -107,57 +107,63 @@ class _TopKeysCard extends StatelessWidget {
                 ),
               )
             else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: topKeys.length.clamp(0, 15),
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final k = topKeys[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                k.key,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontFamily: 'monospace',
-                                  fontWeight: FontWeight.w600,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 180),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: topKeys.length.clamp(0, 8),
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final k = topKeys[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  k.key,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontFamily: 'monospace',
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(3),
-                                child: LinearProgressIndicator(
-                                  value: (k.percentage / 100.0).clamp(0.0, 1.0),
-                                  minHeight: 4,
-                                  backgroundColor:
-                                      colorScheme.surfaceContainerHighest,
-                                  color: colorScheme.tertiary,
+                                const SizedBox(height: 2),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: (k.percentage / 100.0).clamp(
+                                      0.0,
+                                      1.0,
+                                    ),
+                                    minHeight: 3,
+                                    backgroundColor:
+                                        colorScheme.surfaceContainerHighest,
+                                    color: colorScheme.tertiary,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          '${numberFormat.format(k.count)} '
-                          '(${k.percentage.toStringAsFixed(1)}%)',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w500,
+                          const SizedBox(width: 8),
+                          Text(
+                            '${numberFormat.format(k.count)} '
+                            '(${k.percentage.toStringAsFixed(1)}%)',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
           ],
         ),

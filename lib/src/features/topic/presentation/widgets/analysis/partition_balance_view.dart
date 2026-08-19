@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PartitionBalanceView extends StatelessWidget {
   final List<PartitionAnalysis> partitionStats;

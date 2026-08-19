@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
@@ -8,6 +7,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/part
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_summary_cards.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum ScanScopeOption { full, sample10k, sample50k, sample100k }
 
