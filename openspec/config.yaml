@@ -9,7 +9,7 @@ context: |
       - Navigation & Routing: go_router.
       - Data Storage & Persistence: shared_preferences (local JSON/plist stores).
       - Styling & Theming: flex_color_scheme, google_fonts, Material 3.
-      - UI Libraries: data_table_2, timelines_plus, json_explorer, file_picker.
+      - UI Libraries: material_ui, data_table_2, timelines_plus, json_explorer, file_picker.
     - Backend: Rust Cargo Workspace located under `rust/`.
       - `rust_lib_kafkalyzer`: Main bridge crate / API wrapper for Dart integration.
       - `kafkalyzer-core`: Pure Rust library for AS400 decoding and Avro conversions.
@@ -27,6 +27,7 @@ context: |
       - Handle all potential exceptions and errors gracefully; do not let operations fail silently.
 
     - UI & UX:
+        - Material UI Elements: The Flutter package `package:material_ui/material_ui.dart` MUST be used for all Material UI elements.
         - All asynchronous UI actions (e.g., fetching Kafka messages, cluster connection) MUST provide visual feedback (e.g., CircularProgressIndicator or loading states).
         - Errors during UI actions must be reported to the user via SnackBars or dialogs instead of failing silently in the logs.
         - Reuse: Existing UI components like `MessageDetailsDialog` should be reused to maintain visual and functional consistency.
@@ -40,6 +41,7 @@ rules:
     - Clearly document the "Why", "What", and "How" of the changes.
     - Explicitly detail any new, modified, or deleted capabilities.
   design:
+    - Material UI Elements: Ensure all Material UI elements use `package:material_ui/material_ui.dart`.
     - Do not modify existing Dart/Flutter UI code unless explicitly requested or necessary.
     - Maintain backwards compatibility of all existing Flutter/Dart integrations and Rust-Dart API signatures.
     - Status Access: For accessing global state (like the active cluster or settings), prefer using `ActiveConnectionController` or `getIt` over deep prop-drilling unless a widget is purely presentational.
