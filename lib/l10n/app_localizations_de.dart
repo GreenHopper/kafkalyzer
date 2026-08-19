@@ -336,6 +336,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get closeTab => 'Tab schließen';
 
   @override
+  String get scanning => 'Wird gescannt...';
+
+  @override
+  String get operationInProgress => 'Operation in Fortschritt';
+
+  @override
+  String get operationInProgressMessage =>
+      'Eine Suche oder Analyse wird auf diesem Tab noch ausgeführt. Tab schließen und die Operation abbrechen?';
+
+  @override
   String get duplicateTab => 'Tab duplizieren';
 
   @override

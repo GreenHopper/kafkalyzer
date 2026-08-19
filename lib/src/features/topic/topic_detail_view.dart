@@ -174,11 +174,22 @@ class _TopicDetailViewState extends State<TopicDetailView>
       children: [
         IconButton(
           onPressed: () {
-            if (widget.tabId != null) {
-              activeController.closeTopicTab(widget.tabId!);
-            } else {
-              activeController.closeTopic(widget.topic, widget.profile.name);
-            }
+            final isRunning =
+                streamController.isStreaming || analysisController.isAnalyzing;
+            confirmCloseTab(
+              context,
+              isOperationRunning: isRunning,
+              onClose: () {
+                if (widget.tabId != null) {
+                  activeController.closeTopicTab(widget.tabId!);
+                } else {
+                  activeController.closeTopic(
+                    widget.topic,
+                    widget.profile.name,
+                  );
+                }
+              },
+            );
           },
           icon: const Icon(Icons.close),
           tooltip: l10n?.closeTab ?? "Close Tab",

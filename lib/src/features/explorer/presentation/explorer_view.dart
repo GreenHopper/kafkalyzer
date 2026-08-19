@@ -11,8 +11,10 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_item.dart';
+import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 
 class ExplorerView extends WatchingStatefulWidget {
   const ExplorerView({super.key});
@@ -574,6 +576,7 @@ class _ExplorerViewState extends State<ExplorerView> {
   ) {
     final isSelected = activeController.activeTopic?.id == record.id;
     final streamCtrl = activeController.getStreamController(record.id);
+    final analysisCtrl = activeController.getAnalysisController(record.id);
 
     return InkWell(
       onTap: () => activeController.setActiveTabId(record.id),
@@ -596,13 +599,14 @@ class _ExplorerViewState extends State<ExplorerView> {
           ),
         ),
         child: ListenableBuilder(
-          listenable: streamCtrl,
+          listenable: Listenable.merge([streamCtrl, analysisCtrl]),
           builder: (context, _) => _buildTabItemContent(
             context,
             l10n,
             activeController,
             record,
             streamCtrl,
+            analysisCtrl,
             isSelected,
           ),
         ),
@@ -616,9 +620,11 @@ class _ExplorerViewState extends State<ExplorerView> {
     ActiveConnectionController activeController,
     OpenTopicRecord record,
     MessageStreamController streamCtrl,
+    TopicAnalysisController analysisCtrl,
     bool isSelected,
   ) {
     final title = _getTabTitle(activeController, record);
+    final isRunning = streamCtrl.isStreaming || analysisCtrl.isAnalyzing;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -650,7 +656,20 @@ class _ExplorerViewState extends State<ExplorerView> {
         ),
         if (streamCtrl.isStreaming) ...[
           const SizedBox(width: 8),
-          _buildTabProgressIndicator(context, streamCtrl),
+          _buildTabProgressIndicator(
+            context,
+            l10n,
+            streamCtrl.progress,
+            streamCtrl.startTime,
+          ),
+        ] else if (analysisCtrl.isAnalyzing) ...[
+          const SizedBox(width: 8),
+          _buildTabProgressIndicator(
+            context,
+            l10n,
+            analysisCtrl.progressRatio,
+            analysisCtrl.startTime,
+          ),
         ] else if (streamCtrl.messages.isNotEmpty) ...[
           const SizedBox(width: 8),
           _buildTabMessageCount(context, streamCtrl),
@@ -669,7 +688,11 @@ class _ExplorerViewState extends State<ExplorerView> {
         ),
         const SizedBox(width: 4),
         InkWell(
-          onTap: () => activeController.closeTopicTab(record.id),
+          onTap: () => confirmCloseTab(
+            context,
+            isOperationRunning: isRunning,
+            onClose: () => activeController.closeTopicTab(record.id),
+          ),
           child: Tooltip(
             message: l10n.closeTab,
             child: Icon(
@@ -685,7 +708,9 @@ class _ExplorerViewState extends State<ExplorerView> {
 
   Widget _buildTabProgressIndicator(
     BuildContext context,
-    MessageStreamController streamCtrl,
+    AppLocalizations l10n,
+    double progress,
+    DateTime? startTime,
   ) {
     return SizedBox(
       width: 80,
@@ -694,7 +719,7 @@ class _ExplorerViewState extends State<ExplorerView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           LinearProgressIndicator(
-            value: streamCtrl.progress > 0 ? streamCtrl.progress : null,
+            value: progress > 0 ? progress : null,
             minHeight: 2,
             backgroundColor: Theme.of(
               context,
@@ -703,15 +728,12 @@ class _ExplorerViewState extends State<ExplorerView> {
           const SizedBox(height: 4),
           Builder(
             builder: (context) {
-              String etaText = "Scanning...";
-              if (streamCtrl.progress > 0 &&
-                  streamCtrl.startTime != null &&
-                  streamCtrl.progress < 1.0) {
+              String etaText = l10n.scanning;
+              if (progress > 0 && startTime != null && progress < 1.0) {
                 final elapsedSeconds = DateTime.now()
-                    .difference(streamCtrl.startTime!)
+                    .difference(startTime)
                     .inSeconds;
-                final totalEstimatedSeconds =
-                    elapsedSeconds / streamCtrl.progress;
+                final totalEstimatedSeconds = elapsedSeconds / progress;
                 final remainingSeconds =
                     (totalEstimatedSeconds - elapsedSeconds).round();
                 if (remainingSeconds > 0) {

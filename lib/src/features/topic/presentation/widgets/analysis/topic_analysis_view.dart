@@ -212,6 +212,7 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
     final total = widget.controller.totalMessagesToScan;
     final progress = widget.controller.progressRatio;
     final mps = widget.controller.messagesPerSecond;
+    final etaText = _computeEta(scanned, total, progress, mps);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -229,12 +230,15 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                '${l10n?.analyzingTopic ?? 'Analyzing topic...'} '
-                '(${numberFormat.format(scanned)} / ${numberFormat.format(total)} messages • ${(progress * 100).toStringAsFixed(1)}%)',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+              Flexible(
+                child: Text(
+                  '${l10n?.analyzingTopic ?? 'Analyzing topic...'} '
+                  '(${numberFormat.format(scanned)} / ${numberFormat.format(total)} messages • ${(progress * 100).toStringAsFixed(1)}%)',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               const Spacer(),
               if (mps > 0)
@@ -244,6 +248,15 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
+              if (etaText != null) ...[
+                if (mps > 0) const SizedBox(width: 12),
+                Text(
+                  etaText,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 6),
@@ -257,6 +270,28 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
         ],
       ),
     );
+  }
+
+  String? _computeEta(int scanned, int total, double progress, double mps) {
+    if (total <= 0 || progress <= 0 || progress >= 1.0) return null;
+
+    int remainingSeconds;
+    if (mps > 0) {
+      remainingSeconds = ((total - scanned) / mps).round();
+    } else if (widget.controller.startTime != null) {
+      final elapsedSeconds = DateTime.now()
+          .difference(widget.controller.startTime!)
+          .inSeconds;
+      if (elapsedSeconds <= 0) return null;
+      final totalEstimated = elapsedSeconds / progress;
+      remainingSeconds = (totalEstimated - elapsedSeconds).round();
+    } else {
+      return null;
+    }
+
+    if (remainingSeconds <= 0) return null;
+    if (remainingSeconds < 60) return '~$remainingSeconds s';
+    return '~${remainingSeconds ~/ 60} m';
   }
 
   Widget _buildErrorBanner(

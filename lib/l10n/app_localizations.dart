@@ -602,6 +602,24 @@ abstract class AppLocalizations {
   /// **'Close Tab'**
   String get closeTab;
 
+  /// No description provided for @scanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning...'**
+  String get scanning;
+
+  /// No description provided for @operationInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation in Progress'**
+  String get operationInProgress;
+
+  /// No description provided for @operationInProgressMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A search or analysis is still running on this tab. Close the tab and cancel the operation?'**
+  String get operationInProgressMessage;
+
   /// No description provided for @duplicateTab.
   ///
   /// In en, this message translates to:

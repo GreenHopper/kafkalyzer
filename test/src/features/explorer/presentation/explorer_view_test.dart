@@ -29,6 +29,8 @@ void main() {
   late MockActiveConnectionController mockActiveConnectionController;
   late MockTopicController mockTopicController;
   late MockSchemaController mockSchemaController;
+  late FakeMessageStreamController fakeStreamController;
+  late FakeTopicAnalysisController fakeAnalysisController;
 
   final testProfile = ClusterProfile(
     name: 'test-cluster',
@@ -75,14 +77,14 @@ void main() {
     when(mockSchemaController.isLoading(any)).thenReturn(false);
     when(mockTopicController.hasCachedTopics(any)).thenReturn(false);
     when(mockTopicController.isLoading(any)).thenReturn(false);
-    final fakeStreamController = FakeMessageStreamController();
+    fakeStreamController = FakeMessageStreamController();
     when(
       mockActiveConnectionController.getStreamController(any),
     ).thenReturn(fakeStreamController);
     when(
       mockActiveConnectionController.getStreamController(any, any),
     ).thenReturn(fakeStreamController);
-    final fakeAnalysisController = FakeTopicAnalysisController();
+    fakeAnalysisController = FakeTopicAnalysisController();
     when(
       mockActiveConnectionController.getAnalysisController(any),
     ).thenReturn(fakeAnalysisController);
@@ -403,12 +405,165 @@ void main() {
         ),
       ).called(1);
 
-      // Close tab
+      // Close tab (no active operation — closes immediately)
       final closeButton = find.byTooltip('Close Tab');
       expect(closeButton, findsWidgets);
       await tester.tap(closeButton.first);
       await tester.pump();
 
+      verify(mockActiveConnectionController.closeTopicTab('tab-1')).called(1);
+    });
+
+    testWidgets(
+      'shows progress indicator in tab bar when analysis is running',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        const topic = TopicMetadata(
+          name: 'test-topic',
+          partitionCount: 1,
+          replicationFactor: 1,
+        );
+
+        final tab1 = OpenTopicRecord(topic, testProfile, id: 'tab-1');
+
+        // Set analysis to running state
+        fakeAnalysisController.startAnalysisTest(0.5);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([testProfile]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(false);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(mockActiveConnectionController.error).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+        when(mockActiveConnectionController.topics).thenReturn([topic]);
+        when(mockActiveConnectionController.openTopics).thenReturn([tab1]);
+        when(mockActiveConnectionController.activeTopic).thenReturn(tab1);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+        when(mockTopicController.getTopics(testProfile)).thenReturn([topic]);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+
+        // The tab should show a LinearProgressIndicator for the analysis
+        expect(find.byType(LinearProgressIndicator), findsWidgets);
+      },
+    );
+
+    testWidgets('shows close confirmation dialog when analysis is running', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      const topic = TopicMetadata(
+        name: 'test-topic',
+        partitionCount: 1,
+        replicationFactor: 1,
+      );
+
+      final tab1 = OpenTopicRecord(topic, testProfile, id: 'tab-1');
+
+      // Set analysis to running state
+      fakeAnalysisController.startAnalysisTest(0.3);
+
+      when(mockClusterListController.isLoading).thenReturn(false);
+      when(mockClusterListController.clusters).thenReturn([testProfile]);
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
+      when(mockActiveConnectionController.isConnecting).thenReturn(false);
+      when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
+      when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(mockActiveConnectionController.error).thenReturn(null);
+      when(mockActiveConnectionController.topicFilter).thenReturn('');
+      when(mockActiveConnectionController.topics).thenReturn([topic]);
+      when(mockActiveConnectionController.openTopics).thenReturn([tab1]);
+      when(mockActiveConnectionController.activeTopic).thenReturn(tab1);
+      when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+      when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+      when(mockTopicController.getTopics(testProfile)).thenReturn([topic]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+
+      // Tap close button
+      final closeButton = find.byTooltip('Close Tab');
+      await tester.tap(closeButton.first);
+      await tester.pumpAndSettle();
+
+      // Dialog should appear
+      expect(find.text('Operation in Progress'), findsOneWidget);
+
+      // Tap Cancel — tab should NOT close
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      verifyNever(mockActiveConnectionController.closeTopicTab('tab-1'));
+
+      // Tap close button again, this time confirm
+      await tester.tap(closeButton.first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      verify(mockActiveConnectionController.closeTopicTab('tab-1')).called(1);
+    });
+
+    testWidgets('closes tab immediately when no operation is running', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      const topic = TopicMetadata(
+        name: 'test-topic',
+        partitionCount: 1,
+        replicationFactor: 1,
+      );
+
+      final tab1 = OpenTopicRecord(topic, testProfile, id: 'tab-1');
+
+      when(mockClusterListController.isLoading).thenReturn(false);
+      when(mockClusterListController.clusters).thenReturn([testProfile]);
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
+      when(mockActiveConnectionController.isConnecting).thenReturn(false);
+      when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
+      when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(mockActiveConnectionController.error).thenReturn(null);
+      when(mockActiveConnectionController.topicFilter).thenReturn('');
+      when(mockActiveConnectionController.topics).thenReturn([topic]);
+      when(mockActiveConnectionController.openTopics).thenReturn([tab1]);
+      when(mockActiveConnectionController.activeTopic).thenReturn(tab1);
+      when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+      when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+      when(mockTopicController.getTopics(testProfile)).thenReturn([topic]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+
+      // Tap close button — no dialog should appear
+      final closeButton = find.byTooltip('Close Tab');
+      await tester.tap(closeButton.first);
+      await tester.pump();
+
+      // No dialog
+      expect(find.text('Operation in Progress'), findsNothing);
+
+      // Tab should close immediately
       verify(mockActiveConnectionController.closeTopicTab('tab-1')).called(1);
     });
   });
@@ -438,11 +593,15 @@ class MockLogger extends Logger {
 
 class FakeMessageStreamController extends ChangeNotifier
     implements MessageStreamController {
+  bool streaming = false;
+  double _progress = 0.0;
+  DateTime? _startTime;
+
   @override
   List<KafkaMessage> get messages => [];
 
   @override
-  bool get isStreaming => false;
+  bool get isStreaming => streaming;
 
   @override
   int get totalConsumed => 0;
@@ -451,13 +610,20 @@ class FakeMessageStreamController extends ChangeNotifier
   int get totalToScan => 0;
 
   @override
-  double get progress => 0.0;
+  double get progress => _progress;
 
   @override
-  DateTime? get startTime => null;
+  DateTime? get startTime => _startTime;
 
   @override
   void clearMessages() {}
+
+  void startStreamingTest(double progress) {
+    streaming = true;
+    _progress = progress;
+    _startTime = DateTime.now().subtract(const Duration(seconds: 30));
+    notifyListeners();
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -465,8 +631,12 @@ class FakeMessageStreamController extends ChangeNotifier
 
 class FakeTopicAnalysisController extends ChangeNotifier
     implements TopicAnalysisController {
+  bool analyzing = false;
+  double _progressRatio = 0.0;
+  DateTime? _startTime;
+
   @override
-  bool get isAnalyzing => false;
+  bool get isAnalyzing => analyzing;
 
   @override
   TopicAnalysisProgress? get progress => null;
@@ -478,7 +648,7 @@ class FakeTopicAnalysisController extends ChangeNotifier
   String? get error => null;
 
   @override
-  DateTime? get startTime => null;
+  DateTime? get startTime => _startTime;
 
   @override
   int? get maxMessages => null;
@@ -487,7 +657,7 @@ class FakeTopicAnalysisController extends ChangeNotifier
   bool get sampleFromLatest => true;
 
   @override
-  double get progressRatio => 0.0;
+  double get progressRatio => _progressRatio;
 
   @override
   int get scannedMessages => 0;
@@ -503,6 +673,13 @@ class FakeTopicAnalysisController extends ChangeNotifier
 
   @override
   Future<void> stopAnalysis() async {}
+
+  void startAnalysisTest(double progressRatio) {
+    analyzing = true;
+    _progressRatio = progressRatio;
+    _startTime = DateTime.now().subtract(const Duration(seconds: 30));
+    notifyListeners();
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

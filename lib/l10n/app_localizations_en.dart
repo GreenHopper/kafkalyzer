@@ -334,6 +334,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get closeTab => 'Close Tab';
 
   @override
+  String get scanning => 'Scanning...';
+
+  @override
+  String get operationInProgress => 'Operation in Progress';
+
+  @override
+  String get operationInProgressMessage =>
+      'A search or analysis is still running on this tab. Close the tab and cancel the operation?';
+
+  @override
   String get duplicateTab => 'Duplicate Tab';
 
   @override
