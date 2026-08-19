@@ -114,7 +114,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: velopack-linux
+          name: kafkalyzer-linux
           path: velopack_release/*
 
   build-macos:
@@ -212,7 +212,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: velopack-macos
+          name: kafkalyzer-macos
           path: velopack_release/*
 
   build-windows:
@@ -330,7 +330,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: velopack-windows
+          name: kafkalyzer-windows
           path: velopack_release/*
 
   create-release:
@@ -344,19 +344,19 @@ jobs:
       - name: Download Linux build
         uses: actions/download-artifact@v4
         with:
-          name: velopack-linux
+          name: kafkalyzer-linux
           path: release-artifacts/linux
 
       - name: Download macOS build
         uses: actions/download-artifact@v4
         with:
-          name: velopack-macos
+          name: kafkalyzer-macos
           path: release-artifacts/macos
 
       - name: Download Windows build
         uses: actions/download-artifact@v4
         with:
-          name: velopack-windows
+          name: kafkalyzer-windows
           path: release-artifacts/windows
 
       - name: Create Release
