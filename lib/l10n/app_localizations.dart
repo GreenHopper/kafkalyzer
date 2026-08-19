@@ -302,6 +302,54 @@ abstract class AppLocalizations {
   /// **'This topic is empty (0 messages).'**
   String get emptyTopicMessage;
 
+  /// No description provided for @fieldValueExplorer.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Value Explorer (Top 10 Values)'**
+  String get fieldValueExplorer;
+
+  /// No description provided for @searchFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Search fields...'**
+  String get searchFields;
+
+  /// No description provided for @selectFieldToInspect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a field to inspect its Top 10 values'**
+  String get selectFieldToInspect;
+
+  /// No description provided for @top10ValuesForField.
+  ///
+  /// In en, this message translates to:
+  /// **'Top 10 Values for {field}'**
+  String top10ValuesForField(String field);
+
+  /// No description provided for @valueCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Value copied to clipboard'**
+  String get valueCopied;
+
+  /// No description provided for @distinctValues.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} distinct values tracked'**
+  String distinctValues(int count);
+
+  /// No description provided for @fieldOccurrences.
+  ///
+  /// In en, this message translates to:
+  /// **'Appears in {count} msgs ({pct}%)'**
+  String fieldOccurrences(String count, String pct);
+
+  /// No description provided for @noMatchingFields.
+  ///
+  /// In en, this message translates to:
+  /// **'No fields matching \'{query}\''**
+  String noMatchingFields(String query);
+
   /// No description provided for @topValuesForField.
   ///
   /// In en, this message translates to:

@@ -116,6 +116,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyTopicMessage => 'This topic is empty (0 messages).';
 
   @override
+  String get fieldValueExplorer => 'Field Value Explorer (Top 10 Values)';
+
+  @override
+  String get searchFields => 'Search fields...';
+
+  @override
+  String get selectFieldToInspect =>
+      'Select a field to inspect its Top 10 values';
+
+  @override
+  String top10ValuesForField(String field) {
+    return 'Top 10 Values for $field';
+  }
+
+  @override
+  String get valueCopied => 'Value copied to clipboard';
+
+  @override
+  String distinctValues(int count) {
+    return '$count distinct values tracked';
+  }
+
+  @override
+  String fieldOccurrences(String count, String pct) {
+    return 'Appears in $count msgs ($pct%)';
+  }
+
+  @override
+  String noMatchingFields(String query) {
+    return 'No fields matching \'$query\'';
+  }
+
+  @override
   String topValuesForField(String field) {
     return 'Top values for $field';
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/field_value_explorer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
 class KeyAndFieldDistributionView extends StatelessWidget {
@@ -21,35 +22,30 @@ class KeyAndFieldDistributionView extends StatelessWidget {
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 750;
 
-        if (isWide) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 1, child: _TopKeysCard(topKeys: topKeys)),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 1,
-                child: Column(
-                  children: [
-                    _ContentTypesCard(contentTypes: contentTypes),
-                    const SizedBox(height: 12),
-                    _FieldFrequenciesCard(fieldFrequencies: fieldFrequencies),
-                  ],
-                ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (isWide) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 1, child: _TopKeysCard(topKeys: topKeys)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 1,
+                    child: _ContentTypesCard(contentTypes: contentTypes),
+                  ),
+                ],
               ),
-            ],
-          );
-        } else {
-          return Column(
-            children: [
+            ] else ...[
               _TopKeysCard(topKeys: topKeys),
               const SizedBox(height: 12),
               _ContentTypesCard(contentTypes: contentTypes),
-              const SizedBox(height: 12),
-              _FieldFrequenciesCard(fieldFrequencies: fieldFrequencies),
             ],
-          );
-        }
+            const SizedBox(height: 16),
+            FieldValueExplorer(fieldFrequencies: fieldFrequencies),
+          ],
+        );
       },
     );
   }
@@ -213,30 +209,43 @@ class _ContentTypesCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: contentTypes.map((type) {
-                return Chip(
-                  avatar: Icon(
-                    _iconForType(type.typeName),
-                    size: 16,
-                    color: colorScheme.primary,
-                  ),
-                  label: Text(
-                    '${type.typeName}: ${numberFormat.format(type.count)} '
-                    '(${type.percentage.toStringAsFixed(1)}%)',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+            if (contentTypes.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: Text(
+                    'No content types recorded',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  backgroundColor: colorScheme.surfaceContainerHigh,
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-                  ),
-                );
-              }).toList(),
-            ),
+                ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: contentTypes.map((type) {
+                  return Chip(
+                    avatar: Icon(
+                      _iconForType(type.typeName),
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
+                    label: Text(
+                      '${type.typeName}: ${numberFormat.format(type.count)} '
+                      '(${type.percentage.toStringAsFixed(1)}%)',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    backgroundColor: colorScheme.surfaceContainerHigh,
+                    side: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  );
+                }).toList(),
+              ),
           ],
         ),
       ),
@@ -252,133 +261,5 @@ class _ContentTypesCard extends StatelessWidget {
     }
     if (lower.contains('text')) return Icons.text_snippet_outlined;
     return Icons.memory_rounded;
-  }
-}
-
-class _FieldFrequenciesCard extends StatelessWidget {
-  final List<FieldOccurrence> fieldFrequencies;
-
-  const _FieldFrequenciesCard({required this.fieldFrequencies});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final l10n = AppLocalizations.of(context);
-    final numberFormat = NumberFormat.decimalPattern();
-
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.account_tree_outlined,
-                  size: 20,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  l10n?.fieldFrequencies ?? 'Structured Field Frequencies',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (fieldFrequencies.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
-                child: Center(
-                  child: Text(
-                    'No structured JSON fields detected',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: fieldFrequencies.length.clamp(0, 15),
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final field = fieldFrequencies[index];
-                  final hasTopVals = field.topValues.isNotEmpty;
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              field.fieldName,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '${numberFormat.format(field.count)} msgs '
-                              '(${field.percentage.toStringAsFixed(1)}%)',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (hasTopVals) ...[
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: field.topValues.map((v) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.secondaryContainer
-                                      .withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  '${v.value}: ${numberFormat.format(v.count)} (${v.percentage.toStringAsFixed(0)}%)',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    fontSize: 10,
-                                    color: colorScheme.onSecondaryContainer,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
-      ),
-    );
   }
 }

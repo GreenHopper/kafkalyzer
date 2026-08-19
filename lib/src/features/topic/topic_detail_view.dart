@@ -188,23 +188,41 @@ class _TopicDetailViewState extends State<TopicDetailView>
         ),
         const SizedBox(width: 16),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              _buildTopicTitleRow(context),
-              const SizedBox(height: 8),
-              _buildTopicTags(context),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTopicTitleRow(context),
+                    const SizedBox(height: 8),
+                    _buildTopicTags(context),
+                  ],
+                ),
+              ),
+              if (hasSchema(
+                schemaController,
+                widget.profile,
+                widget.topic.name,
+              )) ...[
+                const SizedBox(width: 12),
+                _buildSchemaButton(context),
+              ],
             ],
           ),
         ),
-        if (hasSchema(schemaController, widget.profile, widget.topic.name))
-          _buildSchemaButton(context),
         const SizedBox(width: 16),
         _buildTopicModeSwitcher(context, colorScheme, l10n),
-        if (_viewMode == TopicViewMode.messages) ...[
-          const SizedBox(width: 16),
-          _buildProgressTile(context, colorScheme),
-        ],
+        const SizedBox(width: 16),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: _viewMode == TopicViewMode.messages
+                ? _buildProgressTile(context, colorScheme)
+                : const SizedBox.shrink(),
+          ),
+        ),
       ],
     );
   }
@@ -310,26 +328,24 @@ class _TopicDetailViewState extends State<TopicDetailView>
   }
 
   Widget _buildProgressTile(BuildContext context, ColorScheme colorScheme) {
-    return Flexible(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: TopicProgressTile(
-          topic: "Scan Progress",
-          status: streamController.isStreaming
-              ? StepStatus.running
-              : (streamController.totalConsumed > 0
-                    ? StepStatus.completed
-                    : StepStatus.pending),
-          progress: SearchProgress(
-            streamController.totalConsumed,
-            streamController.totalToScan,
-            startTime: streamController.startTime,
-          ),
-          matchCount: streamController.messages.length,
-          contentPadding: EdgeInsets.zero,
-          dense: true,
-          trailing: _buildProgressActions(context, colorScheme),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: TopicProgressTile(
+        topic: "Scan Progress",
+        status: streamController.isStreaming
+            ? StepStatus.running
+            : (streamController.totalConsumed > 0
+                  ? StepStatus.completed
+                  : StepStatus.pending),
+        progress: SearchProgress(
+          streamController.totalConsumed,
+          streamController.totalToScan,
+          startTime: streamController.startTime,
         ),
+        matchCount: streamController.messages.length,
+        contentPadding: EdgeInsets.zero,
+        dense: true,
+        trailing: _buildProgressActions(context, colorScheme),
       ),
     );
   }

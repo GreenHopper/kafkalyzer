@@ -174,7 +174,7 @@ pub fn consume_with_filter(
     Ok(())
 }
 
-fn create_sr_settings(profile: &ClusterProfile) -> Option<SrSettings> {
+pub(crate) fn create_sr_settings(profile: &ClusterProfile) -> Option<SrSettings> {
     if let Some(url) = &profile.schema_registry_url {
         let mut sr_url = url.trim().to_string();
         if !sr_url.is_empty() && !sr_url.starts_with("http://") && !sr_url.starts_with("https://") {
@@ -452,12 +452,13 @@ fn run_poll_loop<'a>(
             },
             None => {
                 if !run_forever
-                    && check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
-                        all_done_log(&topic);
-                        send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
-                        send_eof(&sink, &topic);
-                        break;
-                    }
+                    && check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink)
+                {
+                    all_done_log(&topic);
+                    send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
+                    send_eof(&sink, &topic);
+                    break;
+                }
 
                 // Heartbeat
                 let heartbeat_msg = KafkaMessage {
@@ -669,7 +670,7 @@ fn check_done(
     all_done
 }
 
-fn setup_schema_registry<'a>(
+pub(crate) fn setup_schema_registry<'a>(
     tokio_runtime: &Runtime,
     sr_settings: &'a SrSettings,
     topic: &str,
@@ -955,7 +956,7 @@ fn calculate_end_offsets(
     Ok(end_offsets)
 }
 
-fn decode_message_component<'a>(
+pub(crate) fn decode_message_component<'a>(
     tokio_runtime: &Runtime,
     decoders: &Option<SrDecoders<'a>>,
     data: Option<&[u8]>,
@@ -1305,8 +1306,10 @@ mod tests {
         let decimal =
             apache_avro::types::Value::Decimal(apache_avro::Decimal::from(vec![0x00, 0x7B]));
         let map = std::collections::HashMap::new();
-        let json = kafkalyzer_core::avro_utils::convert_avro_value(&decimal, None, &map)
-            .expect("Should convert");
+        let json = match kafkalyzer_core::avro_utils::convert_avro_value(&decimal, None, &map) {
+            Ok(j) => j,
+            Err(e) => panic!("Should convert: {}", e),
+        };
 
         match json {
             serde_json::Value::Number(n) => assert_eq!(n.as_i64(), Some(123)),
@@ -1323,8 +1326,10 @@ mod tests {
 
         // We test via convert_avro_value directly
         let map = std::collections::HashMap::new();
-        let json = kafkalyzer_core::avro_utils::convert_avro_value(&record, None, &map)
-            .expect("Should convert");
+        let json = match kafkalyzer_core::avro_utils::convert_avro_value(&record, None, &map) {
+            Ok(j) => j,
+            Err(e) => panic!("Should convert: {}", e),
+        };
 
         assert!(json.is_object());
         let obj = json.as_object().unwrap();

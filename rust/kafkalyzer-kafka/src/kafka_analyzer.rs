@@ -13,10 +13,12 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio::runtime::Runtime;
 
-use crate::kafka_consumer::StreamSink;
+use crate::kafka_consumer::{
+    create_sr_settings, decode_message_component, setup_schema_registry, StreamSink,
+};
 use crate::kafka_utils::create_config;
 
 pub struct AnalyzerAccumulator {
@@ -72,6 +74,9 @@ impl AnalyzerAccumulator {
         timestamp_ms: i64,
         key_bytes: Option<&[u8]>,
         payload_bytes: Option<&[u8]>,
+        decoded_key: Option<&str>,
+        decoded_payload: Option<&str>,
+        is_sr_encoded: bool,
     ) {
         self.total_messages += 1;
 
@@ -123,22 +128,36 @@ impl AnalyzerAccumulator {
         }
 
         // Key Analysis
-        match key_bytes {
+        let key_str = if let Some(dk) = decoded_key {
+            if dk.is_empty() {
+                None
+            } else {
+                Some(dk.to_string())
+            }
+        } else {
+            match key_bytes {
+                None => None,
+                Some(bytes) => {
+                    if bytes.is_empty() {
+                        None
+                    } else {
+                        Some(match std::str::from_utf8(bytes) {
+                            Ok(s) => s.to_string(),
+                            Err(_) => format!("[Binary 0x{}]", hex_preview(bytes)),
+                        })
+                    }
+                }
+            }
+        };
+
+        match key_str {
             None => {
                 self.null_keys_count += 1;
             }
-            Some(bytes) => {
-                if bytes.is_empty() {
-                    self.null_keys_count += 1;
-                } else {
-                    let key_str = match std::str::from_utf8(bytes) {
-                        Ok(s) => s.to_string(),
-                        Err(_) => format!("[Binary 0x{}]", hex_preview(bytes)),
-                    };
-                    // Bounded tracking up to 10,000 unique keys
-                    if self.key_counts.len() < 10000 || self.key_counts.contains_key(&key_str) {
-                        *self.key_counts.entry(key_str).or_insert(0) += 1;
-                    }
+            Some(k) => {
+                // Bounded tracking up to 10,000 unique keys
+                if self.key_counts.len() < 10000 || self.key_counts.contains_key(&k) {
+                    *self.key_counts.entry(k).or_insert(0) += 1;
                 }
             }
         }
@@ -154,25 +173,33 @@ impl AnalyzerAccumulator {
             return;
         }
 
-        let Some(payload) = payload_bytes else {
-            return;
-        };
-
-        // Check for Confluent / Schema Registry magic byte 0
-        if payload.len() > 5 && payload[0] == 0 {
-            *self
-                .content_type_counts
-                .entry("Schema Registry (Avro/Proto)".to_string())
-                .or_insert(0) += 1;
-            return;
+        // Try parsing JSON from decoded payload or raw payload
+        let mut parsed_json = None;
+        if let Some(dp) = decoded_payload {
+            if let Ok(json_val) = serde_json::from_str::<Value>(dp) {
+                parsed_json = Some(json_val);
+            }
         }
 
-        // Try JSON parsing
-        if let Ok(json_val) = serde_json::from_slice::<Value>(payload) {
+        if parsed_json.is_none() {
+            if let Some(payload) = payload_bytes {
+                if let Ok(json_val) = serde_json::from_slice::<Value>(payload) {
+                    parsed_json = Some(json_val);
+                }
+            }
+        }
+
+        if let Some(json_val) = parsed_json {
+            let type_label = if is_sr_encoded {
+                "Avro / Schema Registry"
+            } else {
+                "JSON"
+            };
             *self
                 .content_type_counts
-                .entry("JSON".to_string())
+                .entry(type_label.to_string())
                 .or_insert(0) += 1;
+
             if let Value::Object(map) = json_val {
                 for (field_name, field_val) in map {
                     // Record field occurrence
@@ -181,40 +208,46 @@ impl AnalyzerAccumulator {
                         *self.field_counts.entry(field_name.clone()).or_insert(0) += 1;
                     }
 
-                    // For categorical / small identifying fields, track top values
-                    if is_categorical_field(&field_name) {
-                        let val_str = match field_val {
-                            Value::String(s) => {
-                                if s.len() <= 60 {
-                                    Some(s)
-                                } else {
-                                    Some(format!("{}...", &s[..57]))
-                                }
+                    // For all scalar fields (string, number, boolean, null), track top values
+                    let val_str = match field_val {
+                        Value::String(s) => {
+                            if s.len() <= 80 {
+                                Some(s)
+                            } else {
+                                Some(format!("{}...", &s[..77]))
                             }
-                            Value::Number(n) => Some(n.to_string()),
-                            Value::Bool(b) => Some(b.to_string()),
-                            _ => None,
-                        };
+                        }
+                        Value::Number(n) => Some(n.to_string()),
+                        Value::Bool(b) => Some(b.to_string()),
+                        Value::Null => Some("null".to_string()),
+                        _ => None,
+                    };
 
-                        if let Some(v_str) = val_str {
-                            let val_map = self.field_value_counts.entry(field_name).or_default();
-                            if val_map.len() < 100 || val_map.contains_key(&v_str) {
-                                *val_map.entry(v_str).or_insert(0) += 1;
-                            }
+                    if let Some(v_str) = val_str {
+                        let val_map = self.field_value_counts.entry(field_name).or_default();
+                        if val_map.len() < 200 || val_map.contains_key(&v_str) {
+                            *val_map.entry(v_str).or_insert(0) += 1;
                         }
                     }
                 }
             }
-        } else if std::str::from_utf8(payload).is_ok() {
+        } else if is_sr_encoded {
             *self
                 .content_type_counts
-                .entry("Text".to_string())
+                .entry("Schema Registry (Avro/Proto)".to_string())
                 .or_insert(0) += 1;
-        } else {
-            *self
-                .content_type_counts
-                .entry("Binary".to_string())
-                .or_insert(0) += 1;
+        } else if let Some(payload) = payload_bytes {
+            if std::str::from_utf8(payload).is_ok() {
+                *self
+                    .content_type_counts
+                    .entry("Text".to_string())
+                    .or_insert(0) += 1;
+            } else {
+                *self
+                    .content_type_counts
+                    .entry("Binary".to_string())
+                    .or_insert(0) += 1;
+            }
         }
     }
 
@@ -320,14 +353,14 @@ impl AnalyzerAccumulator {
             })
             .collect();
 
-        // Field Frequencies & Top Values (Top 25 fields)
+        // Field Frequencies & Top 10 Values (Top 50 fields)
         let mut fields_vec: Vec<(String, i64)> = self
             .field_counts
             .iter()
             .map(|(k, v)| (k.clone(), *v))
             .collect();
         fields_vec.sort_by(|a, b| b.1.cmp(&a.1));
-        fields_vec.truncate(25);
+        fields_vec.truncate(50);
 
         let field_frequencies = fields_vec
             .into_iter()
@@ -343,7 +376,7 @@ impl AnalyzerAccumulator {
                     let mut val_vec: Vec<(String, i64)> =
                         val_map.iter().map(|(k, v)| (k.clone(), *v)).collect();
                     val_vec.sort_by(|a, b| b.1.cmp(&a.1));
-                    val_vec.truncate(5);
+                    val_vec.truncate(10);
 
                     top_vals = val_vec
                         .into_iter()
@@ -391,22 +424,6 @@ impl AnalyzerAccumulator {
     }
 }
 
-fn is_categorical_field(name: &str) -> bool {
-    let lower = name.to_lowercase();
-    lower.contains("type")
-        || lower.contains("status")
-        || lower.contains("event")
-        || lower.contains("action")
-        || lower.contains("category")
-        || lower.contains("state")
-        || lower.contains("kind")
-        || lower.contains("level")
-        || lower.contains("code")
-        || lower.contains("gender")
-        || lower.contains("role")
-        || lower.contains("version")
-}
-
 fn hex_preview(bytes: &[u8]) -> String {
     let len = bytes.len().min(8);
     bytes[..len]
@@ -424,29 +441,46 @@ pub fn analyze_topic_content(
     sink: StreamSink<TopicAnalysisProgress>,
     cancel_flag: Arc<AtomicBool>,
 ) -> Result<()> {
-    let config = create_config(&profile);
+    // 1. Setup Runtime & Schema Registry
+    let tokio_runtime = Runtime::new()?;
+    let sr_settings = create_sr_settings(&profile);
+    let (decoders, key_is_avro, value_is_avro) = if let Some(ref settings) = sr_settings {
+        setup_schema_registry(&tokio_runtime, settings, &topic).unwrap_or((None, false, false))
+    } else {
+        (None, false, false)
+    };
+
+    // 2. Setup Consumer with unique group.id and earliest reset
+    let mut config = create_config(&profile);
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let group_id = format!("kafkalyzer_analyzer_{}", timestamp);
+    config.set("group.id", &group_id);
+    config.set("enable.auto.commit", "false");
+    config.set("enable.auto.offset.store", "false");
+    config.set("auto.offset.reset", "earliest");
+
     let consumer: BaseConsumer = config.create()?;
 
-    // 1. Fetch metadata and check cleanup policy
+    // 3. Fetch topic metadata & cleanup policy
     let timeout = Duration::from_secs(10);
     let metadata = consumer.fetch_metadata(Some(&topic), timeout)?;
 
     let mut is_compacted = false;
-    let rt = Runtime::new().ok();
-    if let Some(ref rt_handle) = rt {
-        if let Ok(admin_client) = config.create::<AdminClient<DefaultClientContext>>() {
-            let resource = ResourceSpecifier::Topic(&topic);
-            let admin_options = AdminOptions::new().operation_timeout(Some(Duration::from_secs(5)));
-            if let Ok(configs) =
-                rt_handle.block_on(admin_client.describe_configs(&[resource], &admin_options))
-            {
-                for config_res in configs.into_iter().flatten() {
-                    for entry in config_res.entries {
-                        if entry.name == "cleanup.policy" {
-                            if let Some(val) = entry.value {
-                                if val.contains("compact") {
-                                    is_compacted = true;
-                                }
+    if let Ok(admin_client) = config.create::<AdminClient<DefaultClientContext>>() {
+        let resource = ResourceSpecifier::Topic(&topic);
+        let admin_options = AdminOptions::new().operation_timeout(Some(Duration::from_secs(5)));
+        if let Ok(configs) =
+            tokio_runtime.block_on(admin_client.describe_configs(&[resource], &admin_options))
+        {
+            for config_res in configs.into_iter().flatten() {
+                for entry in config_res.entries {
+                    if entry.name == "cleanup.policy" {
+                        if let Some(val) = entry.value {
+                            if val.contains("compact") {
+                                is_compacted = true;
                             }
                         }
                     }
@@ -457,7 +491,7 @@ pub fn analyze_topic_content(
 
     let mut accumulator = AnalyzerAccumulator::new(topic.clone(), is_compacted);
 
-    // 2. Setup topic partition list and calculate high watermarks
+    // 4. Setup topic partition list and resolve watermark bounds
     let mut tpl = TopicPartitionList::new();
     let topic_meta = metadata
         .topics()
@@ -467,8 +501,10 @@ pub fn analyze_topic_content(
 
     let mut end_offsets: HashMap<i32, i64> = HashMap::new();
     let mut start_offsets: HashMap<i32, i64> = HashMap::new();
+    let mut completed_partitions = std::collections::HashSet::new();
     let mut total_messages_to_scan: i64 = 0;
 
+    let part_count = topic_meta.partitions().len() as i64;
     for partition in topic_meta.partitions() {
         let p_id = partition.id();
         let (low, high) = consumer
@@ -480,7 +516,6 @@ pub fn analyze_topic_content(
         let end_off = high;
 
         if let Some(max_msgs) = max_messages {
-            let part_count = topic_meta.partitions().len() as i64;
             let target_per_partition = (max_msgs / part_count.max(1)).max(1);
             if sample_from_latest && available > target_per_partition {
                 start_off = (high - target_per_partition).max(low);
@@ -493,10 +528,14 @@ pub fn analyze_topic_content(
         start_offsets.insert(p_id, start_off);
         end_offsets.insert(p_id, end_off);
 
+        if start_off >= end_off {
+            completed_partitions.insert(p_id);
+        }
+
         tpl.add_partition_offset(&topic, p_id, Offset::Offset(start_off))?;
     }
 
-    if total_messages_to_scan == 0 {
+    if total_messages_to_scan == 0 || completed_partitions.len() >= topic_meta.partitions().len() {
         let report = accumulator.to_report(0);
         let progress = TopicAnalysisProgress {
             scanned_messages: 0,
@@ -515,22 +554,31 @@ pub fn analyze_topic_content(
     // Assign partitions
     consumer.assign(&tpl)?;
 
-    // Seek to resolved start offsets
+    // Seek to resolved start offsets with retry
     for (p_id, start_off) in &start_offsets {
-        consumer.seek(&topic, *p_id, Offset::Offset(*start_off), timeout)?;
+        if *start_off < end_offsets.get(p_id).copied().unwrap_or(0) {
+            for attempt in 1..=3 {
+                match consumer.seek(&topic, *p_id, Offset::Offset(*start_off), timeout) {
+                    Ok(_) => break,
+                    Err(_) if attempt < 3 => {
+                        std::thread::sleep(Duration::from_millis(100));
+                    }
+                    Err(_) => {}
+                }
+            }
+        }
     }
 
     let scan_start = Instant::now();
     let mut last_emit = Instant::now();
-    let mut completed_partitions = std::collections::HashSet::new();
     let total_partitions = topic_meta.partitions().len();
 
-    // 3. Scan polling loop
+    // 5. Scan polling loop
     let mut current_partition_id = -1;
     let mut consecutive_none_polls = 0;
 
     while !cancel_flag.load(Ordering::Relaxed) {
-        match consumer.poll(Duration::from_millis(50)) {
+        match consumer.poll(Duration::from_millis(100)) {
             Some(Ok(msg)) => {
                 consecutive_none_polls = 0;
                 let p = msg.partition();
@@ -543,7 +591,37 @@ pub fn analyze_topic_content(
                     let key = msg.key();
                     let payload = msg.payload();
 
-                    accumulator.record_message(p, off, ts_ms, key, payload);
+                    let is_sr_encoded = payload.is_some_and(|b| b.len() >= 5 && b[0] == 0);
+
+                    // Decode message if Schema Registry is available
+                    let decoded_payload = if value_is_avro || is_sr_encoded {
+                        decode_message_component(
+                            &tokio_runtime,
+                            &decoders,
+                            payload,
+                            value_is_avro || is_sr_encoded,
+                            "",
+                        )
+                    } else {
+                        None
+                    };
+
+                    let decoded_key = if key_is_avro {
+                        decode_message_component(&tokio_runtime, &decoders, key, key_is_avro, "")
+                    } else {
+                        None
+                    };
+
+                    accumulator.record_message(
+                        p,
+                        off,
+                        ts_ms,
+                        key,
+                        payload,
+                        decoded_key.as_deref(),
+                        decoded_payload.as_deref(),
+                        is_sr_encoded,
+                    );
 
                     if off + 1 >= end_off {
                         completed_partitions.insert(p);
@@ -567,15 +645,15 @@ pub fn analyze_topic_content(
             }
             None => {
                 consecutive_none_polls += 1;
-                // If we get 10 consecutive empty polls and have reached close to end offsets
-                if consecutive_none_polls >= 10 {
+                // Allow sufficient time for broker pre-fetching; only exit after 60 consecutive empty polls (6 seconds)
+                if consecutive_none_polls >= 60 {
                     break;
                 }
             }
         }
 
-        // Periodic progress notification (every ~350ms)
-        if last_emit.elapsed() >= Duration::from_millis(350) {
+        // Periodic progress notification (every ~250ms)
+        if last_emit.elapsed() >= Duration::from_millis(250) {
             let elapsed_sec = scan_start.elapsed().as_secs_f64();
             let scanned = accumulator.total_messages;
             let mps = if elapsed_sec > 0.0 {
@@ -656,10 +734,10 @@ mod tests {
         // 2026-03-15 14:30:00 UTC -> 1773585000000 ms
         let ts = 1773585000000_i64;
 
-        acc.record_message(0, 100, ts, Some(key), Some(json_payload));
+        acc.record_message(0, 100, ts, Some(key), Some(json_payload), None, None, false);
 
         // 2. Tombstone message (null payload)
-        acc.record_message(1, 200, ts, Some(b"user-456"), None);
+        acc.record_message(1, 200, ts, Some(b"user-456"), None, None, None, false);
 
         let report = acc.to_report(50);
         assert_eq!(report.total_messages, 2);
@@ -667,20 +745,24 @@ mod tests {
         assert_eq!(report.is_compacted, true);
         assert_eq!(report.partition_stats.len(), 2);
 
-        // Check hourly bucketing for hour 14
-        let hour_14 = report.hourly_distribution.iter().find(|h| h.hour == 14);
-        assert!(hour_14.is_some());
-        assert_eq!(hour_14.unwrap().count, 2);
+        if let Some(h) = report.hourly_distribution.iter().find(|h| h.hour == 14) {
+            assert_eq!(h.count, 2);
+        } else {
+            panic!("Expected hour 14 to be present");
+        }
 
         // Check JSON field frequency
-        let event_type_field = report
+        if let Some(event_type_field) = report
             .field_frequencies
             .iter()
-            .find(|f| f.field_name == "eventType");
-        assert!(event_type_field.is_some());
-        let top_vals = &event_type_field.unwrap().top_values;
-        assert_eq!(top_vals.len(), 1);
-        assert_eq!(top_vals[0].value, "USER_SIGNUP");
+            .find(|f| f.field_name == "eventType")
+        {
+            let top_vals = &event_type_field.top_values;
+            assert_eq!(top_vals.len(), 1);
+            assert_eq!(top_vals[0].value, "USER_SIGNUP");
+        } else {
+            panic!("Expected eventType field to be present");
+        }
     }
 
     #[test]
@@ -688,30 +770,93 @@ mod tests {
         let mut acc = AnalyzerAccumulator::new("multi-part".to_string(), false);
 
         for _ in 0..70 {
-            acc.record_message(0, 0, 1000, Some(b"k1"), Some(b"val"));
+            acc.record_message(0, 0, 1000, Some(b"k1"), Some(b"val"), None, None, false);
         }
         for _ in 0..30 {
-            acc.record_message(1, 0, 1000, Some(b"k2"), Some(b"val"));
+            acc.record_message(1, 0, 1000, Some(b"k2"), Some(b"val"), None, None, false);
         }
 
         let report = acc.to_report(20);
         assert_eq!(report.total_messages, 100);
         assert_eq!(report.partition_stats.len(), 2);
 
-        let p0 = report
-            .partition_stats
-            .iter()
-            .find(|p| p.partition == 0)
-            .unwrap();
-        let p1 = report
-            .partition_stats
-            .iter()
-            .find(|p| p.partition == 1)
-            .unwrap();
+        let p0 = report.partition_stats.iter().find(|p| p.partition == 0);
+        let p1 = report.partition_stats.iter().find(|p| p.partition == 1);
 
-        assert_eq!(p0.message_count, 70);
-        assert_eq!(p0.percentage, 70.0);
-        assert_eq!(p1.message_count, 30);
-        assert_eq!(p1.percentage, 30.0);
+        assert!(p0.is_some());
+        assert!(p1.is_some());
+
+        if let (Some(part0), Some(part1)) = (p0, p1) {
+            assert_eq!(part0.message_count, 70);
+            assert_eq!(part0.percentage, 70.0);
+            assert_eq!(part1.message_count, 30);
+            assert_eq!(part1.percentage, 30.0);
+        }
+    }
+
+    #[test]
+    fn test_accumulator_top_10_field_values() {
+        let mut acc = AnalyzerAccumulator::new("orders".to_string(), false);
+
+        // Record 15 different values for "countryCode", some appearing more frequently
+        for i in 1..=15 {
+            let count = if i <= 10 { 20 - i } else { 1 };
+            let country = format!("CC_{}", i);
+            for _ in 0..count {
+                let payload = format!(
+                    r#"{{"countryCode": "{}", "amount": {}, "isVerified": true}}"#,
+                    country,
+                    i * 10
+                );
+                acc.record_message(
+                    0,
+                    0,
+                    1000,
+                    None,
+                    Some(payload.as_bytes()),
+                    None,
+                    None,
+                    false,
+                );
+            }
+        }
+
+        let report = acc.to_report(100);
+        if let Some(country_field) = report
+            .field_frequencies
+            .iter()
+            .find(|f| f.field_name == "countryCode")
+        {
+            // Top values should be capped at 10
+            assert_eq!(country_field.top_values.len(), 10);
+            // First value should be CC_1 with highest count (19)
+            assert_eq!(country_field.top_values[0].value, "CC_1");
+            assert_eq!(country_field.top_values[0].count, 19);
+        } else {
+            panic!("countryCode should exist");
+        }
+
+        // Check number field
+        if let Some(amount_field) = report
+            .field_frequencies
+            .iter()
+            .find(|f| f.field_name == "amount")
+        {
+            assert_eq!(amount_field.top_values.len(), 10);
+        } else {
+            panic!("amount should exist");
+        }
+
+        // Check boolean field
+        if let Some(verified_field) = report
+            .field_frequencies
+            .iter()
+            .find(|f| f.field_name == "isVerified")
+        {
+            assert_eq!(verified_field.top_values.len(), 1);
+            assert_eq!(verified_field.top_values[0].value, "true");
+        } else {
+            panic!("isVerified should exist");
+        }
     }
 }

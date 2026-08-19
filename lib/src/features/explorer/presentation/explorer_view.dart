@@ -396,9 +396,6 @@ class _ExplorerViewState extends State<ExplorerView> {
                     profile: activeController.activeProfile,
                     forceNew: true,
                   ),
-                  trailing: isSelected
-                      ? const Icon(Icons.check, size: 16)
-                      : null,
                   clusterProfile: activeController.activeProfile,
                 );
               },

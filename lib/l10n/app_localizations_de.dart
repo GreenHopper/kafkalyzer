@@ -116,6 +116,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get emptyTopicMessage => 'Dieses Topic ist leer (0 Nachrichten).';
 
   @override
+  String get fieldValueExplorer => 'Feldwerte-Explorer (Top 10 Werte)';
+
+  @override
+  String get searchFields => 'Felder suchen...';
+
+  @override
+  String get selectFieldToInspect =>
+      'Wählen Sie ein Feld aus, um dessen Top 10 Werte anzuzeigen';
+
+  @override
+  String top10ValuesForField(String field) {
+    return 'Top 10 Werte für $field';
+  }
+
+  @override
+  String get valueCopied => 'Wert in die Zwischenablage kopiert';
+
+  @override
+  String distinctValues(int count) {
+    return '$count verschiedene Werte erfasst';
+  }
+
+  @override
+  String fieldOccurrences(String count, String pct) {
+    return 'Erscheint in $count Nachr. ($pct%)';
+  }
+
+  @override
+  String noMatchingFields(String query) {
+    return 'Keine Felder für \'$query\' gefunden';
+  }
+
+  @override
   String topValuesForField(String field) {
     return 'Häufigste Werte für $field';
   }

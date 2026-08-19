@@ -44,6 +44,35 @@
   "hotPartition": "High Load / Skew",
   "balancedPartitions": "Balanced",
   "emptyTopicMessage": "This topic is empty (0 messages).",
+  "fieldValueExplorer": "Field Value Explorer (Top 10 Values)",
+  "searchFields": "Search fields...",
+  "selectFieldToInspect": "Select a field to inspect its Top 10 values",
+  "top10ValuesForField": "Top 10 Values for {field}",
+  "@top10ValuesForField": {
+    "placeholders": {
+      "field": { "type": "String" }
+    }
+  },
+  "valueCopied": "Value copied to clipboard",
+  "distinctValues": "{count} distinct values tracked",
+  "@distinctValues": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fieldOccurrences": "Appears in {count} msgs ({pct}%)",
+  "@fieldOccurrences": {
+    "placeholders": {
+      "count": { "type": "String" },
+      "pct": { "type": "String" }
+    }
+  },
+  "noMatchingFields": "No fields matching '{query}'",
+  "@noMatchingFields": {
+    "placeholders": {
+      "query": { "type": "String" }
+    }
+  },
   "topValuesForField": "Top values for {field}",
   "@topValuesForField": {
     "placeholders": {
