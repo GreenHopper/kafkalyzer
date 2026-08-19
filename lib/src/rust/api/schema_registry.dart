@@ -8,12 +8,14 @@ import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 Future<List<String>> fetchSubjects({required ClusterProfile profile}) =>
-    RustLib.instance.api.crateApiSchemaRegistryFetchSubjects(profile: profile);
+    KafkalyzerRustLib.instance.api.crateApiSchemaRegistryFetchSubjects(
+      profile: profile,
+    );
 
 Future<String> fetchSchema({
   required ClusterProfile profile,
   required String subject,
-}) => RustLib.instance.api.crateApiSchemaRegistryFetchSchema(
+}) => KafkalyzerRustLib.instance.api.crateApiSchemaRegistryFetchSchema(
   profile: profile,
   subject: subject,
 );

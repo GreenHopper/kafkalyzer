@@ -9,30 +9,32 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`, `from`
 
-Future<bool> validateConnection({required ClusterProfile profile}) => RustLib
-    .instance
-    .api
-    .crateApiKafkaMetadataValidateConnection(profile: profile);
+Future<bool> validateConnection({required ClusterProfile profile}) =>
+    KafkalyzerRustLib.instance.api.crateApiKafkaMetadataValidateConnection(
+      profile: profile,
+    );
 
 Future<List<TopicMetadata>> fetchTopics({required ClusterProfile profile}) =>
-    RustLib.instance.api.crateApiKafkaMetadataFetchTopics(profile: profile);
+    KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchTopics(
+      profile: profile,
+    );
 
 Future<List<ConsumerGroupLag>> fetchConsumerLags({
   required ClusterProfile profile,
-}) => RustLib.instance.api.crateApiKafkaMetadataFetchConsumerLags(
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchConsumerLags(
   profile: profile,
 );
 
 Future<List<ConsumerGroupLag>> fetchConsumerGroups({
   required ClusterProfile profile,
-}) => RustLib.instance.api.crateApiKafkaMetadataFetchConsumerGroups(
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchConsumerGroups(
   profile: profile,
 );
 
 Future<ConsumerGroupLag> fetchConsumerGroupLag({
   required ClusterProfile profile,
   required String groupId,
-}) => RustLib.instance.api.crateApiKafkaMetadataFetchConsumerGroupLag(
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchConsumerGroupLag(
   profile: profile,
   groupId: groupId,
 );

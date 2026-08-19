@@ -77,3 +77,80 @@ pub struct ConsumerGroupLag {
     pub members_count: i32,
     pub topics_count: i32,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HourlyCount {
+    pub hour: i32,
+    pub count: i64,
+    pub percentage: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PartitionAnalysis {
+    pub partition: i32,
+    pub message_count: i64,
+    pub byte_size: i64,
+    pub percentage: f64,
+    pub earliest_offset: i64,
+    pub latest_offset: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KeyOccurrence {
+    pub key: String,
+    pub count: i64,
+    pub percentage: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TypeOccurrence {
+    pub type_name: String,
+    pub count: i64,
+    pub percentage: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FieldValueOccurrence {
+    pub value: String,
+    pub count: i64,
+    pub percentage: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FieldOccurrence {
+    pub field_name: String,
+    pub count: i64,
+    pub percentage: f64,
+    pub top_values: Vec<FieldValueOccurrence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopicAnalysisReport {
+    pub topic: String,
+    pub total_messages: i64,
+    pub total_bytes: i64,
+    pub min_message_size: i64,
+    pub max_message_size: i64,
+    pub avg_message_size: f64,
+    pub tombstones_count: i64,
+    pub is_compacted: bool,
+    pub null_keys_count: i64,
+    pub partition_stats: Vec<PartitionAnalysis>,
+    pub hourly_distribution: Vec<HourlyCount>,
+    pub top_keys: Vec<KeyOccurrence>,
+    pub content_type_distribution: Vec<TypeOccurrence>,
+    pub field_frequencies: Vec<FieldOccurrence>,
+    pub scan_duration_ms: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopicAnalysisProgress {
+    pub scanned_messages: i64,
+    pub total_messages_to_scan: i64,
+    pub progress: f64,
+    pub messages_per_second: f64,
+    pub current_partition: i32,
+    pub is_complete: bool,
+    pub error_message: Option<String>,
+    pub partial_report: Option<TopicAnalysisReport>,
+}

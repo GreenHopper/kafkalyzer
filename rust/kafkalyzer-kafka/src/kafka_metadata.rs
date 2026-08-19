@@ -127,7 +127,7 @@ fn parse_member_subscription(metadata: &[u8]) -> Option<Vec<String>> {
     let mut topics_len_bytes = [0; 4];
     cursor.read_exact(&mut topics_len_bytes).ok()?;
     let topics_len = i32::from_be_bytes(topics_len_bytes);
-    if topics_len < 0 || topics_len > 100_000 {
+    if !(0..=100_000).contains(&topics_len) {
         return None;
     }
 
@@ -137,7 +137,7 @@ fn parse_member_subscription(metadata: &[u8]) -> Option<Vec<String>> {
         let mut name_len_bytes = [0; 2];
         cursor.read_exact(&mut name_len_bytes).ok()?;
         let name_len = i16::from_be_bytes(name_len_bytes);
-        if name_len < 0 || name_len > 10_000 {
+        if !(0..=10_000).contains(&name_len) {
             return None;
         }
 
@@ -164,7 +164,7 @@ fn parse_member_assignment(assignment: &[u8]) -> Option<Vec<String>> {
     let mut topics_len_bytes = [0; 4];
     cursor.read_exact(&mut topics_len_bytes).ok()?;
     let topics_len = i32::from_be_bytes(topics_len_bytes);
-    if topics_len < 0 || topics_len > 100_000 {
+    if !(0..=100_000).contains(&topics_len) {
         return None;
     }
 
@@ -174,7 +174,7 @@ fn parse_member_assignment(assignment: &[u8]) -> Option<Vec<String>> {
         let mut name_len_bytes = [0; 2];
         cursor.read_exact(&mut name_len_bytes).ok()?;
         let name_len = i16::from_be_bytes(name_len_bytes);
-        if name_len < 0 || name_len > 10_000 {
+        if !(0..=10_000).contains(&name_len) {
             return None;
         }
 
@@ -188,7 +188,7 @@ fn parse_member_assignment(assignment: &[u8]) -> Option<Vec<String>> {
         let mut part_len_bytes = [0; 4];
         cursor.read_exact(&mut part_len_bytes).ok()?;
         let part_len = i32::from_be_bytes(part_len_bytes);
-        if part_len < 0 || part_len > 100_000 {
+        if !(0..=100_000).contains(&part_len) {
             return None;
         }
 

@@ -3,6 +3,8 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api.dart';
+import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
 import 'api/kafka_metadata.dart';
 import 'api/kafka_types.dart';
@@ -14,8 +16,9 @@ import 'dart:ffi' as ffi;
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_io.dart';
 
-abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
-  RustLibApiImplPlatform({
+abstract class KafkalyzerRustLibApiImplPlatform
+    extends BaseApiImpl<KafkalyzerRustLibWire> {
+  KafkalyzerRustLibApiImplPlatform({
     required super.handler,
     required super.wire,
     required super.generalizedFrbRustBinding,
@@ -47,6 +50,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<TopicAnalysisProgress>
+  dco_decode_StreamSink_topic_analysis_progress_Sse(dynamic raw);
+
+  @protected
   String dco_decode_String(dynamic raw);
 
   @protected
@@ -62,13 +69,28 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
 
   @protected
+  TopicAnalysisReport dco_decode_box_autoadd_topic_analysis_report(dynamic raw);
+
+  @protected
   ClusterProfile dco_decode_cluster_profile(dynamic raw);
 
   @protected
   ConsumerGroupLag dco_decode_consumer_group_lag(dynamic raw);
 
   @protected
+  double dco_decode_f_64(dynamic raw);
+
+  @protected
+  FieldOccurrence dco_decode_field_occurrence(dynamic raw);
+
+  @protected
+  FieldValueOccurrence dco_decode_field_value_occurrence(dynamic raw);
+
+  @protected
   FilterType dco_decode_filter_type(dynamic raw);
+
+  @protected
+  HourlyCount dco_decode_hourly_count(dynamic raw);
 
   @protected
   int dco_decode_i_32(dynamic raw);
@@ -83,13 +105,33 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   KafkaMessage dco_decode_kafka_message(dynamic raw);
 
   @protected
+  KeyOccurrence dco_decode_key_occurrence(dynamic raw);
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
   List<ConsumerGroupLag> dco_decode_list_consumer_group_lag(dynamic raw);
 
   @protected
+  List<FieldOccurrence> dco_decode_list_field_occurrence(dynamic raw);
+
+  @protected
+  List<FieldValueOccurrence> dco_decode_list_field_value_occurrence(
+    dynamic raw,
+  );
+
+  @protected
+  List<HourlyCount> dco_decode_list_hourly_count(dynamic raw);
+
+  @protected
   List<KafkaHeader> dco_decode_list_kafka_header(dynamic raw);
+
+  @protected
+  List<KeyOccurrence> dco_decode_list_key_occurrence(dynamic raw);
+
+  @protected
+  List<PartitionAnalysis> dco_decode_list_partition_analysis(dynamic raw);
 
   @protected
   List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
@@ -104,6 +146,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<TopicPartitionLag> dco_decode_list_topic_partition_lag(dynamic raw);
 
   @protected
+  List<TypeOccurrence> dco_decode_list_type_occurrence(dynamic raw);
+
+  @protected
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
@@ -113,19 +158,36 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
 
   @protected
+  TopicAnalysisReport? dco_decode_opt_box_autoadd_topic_analysis_report(
+    dynamic raw,
+  );
+
+  @protected
   List<String>? dco_decode_opt_list_String(dynamic raw);
 
   @protected
   List<KafkaHeader>? dco_decode_opt_list_kafka_header(dynamic raw);
 
   @protected
+  PartitionAnalysis dco_decode_partition_analysis(dynamic raw);
+
+  @protected
   SearchScope dco_decode_search_scope(dynamic raw);
+
+  @protected
+  TopicAnalysisProgress dco_decode_topic_analysis_progress(dynamic raw);
+
+  @protected
+  TopicAnalysisReport dco_decode_topic_analysis_report(dynamic raw);
 
   @protected
   TopicMetadata dco_decode_topic_metadata(dynamic raw);
 
   @protected
   TopicPartitionLag dco_decode_topic_partition_lag(dynamic raw);
+
+  @protected
+  TypeOccurrence dco_decode_type_occurrence(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -160,6 +222,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<TopicAnalysisProgress>
+  sse_decode_StreamSink_topic_analysis_progress_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
@@ -177,13 +245,32 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
+  TopicAnalysisReport sse_decode_box_autoadd_topic_analysis_report(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   ClusterProfile sse_decode_cluster_profile(SseDeserializer deserializer);
 
   @protected
   ConsumerGroupLag sse_decode_consumer_group_lag(SseDeserializer deserializer);
 
   @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
+
+  @protected
+  FieldOccurrence sse_decode_field_occurrence(SseDeserializer deserializer);
+
+  @protected
+  FieldValueOccurrence sse_decode_field_value_occurrence(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FilterType sse_decode_filter_type(SseDeserializer deserializer);
+
+  @protected
+  HourlyCount sse_decode_hourly_count(SseDeserializer deserializer);
 
   @protected
   int sse_decode_i_32(SseDeserializer deserializer);
@@ -198,6 +285,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   KafkaMessage sse_decode_kafka_message(SseDeserializer deserializer);
 
   @protected
+  KeyOccurrence sse_decode_key_occurrence(SseDeserializer deserializer);
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
@@ -206,7 +296,30 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<FieldOccurrence> sse_decode_list_field_occurrence(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FieldValueOccurrence> sse_decode_list_field_value_occurrence(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<HourlyCount> sse_decode_list_hourly_count(SseDeserializer deserializer);
+
+  @protected
   List<KafkaHeader> sse_decode_list_kafka_header(SseDeserializer deserializer);
+
+  @protected
+  List<KeyOccurrence> sse_decode_list_key_occurrence(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<PartitionAnalysis> sse_decode_list_partition_analysis(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
@@ -225,6 +338,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  List<TypeOccurrence> sse_decode_list_type_occurrence(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
@@ -232,6 +350,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  TopicAnalysisReport? sse_decode_opt_box_autoadd_topic_analysis_report(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<String>? sse_decode_opt_list_String(SseDeserializer deserializer);
@@ -242,7 +365,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  PartitionAnalysis sse_decode_partition_analysis(SseDeserializer deserializer);
+
+  @protected
   SearchScope sse_decode_search_scope(SseDeserializer deserializer);
+
+  @protected
+  TopicAnalysisProgress sse_decode_topic_analysis_progress(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicAnalysisReport sse_decode_topic_analysis_report(
+    SseDeserializer deserializer,
+  );
 
   @protected
   TopicMetadata sse_decode_topic_metadata(SseDeserializer deserializer);
@@ -251,6 +387,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TopicPartitionLag sse_decode_topic_partition_lag(
     SseDeserializer deserializer,
   );
+
+  @protected
+  TypeOccurrence sse_decode_type_occurrence(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -291,6 +430,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_StreamSink_topic_analysis_progress_Sse(
+    RustStreamSink<TopicAnalysisProgress> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
@@ -312,6 +457,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_topic_analysis_report(
+    TopicAnalysisReport self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_cluster_profile(
     ClusterProfile self,
     SseSerializer serializer,
@@ -324,7 +475,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_field_occurrence(
+    FieldOccurrence self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_field_value_occurrence(
+    FieldValueOccurrence self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_filter_type(FilterType self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_hourly_count(HourlyCount self, SseSerializer serializer);
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
@@ -339,6 +508,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_kafka_message(KafkaMessage self, SseSerializer serializer);
 
   @protected
+  void sse_encode_key_occurrence(KeyOccurrence self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
@@ -348,8 +520,38 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_field_occurrence(
+    List<FieldOccurrence> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_field_value_occurrence(
+    List<FieldValueOccurrence> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_hourly_count(
+    List<HourlyCount> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_kafka_header(
     List<KafkaHeader> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_key_occurrence(
+    List<KeyOccurrence> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_partition_analysis(
+    List<PartitionAnalysis> self,
     SseSerializer serializer,
   );
 
@@ -375,6 +577,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_type_occurrence(
+    List<TypeOccurrence> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
@@ -383,6 +591,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_i_64(
     PlatformInt64? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_topic_analysis_report(
+    TopicAnalysisReport? self,
     SseSerializer serializer,
   );
 
@@ -396,7 +610,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_partition_analysis(
+    PartitionAnalysis self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_search_scope(SearchScope self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_topic_analysis_progress(
+    TopicAnalysisProgress self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_analysis_report(
+    TopicAnalysisReport self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_topic_metadata(TopicMetadata self, SseSerializer serializer);
@@ -404,6 +636,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_topic_partition_lag(
     TopicPartitionLag self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_type_occurrence(
+    TypeOccurrence self,
     SseSerializer serializer,
   );
 
@@ -422,16 +660,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
 // Section: wire_class
 
-class RustLibWire implements BaseWire {
-  factory RustLibWire.fromExternalLibrary(ExternalLibrary lib) =>
-      RustLibWire(lib.ffiDynamicLibrary);
+class KafkalyzerRustLibWire implements BaseWire {
+  factory KafkalyzerRustLibWire.fromExternalLibrary(ExternalLibrary lib) =>
+      KafkalyzerRustLibWire(lib.ffiDynamicLibrary);
 
   /// Holds the symbol lookup function.
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
   _lookup;
 
   /// The symbols are looked up in [dynamicLibrary].
-  RustLibWire(ffi.DynamicLibrary dynamicLibrary)
+  KafkalyzerRustLibWire(ffi.DynamicLibrary dynamicLibrary)
     : _lookup = dynamicLibrary.lookup;
 
   void

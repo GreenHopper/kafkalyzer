@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -8,10 +9,24 @@ import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 
 class OpenTopicRecord {
+  final String id;
   final TopicMetadata topic;
   final ClusterProfile profile;
 
-  OpenTopicRecord(this.topic, this.profile);
+  OpenTopicRecord(this.topic, this.profile, {String? id})
+    : id =
+          id ??
+          '${profile.name}:${topic.name}:${DateTime.now().microsecondsSinceEpoch}';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OpenTopicRecord &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class ActiveConnectionController extends ChangeNotifier {
@@ -94,26 +109,72 @@ class ActiveConnectionController extends ChangeNotifier {
   OpenTopicRecord? _activeTopic;
   final List<OpenTopicRecord> _openTopics = [];
   final Map<String, MessageStreamController> _streamControllers = {};
+  final Map<String, TopicAnalysisController> _analysisControllers = {};
 
   OpenTopicRecord? get activeTopic => _activeTopic;
   List<OpenTopicRecord> get openTopics => List.unmodifiable(_openTopics);
 
+  OpenTopicRecord? openTopic({
+    required TopicMetadata topic,
+    ClusterProfile? profile,
+    bool forceNew = false,
+  }) {
+    final p = profile ?? _activeProfile;
+    if (p == null) return null;
+
+    if (!forceNew) {
+      final existing = _openTopics.cast<OpenTopicRecord?>().firstWhere(
+        (t) => t?.topic.name == topic.name && t?.profile.name == p.name,
+        orElse: () => null,
+      );
+      if (existing != null) {
+        _activeTopic = existing;
+        notifyListeners();
+        return existing;
+      }
+    }
+
+    final newRecord = OpenTopicRecord(topic, p);
+    _openTopics.add(newRecord);
+    _activeTopic = newRecord;
+    notifyListeners();
+    return newRecord;
+  }
+
   void setActiveTopic(TopicMetadata? topic, [ClusterProfile? profile]) {
     if (topic != null) {
-      final p = profile ?? _activeProfile;
-      if (p != null) {
-        if (!_openTopics.any(
-          (t) => t.topic.name == topic.name && t.profile.name == p.name,
-        )) {
-          _openTopics.add(OpenTopicRecord(topic, p));
-        }
-        _activeTopic = _openTopics.cast<OpenTopicRecord?>().firstWhere(
-          (t) => t?.topic.name == topic.name && t?.profile.name == p.name,
-          orElse: () => null,
-        );
-      }
+      openTopic(topic: topic, profile: profile, forceNew: false);
     } else {
       _activeTopic = null;
+      notifyListeners();
+    }
+  }
+
+  void setActiveTabId(String tabId) {
+    final record = _openTopics.cast<OpenTopicRecord?>().firstWhere(
+      (t) => t?.id == tabId,
+      orElse: () => null,
+    );
+    if (record != null) {
+      _activeTopic = record;
+      notifyListeners();
+    }
+  }
+
+  void setActiveTopicRecord(OpenTopicRecord? record) {
+    if (record == null) {
+      _activeTopic = null;
+    } else {
+      final existing = _openTopics.cast<OpenTopicRecord?>().firstWhere(
+        (t) => t?.id == record.id,
+        orElse: () => null,
+      );
+      if (existing != null) {
+        _activeTopic = existing;
+      } else {
+        _openTopics.add(record);
+        _activeTopic = record;
+      }
     }
     notifyListeners();
   }
@@ -123,30 +184,62 @@ class ActiveConnectionController extends ChangeNotifier {
   }
 
   MessageStreamController getStreamController(
-    String topicName,
-    String clusterName,
-  ) {
-    final key = _getTopicKey(topicName, clusterName);
+    String tabIdOrTopicName, [
+    String? clusterName,
+  ]) {
+    final key = clusterName != null
+        ? _getTopicKey(tabIdOrTopicName, clusterName)
+        : tabIdOrTopicName;
     if (!_streamControllers.containsKey(key)) {
       _streamControllers[key] = MessageStreamController();
     }
     return _streamControllers[key]!;
   }
 
+  TopicAnalysisController getAnalysisController(
+    String tabIdOrTopicName, [
+    String? clusterName,
+  ]) {
+    final key = clusterName != null
+        ? _getTopicKey(tabIdOrTopicName, clusterName)
+        : tabIdOrTopicName;
+    if (!_analysisControllers.containsKey(key)) {
+      _analysisControllers[key] = TopicAnalysisController();
+    }
+    return _analysisControllers[key]!;
+  }
+
+  void closeTopicTab(String tabId) {
+    _openTopics.removeWhere((t) => t.id == tabId);
+
+    _streamControllers[tabId]?.dispose();
+    _streamControllers.remove(tabId);
+
+    _analysisControllers[tabId]?.dispose();
+    _analysisControllers.remove(tabId);
+
+    if (_activeTopic?.id == tabId) {
+      _activeTopic = _openTopics.isNotEmpty ? _openTopics.last : null;
+    }
+    notifyListeners();
+  }
+
   void closeTopic(TopicMetadata topic, String clusterName) {
-    _openTopics.removeWhere(
-      (t) => t.topic.name == topic.name && t.profile.name == clusterName,
-    );
+    final matching = _openTopics
+        .where(
+          (t) => t.topic.name == topic.name && t.profile.name == clusterName,
+        )
+        .toList();
+    for (final record in matching) {
+      closeTopicTab(record.id);
+    }
 
     final key = _getTopicKey(topic.name, clusterName);
     _streamControllers[key]?.dispose();
     _streamControllers.remove(key);
 
-    if (_activeTopic?.topic.name == topic.name &&
-        _activeTopic?.profile.name == clusterName) {
-      _activeTopic = _openTopics.isNotEmpty ? _openTopics.last : null;
-    }
-    notifyListeners();
+    _analysisControllers[key]?.dispose();
+    _analysisControllers.remove(key);
   }
 
   void clearOpenTopics() {
@@ -155,6 +248,10 @@ class ActiveConnectionController extends ChangeNotifier {
       controller.dispose();
     }
     _streamControllers.clear();
+    for (final controller in _analysisControllers.values) {
+      controller.dispose();
+    }
+    _analysisControllers.clear();
     _activeTopic = null;
     notifyListeners();
   }
@@ -227,6 +324,10 @@ class ActiveConnectionController extends ChangeNotifier {
       controller.dispose();
     }
     _streamControllers.clear();
+    for (final controller in _analysisControllers.values) {
+      controller.dispose();
+    }
+    _analysisControllers.clear();
     // _topics = []; // managed by controller
     _topicFilter = "";
     notifyListeners();

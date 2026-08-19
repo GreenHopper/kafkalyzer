@@ -391,6 +391,11 @@ class _ExplorerViewState extends State<ExplorerView> {
                     topic,
                     activeController.activeProfile,
                   ),
+                  onOpenInNewTab: () => activeController.openTopic(
+                    topic: topic,
+                    profile: activeController.activeProfile,
+                    forceNew: true,
+                  ),
                   trailing: isSelected
                       ? const Icon(Icons.check, size: 16)
                       : null,
@@ -431,15 +436,13 @@ class _ExplorerViewState extends State<ExplorerView> {
     }
 
     final activeIndex = activeController.openTopics.indexWhere(
-      (t) =>
-          t.topic.name == activeController.activeTopic?.topic.name &&
-          t.profile.name == activeController.activeTopic?.profile.name,
+      (t) => t.id == activeController.activeTopic?.id,
     );
     final safeIndex = activeIndex >= 0 ? activeIndex : 0;
 
     return Column(
       children: [
-        _buildTabBar(context, activeController),
+        _buildTabBar(context, l10n, activeController),
         _buildTabViews(activeController, safeIndex),
       ],
     );
@@ -489,8 +492,27 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
   }
 
+  String _getTabTitle(
+    ActiveConnectionController activeController,
+    OpenTopicRecord record,
+  ) {
+    final matchingTabs = activeController.openTopics
+        .where(
+          (t) =>
+              t.topic.name == record.topic.name &&
+              t.profile.name == record.profile.name,
+        )
+        .toList();
+    if (matchingTabs.length > 1) {
+      final instanceIndex = matchingTabs.indexOf(record) + 1;
+      return '${record.topic.name} ($instanceIndex)';
+    }
+    return record.topic.name;
+  }
+
   Widget _buildTabBar(
     BuildContext context,
+    AppLocalizations l10n,
     ActiveConnectionController activeController,
   ) {
     return Container(
@@ -535,6 +557,7 @@ class _ExplorerViewState extends State<ExplorerView> {
               itemBuilder: (context, index) {
                 return _buildTabItem(
                   context,
+                  l10n,
                   activeController,
                   activeController.openTopics[index],
                 );
@@ -548,20 +571,15 @@ class _ExplorerViewState extends State<ExplorerView> {
 
   Widget _buildTabItem(
     BuildContext context,
+    AppLocalizations l10n,
     ActiveConnectionController activeController,
     OpenTopicRecord record,
   ) {
-    final topic = record.topic;
-    final isSelected =
-        activeController.activeTopic?.topic.name == topic.name &&
-        activeController.activeTopic?.profile.name == record.profile.name;
-    final streamCtrl = activeController.getStreamController(
-      topic.name,
-      record.profile.name,
-    );
+    final isSelected = activeController.activeTopic?.id == record.id;
+    final streamCtrl = activeController.getStreamController(record.id);
 
     return InkWell(
-      onTap: () => activeController.setActiveTopic(topic, record.profile),
+      onTap: () => activeController.setActiveTabId(record.id),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
@@ -584,6 +602,7 @@ class _ExplorerViewState extends State<ExplorerView> {
           listenable: streamCtrl,
           builder: (context, _) => _buildTabItemContent(
             context,
+            l10n,
             activeController,
             record,
             streamCtrl,
@@ -596,11 +615,14 @@ class _ExplorerViewState extends State<ExplorerView> {
 
   Widget _buildTabItemContent(
     BuildContext context,
+    AppLocalizations l10n,
     ActiveConnectionController activeController,
     OpenTopicRecord record,
     MessageStreamController streamCtrl,
     bool isSelected,
   ) {
+    final title = _getTabTitle(activeController, record);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -609,7 +631,7 @@ class _ExplorerViewState extends State<ExplorerView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              record.topic.name,
+              title,
               style: TextStyle(
                 color: isSelected
                     ? Theme.of(context).colorScheme.primary
@@ -637,13 +659,27 @@ class _ExplorerViewState extends State<ExplorerView> {
           _buildTabMessageCount(context, streamCtrl),
         ],
         const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(Icons.add_to_photos_outlined, size: 14),
+          tooltip: l10n.duplicateTab,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+          onPressed: () => activeController.openTopic(
+            topic: record.topic,
+            profile: record.profile,
+            forceNew: true,
+          ),
+        ),
+        const SizedBox(width: 4),
         InkWell(
-          onTap: () =>
-              activeController.closeTopic(record.topic, record.profile.name),
-          child: Icon(
-            Icons.close,
-            size: 16,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          onTap: () => activeController.closeTopicTab(record.id),
+          child: Tooltip(
+            message: l10n.closeTab,
+            child: Icon(
+              Icons.close,
+              size: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ],
@@ -733,7 +769,8 @@ class _ExplorerViewState extends State<ExplorerView> {
         index: safeIndex,
         children: activeController.openTopics.map((record) {
           return TopicDetailView(
-            key: ValueKey('${record.profile.name}:${record.topic.name}'),
+            key: ValueKey(record.id),
+            tabId: record.id,
             topic: record.topic,
             profile: record.profile,
           );

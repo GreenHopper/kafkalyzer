@@ -1,5 +1,5 @@
-import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:mockito/annotations.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
 
-@GenerateMocks([RustLibApi])
+@GenerateMocks([KafkalyzerRustLibApi])
 void main() {}

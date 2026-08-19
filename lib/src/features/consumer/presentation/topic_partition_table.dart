@@ -58,9 +58,12 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
         runForever: false,
       );
 
-      final message = await stream.firstWhere(
-        (m) => m.partition == part.partition && m.offset == part.currentOffset,
-      ).timeout(const Duration(seconds: 10));
+      final message = await stream
+          .firstWhere(
+            (m) =>
+                m.partition == part.partition && m.offset == part.currentOffset,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (mounted) {
         showDialog(
@@ -321,4 +324,3 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     );
   }
 }
-

@@ -1,3 +1,4 @@
+pub mod kafka_analyzer;
 pub mod kafka_consumer;
 pub mod kafka_metadata;
 pub mod kafka_utils;

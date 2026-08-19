@@ -8,15 +8,15 @@ import 'package:mockito/mockito.dart';
 import '../rust/api/rust_mocks.mocks.dart';
 
 void main() {
-  late MockRustLibApi mockApi;
+  late MockKafkalyzerRustLibApi mockApi;
 
   setUpAll(() {
-    mockApi = MockRustLibApi();
-    RustLib.initMock(api: mockApi);
+    mockApi = MockKafkalyzerRustLibApi();
+    KafkalyzerRustLib.initMock(api: mockApi);
   });
 
   tearDownAll(() {
-    RustLib.dispose();
+    KafkalyzerRustLib.dispose();
   });
 
   setUp(() {

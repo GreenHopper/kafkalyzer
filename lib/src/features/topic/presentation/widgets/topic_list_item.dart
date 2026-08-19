@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dart';
@@ -11,6 +12,7 @@ class TopicListItem extends StatelessWidget {
   final TopicMetadata topic;
   final bool isSelected;
   final VoidCallback? onTap;
+  final VoidCallback? onOpenInNewTab;
   final Widget? trailing;
   final ClusterProfile? clusterProfile;
 
@@ -19,6 +21,7 @@ class TopicListItem extends StatelessWidget {
     required this.topic,
     this.isSelected = false,
     this.onTap,
+    this.onOpenInNewTab,
     this.trailing,
     this.clusterProfile,
   });
@@ -57,8 +60,41 @@ class TopicListItem extends StatelessWidget {
           child: _buildSubtitle(context),
         ),
         onTap: onTap,
-        trailing: trailing,
+        trailing: _buildTrailing(context),
       ),
+    );
+  }
+
+  Widget? _buildTrailing(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final List<Widget> children = [];
+    if (isSelected) {
+      children.add(const Icon(Icons.check, size: 16));
+    }
+    if (trailing != null) {
+      children.add(trailing!);
+    }
+    if (onOpenInNewTab != null) {
+      children.add(
+        IconButton(
+          icon: const Icon(Icons.add_to_photos_outlined, size: 16),
+          tooltip: l10n?.openInNewTab ?? 'Open in New Tab',
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          onPressed: onOpenInNewTab,
+        ),
+      );
+    }
+    if (children.isEmpty) return null;
+    if (children.length == 1) return children.first;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) const SizedBox(width: 4),
+          children[i],
+        ],
+      ],
     );
   }
 

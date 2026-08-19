@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 class ClusterProfile {
   final String name;
@@ -147,9 +147,273 @@ class ConsumerGroupLag {
           topicsCount == other.topicsCount;
 }
 
+class FieldOccurrence {
+  final String fieldName;
+  final PlatformInt64 count;
+  final double percentage;
+  final List<FieldValueOccurrence> topValues;
+
+  const FieldOccurrence({
+    required this.fieldName,
+    required this.count,
+    required this.percentage,
+    required this.topValues,
+  });
+
+  @override
+  int get hashCode =>
+      fieldName.hashCode ^
+      count.hashCode ^
+      percentage.hashCode ^
+      topValues.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FieldOccurrence &&
+          runtimeType == other.runtimeType &&
+          fieldName == other.fieldName &&
+          count == other.count &&
+          percentage == other.percentage &&
+          topValues == other.topValues;
+}
+
+class FieldValueOccurrence {
+  final String value;
+  final PlatformInt64 count;
+  final double percentage;
+
+  const FieldValueOccurrence({
+    required this.value,
+    required this.count,
+    required this.percentage,
+  });
+
+  @override
+  int get hashCode => value.hashCode ^ count.hashCode ^ percentage.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FieldValueOccurrence &&
+          runtimeType == other.runtimeType &&
+          value == other.value &&
+          count == other.count &&
+          percentage == other.percentage;
+}
+
 enum FilterType { contains, regex, exact }
 
+class HourlyCount {
+  final int hour;
+  final PlatformInt64 count;
+  final double percentage;
+
+  const HourlyCount({
+    required this.hour,
+    required this.count,
+    required this.percentage,
+  });
+
+  @override
+  int get hashCode => hour.hashCode ^ count.hashCode ^ percentage.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HourlyCount &&
+          runtimeType == other.runtimeType &&
+          hour == other.hour &&
+          count == other.count &&
+          percentage == other.percentage;
+}
+
+class KeyOccurrence {
+  final String key;
+  final PlatformInt64 count;
+  final double percentage;
+
+  const KeyOccurrence({
+    required this.key,
+    required this.count,
+    required this.percentage,
+  });
+
+  @override
+  int get hashCode => key.hashCode ^ count.hashCode ^ percentage.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is KeyOccurrence &&
+          runtimeType == other.runtimeType &&
+          key == other.key &&
+          count == other.count &&
+          percentage == other.percentage;
+}
+
+class PartitionAnalysis {
+  final int partition;
+  final PlatformInt64 messageCount;
+  final PlatformInt64 byteSize;
+  final double percentage;
+  final PlatformInt64 earliestOffset;
+  final PlatformInt64 latestOffset;
+
+  const PartitionAnalysis({
+    required this.partition,
+    required this.messageCount,
+    required this.byteSize,
+    required this.percentage,
+    required this.earliestOffset,
+    required this.latestOffset,
+  });
+
+  @override
+  int get hashCode =>
+      partition.hashCode ^
+      messageCount.hashCode ^
+      byteSize.hashCode ^
+      percentage.hashCode ^
+      earliestOffset.hashCode ^
+      latestOffset.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PartitionAnalysis &&
+          runtimeType == other.runtimeType &&
+          partition == other.partition &&
+          messageCount == other.messageCount &&
+          byteSize == other.byteSize &&
+          percentage == other.percentage &&
+          earliestOffset == other.earliestOffset &&
+          latestOffset == other.latestOffset;
+}
+
 enum SearchScope { key, value, both }
+
+class TopicAnalysisProgress {
+  final PlatformInt64 scannedMessages;
+  final PlatformInt64 totalMessagesToScan;
+  final double progress;
+  final double messagesPerSecond;
+  final int currentPartition;
+  final bool isComplete;
+  final String? errorMessage;
+  final TopicAnalysisReport? partialReport;
+
+  const TopicAnalysisProgress({
+    required this.scannedMessages,
+    required this.totalMessagesToScan,
+    required this.progress,
+    required this.messagesPerSecond,
+    required this.currentPartition,
+    required this.isComplete,
+    this.errorMessage,
+    this.partialReport,
+  });
+
+  @override
+  int get hashCode =>
+      scannedMessages.hashCode ^
+      totalMessagesToScan.hashCode ^
+      progress.hashCode ^
+      messagesPerSecond.hashCode ^
+      currentPartition.hashCode ^
+      isComplete.hashCode ^
+      errorMessage.hashCode ^
+      partialReport.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicAnalysisProgress &&
+          runtimeType == other.runtimeType &&
+          scannedMessages == other.scannedMessages &&
+          totalMessagesToScan == other.totalMessagesToScan &&
+          progress == other.progress &&
+          messagesPerSecond == other.messagesPerSecond &&
+          currentPartition == other.currentPartition &&
+          isComplete == other.isComplete &&
+          errorMessage == other.errorMessage &&
+          partialReport == other.partialReport;
+}
+
+class TopicAnalysisReport {
+  final String topic;
+  final PlatformInt64 totalMessages;
+  final PlatformInt64 totalBytes;
+  final PlatformInt64 minMessageSize;
+  final PlatformInt64 maxMessageSize;
+  final double avgMessageSize;
+  final PlatformInt64 tombstonesCount;
+  final bool isCompacted;
+  final PlatformInt64 nullKeysCount;
+  final List<PartitionAnalysis> partitionStats;
+  final List<HourlyCount> hourlyDistribution;
+  final List<KeyOccurrence> topKeys;
+  final List<TypeOccurrence> contentTypeDistribution;
+  final List<FieldOccurrence> fieldFrequencies;
+  final PlatformInt64 scanDurationMs;
+
+  const TopicAnalysisReport({
+    required this.topic,
+    required this.totalMessages,
+    required this.totalBytes,
+    required this.minMessageSize,
+    required this.maxMessageSize,
+    required this.avgMessageSize,
+    required this.tombstonesCount,
+    required this.isCompacted,
+    required this.nullKeysCount,
+    required this.partitionStats,
+    required this.hourlyDistribution,
+    required this.topKeys,
+    required this.contentTypeDistribution,
+    required this.fieldFrequencies,
+    required this.scanDurationMs,
+  });
+
+  @override
+  int get hashCode =>
+      topic.hashCode ^
+      totalMessages.hashCode ^
+      totalBytes.hashCode ^
+      minMessageSize.hashCode ^
+      maxMessageSize.hashCode ^
+      avgMessageSize.hashCode ^
+      tombstonesCount.hashCode ^
+      isCompacted.hashCode ^
+      nullKeysCount.hashCode ^
+      partitionStats.hashCode ^
+      hourlyDistribution.hashCode ^
+      topKeys.hashCode ^
+      contentTypeDistribution.hashCode ^
+      fieldFrequencies.hashCode ^
+      scanDurationMs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicAnalysisReport &&
+          runtimeType == other.runtimeType &&
+          topic == other.topic &&
+          totalMessages == other.totalMessages &&
+          totalBytes == other.totalBytes &&
+          minMessageSize == other.minMessageSize &&
+          maxMessageSize == other.maxMessageSize &&
+          avgMessageSize == other.avgMessageSize &&
+          tombstonesCount == other.tombstonesCount &&
+          isCompacted == other.isCompacted &&
+          nullKeysCount == other.nullKeysCount &&
+          partitionStats == other.partitionStats &&
+          hourlyDistribution == other.hourlyDistribution &&
+          topKeys == other.topKeys &&
+          contentTypeDistribution == other.contentTypeDistribution &&
+          fieldFrequencies == other.fieldFrequencies &&
+          scanDurationMs == other.scanDurationMs;
+}
 
 class TopicPartitionLag {
   final String topic;
@@ -184,4 +448,28 @@ class TopicPartitionLag {
           logEndOffset == other.logEndOffset &&
           currentOffset == other.currentOffset &&
           lag == other.lag;
+}
+
+class TypeOccurrence {
+  final String typeName;
+  final PlatformInt64 count;
+  final double percentage;
+
+  const TypeOccurrence({
+    required this.typeName,
+    required this.count,
+    required this.percentage,
+  });
+
+  @override
+  int get hashCode => typeName.hashCode ^ count.hashCode ^ percentage.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TypeOccurrence &&
+          runtimeType == other.runtimeType &&
+          typeName == other.typeName &&
+          count == other.count &&
+          percentage == other.percentage;
 }

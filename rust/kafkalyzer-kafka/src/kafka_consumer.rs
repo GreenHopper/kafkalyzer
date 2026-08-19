@@ -381,7 +381,7 @@ fn run_poll_loop<'a>(
         }
 
         // Log every 5000 messages
-        if scanned_count > 0 && scanned_count % 5000 == 0 {
+        if scanned_count > 0 && scanned_count.is_multiple_of(5000) {
             log_to_dart(&sink, format!("Scanned {} messages.", scanned_count));
         }
 
@@ -451,14 +451,13 @@ fn run_poll_loop<'a>(
                 }
             },
             None => {
-                if !run_forever {
-                    if check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
+                if !run_forever
+                    && check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
                         all_done_log(&topic);
                         send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
                         send_eof(&sink, &topic);
                         break;
                     }
-                }
 
                 // Heartbeat
                 let heartbeat_msg = KafkaMessage {
@@ -1087,12 +1086,10 @@ fn matches_filter(
                 FilterType::Regex => {
                     if let Some(re) = regex_pattern {
                         re.is_match(&target_val)
+                    } else if let Ok(re) = Regex::new(term) {
+                        re.is_match(&target_val)
                     } else {
-                        if let Ok(re) = Regex::new(term) {
-                            re.is_match(&target_val)
-                        } else {
-                            target_val.contains(term)
-                        }
+                        target_val.contains(term)
                     }
                 }
                 FilterType::Contains => target_val.contains(term),

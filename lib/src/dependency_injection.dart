@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
@@ -40,6 +41,9 @@ void setupDependencyInjection() {
     () => MultiSearchController(),
   );
   getIt.registerLazySingleton<TopicController>(() => TopicController());
+  getIt.registerFactory<TopicAnalysisController>(
+    () => TopicAnalysisController(),
+  );
   getIt.registerLazySingleton<SchemaController>(() => SchemaController());
   getIt.registerLazySingleton<ThemeController>(() => ThemeController());
 

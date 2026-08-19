@@ -8,13 +8,15 @@ import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 Future<int> murmur2({required List<int> data}) =>
-    RustLib.instance.api.crateApiKafkaUtilsMurmur2(data: data);
+    KafkalyzerRustLib.instance.api.crateApiKafkaUtilsMurmur2(data: data);
 
 Future<int> toPositive({required int number}) =>
-    RustLib.instance.api.crateApiKafkaUtilsToPositive(number: number);
+    KafkalyzerRustLib.instance.api.crateApiKafkaUtilsToPositive(number: number);
 
 Future<ClientConfig> createConfig({required ClusterProfile profile}) =>
-    RustLib.instance.api.crateApiKafkaUtilsCreateConfig(profile: profile);
+    KafkalyzerRustLib.instance.api.crateApiKafkaUtilsCreateConfig(
+      profile: profile,
+    );
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 abstract class ClientConfig implements RustOpaqueInterface {}

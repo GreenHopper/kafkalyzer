@@ -46,7 +46,11 @@ class UpdateService {
     try {
       return await velopack.isUpdateAvailable();
     } catch (e, stackTrace) {
-      _logger.w('Failed to check for updates: $e', error: e, stackTrace: stackTrace);
+      _logger.w(
+        'Failed to check for updates: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
@@ -63,7 +67,11 @@ class UpdateService {
     try {
       return await velopack.getLatestUpdateInfo();
     } catch (e, stackTrace) {
-      _logger.w('Failed to get latest update info: $e', error: e, stackTrace: stackTrace);
+      _logger.w(
+        'Failed to get latest update info: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return null;
     }
   }
@@ -73,7 +81,11 @@ class UpdateService {
     try {
       return velopack.checkAndDownloadUpdatesWithProgress();
     } catch (e, stackTrace) {
-      _logger.e('Failed to start update download: $e', error: e, stackTrace: stackTrace);
+      _logger.e(
+        'Failed to start update download: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return Stream.error(e, stackTrace);
     }
   }
@@ -84,7 +96,11 @@ class UpdateService {
       _logger.i('Applying update and restarting application...');
       await velopack.updateAndRestart();
     } catch (e, stackTrace) {
-      _logger.e('Failed to apply update and restart: $e', error: e, stackTrace: stackTrace);
+      _logger.e(
+        'Failed to apply update and restart: $e',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }

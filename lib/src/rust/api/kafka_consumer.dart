@@ -24,7 +24,7 @@ Stream<KafkaMessage> consumeWithFilter({
   PlatformInt64? endTimestamp,
   int? maxResults,
   required bool runForever,
-}) => RustLib.instance.api.crateApiKafkaConsumerConsumeWithFilter(
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaConsumerConsumeWithFilter(
   profile: profile,
   topic: topic,
   filterTerms: filterTerms,

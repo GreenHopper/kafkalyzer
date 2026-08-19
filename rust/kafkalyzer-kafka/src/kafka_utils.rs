@@ -15,7 +15,7 @@ pub fn murmur2(data: &[u8]) -> u32 {
 
     for i in 0..length4 {
         let i4 = i * 4;
-        let mut block_value: u32 = (data[i4 + 0] as u32)
+        let mut block_value: u32 = (data[i4] as u32)
             + ((data[i4 + 1] as u32) << 8)
             + ((data[i4 + 2] as u32) << 16)
             + ((data[i4 + 3] as u32) << 24);
@@ -169,12 +169,10 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
 
     if let Some(protocol) = &profile.security_protocol {
         config.set("security.protocol", protocol);
+    } else if profile.sasl_username.is_some() {
+        config.set("security.protocol", "SASL_SSL");
     } else {
-        if profile.sasl_username.is_some() {
-            config.set("security.protocol", "SASL_SSL");
-        } else {
-            config.set("security.protocol", "PLAINTEXT");
-        }
+        config.set("security.protocol", "PLAINTEXT");
     }
 
     if let Some(mechanism) = &profile.mechanism {
@@ -277,15 +275,11 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
                             }
                         }
                     }
-                } else {
-                    if let Some(ref mut f) = log_file {
-                        writeln!(f, "Failed to read keystore file via read_to_end.").ok();
-                    }
+                } else if let Some(ref mut f) = log_file {
+                    writeln!(f, "Failed to read keystore file via read_to_end.").ok();
                 }
-            } else {
-                if let Some(ref mut f) = log_file {
-                    writeln!(f, "Keystore file not found or unreadable: {}", location).ok();
-                }
+            } else if let Some(ref mut f) = log_file {
+                writeln!(f, "Keystore file not found or unreadable: {}", location).ok();
             }
 
             // Fallback: If we failed to set the key PEM (parsing failed), let rdkafka try to load the P12 directly.
@@ -411,15 +405,11 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
                             }
                         }
                     }
-                } else {
-                    if let Some(ref mut f) = log_file {
-                        writeln!(f, "Failed to read truststore file: {}", location).ok();
-                    }
+                } else if let Some(ref mut f) = log_file {
+                    writeln!(f, "Failed to read truststore file: {}", location).ok();
                 }
-            } else {
-                if let Some(ref mut f) = log_file {
-                    writeln!(f, "Truststore file not found: {}", location).ok();
-                }
+            } else if let Some(ref mut f) = log_file {
+                writeln!(f, "Truststore file not found: {}", location).ok();
             }
         } else {
             // Standard PEM file
@@ -450,10 +440,8 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
                         }
                         config.set("ssl.ca.location", s);
                     }
-                } else {
-                    if let Some(ref mut f) = log_file {
-                        writeln!(f, "Bundled CA NOT found.").ok();
-                    }
+                } else if let Some(ref mut f) = log_file {
+                    writeln!(f, "Bundled CA NOT found.").ok();
                 }
             }
         }

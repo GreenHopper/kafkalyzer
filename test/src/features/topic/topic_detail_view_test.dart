@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
+
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -23,12 +25,20 @@ class FakeActiveConnectionController extends ChangeNotifier
   TopicMetadata? topic;
   final FakeMessageStreamController mockStreamController =
       FakeMessageStreamController();
+  final TopicAnalysisController mockAnalysisController =
+      TopicAnalysisController();
 
   @override
   MessageStreamController getStreamController(
-    String topicName,
-    String clusterName,
-  ) => mockStreamController;
+    String tabIdOrTopicName, [
+    String? clusterName,
+  ]) => mockStreamController;
+
+  @override
+  TopicAnalysisController getAnalysisController(
+    String tabIdOrTopicName, [
+    String? clusterName,
+  ]) => mockAnalysisController;
 
   @override
   List<OpenTopicRecord> get openTopics => topic != null && activeProfile != null

@@ -12,28 +12,344 @@ class AppLocalizationsDe extends AppLocalizations {
   String get appTitle => 'Kafkalyzer';
 
   @override
+  String get topicAnalysis => 'Topic-Analyse';
+
+  @override
+  String get messagesView => 'Nachrichten';
+
+  @override
+  String get startAnalysis => 'Analyse starten';
+
+  @override
+  String get stopAnalysis => 'Analyse stoppen';
+
+  @override
+  String get analyzingTopic => 'Topic wird analysiert...';
+
+  @override
+  String get analysisComplete => 'Analyse abgeschlossen';
+
+  @override
+  String get scanScope => 'Scan-Umfang';
+
+  @override
+  String get fullTopicScan => 'Vollständiger Scan (Alle Nachrichten)';
+
+  @override
+  String get sampleLast10k => 'Stichprobe letzte 10.000 Nachrichten';
+
+  @override
+  String get sampleLast50k => 'Stichprobe letzte 50.000 Nachrichten';
+
+  @override
+  String get sampleLast100k => 'Stichprobe letzte 100.000 Nachrichten';
+
+  @override
+  String get totalMessages => 'Gesamtanzahl Nachrichten';
+
+  @override
+  String get totalPayloadSize => 'Gesamtgröße Payloads';
+
+  @override
+  String get avgMessageSize => 'Durchschnittl. Nachrichtengröße';
+
+  @override
+  String get minMaxSize => 'Min / Max Größe';
+
+  @override
+  String get tombstones => 'Tombstones';
+
+  @override
+  String get tombstoneRatio => 'Tombstone-Anteil';
+
+  @override
+  String get compactedTopic => 'Kompaktiertes Topic';
+
+  @override
+  String get nonCompactedTopic => 'Delete Retention Topic';
+
+  @override
+  String get nullKeys => 'Null Keys';
+
+  @override
+  String get keyedMessages => 'Nachrichten mit Key';
+
+  @override
+  String get hourlyPeakProduction => 'Stündliche Produktionsspitzen (24h UTC)';
+
+  @override
+  String get partitionUtilization => 'Partition-Auslastung & Verteilung';
+
+  @override
+  String get topKeys => 'Häufigste Message Keys';
+
+  @override
+  String get contentTypeBreakdown => 'Inhaltstypen';
+
+  @override
+  String get fieldFrequencies => 'Strukturierte Feld-Häufigkeiten';
+
+  @override
+  String get fieldValuesDistribution => 'Häufigste Werte';
+
+  @override
+  String get noAnalysisYet =>
+      'Noch keine Analysedaten vorhanden. Klicken Sie auf Analyse starten, um dieses Topic zu profilieren.';
+
+  @override
+  String scanSpeed(String speed) {
+    return '$speed Nachr./Sek.';
+  }
+
+  @override
+  String scanDuration(String duration) {
+    return 'Scan-Dauer: $duration';
+  }
+
+  @override
+  String get hotPartition => 'Hohe Last / Ungleichgewicht';
+
+  @override
+  String get balancedPartitions => 'Ausgeglichen';
+
+  @override
+  String get emptyTopicMessage => 'Dieses Topic ist leer (0 Nachrichten).';
+
+  @override
+  String topValuesForField(String field) {
+    return 'Häufigste Werte für $field';
+  }
+
+  @override
+  String get allMessages => 'Alle Nachrichten';
+
+  @override
+  String get byTopic => 'Nach Topic';
+
+  @override
+  String get byStep => 'Nach Schritt';
+
+  @override
+  String get filterByMessageId =>
+      'Nachrichten-ID, CORID oder PMXCOR-ID filtern';
+
+  @override
+  String get enterMessageIdToFilter =>
+      'Nachrichten-ID, CORID oder PMXCOR-ID eingeben...';
+
+  @override
+  String get statusOpen => 'OFFEN';
+
+  @override
+  String get statusAnalyzing => 'KI-ANALYSE GESTARTET';
+
+  @override
+  String get statusCompleted => 'KI-ANALYSE ABGESCHLOSSEN';
+
+  @override
+  String get statusFailed => 'FEHLGESCHLAGEN';
+
+  @override
+  String showingOrders(int filtered, int total) {
+    return 'Zeige $filtered von $total Aufträgen';
+  }
+
+  @override
+  String get loadOrders => 'Aufträge laden';
+
+  @override
+  String get searchingForOrders => 'Suche nach Aufträgen...';
+
+  @override
+  String get noOrdersFound =>
+      'Keine Aufträge gefunden. Klicken Sie auf Laden, um zu suchen.';
+
+  @override
+  String get noOrdersMatchFilter => 'Keine Aufträge entsprechen dem Filter.';
+
+  @override
+  String failedToLoadOrders(String error) {
+    return 'Fehler beim Laden der Aufträge: $error';
+  }
+
+  @override
+  String get orders => 'Aufträge';
+
+  @override
+  String get rerunNotIntegrated =>
+      'Erneute Ausführung aus dem Verlauf ist in der Auftragsansicht noch nicht integriert.';
+
+  @override
+  String get simulateOrder => 'Auftrag simulieren';
+
+  @override
+  String get limitOrders => 'Auftragslimit aktivieren';
+
+  @override
+  String get maxOrders => 'Max. Aufträge';
+
+  @override
+  String totalOrders(int total) {
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$totalString Aufträge';
+  }
+
+  @override
+  String get aiAnalysisDataAvailable => 'KI-Analysedaten verfügbar';
+
+  @override
+  String get kiError => 'KI Fehler';
+
+  @override
+  String get active => 'Aktiv';
+
+  @override
+  String firstAppearanceForKey(String key) {
+    return 'Erstes Auftreten für Schlüssel: $key';
+  }
+
+  @override
+  String stepMatches(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString Treffer';
+  }
+
+  @override
+  String searchingInTopic(String topic) {
+    return 'Suche in: $topic';
+  }
+
+  @override
+  String examinedMessages(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'Untersucht: $countString Nachrichten';
+  }
+
+  @override
+  String get searchResults => 'Suchergebnisse...';
+
+  @override
+  String matchesCount(int current, int total) {
+    final intl.NumberFormat currentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String currentString = currentNumberFormat.format(current);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$currentString / $totalString Treffer';
+  }
+
+  @override
+  String get otherResults => 'Andere Ergebnisse';
+
+  @override
+  String noResultsFound(String phrase) {
+    return 'Keine Ergebnisse für \'$phrase\' gefunden';
+  }
+
+  @override
+  String get noActiveStreams => 'Keine aktiven Streams';
+
+  @override
+  String get noProgressInfo => 'Keine Fortschrittsinfos';
+
+  @override
+  String scanned(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return '$countString gescannt';
+  }
+
+  @override
+  String scannedCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    return 'Gescannt: $countString';
+  }
+
+  @override
+  String topicsProgress(int completed, int total) {
+    return '$completed von $total Topics abgeschlossen';
+  }
+
+  @override
+  String pmxcorStatus(String status) {
+    return '$status';
+  }
+
+  @override
+  String clusterLabel(String name) {
+    return 'Cluster: $name';
+  }
+
+  @override
+  String get close => 'Schließen';
+
+  @override
+  String get closeTab => 'Tab schließen';
+
+  @override
+  String get duplicateTab => 'Tab duplizieren';
+
+  @override
+  String get openInNewTab => 'In neuem Tab öffnen';
+
+  @override
   String get explorer => 'Explorer';
 
   @override
   String get scripts => 'Skripte';
 
   @override
-  String get orders => 'Aufträge';
-
-  @override
   String get settings => 'Einstellungen';
 
   @override
-  String get consumerLag => 'Consumer-Lag';
+  String get clusters => 'CLUSTER';
+
+  @override
+  String get addCluster => 'Cluster hinzufügen';
+
+  @override
+  String get reloadTopicsAndSchemas => 'Topics & Schemas neu laden';
+
+  @override
+  String get selectClusterToViewTopics =>
+      'Wählen Sie einen Cluster aus, um Topics anzuzeigen';
+
+  @override
+  String get topics => 'Topics';
+
+  @override
+  String get filterTopics => 'Topics filtern...';
+
+  @override
+  String get showInternal => 'Interne anzeigen';
 
   @override
   String get consumerGroups => 'Consumer-Gruppen';
 
   @override
+  String get searchGroups => 'Consumer-Gruppen suchen...';
+
+  @override
   String get noConsumerGroupsFound => 'Keine Consumer-Gruppen gefunden.';
 
   @override
-  String get totalLag => 'Gesamt-Lag';
+  String get consumerLag => 'Consumer-Lag';
 
   @override
   String get autoRefresh => 'Auto-Aktualisierung (15s)';
@@ -54,10 +370,121 @@ class AppLocalizationsDe extends AppLocalizations {
   String get lagCol => 'Lag';
 
   @override
-  String get searchGroups => 'Consumer-Gruppen suchen...';
+  String get totalLag => 'Gesamt-Lag';
 
   @override
-  String get unknownView => 'Unbekannte Ansicht';
+  String get stream => 'Stream';
+
+  @override
+  String get cards => 'Karten';
+
+  @override
+  String get tree => 'Baum';
+
+  @override
+  String get raw => 'Roh';
+
+  @override
+  String get clear => 'Leeren';
+
+  @override
+  String get exportMessages => 'Nachrichten exportieren';
+
+  @override
+  String get startCondition => 'Startbedingung';
+
+  @override
+  String get stopCondition => 'Stoppbedingung';
+
+  @override
+  String get earliest => 'Früheste';
+
+  @override
+  String get latest => 'Neueste';
+
+  @override
+  String get custom => 'Benutzerdefiniert';
+
+  @override
+  String get offset => 'Offset';
+
+  @override
+  String get timestamp => 'Zeitstempel';
+
+  @override
+  String get startOffset => 'Start-Offset';
+
+  @override
+  String get endOffset => 'End-Offset';
+
+  @override
+  String get startTimestamp => 'Start-Zeitstempel';
+
+  @override
+  String get endTimestamp => 'End-Zeitstempel';
+
+  @override
+  String get quickTimeSelection => 'Schnellauswahl Zeit';
+
+  @override
+  String get ago => 'her';
+
+  @override
+  String get now => 'Jetzt';
+
+  @override
+  String get end => 'Ende';
+
+  @override
+  String get partitionOptional => 'Partition (opt.)';
+
+  @override
+  String get fastTrace => 'Schnellsuche (Hash Key)';
+
+  @override
+  String get limit => 'Limit';
+
+  @override
+  String get limitResults => 'Ergebnisse begrenzen';
+
+  @override
+  String get maxResults => 'Max. Ergebnisse';
+
+  @override
+  String get scope => 'Bereich';
+
+  @override
+  String get key => 'Key';
+
+  @override
+  String get value => 'Value';
+
+  @override
+  String get both => 'Beides';
+
+  @override
+  String get type => 'Typ';
+
+  @override
+  String get contains => 'Enthält';
+
+  @override
+  String get regex => 'Regex';
+
+  @override
+  String get exact => 'Exakt';
+
+  @override
+  String get run => 'Ausführen';
+
+  @override
+  String get stop => 'Stopp';
+
+  @override
+  String get clearAll => 'Alle leeren';
+
+  @override
+  String get apply => 'Anwenden';
 
   @override
   String get cancel => 'Abbrechen';
@@ -69,40 +496,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get delete => 'Löschen';
 
   @override
-  String get apply => 'Anwenden';
+  String get edit => 'Bearbeiten';
 
   @override
-  String get clear => 'Leeren';
-
-  @override
-  String get now => 'Jetzt';
-
-  @override
-  String get ago => 'her';
-
-  @override
-  String get custom => 'Benutzerdefiniert';
-
-  @override
-  String get quickTimeSelection => 'Schnellauswahl Zeit';
-
-  @override
-  String get editVariable => 'Variable bearbeiten';
+  String get actions => 'Aktionen';
 
   @override
   String get name => 'Name';
 
   @override
-  String get type => 'Typ';
+  String get topic => 'Topic';
 
   @override
-  String get source => 'Quelle';
+  String get cluster => 'Cluster';
 
   @override
-  String get usedIn => 'Verwendet in';
+  String get parameters => 'Parameter';
 
   @override
-  String get actions => 'Aktionen';
+  String get steps => 'Schritte';
 
   @override
   String get addStep => 'Schritt hinzufügen';
@@ -111,25 +523,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String get unnamedStep => 'Unbenannter Schritt';
 
   @override
-  String get steps => 'Schritte';
+  String get editStep => 'Schritt bearbeiten';
 
   @override
   String get variables => 'Variablen';
 
   @override
-  String get general => 'Allgemein';
+  String get editVariable => 'Variable bearbeiten';
 
   @override
-  String get clusterConfiguration => 'Cluster-Konfiguration';
+  String get usedIn => 'Verwendet in';
 
   @override
-  String get import => 'Importieren';
+  String get noVariablesRequired => 'Keine Variablen erforderlich.';
 
   @override
-  String get export => 'Exportieren';
+  String get addExtraction => 'Extraktion hinzufügen';
 
   @override
-  String get addCluster => 'Cluster hinzufügen';
+  String get newScript => 'Neues Skript';
+
+  @override
+  String get duplicateScript => 'Skript duplizieren';
+
+  @override
+  String get exportScript => 'Skript exportieren';
+
+  @override
+  String get exportSelectedScript => 'Ausgewähltes Skript exportieren';
+
+  @override
+  String get importScripts => 'Skripte importieren';
 
   @override
   String get deleteCluster => 'Cluster löschen';
@@ -140,101 +564,35 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get clustersImportedSuccessfully => 'Cluster erfolgreich importiert';
+  String get useSidebarToSelectScript =>
+      'Verwenden Sie die Seitenleiste, um ein Skript auszuwählen oder zu erstellen.';
 
   @override
-  String failedToImport(String error) {
-    return 'Import fehlgeschlagen: $error';
+  String get createNewScript => 'Neues Skript erstellen';
+
+  @override
+  String get editDefinition => 'Definition bearbeiten';
+
+  @override
+  String get selectValidScript =>
+      'Bitte wählen Sie zuerst ein gültiges Skript aus.';
+
+  @override
+  String scriptExecution(String name) {
+    return 'Skriptausführung: $name';
   }
-
-  @override
-  String get clustersExportedSuccessfully => 'Cluster erfolgreich exportiert';
-
-  @override
-  String failedToExport(String error) {
-    return 'Export fehlgeschlagen: $error';
-  }
-
-  @override
-  String get noActiveStreams => 'Keine aktiven Streams';
-
-  @override
-  String get clearAll => 'Alle leeren';
-
-  @override
-  String get viewAll => 'Alle anzeigen';
-
-  @override
-  String get stop => 'Stopp';
-
-  @override
-  String get stream => 'Stream';
-
-  @override
-  String get messageDetails => 'Nachrichtendetails';
-
-  @override
-  String get copyMessage => 'Nachricht kopieren';
-
-  @override
-  String get fullMessageCopied =>
-      'Vollständige Nachricht in die Zwischenablage kopiert';
-
-  @override
-  String get metadataCopied => 'Metadaten in die Zwischenablage kopiert';
-
-  @override
-  String get contentCopied => 'Inhalt in die Zwischenablage kopiert';
-
-  @override
-  String get raw => 'Roh';
-
-  @override
-  String get tree => 'Baum';
-
-  @override
-  String get cards => 'Karten';
-
-  @override
-  String get loadOrders => 'Aufträge laden';
-
-  @override
-  String get noOrdersFound =>
-      'Keine Aufträge gefunden. Klicken Sie auf Laden, um zu suchen.';
-
-  @override
-  String get noOrdersMatchFilter => 'Keine Aufträge entsprechen dem Filter.';
-
-  @override
-  String get pleaseSelectCluster => 'Bitte wählen Sie einen Cluster aus';
-
-  @override
-  String failedToLoadOrders(String error) {
-    return 'Fehler beim Laden der Aufträge: $error';
-  }
-
-  @override
-  String get run => 'Ausführen';
 
   @override
   String get newRun => 'Neuer Durchlauf';
 
   @override
-  String get noVariablesRequired => 'Keine Variablen erforderlich.';
+  String get history => 'Verlauf';
+
+  @override
+  String get reviewPreviousRuns => 'Vergangene Durchläufe ansehen';
 
   @override
   String get noPastRunsFound => 'Keine vergangenen Durchläufe gefunden.';
-
-  @override
-  String get runArchiveImported => 'Durchlauf-Archiv importiert';
-
-  @override
-  String failedToImportRun(String error) {
-    return 'Fehler beim Importieren des Durchlaufs: $error';
-  }
-
-  @override
-  String get runArchiveExported => 'Durchlauf-Archiv exportiert';
 
   @override
   String get deleteRunResult => 'Durchlaufergebnis löschen';
@@ -247,21 +605,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get runResultDeleted => 'Durchlaufergebnis gelöscht';
 
   @override
-  String get allMessages => 'Alle Nachrichten';
+  String get runDetails => 'Details';
 
   @override
-  String get otherResults => 'Andere Ergebnisse';
+  String get runSummary => 'Gesamt';
 
   @override
-  String noResultsFound(String phrase) {
-    return 'Keine Ergebnisse für \'$phrase\' gefunden';
-  }
+  String get chronological => 'Chronologisch';
 
   @override
-  String get editStep => 'Schritt bearbeiten';
-
-  @override
-  String get addExtraction => 'Extraktion hinzufügen';
+  String get general => 'Allgemein';
 
   @override
   String get switchLightMode => 'In den hellen Modus wechseln';
@@ -273,161 +626,65 @@ class AppLocalizationsDe extends AppLocalizations {
   String get defaultScriptOutputDir => 'Standard-Skript-Ausgabeverzeichnis';
 
   @override
+  String get selectOutputDirectory => 'Ausgabeverzeichnis wählen';
+
+  @override
+  String get maxScriptRunHistory => 'Max. Anzahl an Skript-Durchläufen';
+
+  @override
+  String get exportConfiguration => 'Konfiguration exportieren';
+
+  @override
+  String get export => 'Exportieren';
+
+  @override
+  String get importConfiguration => 'Konfiguration importieren';
+
+  @override
+  String get import => 'Importieren';
+
+  @override
+  String get configuration => 'Konfiguration';
+
+  @override
+  String get clusterConfiguration => 'Cluster-Konfiguration';
+
+  @override
+  String get pleaseSelectCluster => 'Bitte wählen Sie einen Cluster aus';
+
+  @override
   String get selectAll => 'Alle auswählen';
 
   @override
   String get deselectAll => 'Alle abwählen';
 
   @override
-  String get active => 'Aktiv';
+  String get viewAll => 'Alle anzeigen';
 
   @override
-  String get edit => 'Bearbeiten';
+  String get messageDetails => 'Nachrichtendetails';
 
   @override
-  String get simulateOrder => 'Auftrag simulieren';
+  String get copyMessage => 'Nachricht kopieren';
 
   @override
-  String get cluster => 'Cluster';
+  String get contentCopied => 'Inhalt in die Zwischenablage kopiert';
 
   @override
-  String get maxOrders => 'Max. Aufträge';
+  String get metadataCopied => 'Metadaten in die Zwischenablage kopiert';
 
   @override
-  String get filterByMessageId =>
-      'Nachrichten-ID, CORID oder PMXCOR-ID filtern';
+  String get fullMessageCopied =>
+      'Vollständige Nachricht in die Zwischenablage kopiert';
 
   @override
-  String get enterMessageIdToFilter =>
-      'Nachrichten-ID, CORID oder PMXCOR-ID eingeben...';
+  String get copiedToClipboard => 'In die Zwischenablage kopiert';
 
   @override
-  String showingOrders(int filtered, int total) {
-    return 'Zeige $filtered von $total Aufträgen';
-  }
+  String get noDifferencesFound => 'Keine Unterschiede gefunden.';
 
   @override
-  String get aiAnalysisDataAvailable => 'KI-Analysedaten verfügbar';
-
-  @override
-  String pmxcorStatus(String status) {
-    return '$status';
-  }
-
-  @override
-  String get statusOpen => 'OFFEN';
-
-  @override
-  String get statusAnalyzing => 'KI-ANALYSE GESTARTET';
-
-  @override
-  String get statusCompleted => 'KI-ANALYSE ABGESCHLOSSEN';
-
-  @override
-  String get statusFailed => 'FEHLGESCHLAGEN';
-
-  @override
-  String get clusters => 'CLUSTER';
-
-  @override
-  String get selectClusterToViewTopics =>
-      'Wählen Sie einen Cluster aus, um Topics anzuzeigen';
-
-  @override
-  String get topics => 'Topics';
-
-  @override
-  String clusterLabel(String name) {
-    return 'Cluster: $name';
-  }
-
-  @override
-  String get showInternal => 'Interne anzeigen';
-
-  @override
-  String get reloadTopicsAndSchemas => 'Topics & Schemas neu laden';
-
-  @override
-  String get filterTopics => 'Topics filtern...';
-
-  @override
-  String get selectOutputDirectory => 'Ausgabeverzeichnis wählen';
-
-  @override
-  String get topic => 'Topic';
-
-  @override
-  String get scope => 'Bereich';
-
-  @override
-  String get contains => 'Enthält';
-
-  @override
-  String get regex => 'Regex';
-
-  @override
-  String get exact => 'Exakt';
-
-  @override
-  String get key => 'Key';
-
-  @override
-  String get value => 'Value';
-
-  @override
-  String get both => 'Beides';
-
-  @override
-  String get fastTrace => 'Schnellsuche (Hash Key)';
-
-  @override
-  String get limit => 'Limit';
-
-  @override
-  String get limitOrders => 'Auftragslimit aktivieren';
-
-  @override
-  String get partitionOptional => 'Partition (opt.)';
-
-  @override
-  String get importScripts => 'Skripte importieren';
-
-  @override
-  String get exportSelectedScript => 'Ausgewähltes Skript exportieren';
-
-  @override
-  String get exportScript => 'Skript exportieren';
-
-  @override
-  String get createNewScript => 'Neues Skript erstellen';
-
-  @override
-  String get scriptsImportedSuccessfully => 'Skripte erfolgreich importiert';
-
-  @override
-  String get scriptExportedSuccessfully => 'Skript erfolgreich exportiert';
-
-  @override
-  String get history => 'Verlauf';
-
-  @override
-  String get editDefinition => 'Definition bearbeiten';
-
-  @override
-  String get newScript => 'Neues Skript';
-
-  @override
-  String get useSidebarToSelectScript =>
-      'Verwenden Sie die Seitenleiste, um ein Skript auszuwählen oder zu erstellen.';
-
-  @override
-  String get configuration => 'Konfiguration';
-
-  @override
-  String get exportConfiguration => 'Konfiguration exportieren';
-
-  @override
-  String get importConfiguration => 'Konfiguration importieren';
+  String get unknownView => 'Unbekannte Ansicht';
 
   @override
   String get configurationExportedSuccessfully =>
@@ -438,180 +695,41 @@ class AppLocalizationsDe extends AppLocalizations {
       'Konfiguration erfolgreich importiert';
 
   @override
-  String get copiedToClipboard => 'In die Zwischenablage kopiert';
+  String get clustersExportedSuccessfully => 'Cluster erfolgreich exportiert';
 
   @override
-  String get reviewPreviousRuns => 'Vergangene Durchläufe ansehen';
+  String get clustersImportedSuccessfully => 'Cluster erfolgreich importiert';
 
   @override
-  String get maxScriptRunHistory => 'Max. Anzahl an Skript-Durchläufen';
+  String get scriptExportedSuccessfully => 'Skript erfolgreich exportiert';
 
   @override
-  String scriptExecution(String name) {
-    return 'Skriptausführung: $name';
-  }
+  String get scriptsImportedSuccessfully => 'Skripte erfolgreich importiert';
 
   @override
-  String get selectValidScript =>
-      'Bitte wählen Sie zuerst ein gültiges Skript aus.';
+  String get runArchiveExported => 'Durchlauf-Archiv exportiert';
 
   @override
-  String get rerunNotIntegrated =>
-      'Erneute Ausführung aus dem Verlauf ist in der Auftragsansicht noch nicht integriert.';
-
-  @override
-  String get kiError => 'KI Fehler';
-
-  @override
-  String totalOrders(int total) {
-    final intl.NumberFormat totalNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String totalString = totalNumberFormat.format(total);
-
-    return '$totalString Aufträge';
-  }
-
-  @override
-  String get limitResults => 'Ergebnisse begrenzen';
-
-  @override
-  String get maxResults => 'Max. Ergebnisse';
-
-  @override
-  String get startCondition => 'Startbedingung';
-
-  @override
-  String get stopCondition => 'Stoppbedingung';
-
-  @override
-  String get startOffset => 'Start-Offset';
-
-  @override
-  String get startTimestamp => 'Start-Zeitstempel';
-
-  @override
-  String get endOffset => 'End-Offset';
-
-  @override
-  String get endTimestamp => 'End-Zeitstempel';
-
-  @override
-  String get end => 'Ende';
-
-  @override
-  String get latest => 'Neueste';
-
-  @override
-  String get earliest => 'Früheste';
-
-  @override
-  String get offset => 'Offset';
-
-  @override
-  String get timestamp => 'Zeitstempel';
-
-  @override
-  String get duplicateScript => 'Skript duplizieren';
-
-  @override
-  String get searchingForOrders => 'Suche nach Aufträgen...';
-
-  @override
-  String searchingInTopic(String topic) {
-    return 'Suche in: $topic';
-  }
-
-  @override
-  String topicsProgress(int completed, int total) {
-    return '$completed von $total Topics abgeschlossen';
-  }
-
-  @override
-  String scannedCount(int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    return 'Gescannt: $countString';
-  }
-
-  @override
-  String get noProgressInfo => 'Keine Fortschrittsinfos';
-
-  @override
-  String get runSummary => 'Gesamt';
-
-  @override
-  String get runDetails => 'Details';
-
-  @override
-  String get parameters => 'Parameter';
-
-  @override
-  String examinedMessages(int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    return 'Untersucht: $countString Nachrichten';
-  }
-
-  @override
-  String firstAppearanceForKey(String key) {
-    return 'Erstes Auftreten für Schlüssel: $key';
-  }
-
-  @override
-  String get noDifferencesFound => 'Keine Unterschiede gefunden.';
-
-  @override
-  String get chronological => 'Chronologisch';
-
-  @override
-  String get byTopic => 'Nach Topic';
-
-  @override
-  String get byStep => 'Nach Schritt';
-
-  @override
-  String matchesCount(int current, int total) {
-    final intl.NumberFormat currentNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String currentString = currentNumberFormat.format(current);
-    final intl.NumberFormat totalNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String totalString = totalNumberFormat.format(total);
-
-    return '$currentString / $totalString Treffer';
-  }
-
-  @override
-  String stepMatches(int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    return '$countString Treffer';
-  }
-
-  @override
-  String get searchResults => 'Suchergebnisse...';
-
-  @override
-  String scanned(int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    return '$countString gescannt';
-  }
-
-  @override
-  String get exportMessages => 'Nachrichten exportieren';
+  String get runArchiveImported => 'Durchlauf-Archiv importiert';
 
   @override
   String get messagesExportedSuccessfully =>
       'Nachrichten erfolgreich exportiert';
+
+  @override
+  String failedToExport(String error) {
+    return 'Export fehlgeschlagen: $error';
+  }
+
+  @override
+  String failedToImport(String error) {
+    return 'Import fehlgeschlagen: $error';
+  }
+
+  @override
+  String failedToImportRun(String error) {
+    return 'Fehler beim Importieren des Durchlaufs: $error';
+  }
 
   @override
   String messagesExportFailed(String error) {
@@ -641,11 +759,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get downloadingUpdate => 'Update wird heruntergeladen...';
 
   @override
-  String get updateReadyRestart =>
-      'Update bereit! Neustart erforderlich, um das Update anzuwenden.';
+  String get restartNow => 'Jetzt neu starten';
 
   @override
-  String get restartNow => 'Jetzt neu starten';
+  String get updateReadyRestart =>
+      'Update bereit! Neustart erforderlich, um das Update anzuwenden.';
 
   @override
   String updateError(String error) {
@@ -657,7 +775,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noReleaseNotes => 'Keine Versionshinweise verfügbar.';
-
-  @override
-  String get close => 'Schließen';
 }

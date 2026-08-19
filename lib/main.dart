@@ -11,8 +11,8 @@ Future<void> main() async {
   debugPrint('DEBUG: main() started');
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('DEBUG: WidgetsFlutterBinding initialized');
-  await RustLib.init();
-  debugPrint('DEBUG: RustLib initialized');
+  await KafkalyzerRustLib.init();
+  debugPrint('DEBUG: KafkalyzerRustLib initialized');
   setupDependencyInjection();
   debugPrint('DEBUG: DI setup complete');
 

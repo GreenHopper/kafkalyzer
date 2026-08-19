@@ -19,17 +19,23 @@ void main() {
       );
     });
 
-    test('initialization handles unpackaged/test environment gracefully without throwing', () async {
-      expect(updateService.isInitialized, isFalse);
-      // In a unit test environment, native bridge won't connect, but initialize() must not throw
-      await updateService.initialize();
-      // Should handle exception gracefully
-    });
+    test(
+      'initialization handles unpackaged/test environment gracefully without throwing',
+      () async {
+        expect(updateService.isInitialized, isFalse);
+        // In a unit test environment, native bridge won't connect, but initialize() must not throw
+        await updateService.initialize();
+        // Should handle exception gracefully
+      },
+    );
 
-    test('isUpdateAvailable returns false when unpackaged or uninitialized', () async {
-      final available = await updateService.isUpdateAvailable();
-      expect(available, isFalse);
-    });
+    test(
+      'isUpdateAvailable returns false when unpackaged or uninitialized',
+      () async {
+        final available = await updateService.isUpdateAvailable();
+        expect(available, isFalse);
+      },
+    );
 
     test('getLatestUpdateInfo returns null when uninitialized', () async {
       final info = await updateService.getLatestUpdateInfo();

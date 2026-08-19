@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:group_button/group_button.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
 
@@ -11,6 +12,8 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dar
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_view.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
@@ -23,13 +26,18 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 
 enum StartStrategy { latest, earliest, customOffset, customTimestamp }
 
+enum TopicViewMode { messages, analysis }
+
 class TopicDetailView extends StatefulWidget {
   final TopicMetadata topic;
   final ClusterProfile profile;
+  final String? tabId;
+
   const TopicDetailView({
     super.key,
     required this.topic,
     required this.profile,
+    this.tabId,
   });
 
   @override
@@ -47,7 +55,10 @@ class _TopicDetailViewState extends State<TopicDetailView>
 
   late final ActiveConnectionController activeController;
   late final MessageStreamController streamController;
+  late final TopicAnalysisController analysisController;
   late final SchemaController schemaController;
+
+  TopicViewMode _viewMode = TopicViewMode.messages;
 
   MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.earliest;
 
@@ -55,10 +66,9 @@ class _TopicDetailViewState extends State<TopicDetailView>
   void initState() {
     super.initState();
     activeController = getIt<ActiveConnectionController>();
-    streamController = activeController.getStreamController(
-      widget.topic.name,
-      widget.profile.name,
-    );
+    final key = widget.tabId ?? '${widget.profile.name}:${widget.topic.name}';
+    streamController = activeController.getStreamController(key);
+    analysisController = activeController.getAnalysisController(key);
     schemaController = getIt<SchemaController>();
   }
 
@@ -126,20 +136,30 @@ class _TopicDetailViewState extends State<TopicDetailView>
                 child: _buildHeader(context),
               ),
             ),
-            _buildSettings(context, colorScheme, startStreaming),
-            const Divider(height: 1),
-            Expanded(
-              child: MessagesView(
-                preferencesKey: "topic_detail_view_mode",
-                messages: messages,
-                onMessageTap: (msg) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => MessageDetailsDialog(message: msg),
-                  );
-                },
+            if (_viewMode == TopicViewMode.messages) ...[
+              _buildSettings(context, colorScheme, startStreaming),
+              const Divider(height: 1),
+              Expanded(
+                child: MessagesView(
+                  preferencesKey: "topic_detail_view_mode",
+                  messages: messages,
+                  onMessageTap: (msg) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => MessageDetailsDialog(message: msg),
+                    );
+                  },
+                ),
               ),
-            ),
+            ] else ...[
+              Expanded(
+                child: TopicAnalysisView(
+                  topic: widget.topic,
+                  profile: widget.profile,
+                  controller: analysisController,
+                ),
+              ),
+            ],
           ],
         );
       },
@@ -148,14 +168,20 @@ class _TopicDetailViewState extends State<TopicDetailView>
 
   Widget _buildHeader(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Row(
       children: [
         IconButton(
-          onPressed: () =>
-              activeController.closeTopic(widget.topic, widget.profile.name),
+          onPressed: () {
+            if (widget.tabId != null) {
+              activeController.closeTopicTab(widget.tabId!);
+            } else {
+              activeController.closeTopic(widget.topic, widget.profile.name);
+            }
+          },
           icon: const Icon(Icons.close),
-          tooltip: "Close Tab",
+          tooltip: l10n?.closeTab ?? "Close Tab",
           style: IconButton.styleFrom(
             backgroundColor: colorScheme.surfaceContainerHigh,
           ),
@@ -173,9 +199,45 @@ class _TopicDetailViewState extends State<TopicDetailView>
         ),
         if (hasSchema(schemaController, widget.profile, widget.topic.name))
           _buildSchemaButton(context),
-        const Spacer(),
-        _buildProgressTile(context, colorScheme),
+        const SizedBox(width: 16),
+        _buildTopicModeSwitcher(context, colorScheme, l10n),
+        if (_viewMode == TopicViewMode.messages) ...[
+          const SizedBox(width: 16),
+          _buildProgressTile(context, colorScheme),
+        ],
       ],
+    );
+  }
+
+  Widget _buildTopicModeSwitcher(
+    BuildContext context,
+    ColorScheme colorScheme,
+    AppLocalizations? l10n,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _TopicModeButton(
+            icon: Icons.list_alt_rounded,
+            label: l10n?.messagesView ?? 'Messages',
+            isSelected: _viewMode == TopicViewMode.messages,
+            onTap: () => setState(() => _viewMode = TopicViewMode.messages),
+          ),
+          const SizedBox(width: 2),
+          _TopicModeButton(
+            icon: Icons.analytics_outlined,
+            label: l10n?.topicAnalysis ?? 'Analysis',
+            isSelected: _viewMode == TopicViewMode.analysis,
+            onTap: () => setState(() => _viewMode = TopicViewMode.analysis),
+          ),
+        ],
+      ),
     );
   }
 
@@ -695,5 +757,63 @@ class _TopicDetailViewState extends State<TopicDetailView>
         runForever: _endStrategy == MultiSearchEndStrategy.live,
       );
     }
+  }
+}
+
+class _TopicModeButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _TopicModeButton({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.surface : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: isSelected
+              ? Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                )
+              : null,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

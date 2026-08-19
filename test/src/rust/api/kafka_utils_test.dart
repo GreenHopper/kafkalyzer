@@ -10,15 +10,15 @@ import 'rust_mocks.mocks.dart';
 class MockClientConfig extends Mock implements ClientConfig {}
 
 void main() {
-  late MockRustLibApi mockApi;
+  late MockKafkalyzerRustLibApi mockApi;
 
   setUpAll(() {
-    mockApi = MockRustLibApi();
-    RustLib.initMock(api: mockApi);
+    mockApi = MockKafkalyzerRustLibApi();
+    KafkalyzerRustLib.initMock(api: mockApi);
   });
 
   tearDownAll(() {
-    RustLib.dispose();
+    KafkalyzerRustLib.dispose();
   });
 
   setUp(() {

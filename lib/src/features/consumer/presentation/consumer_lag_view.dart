@@ -528,7 +528,12 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                         ? _buildNoClusterSelected(context, l10n)
                         : (_isLoading && _lags.isEmpty
                               ? _buildLoadingState(context)
-                              : _buildGroupList(context, l10n, filteredLags, activeProfile))),
+                              : _buildGroupList(
+                                  context,
+                                  l10n,
+                                  filteredLags,
+                                  activeProfile,
+                                ))),
             ),
           ],
         ),

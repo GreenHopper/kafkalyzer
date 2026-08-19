@@ -157,10 +157,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text(
-                l10n.checkingForUpdates,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(l10n.checkingForUpdates, style: theme.textTheme.bodyMedium),
             ],
           ),
         );
@@ -196,10 +193,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
         );
 
       case _UpdateDialogStatus.available:
-        final targetVersion =
-            _updateInfo?.targetFullRelease.version ?? '';
-        final releaseNotes =
-            _updateInfo?.targetFullRelease.notesMarkdown;
+        final targetVersion = _updateInfo?.targetFullRelease.version ?? '';
+        final releaseNotes = _updateInfo?.targetFullRelease.notesMarkdown;
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -255,9 +250,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant,
-                ),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
               ),
               child: SingleChildScrollView(
                 child: Text(

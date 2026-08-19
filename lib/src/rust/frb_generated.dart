@@ -3,6 +3,8 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api.dart';
+import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
 import 'api/kafka_metadata.dart';
 import 'api/kafka_types.dart';
@@ -16,15 +18,21 @@ import 'frb_generated.io.dart'
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 /// Main entrypoint of the Rust API
-class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
+class KafkalyzerRustLib
+    extends
+        BaseEntrypoint<
+          KafkalyzerRustLibApi,
+          KafkalyzerRustLibApiImpl,
+          KafkalyzerRustLibWire
+        > {
   @internal
-  static final instance = RustLib._();
+  static final instance = KafkalyzerRustLib._();
 
-  RustLib._();
+  KafkalyzerRustLib._();
 
   /// Initialize flutter_rust_bridge
   static Future<void> init({
-    RustLibApi? api,
+    KafkalyzerRustLibApi? api,
     BaseHandler? handler,
     ExternalLibrary? externalLibrary,
     bool forceSameCodegenVersion = true,
@@ -39,7 +47,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 
   /// Initialize flutter_rust_bridge in mock mode.
   /// No libraries for FFI are loaded.
-  static void initMock({required RustLibApi api}) {
+  static void initMock({required KafkalyzerRustLibApi api}) {
     instance.initMockImpl(api: api);
   }
 
@@ -50,17 +58,15 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   static void dispose() => instance.disposeImpl();
 
   @override
-  ApiImplConstructor<RustLibApiImpl, RustLibWire> get apiImplConstructor =>
-      RustLibApiImpl.new;
+  ApiImplConstructor<KafkalyzerRustLibApiImpl, KafkalyzerRustLibWire>
+  get apiImplConstructor => KafkalyzerRustLibApiImpl.new;
 
   @override
-  WireConstructor<RustLibWire> get wireConstructor =>
-      RustLibWire.fromExternalLibrary;
+  WireConstructor<KafkalyzerRustLibWire> get wireConstructor =>
+      KafkalyzerRustLibWire.fromExternalLibrary;
 
   @override
-  Future<void> executeRustInitializers() async {
-    await api.crateApiInitApp();
-  }
+  Future<void> executeRustInitializers() async {}
 
   @override
   ExternalLibraryLoaderConfig get defaultExternalLibraryLoaderConfig =>
@@ -70,7 +76,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 1945713043;
+  int get rustContentHash => 839132467;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -80,7 +86,14 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
       );
 }
 
-abstract class RustLibApi extends BaseApi {
+abstract class KafkalyzerRustLibApi extends BaseApi {
+  Stream<TopicAnalysisProgress> crateApiKafkaAnalyzerAnalyzeTopicContent({
+    required ClusterProfile profile,
+    required String topic,
+    PlatformInt64? maxMessages,
+    required bool sampleFromLatest,
+  });
+
   Stream<KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
     required ClusterProfile profile,
     required String topic,
@@ -147,13 +160,64 @@ abstract class RustLibApi extends BaseApi {
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_ClientConfigPtr;
 }
 
-class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
-  RustLibApiImpl({
+class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
+    implements KafkalyzerRustLibApi {
+  KafkalyzerRustLibApiImpl({
     required super.handler,
     required super.wire,
     required super.generalizedFrbRustBinding,
     required super.portManager,
   });
+
+  @override
+  Stream<TopicAnalysisProgress> crateApiKafkaAnalyzerAnalyzeTopicContent({
+    required ClusterProfile profile,
+    required String topic,
+    PlatformInt64? maxMessages,
+    required bool sampleFromLatest,
+  }) {
+    final sink = RustStreamSink<TopicAnalysisProgress>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_box_autoadd_cluster_profile(profile, serializer);
+            sse_encode_String(topic, serializer);
+            sse_encode_opt_box_autoadd_i_64(maxMessages, serializer);
+            sse_encode_bool(sampleFromLatest, serializer);
+            sse_encode_StreamSink_topic_analysis_progress_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 1,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: sse_decode_AnyhowException,
+          ),
+          constMeta: kCrateApiKafkaAnalyzerAnalyzeTopicContentConstMeta,
+          argValues: [profile, topic, maxMessages, sampleFromLatest, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiKafkaAnalyzerAnalyzeTopicContentConstMeta =>
+      const TaskConstMeta(
+        debugName: "analyze_topic_content",
+        argNames: [
+          "profile",
+          "topic",
+          "maxMessages",
+          "sampleFromLatest",
+          "sink",
+        ],
+      );
 
   @override
   Stream<KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
@@ -196,7 +260,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 1,
+              funcId: 2,
               port: port_,
             );
           },
@@ -263,7 +327,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 3,
             port: port_,
           );
         },
@@ -296,7 +360,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 4,
             port: port_,
           );
         },
@@ -329,7 +393,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 5,
             port: port_,
           );
         },
@@ -362,7 +426,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 6,
             port: port_,
           );
         },
@@ -397,7 +461,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 7,
             port: port_,
           );
         },
@@ -430,7 +494,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 8,
             port: port_,
           );
         },
@@ -460,7 +524,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 9,
             port: port_,
           );
         },
@@ -487,7 +551,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 10,
             port: port_,
           );
         },
@@ -515,7 +579,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 11,
             port: port_,
           );
         },
@@ -543,7 +607,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 12,
             port: port_,
           );
         },
@@ -573,7 +637,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 13,
             port: port_,
           );
         },
@@ -635,6 +699,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RustStreamSink<TopicAnalysisProgress>
+  dco_decode_StreamSink_topic_analysis_progress_Sse(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
   String dco_decode_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as String;
@@ -662,6 +733,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_i_64(raw);
+  }
+
+  @protected
+  TopicAnalysisReport dco_decode_box_autoadd_topic_analysis_report(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_topic_analysis_report(raw);
   }
 
   @protected
@@ -712,9 +791,55 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double dco_decode_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
+  FieldOccurrence dco_decode_field_occurrence(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return FieldOccurrence(
+      fieldName: dco_decode_String(arr[0]),
+      count: dco_decode_i_64(arr[1]),
+      percentage: dco_decode_f_64(arr[2]),
+      topValues: dco_decode_list_field_value_occurrence(arr[3]),
+    );
+  }
+
+  @protected
+  FieldValueOccurrence dco_decode_field_value_occurrence(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return FieldValueOccurrence(
+      value: dco_decode_String(arr[0]),
+      count: dco_decode_i_64(arr[1]),
+      percentage: dco_decode_f_64(arr[2]),
+    );
+  }
+
+  @protected
   FilterType dco_decode_filter_type(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return FilterType.values[raw as int];
+  }
+
+  @protected
+  HourlyCount dco_decode_hourly_count(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return HourlyCount(
+      hour: dco_decode_i_32(arr[0]),
+      count: dco_decode_i_64(arr[1]),
+      percentage: dco_decode_f_64(arr[2]),
+    );
   }
 
   @protected
@@ -759,6 +884,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  KeyOccurrence dco_decode_key_occurrence(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return KeyOccurrence(
+      key: dco_decode_String(arr[0]),
+      count: dco_decode_i_64(arr[1]),
+      percentage: dco_decode_f_64(arr[2]),
+    );
+  }
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_String).toList();
@@ -771,9 +909,43 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<FieldOccurrence> dco_decode_list_field_occurrence(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_field_occurrence).toList();
+  }
+
+  @protected
+  List<FieldValueOccurrence> dco_decode_list_field_value_occurrence(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_field_value_occurrence)
+        .toList();
+  }
+
+  @protected
+  List<HourlyCount> dco_decode_list_hourly_count(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_hourly_count).toList();
+  }
+
+  @protected
   List<KafkaHeader> dco_decode_list_kafka_header(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_kafka_header).toList();
+  }
+
+  @protected
+  List<KeyOccurrence> dco_decode_list_key_occurrence(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_key_occurrence).toList();
+  }
+
+  @protected
+  List<PartitionAnalysis> dco_decode_list_partition_analysis(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_partition_analysis).toList();
   }
 
   @protected
@@ -801,6 +973,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<TypeOccurrence> dco_decode_list_type_occurrence(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_type_occurrence).toList();
+  }
+
+  @protected
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
@@ -819,6 +997,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TopicAnalysisReport? dco_decode_opt_box_autoadd_topic_analysis_report(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null
+        ? null
+        : dco_decode_box_autoadd_topic_analysis_report(raw);
+  }
+
+  @protected
   List<String>? dco_decode_opt_list_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_list_String(raw);
@@ -831,9 +1019,68 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PartitionAnalysis dco_decode_partition_analysis(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return PartitionAnalysis(
+      partition: dco_decode_i_32(arr[0]),
+      messageCount: dco_decode_i_64(arr[1]),
+      byteSize: dco_decode_i_64(arr[2]),
+      percentage: dco_decode_f_64(arr[3]),
+      earliestOffset: dco_decode_i_64(arr[4]),
+      latestOffset: dco_decode_i_64(arr[5]),
+    );
+  }
+
+  @protected
   SearchScope dco_decode_search_scope(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return SearchScope.values[raw as int];
+  }
+
+  @protected
+  TopicAnalysisProgress dco_decode_topic_analysis_progress(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return TopicAnalysisProgress(
+      scannedMessages: dco_decode_i_64(arr[0]),
+      totalMessagesToScan: dco_decode_i_64(arr[1]),
+      progress: dco_decode_f_64(arr[2]),
+      messagesPerSecond: dco_decode_f_64(arr[3]),
+      currentPartition: dco_decode_i_32(arr[4]),
+      isComplete: dco_decode_bool(arr[5]),
+      errorMessage: dco_decode_opt_String(arr[6]),
+      partialReport: dco_decode_opt_box_autoadd_topic_analysis_report(arr[7]),
+    );
+  }
+
+  @protected
+  TopicAnalysisReport dco_decode_topic_analysis_report(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 15)
+      throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
+    return TopicAnalysisReport(
+      topic: dco_decode_String(arr[0]),
+      totalMessages: dco_decode_i_64(arr[1]),
+      totalBytes: dco_decode_i_64(arr[2]),
+      minMessageSize: dco_decode_i_64(arr[3]),
+      maxMessageSize: dco_decode_i_64(arr[4]),
+      avgMessageSize: dco_decode_f_64(arr[5]),
+      tombstonesCount: dco_decode_i_64(arr[6]),
+      isCompacted: dco_decode_bool(arr[7]),
+      nullKeysCount: dco_decode_i_64(arr[8]),
+      partitionStats: dco_decode_list_partition_analysis(arr[9]),
+      hourlyDistribution: dco_decode_list_hourly_count(arr[10]),
+      topKeys: dco_decode_list_key_occurrence(arr[11]),
+      contentTypeDistribution: dco_decode_list_type_occurrence(arr[12]),
+      fieldFrequencies: dco_decode_list_field_occurrence(arr[13]),
+      scanDurationMs: dco_decode_i_64(arr[14]),
+    );
   }
 
   @protected
@@ -863,6 +1110,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       logEndOffset: dco_decode_i_64(arr[2]),
       currentOffset: dco_decode_i_64(arr[3]),
       lag: dco_decode_i_64(arr[4]),
+    );
+  }
+
+  @protected
+  TypeOccurrence dco_decode_type_occurrence(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return TypeOccurrence(
+      typeName: dco_decode_String(arr[0]),
+      count: dco_decode_i_64(arr[1]),
+      percentage: dco_decode_f_64(arr[2]),
     );
   }
 
@@ -930,6 +1190,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RustStreamSink<TopicAnalysisProgress>
+  sse_decode_StreamSink_topic_analysis_progress_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
   String sse_decode_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_list_prim_u_8_strict(deserializer);
@@ -960,6 +1229,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_i_64(deserializer));
+  }
+
+  @protected
+  TopicAnalysisReport sse_decode_box_autoadd_topic_analysis_report(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_topic_analysis_report(deserializer));
   }
 
   @protected
@@ -1031,10 +1308,59 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  double sse_decode_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getFloat64();
+  }
+
+  @protected
+  FieldOccurrence sse_decode_field_occurrence(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_fieldName = sse_decode_String(deserializer);
+    var var_count = sse_decode_i_64(deserializer);
+    var var_percentage = sse_decode_f_64(deserializer);
+    var var_topValues = sse_decode_list_field_value_occurrence(deserializer);
+    return FieldOccurrence(
+      fieldName: var_fieldName,
+      count: var_count,
+      percentage: var_percentage,
+      topValues: var_topValues,
+    );
+  }
+
+  @protected
+  FieldValueOccurrence sse_decode_field_value_occurrence(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_value = sse_decode_String(deserializer);
+    var var_count = sse_decode_i_64(deserializer);
+    var var_percentage = sse_decode_f_64(deserializer);
+    return FieldValueOccurrence(
+      value: var_value,
+      count: var_count,
+      percentage: var_percentage,
+    );
+  }
+
+  @protected
   FilterType sse_decode_filter_type(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
     return FilterType.values[inner];
+  }
+
+  @protected
+  HourlyCount sse_decode_hourly_count(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_hour = sse_decode_i_32(deserializer);
+    var var_count = sse_decode_i_64(deserializer);
+    var var_percentage = sse_decode_f_64(deserializer);
+    return HourlyCount(
+      hour: var_hour,
+      count: var_count,
+      percentage: var_percentage,
+    );
   }
 
   @protected
@@ -1079,6 +1405,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  KeyOccurrence sse_decode_key_occurrence(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_key = sse_decode_String(deserializer);
+    var var_count = sse_decode_i_64(deserializer);
+    var var_percentage = sse_decode_f_64(deserializer);
+    return KeyOccurrence(
+      key: var_key,
+      count: var_count,
+      percentage: var_percentage,
+    );
+  }
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1105,6 +1444,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<FieldOccurrence> sse_decode_list_field_occurrence(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <FieldOccurrence>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_field_occurrence(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<FieldValueOccurrence> sse_decode_list_field_value_occurrence(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <FieldValueOccurrence>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_field_value_occurrence(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HourlyCount> sse_decode_list_hourly_count(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HourlyCount>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_hourly_count(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<KafkaHeader> sse_decode_list_kafka_header(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1112,6 +1491,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <KafkaHeader>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_kafka_header(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<KeyOccurrence> sse_decode_list_key_occurrence(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <KeyOccurrence>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_key_occurrence(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<PartitionAnalysis> sse_decode_list_partition_analysis(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <PartitionAnalysis>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_partition_analysis(deserializer));
     }
     return ans_;
   }
@@ -1159,6 +1566,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<TypeOccurrence> sse_decode_list_type_occurrence(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TypeOccurrence>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_type_occurrence(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1192,6 +1613,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TopicAnalysisReport? sse_decode_opt_box_autoadd_topic_analysis_report(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_topic_analysis_report(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   List<String>? sse_decode_opt_list_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1216,10 +1650,99 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  PartitionAnalysis sse_decode_partition_analysis(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_partition = sse_decode_i_32(deserializer);
+    var var_messageCount = sse_decode_i_64(deserializer);
+    var var_byteSize = sse_decode_i_64(deserializer);
+    var var_percentage = sse_decode_f_64(deserializer);
+    var var_earliestOffset = sse_decode_i_64(deserializer);
+    var var_latestOffset = sse_decode_i_64(deserializer);
+    return PartitionAnalysis(
+      partition: var_partition,
+      messageCount: var_messageCount,
+      byteSize: var_byteSize,
+      percentage: var_percentage,
+      earliestOffset: var_earliestOffset,
+      latestOffset: var_latestOffset,
+    );
+  }
+
+  @protected
   SearchScope sse_decode_search_scope(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
     return SearchScope.values[inner];
+  }
+
+  @protected
+  TopicAnalysisProgress sse_decode_topic_analysis_progress(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_scannedMessages = sse_decode_i_64(deserializer);
+    var var_totalMessagesToScan = sse_decode_i_64(deserializer);
+    var var_progress = sse_decode_f_64(deserializer);
+    var var_messagesPerSecond = sse_decode_f_64(deserializer);
+    var var_currentPartition = sse_decode_i_32(deserializer);
+    var var_isComplete = sse_decode_bool(deserializer);
+    var var_errorMessage = sse_decode_opt_String(deserializer);
+    var var_partialReport = sse_decode_opt_box_autoadd_topic_analysis_report(
+      deserializer,
+    );
+    return TopicAnalysisProgress(
+      scannedMessages: var_scannedMessages,
+      totalMessagesToScan: var_totalMessagesToScan,
+      progress: var_progress,
+      messagesPerSecond: var_messagesPerSecond,
+      currentPartition: var_currentPartition,
+      isComplete: var_isComplete,
+      errorMessage: var_errorMessage,
+      partialReport: var_partialReport,
+    );
+  }
+
+  @protected
+  TopicAnalysisReport sse_decode_topic_analysis_report(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_topic = sse_decode_String(deserializer);
+    var var_totalMessages = sse_decode_i_64(deserializer);
+    var var_totalBytes = sse_decode_i_64(deserializer);
+    var var_minMessageSize = sse_decode_i_64(deserializer);
+    var var_maxMessageSize = sse_decode_i_64(deserializer);
+    var var_avgMessageSize = sse_decode_f_64(deserializer);
+    var var_tombstonesCount = sse_decode_i_64(deserializer);
+    var var_isCompacted = sse_decode_bool(deserializer);
+    var var_nullKeysCount = sse_decode_i_64(deserializer);
+    var var_partitionStats = sse_decode_list_partition_analysis(deserializer);
+    var var_hourlyDistribution = sse_decode_list_hourly_count(deserializer);
+    var var_topKeys = sse_decode_list_key_occurrence(deserializer);
+    var var_contentTypeDistribution = sse_decode_list_type_occurrence(
+      deserializer,
+    );
+    var var_fieldFrequencies = sse_decode_list_field_occurrence(deserializer);
+    var var_scanDurationMs = sse_decode_i_64(deserializer);
+    return TopicAnalysisReport(
+      topic: var_topic,
+      totalMessages: var_totalMessages,
+      totalBytes: var_totalBytes,
+      minMessageSize: var_minMessageSize,
+      maxMessageSize: var_maxMessageSize,
+      avgMessageSize: var_avgMessageSize,
+      tombstonesCount: var_tombstonesCount,
+      isCompacted: var_isCompacted,
+      nullKeysCount: var_nullKeysCount,
+      partitionStats: var_partitionStats,
+      hourlyDistribution: var_hourlyDistribution,
+      topKeys: var_topKeys,
+      contentTypeDistribution: var_contentTypeDistribution,
+      fieldFrequencies: var_fieldFrequencies,
+      scanDurationMs: var_scanDurationMs,
+    );
   }
 
   @protected
@@ -1255,6 +1778,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       logEndOffset: var_logEndOffset,
       currentOffset: var_currentOffset,
       lag: var_lag,
+    );
+  }
+
+  @protected
+  TypeOccurrence sse_decode_type_occurrence(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_typeName = sse_decode_String(deserializer);
+    var var_count = sse_decode_i_64(deserializer);
+    var var_percentage = sse_decode_f_64(deserializer);
+    return TypeOccurrence(
+      typeName: var_typeName,
+      count: var_count,
+      percentage: var_percentage,
     );
   }
 
@@ -1334,6 +1870,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_StreamSink_topic_analysis_progress_Sse(
+    RustStreamSink<TopicAnalysisProgress> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_topic_analysis_progress,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_String(String self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
@@ -1367,6 +1920,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_64(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_topic_analysis_report(
+    TopicAnalysisReport self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_topic_analysis_report(self, serializer);
   }
 
   @protected
@@ -1413,9 +1975,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putFloat64(self);
+  }
+
+  @protected
+  void sse_encode_field_occurrence(
+    FieldOccurrence self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.fieldName, serializer);
+    sse_encode_i_64(self.count, serializer);
+    sse_encode_f_64(self.percentage, serializer);
+    sse_encode_list_field_value_occurrence(self.topValues, serializer);
+  }
+
+  @protected
+  void sse_encode_field_value_occurrence(
+    FieldValueOccurrence self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.value, serializer);
+    sse_encode_i_64(self.count, serializer);
+    sse_encode_f_64(self.percentage, serializer);
+  }
+
+  @protected
   void sse_encode_filter_type(FilterType self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_hourly_count(HourlyCount self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.hour, serializer);
+    sse_encode_i_64(self.count, serializer);
+    sse_encode_f_64(self.percentage, serializer);
   }
 
   @protected
@@ -1450,6 +2049,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_key_occurrence(KeyOccurrence self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.key, serializer);
+    sse_encode_i_64(self.count, serializer);
+    sse_encode_f_64(self.percentage, serializer);
+  }
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
@@ -1471,6 +2078,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_field_occurrence(
+    List<FieldOccurrence> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_field_occurrence(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_field_value_occurrence(
+    List<FieldValueOccurrence> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_field_value_occurrence(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_hourly_count(
+    List<HourlyCount> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_hourly_count(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_kafka_header(
     List<KafkaHeader> self,
     SseSerializer serializer,
@@ -1479,6 +2122,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_kafka_header(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_key_occurrence(
+    List<KeyOccurrence> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_key_occurrence(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_partition_analysis(
+    List<PartitionAnalysis> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_partition_analysis(item, serializer);
     }
   }
 
@@ -1529,6 +2196,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_type_occurrence(
+    List<TypeOccurrence> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_type_occurrence(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1562,6 +2241,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_topic_analysis_report(
+    TopicAnalysisReport? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_topic_analysis_report(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_list_String(
     List<String>? self,
     SseSerializer serializer,
@@ -1588,9 +2280,65 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_partition_analysis(
+    PartitionAnalysis self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.partition, serializer);
+    sse_encode_i_64(self.messageCount, serializer);
+    sse_encode_i_64(self.byteSize, serializer);
+    sse_encode_f_64(self.percentage, serializer);
+    sse_encode_i_64(self.earliestOffset, serializer);
+    sse_encode_i_64(self.latestOffset, serializer);
+  }
+
+  @protected
   void sse_encode_search_scope(SearchScope self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_topic_analysis_progress(
+    TopicAnalysisProgress self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.scannedMessages, serializer);
+    sse_encode_i_64(self.totalMessagesToScan, serializer);
+    sse_encode_f_64(self.progress, serializer);
+    sse_encode_f_64(self.messagesPerSecond, serializer);
+    sse_encode_i_32(self.currentPartition, serializer);
+    sse_encode_bool(self.isComplete, serializer);
+    sse_encode_opt_String(self.errorMessage, serializer);
+    sse_encode_opt_box_autoadd_topic_analysis_report(
+      self.partialReport,
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_topic_analysis_report(
+    TopicAnalysisReport self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.topic, serializer);
+    sse_encode_i_64(self.totalMessages, serializer);
+    sse_encode_i_64(self.totalBytes, serializer);
+    sse_encode_i_64(self.minMessageSize, serializer);
+    sse_encode_i_64(self.maxMessageSize, serializer);
+    sse_encode_f_64(self.avgMessageSize, serializer);
+    sse_encode_i_64(self.tombstonesCount, serializer);
+    sse_encode_bool(self.isCompacted, serializer);
+    sse_encode_i_64(self.nullKeysCount, serializer);
+    sse_encode_list_partition_analysis(self.partitionStats, serializer);
+    sse_encode_list_hourly_count(self.hourlyDistribution, serializer);
+    sse_encode_list_key_occurrence(self.topKeys, serializer);
+    sse_encode_list_type_occurrence(self.contentTypeDistribution, serializer);
+    sse_encode_list_field_occurrence(self.fieldFrequencies, serializer);
+    sse_encode_i_64(self.scanDurationMs, serializer);
   }
 
   @protected
@@ -1614,6 +2362,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_64(self.logEndOffset, serializer);
     sse_encode_i_64(self.currentOffset, serializer);
     sse_encode_i_64(self.lag, serializer);
+  }
+
+  @protected
+  void sse_encode_type_occurrence(
+    TypeOccurrence self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.typeName, serializer);
+    sse_encode_i_64(self.count, serializer);
+    sse_encode_f_64(self.percentage, serializer);
   }
 
   @protected
@@ -1651,11 +2410,17 @@ class ClientConfigImpl extends RustOpaque implements ClientConfig {
     : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
 
   static final _kStaticData = RustArcStaticData(
-    rustArcIncrementStrongCount:
-        RustLib.instance.api.rust_arc_increment_strong_count_ClientConfig,
-    rustArcDecrementStrongCount:
-        RustLib.instance.api.rust_arc_decrement_strong_count_ClientConfig,
-    rustArcDecrementStrongCountPtr:
-        RustLib.instance.api.rust_arc_decrement_strong_count_ClientConfigPtr,
+    rustArcIncrementStrongCount: KafkalyzerRustLib
+        .instance
+        .api
+        .rust_arc_increment_strong_count_ClientConfig,
+    rustArcDecrementStrongCount: KafkalyzerRustLib
+        .instance
+        .api
+        .rust_arc_decrement_strong_count_ClientConfig,
+    rustArcDecrementStrongCountPtr: KafkalyzerRustLib
+        .instance
+        .api
+        .rust_arc_decrement_strong_count_ClientConfigPtr,
   );
 }
