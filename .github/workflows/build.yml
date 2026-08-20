@@ -251,15 +251,20 @@ jobs:
           toolchain: stable
           cache-workspaces: "rust"
 
-      - name: Set up sccache
-        uses: mozilla-actions/sccache-action@v0.0.7
-
       - name: Export GitHub Actions cache API variables
         uses: actions/github-script@v7
         with:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL)
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN)
+
+      - name: Cache Cargokit Windows target directory
+        uses: actions/cache@v4
+        with:
+          path: build/windows/x64/plugins/rust_lib_kafkalyzer/cargokit_build
+          key: ${{ runner.os }}-cargokit-windows-${{ hashFiles('rust/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargokit-windows-
 
       - name: Install OpenSSL and Cyrus SASL via vcpkg
         shell: pwsh
@@ -287,9 +292,6 @@ jobs:
 
       - name: Build Windows app
         run: flutter build windows --release --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
-        env:
-          SCCACHE_GHA_ENABLED: "true"
-          RUSTC_WRAPPER: "sccache"
 
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
