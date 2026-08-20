@@ -42,5 +42,5 @@
 
 - [x] 6.1 `dart format` and `flutter analyze` are clean
 - [x] 6.2 `flutter test` passes (model, service, controller, and widget tests)
-- [ ] 6.3 Manual smoke test (live environment): run an analysis → export → close/reopen the topic → import the file → confirm the dashboard renders and the imported indicator shows; then import a malformed file, a wrong-version file, and a non-analysis file and confirm each is rejected with a clear localized message. (Each of these behaviors is covered by the automated tests in 6.2; only the live-cluster end-to-end GUI pass needs a real environment.)
+- [x] 6.3 Manual smoke test (live environment): run an analysis → export → close/reopen the topic → import the file → confirm the dashboard renders and the imported indicator shows; then import a malformed file, a wrong-version file, and a non-analysis file and confirm each is rejected with a clear localized message. (Each of these behaviors is covered by the automated tests in 6.2; only the live-cluster end-to-end GUI pass needs a real environment.)
 - [x] 6.4 `openspec validate topic-analysis-export-import` passes and every spec scenario is covered by a test or the manual smoke test
