@@ -71,6 +71,7 @@ dependencies:
 
   material_ui: ^1.0.0
   velopack_flutter: ^0.3.2
+  icons_launcher: ^3.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -138,3 +139,14 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+icons_launcher:
+  platforms:
+    linux:
+      enable: true
+      image_path: "assets/logo-transparent.png"
+    windows:
+      enable: true
+      image_path: "assets/logo-transparent.png"
+    macos:
+      enable: true
+      image_path: "assets/logo.png"

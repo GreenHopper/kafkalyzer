@@ -8,7 +8,7 @@ export 'package:velopack_flutter/velopack_flutter.dart' show UpdateInfo;
 
 class UpdateService {
   static const String defaultRepositoryUrl =
-      'https://github.com/Protoss78/kafkalyzer';
+      'https://github.com/GreenHopper/kafkalyzer';
 
   final Logger _logger;
   bool _isInitialized = false;

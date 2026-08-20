@@ -15,7 +15,7 @@ void main() {
     test('default repository url is configured correctly', () {
       expect(
         UpdateService.defaultRepositoryUrl,
-        'https://github.com/Protoss78/kafkalyzer',
+        'https://github.com/GreenHopper/kafkalyzer',
       );
     });
 
