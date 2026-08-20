@@ -272,6 +272,66 @@ abstract class AppLocalizations {
   /// **'No analysis data yet. Click Start Analysis to profile this topic.'**
   String get noAnalysisYet;
 
+  /// No description provided for @exportAnalysisReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Analysis Report'**
+  String get exportAnalysisReport;
+
+  /// No description provided for @importAnalysisReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Analysis Report'**
+  String get importAnalysisReport;
+
+  /// No description provided for @importedFromTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported from {cluster} at {time}'**
+  String importedFromTime(String cluster, String time);
+
+  /// No description provided for @unknownCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown cluster'**
+  String get unknownCluster;
+
+  /// No description provided for @analysisExportedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis report exported successfully'**
+  String get analysisExportedSuccessfully;
+
+  /// No description provided for @analysisImportedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis report imported successfully'**
+  String get analysisImportedSuccessfully;
+
+  /// No description provided for @importNotAValidAnalysisFile.
+  ///
+  /// In en, this message translates to:
+  /// **'That file is not a valid Kafkalyzer analysis report.'**
+  String get importNotAValidAnalysisFile;
+
+  /// No description provided for @importUnsupportedVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'This analysis file uses an unsupported version ({version}).'**
+  String importUnsupportedVersion(String version);
+
+  /// No description provided for @importMalformed.
+  ///
+  /// In en, this message translates to:
+  /// **'This analysis file could not be read.'**
+  String get importMalformed;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to export the analysis report.'**
+  String get exportFailed;
+
   /// No description provided for @scanSpeed.
   ///
   /// In en, this message translates to:

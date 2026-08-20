@@ -29,6 +29,27 @@
   "fieldFrequencies": "Strukturierte Feld-Häufigkeiten",
   "fieldValuesDistribution": "Häufigste Werte",
   "noAnalysisYet": "Noch keine Analysedaten vorhanden. Klicken Sie auf Analyse starten, um dieses Topic zu profilieren.",
+  "exportAnalysisReport": "Analysebericht exportieren",
+  "importAnalysisReport": "Analysebericht importieren",
+  "importedFromTime": "Importiert von {cluster} am {time}",
+  "@importedFromTime": {
+    "placeholders": {
+      "cluster": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "unknownCluster": "unbekannter Cluster",
+  "analysisExportedSuccessfully": "Analysebericht erfolgreich exportiert",
+  "analysisImportedSuccessfully": "Analysebericht erfolgreich importiert",
+  "importNotAValidAnalysisFile": "Diese Datei ist kein gültiger Kafkalyzer-Analysebericht.",
+  "importUnsupportedVersion": "Diese Analyse-Datei verwendet eine nicht unterstützte Version ({version}).",
+  "@importUnsupportedVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "importMalformed": "Diese Analyse-Datei konnte nicht gelesen werden.",
+  "exportFailed": "Fehler beim Exportieren des Analyseberichts.",
   "scanSpeed": "{speed} Nachr./Sek.",
   "scanDuration": "Scan-Dauer: {duration}",
   "hotPartition": "Hohe Last / Ungleichgewicht",

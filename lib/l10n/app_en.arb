@@ -29,6 +29,27 @@
   "fieldFrequencies": "Structured Field Frequencies",
   "fieldValuesDistribution": "Top Values",
   "noAnalysisYet": "No analysis data yet. Click Start Analysis to profile this topic.",
+  "exportAnalysisReport": "Export Analysis Report",
+  "importAnalysisReport": "Import Analysis Report",
+  "importedFromTime": "Imported from {cluster} at {time}",
+  "@importedFromTime": {
+    "placeholders": {
+      "cluster": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "unknownCluster": "unknown cluster",
+  "analysisExportedSuccessfully": "Analysis report exported successfully",
+  "analysisImportedSuccessfully": "Analysis report imported successfully",
+  "importNotAValidAnalysisFile": "That file is not a valid Kafkalyzer analysis report.",
+  "importUnsupportedVersion": "This analysis file uses an unsupported version ({version}).",
+  "@importUnsupportedVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "importMalformed": "This analysis file could not be read.",
+  "exportFailed": "Failed to export the analysis report.",
   "scanSpeed": "{speed} msgs/sec",
   "@scanSpeed": {
     "placeholders": {

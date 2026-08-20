@@ -15,6 +15,7 @@ import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
 
 final getIt = GetIt.instance;
@@ -54,5 +55,8 @@ void setupDependencyInjection() {
   getIt.registerLazySingleton<SettingsService>(() => SettingsService());
   getIt.registerLazySingleton<MessageExportService>(
     () => MessageExportService(),
+  );
+  getIt.registerLazySingleton<TopicAnalysisExportService>(
+    () => TopicAnalysisExportService(),
   );
 }

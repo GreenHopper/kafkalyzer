@@ -97,6 +97,44 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch keine Analysedaten vorhanden. Klicken Sie auf Analyse starten, um dieses Topic zu profilieren.';
 
   @override
+  String get exportAnalysisReport => 'Analysebericht exportieren';
+
+  @override
+  String get importAnalysisReport => 'Analysebericht importieren';
+
+  @override
+  String importedFromTime(String cluster, String time) {
+    return 'Importiert von $cluster am $time';
+  }
+
+  @override
+  String get unknownCluster => 'unbekannter Cluster';
+
+  @override
+  String get analysisExportedSuccessfully =>
+      'Analysebericht erfolgreich exportiert';
+
+  @override
+  String get analysisImportedSuccessfully =>
+      'Analysebericht erfolgreich importiert';
+
+  @override
+  String get importNotAValidAnalysisFile =>
+      'Diese Datei ist kein gültiger Kafkalyzer-Analysebericht.';
+
+  @override
+  String importUnsupportedVersion(String version) {
+    return 'Diese Analyse-Datei verwendet eine nicht unterstützte Version ($version).';
+  }
+
+  @override
+  String get importMalformed =>
+      'Diese Analyse-Datei konnte nicht gelesen werden.';
+
+  @override
+  String get exportFailed => 'Fehler beim Exportieren des Analyseberichts.';
+
+  @override
   String scanSpeed(String speed) {
     return '$speed Nachr./Sek.';
   }

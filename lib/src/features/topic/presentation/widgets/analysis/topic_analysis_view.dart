@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/hourly_production_chart.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/key_and_field_distribution_view.dart';
@@ -29,6 +30,10 @@ class TopicAnalysisView extends StatefulWidget {
 
 class _TopicAnalysisViewState extends State<TopicAnalysisView> {
   ScanScopeOption _selectedScope = ScanScopeOption.full;
+  bool _importing = false;
+  bool _exporting = false;
+
+  bool get _busy => _importing || _exporting;
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +160,9 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                 ),
               ],
             ),
+            if (widget.controller.isImported) _buildImportedChip(context, l10n),
+            _buildImportButton(context, l10n),
+            _buildExportButton(context, l10n),
             if (isAnalyzing)
               FilledButton.tonalIcon(
                 onPressed: () => widget.controller.stopAnalysis(),
@@ -167,7 +175,7 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
               )
             else
               FilledButton.icon(
-                onPressed: _startScan,
+                onPressed: _busy ? null : _startScan,
                 icon: const Icon(Icons.analytics_outlined),
                 label: Text(l10n?.startAnalysis ?? 'Start Analysis'),
               ),
@@ -200,6 +208,111 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
       maxMessages: maxMsgs,
       sampleFromLatest: true,
     );
+  }
+
+  Widget _buildImportedChip(BuildContext context, AppLocalizations? l10n) {
+    final cluster = widget.controller.reportClusterName;
+    final time = widget.controller.reportExportedAt;
+    final clusterStr = (cluster != null && cluster.isNotEmpty)
+        ? cluster
+        : (l10n?.unknownCluster ?? 'unknown cluster');
+    final timeStr = time != null
+        ? DateFormat('yyyy-MM-dd HH:mm').format(time.toLocal())
+        : '';
+    final label = l10n?.importedFromTime(clusterStr, timeStr) ?? 'Imported';
+    return Chip(
+      avatar: const Icon(Icons.file_download_outlined, size: 16),
+      label: Text(label),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Widget _buildImportButton(BuildContext context, AppLocalizations? l10n) {
+    return FilledButton.tonalIcon(
+      onPressed: _busy ? null : _onImport,
+      icon: _importing
+          ? const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.file_open_outlined),
+      label: Text(l10n?.importAnalysisReport ?? 'Import Analysis Report'),
+    );
+  }
+
+  Widget _buildExportButton(BuildContext context, AppLocalizations? l10n) {
+    final canExport = widget.controller.report != null && !_busy;
+    return FilledButton.icon(
+      onPressed: canExport ? _onExport : null,
+      icon: _exporting
+          ? const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.save_alt_outlined),
+      label: Text(l10n?.exportAnalysisReport ?? 'Export Analysis Report'),
+    );
+  }
+
+  Future<void> _onImport() async {
+    setState(() => _importing = true);
+    final ok = await widget.controller.importReport();
+    if (!mounted) return;
+    setState(() => _importing = false);
+    final l10n = AppLocalizations.of(context);
+    if (ok) {
+      _showSnackBar(
+        l10n?.analysisImportedSuccessfully ?? 'Analysis report imported',
+      );
+    } else if (widget.controller.importErrorKind != null) {
+      _showSnackBar(_importErrorMessage(l10n));
+    }
+    // Cancelled: no message.
+  }
+
+  Future<void> _onExport() async {
+    if (widget.controller.report == null) return;
+    setState(() => _exporting = true);
+    try {
+      final path = await widget.controller.exportReport(
+        clusterName: widget.profile.name,
+      );
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      if (path != null) {
+        _showSnackBar(
+          l10n?.analysisExportedSuccessfully ?? 'Analysis report exported',
+        );
+      }
+      // null: user cancelled the save dialog.
+    } catch (_) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
+      _showSnackBar(l10n?.exportFailed ?? 'Failed to export');
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _importErrorMessage(AppLocalizations? l10n) {
+    final kind = widget.controller.importErrorKind;
+    if (kind == TopicAnalysisImportErrorKind.unsupportedVersion) {
+      final version =
+          widget.controller.importErrorFoundVersion?.toString() ?? '?';
+      return l10n?.importUnsupportedVersion(version) ?? 'Unsupported version';
+    }
+    if (kind == TopicAnalysisImportErrorKind.notAnAnalysisFile) {
+      return l10n?.importNotAValidAnalysisFile ?? 'Not a valid analysis file';
+    }
+    return l10n?.importMalformed ?? 'Could not read file';
   }
 
   Widget _buildProgressBanner(
