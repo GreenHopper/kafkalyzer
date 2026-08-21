@@ -334,7 +334,7 @@ jobs:
             Copy-Item "changelog.md" "$releaseDir/" -Force
           }
 
-          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe --icon assets/logo-transparent.png -o velopack_release
+          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe --icon windows/runner/resources/app_icon.ico -o velopack_release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
