@@ -14,9 +14,9 @@ Grab the latest stable release for your platform — the links below always reso
 
 | Platform | Asset | |
 | --- | --- | --- |
-| 🐧 Linux | AppImage | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer-x86_64.AppImage) |
-| 🍎 macOS | Portable App | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer.zip) |
-| 🪟 Windows | Installer | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/KafkalyzerSetup.exe) |
+| 🐧 Linux | AppImage | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer.AppImage) |
+| 🍎 macOS | Portable App | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer-osx-Portable.zip) |
+| 🪟 Windows | Installer | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer-win-Setup.exe) |
 
 > **Note:** The macOS archive contains a ready-to-use app bundle — unzip it and move the app into your `Applications` folder. All links use GitHub's `/releases/latest/download/` redirect, so they never expire when a new version ships.
 
