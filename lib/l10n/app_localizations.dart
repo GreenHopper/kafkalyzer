@@ -860,11 +860,59 @@ abstract class AppLocalizations {
   /// **'Start Condition'**
   String get startCondition;
 
+  /// No description provided for @startConditionLatestTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start at the most recent messages (tail of topic according to limit)'**
+  String get startConditionLatestTooltip;
+
+  /// No description provided for @startConditionEarliestTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start reading from the oldest available message (offset 0)'**
+  String get startConditionEarliestTooltip;
+
+  /// No description provided for @startConditionOffsetTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start reading from a specific offset'**
+  String get startConditionOffsetTooltip;
+
+  /// No description provided for @startConditionTimestampTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Start reading from a specific timestamp'**
+  String get startConditionTimestampTooltip;
+
   /// No description provided for @stopCondition.
   ///
   /// In en, this message translates to:
   /// **'Stop Condition'**
   String get stopCondition;
+
+  /// No description provided for @stopConditionStreamTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue listening indefinitely for newly arriving messages'**
+  String get stopConditionStreamTooltip;
+
+  /// No description provided for @stopConditionEndTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop when reaching the current end of the topic (high watermark)'**
+  String get stopConditionEndTooltip;
+
+  /// No description provided for @stopConditionOffsetTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop reading at a specific offset'**
+  String get stopConditionOffsetTooltip;
+
+  /// No description provided for @stopConditionTimestampTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop reading at a specific timestamp'**
+  String get stopConditionTimestampTooltip;
 
   /// No description provided for @earliest.
   ///

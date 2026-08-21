@@ -70,6 +70,14 @@ class EndConditionConfiguration extends StatelessWidget {
                   runSpacing: 8,
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                _getStrategyDescription(l10n),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  fontSize: 11,
+                ),
+              ),
               if (endStrategy == MultiSearchEndStrategy.customOffset) ...[
                 const SizedBox(height: 16),
                 TextField(
@@ -101,5 +109,18 @@ class EndConditionConfiguration extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _getStrategyDescription(AppLocalizations l10n) {
+    switch (endStrategy) {
+      case MultiSearchEndStrategy.live:
+        return l10n.stopConditionStreamTooltip;
+      case MultiSearchEndStrategy.latest:
+        return l10n.stopConditionEndTooltip;
+      case MultiSearchEndStrategy.customOffset:
+        return l10n.stopConditionOffsetTooltip;
+      case MultiSearchEndStrategy.customTimestamp:
+        return l10n.stopConditionTimestampTooltip;
+    }
   }
 }

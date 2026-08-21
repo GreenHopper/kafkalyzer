@@ -49,6 +49,7 @@ class MessageStreamController extends ChangeNotifier {
     int? endOffset,
     int? endTimestamp,
     bool runForever = true,
+    bool startFromTail = false,
   }) async {
     await stopStreaming();
 
@@ -72,9 +73,11 @@ class MessageStreamController extends ChangeNotifier {
         startTimestamp: startTimestamp,
         startPartition: startPartition,
         fastTraceKey: fastTraceEnabled ? filterTerms?.firstOrNull : null,
+        endOffset: endOffset,
         endTimestamp: endTimestamp,
         runForever: runForever,
         maxResults: maxResults,
+        startFromTail: startFromTail,
       );
       _subscription = stream.listen(
         _onMessageReceived,

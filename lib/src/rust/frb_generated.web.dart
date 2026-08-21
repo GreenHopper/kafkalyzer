@@ -62,6 +62,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  bool dco_decode_box_autoadd_bool(dynamic raw);
+
+  @protected
   ClusterProfile dco_decode_box_autoadd_cluster_profile(dynamic raw);
 
   @protected
@@ -154,6 +157,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
+  bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
+
+  @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
 
   @protected
@@ -234,6 +240,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  bool sse_decode_box_autoadd_bool(SseDeserializer deserializer);
 
   @protected
   ClusterProfile sse_decode_box_autoadd_cluster_profile(
@@ -348,6 +357,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
+  bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer);
 
   @protected
@@ -442,6 +454,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_bool(bool self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_cluster_profile(
@@ -586,6 +601,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer);

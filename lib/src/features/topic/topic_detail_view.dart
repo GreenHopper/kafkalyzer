@@ -782,6 +782,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
         endOffset: endOffset,
         endTimestamp: endTimestamp,
         runForever: _endStrategy == MultiSearchEndStrategy.live,
+        startFromTail: _startStrategy == MultiSearchStartStrategy.latest,
       );
     }
   }

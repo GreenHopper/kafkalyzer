@@ -471,7 +471,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startCondition => 'Start Condition';
 
   @override
+  String get startConditionLatestTooltip =>
+      'Start at the most recent messages (tail of topic according to limit)';
+
+  @override
+  String get startConditionEarliestTooltip =>
+      'Start reading from the oldest available message (offset 0)';
+
+  @override
+  String get startConditionOffsetTooltip =>
+      'Start reading from a specific offset';
+
+  @override
+  String get startConditionTimestampTooltip =>
+      'Start reading from a specific timestamp';
+
+  @override
   String get stopCondition => 'Stop Condition';
+
+  @override
+  String get stopConditionStreamTooltip =>
+      'Continue listening indefinitely for newly arriving messages';
+
+  @override
+  String get stopConditionEndTooltip =>
+      'Stop when reaching the current end of the topic (high watermark)';
+
+  @override
+  String get stopConditionOffsetTooltip => 'Stop reading at a specific offset';
+
+  @override
+  String get stopConditionTimestampTooltip =>
+      'Stop reading at a specific timestamp';
 
   @override
   String get earliest => 'Earliest';

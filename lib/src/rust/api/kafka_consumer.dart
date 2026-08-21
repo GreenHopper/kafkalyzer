@@ -24,6 +24,7 @@ Stream<KafkaMessage> consumeWithFilter({
   PlatformInt64? endTimestamp,
   int? maxResults,
   required bool runForever,
+  bool? startFromTail,
 }) => KafkalyzerRustLib.instance.api.crateApiKafkaConsumerConsumeWithFilter(
   profile: profile,
   topic: topic,
@@ -39,6 +40,7 @@ Stream<KafkaMessage> consumeWithFilter({
   endTimestamp: endTimestamp,
   maxResults: maxResults,
   runForever: runForever,
+  startFromTail: startFromTail,
 );
 
 class KafkaHeader {

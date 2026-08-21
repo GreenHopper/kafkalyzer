@@ -50,6 +50,7 @@ pub fn consume_with_filter(
     end_timestamp: Option<i64>,
     max_results: Option<i32>,
     run_forever: bool,
+    start_from_tail: bool,
     sink: StreamSink<KafkaMessage>,
 ) -> Result<()> {
     // 1. Setup Runtime & Config
@@ -64,10 +65,8 @@ pub fn consume_with_filter(
     };
 
     // 3. Create Consumer
-    let consumer = create_consumer(
-        &profile,
-        start_offset.is_some() || start_timestamp.is_some(),
-    )?;
+    let is_seeking = start_offset.is_some() || start_timestamp.is_some() || start_from_tail;
+    let consumer = create_consumer(&profile, is_seeking)?;
 
     // 4. Setup Assignment
     let timeout = std::time::Duration::from_secs(10);
@@ -101,6 +100,8 @@ pub fn consume_with_filter(
         &watermarks,
         start_offset,
         start_timestamp,
+        start_from_tail,
+        max_results,
         timeout,
         &sink,
     )?;
@@ -147,7 +148,7 @@ pub fn consume_with_filter(
     }
 
     // 9. Seek only after the fast-path check, and only when a start was requested.
-    if start_offset.is_some() || start_timestamp.is_some() {
+    if start_offset.is_some() || start_timestamp.is_some() || start_from_tail {
         apply_start_seeks(&consumer, &topic, &start_offsets_map_result, timeout, &sink);
     }
 
@@ -283,6 +284,12 @@ fn start_offset_from_watermarks(start_offset: Option<i64>, low: i64, high: i64) 
         Some(offset) => clamp_start_offset(offset, low),
         None => high,
     }
+}
+
+fn tail_offset_from_watermarks(low: i64, high: i64, limit: Option<i32>) -> i64 {
+    let limit = limit.unwrap_or(200) as i64;
+    let tail_start = if high > limit { high - limit } else { low };
+    clamp_start_offset(tail_start, low)
 }
 
 fn range_to_scan(start: i64, end: i64) -> i64 {
@@ -787,6 +794,8 @@ fn resolve_start_offsets(
     watermarks: &std::collections::HashMap<i32, (i64, i64)>,
     start_offset: Option<i64>,
     start_timestamp: Option<i64>,
+    start_from_tail: bool,
+    max_results: Option<i32>,
     timeout: std::time::Duration,
     sink: &StreamSink<KafkaMessage>,
 ) -> Result<std::collections::HashMap<i32, i64>> {
@@ -798,7 +807,11 @@ fn resolve_start_offsets(
 
     let mut actual_start_offsets = std::collections::HashMap::new();
     for (&partition, &(low, high)) in watermarks {
-        let resolved = start_offset_from_watermarks(start_offset, low, high);
+        let resolved = if start_from_tail {
+            tail_offset_from_watermarks(low, high, max_results)
+        } else {
+            start_offset_from_watermarks(start_offset, low, high)
+        };
         if let Some(offset) = start_offset {
             if offset < low {
                 log_to_dart(
@@ -1454,6 +1467,48 @@ mod tests {
         watermarks.insert(0, (10, 42));
         assert_eq!(watermark_high(&watermarks, 0), 42);
         assert_eq!(watermark_high(&watermarks, 7), 0);
+    }
+
+    #[test]
+    fn test_tail_offset_from_watermarks() {
+        // High 1000, Low 0, Limit 200 -> Tail start 800
+        assert_eq!(tail_offset_from_watermarks(0, 1000, Some(200)), 800);
+
+        // High 150, Low 0, Limit 200 -> Tail start 0 (clamped to low)
+        assert_eq!(tail_offset_from_watermarks(0, 150, Some(200)), 0);
+
+        // High 600, Low 500, Limit 200 -> Tail start 500 (clamped to low watermark 500)
+        assert_eq!(tail_offset_from_watermarks(500, 600, Some(200)), 500);
+
+        // Empty topic: High 0, Low 0 -> Tail start 0
+        assert_eq!(tail_offset_from_watermarks(0, 0, Some(200)), 0);
+
+        // Default limit (None -> 200)
+        assert_eq!(tail_offset_from_watermarks(0, 500, None), 300);
+    }
+
+    #[test]
+    fn test_populated_topic_latest_200_tail_offsets() {
+        let mut watermarks = std::collections::HashMap::new();
+        watermarks.insert(0, (0, 600));
+        watermarks.insert(1, (0, 400));
+
+        let mut start_offsets = std::collections::HashMap::new();
+        let mut end_offsets = std::collections::HashMap::new();
+        for (&partition, &(low, high)) in &watermarks {
+            start_offsets.insert(partition, tail_offset_from_watermarks(low, high, Some(200)));
+            end_offsets.insert(partition, high);
+        }
+
+        let mut tpl = rdkafka::TopicPartitionList::new();
+        tpl.add_partition("populated-topic", 0);
+        tpl.add_partition("populated-topic", 1);
+
+        // Partition 0: start 400, end 600 -> range 200
+        // Partition 1: start 200, end 400 -> range 200
+        let total = calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None);
+        assert_eq!(total, 400);
+        assert!(!should_fast_path_empty(false, total));
     }
 }
 

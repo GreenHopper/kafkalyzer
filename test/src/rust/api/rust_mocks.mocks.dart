@@ -126,6 +126,7 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
     int? endTimestamp,
     int? maxResults,
     required bool? runForever,
+    bool? startFromTail,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaConsumerConsumeWithFilter, [], {
@@ -143,6 +144,7 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               #endTimestamp: endTimestamp,
               #maxResults: maxResults,
               #runForever: runForever,
+              #startFromTail: startFromTail,
             }),
             returnValue: _i8.Stream<_i9.KafkaMessage>.empty(),
           )

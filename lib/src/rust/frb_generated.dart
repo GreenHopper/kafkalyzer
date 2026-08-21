@@ -109,6 +109,7 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
     PlatformInt64? endTimestamp,
     int? maxResults,
     required bool runForever,
+    bool? startFromTail,
   });
 
   Future<ClientConfig> crateApiKafkaUtilsCreateConfig({
@@ -235,6 +236,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     PlatformInt64? endTimestamp,
     int? maxResults,
     required bool runForever,
+    bool? startFromTail,
   }) {
     final sink = RustStreamSink<KafkaMessage>();
     unawaited(
@@ -256,6 +258,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
             sse_encode_opt_box_autoadd_i_64(endTimestamp, serializer);
             sse_encode_opt_box_autoadd_i_32(maxResults, serializer);
             sse_encode_bool(runForever, serializer);
+            sse_encode_opt_box_autoadd_bool(startFromTail, serializer);
             sse_encode_StreamSink_kafka_message_Sse(sink, serializer);
             pdeCallFfi(
               generalizedFrbRustBinding,
@@ -284,6 +287,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
             endTimestamp,
             maxResults,
             runForever,
+            startFromTail,
             sink,
           ],
           apiImpl: this,
@@ -311,6 +315,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           "endTimestamp",
           "maxResults",
           "runForever",
+          "startFromTail",
           "sink",
         ],
       );
@@ -718,6 +723,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  bool dco_decode_box_autoadd_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as bool;
+  }
+
+  @protected
   ClusterProfile dco_decode_box_autoadd_cluster_profile(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_cluster_profile(raw);
@@ -985,6 +996,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  bool? dco_decode_opt_box_autoadd_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_bool(raw);
+  }
+
+  @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_i_32(raw);
@@ -1209,6 +1226,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   bool sse_decode_bool(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
+  bool sse_decode_box_autoadd_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_bool(deserializer));
   }
 
   @protected
@@ -1591,6 +1614,17 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_bool(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1896,6 +1930,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   void sse_encode_bool(bool self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_bool(bool self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self, serializer);
   }
 
   @protected
@@ -2214,6 +2254,16 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_String(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_bool(self, serializer);
     }
   }
 

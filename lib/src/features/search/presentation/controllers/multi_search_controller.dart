@@ -18,6 +18,7 @@ class SearchTarget {
   final String? filterField;
   final FilterType filterType;
   final SearchScope scope;
+  final MultiSearchStartStrategy startStrategy;
   final int? startOffset;
   final int? startTimestamp;
   final int? startPartition;
@@ -37,6 +38,7 @@ class SearchTarget {
     this.filterField,
     this.filterType = FilterType.contains,
     this.scope = SearchScope.both,
+    this.startStrategy = MultiSearchStartStrategy.latest,
     this.startOffset,
     this.startTimestamp,
     this.startPartition,
@@ -61,6 +63,7 @@ class SearchTarget {
           filterField == other.filterField &&
           filterType == other.filterType &&
           scope == other.scope &&
+          startStrategy == other.startStrategy &&
           startOffset == other.startOffset &&
           startTimestamp == other.startTimestamp &&
           startPartition == other.startPartition &&
@@ -81,6 +84,7 @@ class SearchTarget {
       filterField.hashCode ^
       filterType.hashCode ^
       scope.hashCode ^
+      startStrategy.hashCode ^
       startOffset.hashCode ^
       startTimestamp.hashCode ^
       startPartition.hashCode ^
@@ -283,6 +287,7 @@ class MultiSearchController extends ChangeNotifier {
         endTimestamp: target.endTimestamp,
         maxResults: target.maxResults,
         runForever: target.endStrategy == MultiSearchEndStrategy.live,
+        startFromTail: target.startStrategy == MultiSearchStartStrategy.latest,
       );
 
       final subscription = stream.listen(

@@ -47,12 +47,33 @@ class StartConditionConfiguration extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStrategySelector(l10n, context),
+              const SizedBox(height: 8),
+              Text(
+                _getStrategyDescription(l10n),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  fontSize: 11,
+                ),
+              ),
               _buildOffsetOrTimestampFields(l10n),
             ],
           ),
         ),
       ],
     );
+  }
+
+  String _getStrategyDescription(AppLocalizations l10n) {
+    switch (startStrategy) {
+      case MultiSearchStartStrategy.latest:
+        return l10n.startConditionLatestTooltip;
+      case MultiSearchStartStrategy.earliest:
+        return l10n.startConditionEarliestTooltip;
+      case MultiSearchStartStrategy.customOffset:
+        return l10n.startConditionOffsetTooltip;
+      case MultiSearchStartStrategy.customTimestamp:
+        return l10n.startConditionTimestampTooltip;
+    }
   }
 
   Widget _buildStrategySelector(AppLocalizations l10n, BuildContext context) {

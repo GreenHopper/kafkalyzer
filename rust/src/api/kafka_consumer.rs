@@ -60,6 +60,7 @@ pub async fn consume_with_filter(
     end_timestamp: Option<i64>,
     max_results: Option<i32>,
     run_forever: bool,
+    start_from_tail: Option<bool>,
     sink: StreamSink<KafkaMessage>,
 ) -> Result<()> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
@@ -79,6 +80,7 @@ pub async fn consume_with_filter(
     let domain_profile = profile.to_domain();
     let domain_filter_type = filter_type.to_domain();
     let domain_search_scope = search_scope.to_domain();
+    let from_tail = start_from_tail.unwrap_or(false);
 
     tokio::task::spawn_blocking(move || {
         kafkalyzer_kafka::kafka_consumer::consume_with_filter(
@@ -96,6 +98,7 @@ pub async fn consume_with_filter(
             end_timestamp,
             max_results,
             run_forever,
+            from_tail,
             kafka_sink,
         )
     })
