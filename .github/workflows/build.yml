@@ -65,7 +65,10 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            echo "VERSION=1.0.0-dev${{ github.run_number }}" >> $GITHUB_ENV
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            LATEST_TAG=${LATEST_TAG:-1.0.0}
+            SHA=$(git rev-parse --short HEAD)
+            echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
           fi
 
       - name: Set up .NET
@@ -109,7 +112,7 @@ jobs:
             cp changelog.md build/linux/x64/release/bundle/
           fi
 
-          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/linux/x64/release/bundle -e kafkalyzer -o velopack_release
+          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/linux/x64/release/bundle -e kafkalyzer --icon assets/logo-transparent.png -o velopack_release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -133,7 +136,10 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            echo "VERSION=1.0.0-dev${{ github.run_number }}" >> $GITHUB_ENV
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            LATEST_TAG=${LATEST_TAG:-1.0.0}
+            SHA=$(git rev-parse --short HEAD)
+            echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
           fi
 
       - name: Set up .NET
@@ -231,7 +237,10 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            echo "VERSION=1.0.0-dev${{ github.run_number }}" >> $GITHUB_ENV
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            LATEST_TAG=${LATEST_TAG:-1.0.0}
+            SHA=$(git rev-parse --short HEAD)
+            echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
           fi
 
       - name: Set up .NET
@@ -325,7 +334,7 @@ jobs:
             Copy-Item "changelog.md" "$releaseDir/" -Force
           }
 
-          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe -o velopack_release
+          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe --icon assets/logo-transparent.png -o velopack_release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -366,5 +375,5 @@ jobs:
             release-artifacts/linux/*
             release-artifacts/macos/*
             release-artifacts/windows/*
-          draft: true
+          draft: false
           generate_release_notes: true

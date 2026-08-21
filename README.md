@@ -8,6 +8,18 @@ kafkalyzer is a high-performance, cross-platform Desktop Client for Apache Kafka
 - **macOS**: Native support for both Intel and Apple Silicon (M1/M2/M3).
 - **Windows**: Windows 10 and 11.
 
+## 📥 Downloads
+
+Grab the latest stable release for your platform — the links below always resolve to the newest published build:
+
+| Platform | Asset | |
+| --- | --- | --- |
+| 🐧 Linux | AppImage | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer-x86_64.AppImage) |
+| 🍎 macOS | Portable App | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer.zip) |
+| 🪟 Windows | Installer | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/KafkalyzerSetup.exe) |
+
+> **Note:** The macOS archive contains a ready-to-use app bundle — unzip it and move the app into your `Applications` folder. All links use GitHub's `/releases/latest/download/` redirect, so they never expire when a new version ships.
+
 ## 🏗️ Architecture
 
 The application leverages the power of two ecosystems:
