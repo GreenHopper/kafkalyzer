@@ -100,7 +100,7 @@ _ScriptStep _$ScriptStepFromJson(Map<String, dynamic> json) => _ScriptStep(
         _$MultiSearchStartStrategyEnumMap,
         json['startStrategy'],
       ) ??
-      MultiSearchStartStrategy.earliest,
+      MultiSearchStartStrategy.latest,
   endStrategy:
       $enumDecodeNullable(
         _$MultiSearchEndStrategyEnumMap,

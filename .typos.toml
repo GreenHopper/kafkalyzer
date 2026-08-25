@@ -1,0 +1,18 @@
+[files]
+extend-exclude = ["openspec/**"]
+
+[default.extend-words]
+oder = "oder"
+alle = "alle"
+unter = "unter"
+Plattform = "Plattform"
+Konfiguration = "Konfiguration"
+Ein = "Ein"
+explizit = "explizit"
+manuell = "manuell"
+ein = "ein"
+triggern = "triggern"
+Paket = "Paket"
+Lokales = "Lokales"
+sie = "sie"
+Suche = "Suche"

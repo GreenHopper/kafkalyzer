@@ -143,10 +143,10 @@ icons_launcher:
   platforms:
     linux:
       enable: true
-      image_path: "assets/logo-transparent.png"
+      image_path: "assets/logo.png"
     windows:
       enable: true
-      image_path: "assets/logo-transparent.png"
+      image_path: "assets/logo.png"
     macos:
       enable: true
       image_path: "assets/logo.png"

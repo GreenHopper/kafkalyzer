@@ -1,10 +1,11 @@
 ## Context
 
-The initial `ConsumerLagView` successfully fetches and displays consumer group details lazily. However, administrators need a more scannable, interactive, and customizable monitoring view. They require a tabular representation, customizeable update frequencies, column-based sorting on all tables, and grouping of partitions under their respective topics to keep the detail view clean.
+The initial `ConsumerLagView` successfully fetches and displays consumer group details lazily. However, administrators need a more scannable, interactive, and customizable monitoring view. They require a tabular representation, customizable update frequencies, column-based sorting on all tables, and grouping of partitions under their respective topics to keep the detail view clean.
 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Present consumer group data in a clean, scrollable grid/table layout.
 - Include column stats (active members count and topics count) in the overview table.
 - Display a matched-count indicator for group filters.
@@ -13,21 +14,26 @@ The initial `ConsumerLagView` successfully fetches and displays consumer group d
 - In details view, group partitions by Topic and make partition lags visible only upon expanding a topic.
 
 **Non-Goals:**
+
 - Graphing historical lag metrics (this remains an instant snapshot view).
 
 ## Architecture & Data Design
 
 ### Rust API Updates
+
 We will add `members_count` and `topics_count` fields to the `ConsumerGroupLag` struct in the Rust backend and the API bridge.
+
 - `members_count`: Count of active consumers within the group.
 - `topics_count`: Count of unique topics the group has member subscriptions or partition assignments for.
 
 ### Dart Model Update
+
 The Flutter code-generator will translate these fields into the `ConsumerGroupLag` Dart class.
 
 ## UI Components & State Flow
 
 ### 1. Main Tabular View
+
 - Replace the list of cards with a custom styled `DataTable` or `Table` widget.
 - Columns:
   - Group ID (sortable)
@@ -40,11 +46,13 @@ The Flutter code-generator will translate these fields into the `ConsumerGroupLa
 - Re-sort `filteredLags` on build based on the selected column.
 
 ### 2. Search matched count
+
 - Display a small subtitle/badge text next to the search input:
   - German: `X von Y Gruppen gefunden`
   - English: `Found X of Y groups`
 
 ### 3. Status/State Filter
+
 - Render a DropdownButton next to the search filter, containing:
   - All (All states)
   - Stable
@@ -55,6 +63,7 @@ The Flutter code-generator will translate these fields into the `ConsumerGroupLa
   matches.
 
 ### 4. Customizable Refresh Interval
+
 - Replace Switch with a Dropdown selector containing:
   - Off (Disabled)
   - 5 seconds
@@ -64,6 +73,7 @@ The Flutter code-generator will translate these fields into the `ConsumerGroupLa
 - Maintain `_refreshIntervalSeconds` state. When changed, restart the timer.
 
 ### 4. Nested Topic Partition Details
+
 - When a group table row is expanded:
   - Group partition lags by topic name: `Map<String, List<TopicPartitionLag>>`.
   - Display a table or list of Topics inside the group details view.

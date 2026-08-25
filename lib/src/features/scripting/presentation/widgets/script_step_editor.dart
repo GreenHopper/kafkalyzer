@@ -50,7 +50,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   late TextEditingController _endTimestampController;
   late TextEditingController _maxResultsController;
 
-  MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.earliest;
+  MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.latest;
   MultiSearchEndStrategy _endStrategy = MultiSearchEndStrategy.latest;
   bool _limitResults = true;
   bool _fastTraceEnabled = false;

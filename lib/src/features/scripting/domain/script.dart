@@ -59,7 +59,7 @@ abstract class ScriptStep with _$ScriptStep {
     @Default(SearchScope.both) SearchScope scope,
 
     // Configuration strategies
-    @Default(MultiSearchStartStrategy.earliest)
+    @Default(MultiSearchStartStrategy.latest)
     MultiSearchStartStrategy startStrategy,
     @Default(MultiSearchEndStrategy.latest) MultiSearchEndStrategy endStrategy,
 

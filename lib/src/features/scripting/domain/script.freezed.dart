@@ -1054,7 +1054,7 @@ return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.fil
 @JsonSerializable()
 
 class _ScriptStep implements ScriptStep {
-  const _ScriptStep({required this.id, required this.name, required this.clusterName,  List<String> topicNames = const [], this.filterTemplate, this.filterType = FilterType.contains, this.scope = SearchScope.both, this.startStrategy = MultiSearchStartStrategy.earliest, this.endStrategy = MultiSearchEndStrategy.latest, this.startOffset, this.startTimestamp, this.startPartition, this.fastTraceEnabled = false, this.endOffset, this.endTimestamp, this.maxResults,  List<ScriptExtraction> extractions = const []}): _topicNames = topicNames,_extractions = extractions;
+  const _ScriptStep({required this.id, required this.name, required this.clusterName,  List<String> topicNames = const [], this.filterTemplate, this.filterType = FilterType.contains, this.scope = SearchScope.both, this.startStrategy = MultiSearchStartStrategy.latest, this.endStrategy = MultiSearchEndStrategy.latest, this.startOffset, this.startTimestamp, this.startPartition, this.fastTraceEnabled = false, this.endOffset, this.endTimestamp, this.maxResults,  List<ScriptExtraction> extractions = const []}): _topicNames = topicNames,_extractions = extractions;
   factory _ScriptStep.fromJson(Map<String, dynamic> json) => _$ScriptStepFromJson(json);
 
 @override final  String id;

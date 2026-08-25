@@ -58,18 +58,34 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
         runForever: false,
       );
 
-      final message = await stream
-          .firstWhere(
-            (m) =>
-                m.partition == part.partition && m.offset == part.currentOffset,
-          )
-          .timeout(const Duration(seconds: 10));
+      consumer.KafkaMessage? message;
+      await for (final m in stream.timeout(const Duration(seconds: 10))) {
+        if (m.partition == part.partition && m.offset >= 0) {
+          message = m;
+          break;
+        }
+      }
 
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => MessageDetailsDialog(message: message),
-        );
+        if (message != null) {
+          showDialog(
+            context: context,
+            builder: (context) => MessageDetailsDialog(message: message!),
+          );
+        } else {
+          final isGerman = Localizations.localeOf(context).languageCode == 'de';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isGerman
+                    ? "Keine Nachricht am oder nach Offset ${part.currentOffset} gefunden"
+                    : "No message found at or after offset ${part.currentOffset}",
+                style: TextStyle(color: Theme.of(context).colorScheme.onError),
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

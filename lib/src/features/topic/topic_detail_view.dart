@@ -60,7 +60,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
 
   TopicViewMode _viewMode = TopicViewMode.messages;
 
-  MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.earliest;
+  MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.latest;
 
   @override
   void initState() {

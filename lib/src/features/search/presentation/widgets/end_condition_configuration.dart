@@ -74,7 +74,9 @@ class EndConditionConfiguration extends StatelessWidget {
               Text(
                 _getStrategyDescription(l10n),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                   fontSize: 11,
                 ),
               ),

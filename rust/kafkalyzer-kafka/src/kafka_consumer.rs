@@ -68,23 +68,13 @@ pub fn consume_with_filter(
     let is_seeking = start_offset.is_some() || start_timestamp.is_some() || start_from_tail;
     let consumer = create_consumer(&profile, is_seeking)?;
 
-    // 4. Setup Assignment
+    // 4. Setup Target Partitions
     let timeout = std::time::Duration::from_secs(10);
     let metadata = consumer.fetch_metadata(Some(&topic), timeout)?;
-    let (topic_partition_list, target_partition_id) = setup_topic_assignment(
-        &consumer,
-        &topic,
-        &metadata,
-        &fast_trace_key,
-        start_partition,
-    )?;
+    let (assigned_partitions, target_partition_id) =
+        resolve_target_partitions(&topic, &metadata, &fast_trace_key, start_partition)?;
 
     // 5. Fetch watermarks in a single pass and reuse them for start/end bounds.
-    let assigned_partitions: Vec<i32> = topic_partition_list
-        .elements()
-        .iter()
-        .map(|e| e.partition())
-        .collect();
     let watermarks = fetch_partition_watermarks(
         &consumer,
         &topic,
@@ -111,7 +101,7 @@ pub fn consume_with_filter(
         &consumer,
         &metadata,
         &topic,
-        &topic_partition_list,
+        &assigned_partitions,
         &watermarks,
         run_forever,
         end_offset,
@@ -123,7 +113,7 @@ pub fn consume_with_filter(
 
     // 8. Calculate total to scan from the resolved bounds.
     let total_to_scan = calculate_total_to_scan(
-        &topic_partition_list,
+        &assigned_partitions,
         &start_offsets_map_result,
         &end_offsets,
         target_partition_id,
@@ -147,7 +137,17 @@ pub fn consume_with_filter(
         return Ok(());
     }
 
-    // 9. Seek only after the fast-path check, and only when a start was requested.
+    // 9. Assign partitions with resolved start offsets directly.
+    let mut topic_partition_list = rdkafka::TopicPartitionList::new();
+    for &p in &assigned_partitions {
+        let start = start_offsets_map_result.get(&p).copied().unwrap_or(0);
+        topic_partition_list.add_partition_offset(&topic, p, rdkafka::Offset::Offset(start))?;
+    }
+    consumer
+        .assign(&topic_partition_list)
+        .map_err(|error| anyhow::anyhow!("Assign error: {}", error))?;
+
+    // Also apply explicit seeks as a safeguard
     if start_offset.is_some() || start_timestamp.is_some() || start_from_tail {
         apply_start_seeks(&consumer, &topic, &start_offsets_map_result, timeout, &sink);
     }
@@ -319,19 +319,14 @@ fn watermark_high(watermarks: &std::collections::HashMap<i32, (i64, i64)>, parti
 }
 
 fn calculate_total_to_scan(
-    topic_partition_list: &rdkafka::TopicPartitionList,
+    assigned_partitions: &[i32],
     start_offsets_map: &std::collections::HashMap<i32, i64>,
     end_offsets: &std::collections::HashMap<i32, i64>,
     target_partition_id: Option<i32>,
 ) -> i64 {
     let mut total_to_scan: i64 = 0;
 
-    let mut all_partitions = std::collections::HashSet::new();
-    for elem in topic_partition_list.elements() {
-        all_partitions.insert(elem.partition());
-    }
-
-    for p in all_partitions {
+    for &p in assigned_partitions {
         if let Some(target) = target_partition_id {
             if p != target {
                 continue;
@@ -591,6 +586,13 @@ fn all_done_log(topic: &str) {
     println!("All partitions done for topic {}", topic);
 }
 
+fn is_partition_done(high: i64, tracked: i64) -> bool {
+    if high == 0 {
+        return true;
+    }
+    tracked >= high
+}
+
 fn check_done(
     consumer: &BaseConsumer,
     end_offsets: &std::collections::HashMap<i32, i64>,
@@ -601,9 +603,6 @@ fn check_done(
     let mut all_done = true;
     let mut pending_partitions = Vec::new();
 
-    // Optimize: Fetch position once for all partitions
-    let positions = consumer.position().ok();
-
     for (p, high) in end_offsets {
         if *high == 0 {
             continue;
@@ -611,31 +610,14 @@ fn check_done(
 
         let mut part_done = false;
 
-        // 1. Check actual consumer position (canonical truth)
-        if let Some(ref pos_list) = positions {
-            for elem in pos_list.elements() {
-                if elem.partition() == *p {
-                    if let rdkafka::Offset::Offset(curr_off) = elem.offset() {
-                        if curr_off >= *high {
-                            part_done = true;
-                        }
-                    }
-                    break;
-                }
-            }
+        // 1. Check manually tracked offsets (actual consumed progress)
+        let tracked = *current_offsets.get(p).unwrap_or(&0);
+        if is_partition_done(*high, tracked) {
+            part_done = true;
         }
 
-        // 2. Fallback: Check manually tracked offsets (if position didn't confirm done)
+        // 2. Fallback: Check Watermarks (Empty/Expired partitions)
         if !part_done {
-            let tracked = *current_offsets.get(p).unwrap_or(&0);
-            if tracked >= *high {
-                part_done = true;
-            }
-        }
-
-        // 3. Fallback: Check Watermarks (Empty/Expired partitions)
-        if !part_done {
-            // Use a short timeout to avoid stalling the loop significantly
             if let Ok((low, _)) =
                 consumer.fetch_watermarks(topic, *p, std::time::Duration::from_millis(100))
             {
@@ -649,28 +631,6 @@ fn check_done(
             all_done = false;
             let _tracked = *current_offsets.get(p).unwrap_or(&0);
             pending_partitions.push(format!("P{}: tracked={}/high={}", p, _tracked, high));
-        }
-    }
-
-    if !all_done && !pending_partitions.is_empty() {
-        // log_to_dart(sink, format!("[{}] Waiting for partitions: {:?}", topic, pending_partitions));
-    } else if all_done {
-        // log_to_dart(sink, format!("[{}] All partitions done. Final check state:", topic));
-        for (p, high) in end_offsets {
-            if *high == 0 {
-                continue;
-            }
-            let _tracked = *current_offsets.get(p).unwrap_or(&0);
-            // let mut pos = rdkafka::Offset::Invalid;
-            if let Some(ref l) = positions {
-                for elem in l.elements() {
-                    if elem.partition() == *p {
-                        // pos = elem.offset();
-                        break;
-                    }
-                }
-            }
-            // log_to_dart(sink, format!("  P{}: High={}, Tracked={}, ConsumerPos={:?}", p, high, tracked, pos));
         }
     }
 
@@ -710,14 +670,13 @@ pub(crate) fn setup_schema_registry<'a>(
     Ok((decoders, key_avro, value_avro))
 }
 
-fn setup_topic_assignment(
-    consumer: &BaseConsumer,
+fn resolve_target_partitions(
     topic: &str,
     metadata: &rdkafka::metadata::Metadata,
     fast_trace_key: &Option<String>,
     start_partition: Option<i32>,
-) -> Result<(rdkafka::TopicPartitionList, Option<i32>)> {
-    let mut topic_partition_list = rdkafka::TopicPartitionList::new();
+) -> Result<(Vec<i32>, Option<i32>)> {
+    let mut assigned_partitions = Vec::new();
     let mut found_topic = false;
     let mut target_partition_id = start_partition;
 
@@ -744,10 +703,10 @@ fn setup_topic_assignment(
             for partition_meta in topic_meta.partitions() {
                 if let Some(target) = target_partition_id {
                     if partition_meta.id() == target {
-                        topic_partition_list.add_partition(topic, partition_meta.id());
+                        assigned_partitions.push(partition_meta.id());
                     }
                 } else {
-                    topic_partition_list.add_partition(topic, partition_meta.id());
+                    assigned_partitions.push(partition_meta.id());
                 }
             }
         }
@@ -757,11 +716,7 @@ fn setup_topic_assignment(
         return Err(anyhow::anyhow!("Topic {} not found", topic));
     }
 
-    consumer
-        .assign(&topic_partition_list)
-        .map_err(|error| anyhow::anyhow!("Assign error: {}", error))?;
-
-    Ok((topic_partition_list, target_partition_id))
+    Ok((assigned_partitions, target_partition_id))
 }
 
 fn fetch_partition_watermarks(
@@ -899,7 +854,7 @@ fn calculate_end_offsets(
     consumer: &BaseConsumer,
     metadata: &rdkafka::metadata::Metadata,
     topic: &str,
-    topic_partition_list: &rdkafka::TopicPartitionList,
+    assigned_partitions: &[i32],
     watermarks: &std::collections::HashMap<i32, (i64, i64)>,
     _run_forever: bool,
     end_offset: Option<i64>,
@@ -960,8 +915,7 @@ fn calculate_end_offsets(
             }
         }
     } else {
-        for partition_item in topic_partition_list.elements() {
-            let p_id = partition_item.partition();
+        for &p_id in assigned_partitions {
             end_offsets.insert(p_id, watermark_high(watermarks, p_id));
         }
     }
@@ -1373,21 +1327,21 @@ mod tests {
         tpl.add_partition("test-topic", 1);
 
         assert_eq!(
-            calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None),
+            calculate_total_to_scan(&[0, 1], &start_offsets, &end_offsets, None),
             0
         );
 
         end_offsets.insert(0, 150);
         end_offsets.insert(1, 200);
         assert_eq!(
-            calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None),
+            calculate_total_to_scan(&[0, 1], &start_offsets, &end_offsets, None),
             350
         );
 
         start_offsets.insert(0, 200);
         start_offsets.insert(1, 250);
         assert_eq!(
-            calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None),
+            calculate_total_to_scan(&[0, 1], &start_offsets, &end_offsets, None),
             0
         );
     }
@@ -1409,7 +1363,7 @@ mod tests {
         tpl.add_partition("empty-topic", 0);
         tpl.add_partition("empty-topic", 1);
 
-        let total = calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None);
+        let total = calculate_total_to_scan(&[0, 1], &start_offsets, &end_offsets, None);
         assert_eq!(total, 0);
         assert!(should_fast_path_empty(false, total));
     }
@@ -1439,7 +1393,7 @@ mod tests {
         tpl.add_partition("populated-topic", 0);
         tpl.add_partition("populated-topic", 1);
 
-        let total = calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None);
+        let total = calculate_total_to_scan(&[0, 1], &start_offsets, &end_offsets, None);
         assert_eq!(total, 1000);
         assert!(!should_fast_path_empty(false, total));
         assert!(should_stop_for_limit(200, Some(200)));
@@ -1506,9 +1460,24 @@ mod tests {
 
         // Partition 0: start 400, end 600 -> range 200
         // Partition 1: start 200, end 400 -> range 200
-        let total = calculate_total_to_scan(&tpl, &start_offsets, &end_offsets, None);
+        let total = calculate_total_to_scan(&[0, 1], &start_offsets, &end_offsets, None);
         assert_eq!(total, 400);
         assert!(!should_fast_path_empty(false, total));
+    }
+
+    #[test]
+    fn test_is_partition_done() {
+        // High 0 is always done
+        assert!(is_partition_done(0, 0));
+        assert!(is_partition_done(0, 50));
+
+        // Tracked < High is not done
+        assert!(!is_partition_done(1000, 800));
+        assert!(!is_partition_done(1000, 999));
+
+        // Tracked >= High is done
+        assert!(is_partition_done(1000, 1000));
+        assert!(is_partition_done(1000, 1001));
     }
 }
 

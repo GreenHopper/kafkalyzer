@@ -92,7 +92,9 @@ void main() {
 
       // Expect live stream helper description
       expect(
-        find.text('Continue listening indefinitely for newly arriving messages'),
+        find.text(
+          'Continue listening indefinitely for newly arriving messages',
+        ),
         findsOneWidget,
       );
 
