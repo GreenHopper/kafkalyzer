@@ -171,6 +171,43 @@ void main() {
       expect(find.text('test-topic'), findsAtLeastNWidgets(2));
     });
 
+    testWidgets('hides Step and Topic columns by default', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
+          home: Scaffold(
+            body: MessagesTableView(messages: messages, onMessageTap: (_) {}),
+          ),
+        ),
+      );
+      expect(find.text('Step'), findsNothing);
+      expect(find.text('Topic'), findsNothing);
+      expect(find.text('Timestamp'), findsOneWidget);
+    });
+
+    testWidgets('shows Step column when enabled', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
+          home: Scaffold(
+            body: MessagesTableView(
+              messages: messages,
+              showStep: true,
+              onMessageTap: (_) {},
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Step'), findsOneWidget);
+      expect(find.text('Topic'), findsNothing);
+    });
+
     testWidgets('row tap calls onMessageTap or shows details dialog', (
       tester,
     ) async {

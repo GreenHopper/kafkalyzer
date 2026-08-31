@@ -44,6 +44,8 @@ void main() {
     required Function(KafkaMessage) onMessageTap,
     String? preferencesKey,
     bool showHeader = true,
+    bool showTopic = false,
+    bool showStep = false,
   }) {
     return MaterialApp(
       localizationsDelegates: const [
@@ -57,6 +59,8 @@ void main() {
           onMessageTap: onMessageTap,
           preferencesKey: preferencesKey,
           showHeader: showHeader,
+          showTopic: showTopic,
+          showStep: showStep,
         ),
       ),
     );
@@ -166,31 +170,32 @@ void main() {
     expect(find.text('Messages exported successfully'), findsOneWidget);
   });
 
-  testWidgets('defaults to descending sort and toggles preference for active view', (
-    WidgetTester tester,
-  ) async {
-    tester.view.physicalSize = const Size(1920, 1080);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'defaults to descending sort and toggles preference for active view',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+      );
+      await tester.pumpAndSettle();
 
-    // Default view is table; default sort is descending
-    expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_upward), findsNothing);
+      // Default view is table; default sort is descending
+      expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward), findsNothing);
 
-    await tester.tap(find.byKey(const Key('message_sort_order_toggle')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('message_sort_order_toggle')));
+      await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('message_sort_order_table'), 'asc');
-    expect(prefs.getString('message_sort_order_timeline'), isNull);
-  });
+      expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('message_sort_order_table'), 'asc');
+      expect(prefs.getString('message_sort_order_timeline'), isNull);
+    },
+  );
 
   testWidgets('restores independent sort orders when switching view types', (
     WidgetTester tester,
@@ -254,20 +259,160 @@ void main() {
     final apple = find.text('apple pie', findRichText: true);
     expect(banana, findsOneWidget);
     expect(apple, findsOneWidget);
-    expect(
-      tester.getTopLeft(banana).dy,
-      lessThan(tester.getTopLeft(apple).dy),
-    );
+    expect(tester.getTopLeft(banana).dy, lessThan(tester.getTopLeft(apple).dy));
 
     // Toggle to ascending → oldest first
     await tester.tap(find.byKey(const Key('message_sort_order_toggle')));
     await tester.pumpAndSettle();
 
-    expect(
-      tester.getTopLeft(apple).dy,
-      lessThan(tester.getTopLeft(banana).dy),
-    );
+    expect(tester.getTopLeft(apple).dy, lessThan(tester.getTopLeft(banana).dy));
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('message_sort_order_timeline'), 'asc');
+  });
+
+  testWidgets('default table view hides Step and Topic columns', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MessagesTableView), findsOneWidget);
+    expect(find.text('Timestamp'), findsAtLeastNWidgets(1));
+    expect(find.text('Step'), findsNothing);
+    expect(find.text('Topic'), findsNothing);
+  });
+
+  testWidgets('table view shows Step and Topic when enabled', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        messages: testMessages,
+        onMessageTap: (_) {},
+        showTopic: true,
+        showStep: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MessagesTableView), findsOneWidget);
+    expect(find.text('Step'), findsOneWidget);
+    expect(find.text('Topic'), findsOneWidget);
+  });
+
+  testWidgets('defaults to timestamp sort field before view mode controls', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    final fieldFinder = find.byKey(const Key('message_sort_field_selector'));
+    final orderFinder = find.byKey(const Key('message_sort_order_toggle'));
+    final tableModeFinder = find.byIcon(Icons.table_chart);
+
+    expect(fieldFinder, findsOneWidget);
+    expect(
+      tester.getTopLeft(fieldFinder).dx,
+      lessThan(tester.getTopLeft(orderFinder).dx),
+    );
+    expect(
+      tester.getTopLeft(orderFinder).dx,
+      lessThan(tester.getTopLeft(tableModeFinder).dx),
+    );
+  });
+
+  testWidgets('persists sort field per view type independently', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    SharedPreferences.setMockInitialValues({
+      'message_sort_field_table': 'offset',
+      'message_sort_field_timeline': 'key',
+    });
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    // Table shows Offset as selected field label in the selector child
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('message_sort_field_selector')),
+        matching: find.text('Offset'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byIcon(Icons.view_list));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('message_sort_field_selector')),
+        matching: find.text('Key'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('timeline sorts by key when sort field is key', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    SharedPreferences.setMockInitialValues({
+      'my_view_pref': 'timeline',
+      'message_sort_field_timeline': 'key',
+      'message_sort_order_timeline': 'asc',
+    });
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        messages: testMessages,
+        onMessageTap: (_) {},
+        preferencesKey: 'my_view_pref',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final apple = find.text('apple pie', findRichText: true);
+    final banana = find.text('banana cake', findRichText: true);
+    // key-1 before key-2 when ascending
+    expect(tester.getTopLeft(apple).dy, lessThan(tester.getTopLeft(banana).dy));
+
+    await tester.tap(find.byKey(const Key('message_sort_field_selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Offset').last);
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('message_sort_field_timeline'), 'offset');
   });
 }

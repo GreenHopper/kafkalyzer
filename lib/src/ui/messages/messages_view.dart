@@ -11,15 +11,27 @@ import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// SharedPreferences key prefix for chronological sort order per view type.
+/// SharedPreferences key prefix for sort direction per view type.
 const String messageSortOrderPrefPrefix = 'message_sort_order_';
 
-/// Supported message result view types that persist their own sort order.
+/// SharedPreferences key prefix for sort field per view type.
+const String messageSortFieldPrefPrefix = 'message_sort_field_';
+
+/// Supported message result view types that persist their own sort prefs.
 const List<String> messageSortOrderViews = [
   'timeline',
   'table',
   'diff',
   'schema',
+];
+
+/// Supported sort fields for the results toolbar.
+const List<String> messageSortFields = [
+  'timestamp',
+  'partition',
+  'offset',
+  'key',
+  'value',
 ];
 
 class MessagesView extends StatefulWidget {
@@ -28,6 +40,11 @@ class MessagesView extends StatefulWidget {
   final Map<String, List<ScriptExtraction>>? stepExtractions;
   final String? preferencesKey; // Key for persisting the active view mode
   final bool showHeader; // Whether to show the search bar and view switcher
+  /// Whether the table view shows the Topic column (scripting contexts).
+  final bool showTopic;
+
+  /// Whether the table view shows the Step column (scripting contexts).
+  final bool showStep;
 
   const MessagesView({
     super.key,
@@ -36,6 +53,8 @@ class MessagesView extends StatefulWidget {
     this.stepExtractions,
     this.preferencesKey,
     this.showHeader = true,
+    this.showTopic = false,
+    this.showStep = false,
   });
 
   @override
@@ -50,6 +69,9 @@ class _MessagesViewState extends State<MessagesView> {
   /// Per-view ascending flags. Missing entries mean descending (default).
   final Map<String, bool> _sortAscendingByView = {};
 
+  /// Per-view sort fields. Missing entries mean timestamp (default).
+  final Map<String, String> _sortFieldByView = {};
+
   // Cached lists to prevent re-filtering and re-sorting when just switching views
   List<KafkaMessage> _cachedFilteredMessages = [];
   List<KafkaMessage> _cachedSortedMessages = [];
@@ -57,11 +79,13 @@ class _MessagesViewState extends State<MessagesView> {
 
   bool get _sortAscending => _sortAscendingByView[_activeView] ?? false;
 
+  String get _sortField => _sortFieldByView[_activeView] ?? 'timestamp';
+
   @override
   void initState() {
     super.initState();
     _updateFilters();
-    _loadSortOrders();
+    _loadSortPreferences();
     if (widget.preferencesKey != null) {
       _loadPreferences();
     }
@@ -111,21 +135,30 @@ class _MessagesViewState extends State<MessagesView> {
       }).toList();
     }
 
-    // 2. Sort by timestamp for the active view's preferred order
-    final ascending = _sortAscending;
+    // 2. Sort by the active view's preferred field and direction
     _cachedSortedMessages = List<KafkaMessage>.from(_cachedFilteredMessages)
-      ..sort(
-        (a, b) => ascending
-            ? a.timestamp.compareTo(b.timestamp)
-            : b.timestamp.compareTo(a.timestamp),
-      );
+      ..sort(_compareMessages);
   }
 
-  Future<void> _loadSortOrders() async {
+  int _compareMessages(KafkaMessage a, KafkaMessage b) {
+    final cmp = switch (_sortField) {
+      'partition' => a.partition.compareTo(b.partition),
+      'offset' => a.offset.compareTo(b.offset),
+      'key' => (a.key ?? '').compareTo(b.key ?? ''),
+      'value' => (a.payload ?? '').compareTo(b.payload ?? ''),
+      _ => a.timestamp.compareTo(b.timestamp),
+    };
+    return _sortAscending ? cmp : -cmp;
+  }
+
+  Future<void> _loadSortPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     for (final view in messageSortOrderViews) {
       _sortAscendingByView[view] = _parseSortAscending(
         prefs.getString('$messageSortOrderPrefPrefix$view'),
+      );
+      _sortFieldByView[view] = _parseSortField(
+        prefs.getString('$messageSortFieldPrefPrefix$view'),
       );
     }
     if (mounted) {
@@ -137,6 +170,14 @@ class _MessagesViewState extends State<MessagesView> {
 
   /// Missing or invalid values default to descending (ascending = false).
   static bool _parseSortAscending(String? value) => value == 'asc';
+
+  /// Missing or invalid values default to timestamp.
+  static String _parseSortField(String? value) {
+    if (value != null && messageSortFields.contains(value)) {
+      return value;
+    }
+    return 'timestamp';
+  }
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
@@ -175,6 +216,32 @@ class _MessagesViewState extends State<MessagesView> {
     });
   }
 
+  void _onSortFieldChanged(String field) {
+    setState(() {
+      _sortFieldByView[_activeView] = field;
+      _updateFilters();
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('$messageSortFieldPrefPrefix$_activeView', field);
+    });
+  }
+
+  String _labelForSortField(AppLocalizations l10n, String field) {
+    switch (field) {
+      case 'partition':
+        return l10n.sortFieldPartition;
+      case 'offset':
+        return l10n.sortFieldOffset;
+      case 'key':
+        return l10n.sortFieldKey;
+      case 'value':
+        return l10n.sortFieldValue;
+      case 'timestamp':
+      default:
+        return l10n.sortFieldTimestamp;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.messages.isEmpty) {
@@ -194,12 +261,31 @@ class _MessagesViewState extends State<MessagesView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ViewModeSwitcher(
-                  activeView: _activeView,
-                  onViewChanged: _onViewModeChanged,
-                  showSchemaView: _showSchemaView,
+                Tooltip(
+                  message: l10n.sortFieldTooltip,
+                  child: PopupMenuButton<String>(
+                    key: const Key('message_sort_field_selector'),
+                    initialValue: _sortField,
+                    onSelected: _onSortFieldChanged,
+                    itemBuilder: (context) => [
+                      for (final field in messageSortFields)
+                        PopupMenuItem<String>(
+                          value: field,
+                          child: Text(_labelForSortField(l10n, field)),
+                        ),
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_labelForSortField(l10n, _sortField)),
+                          const Icon(Icons.arrow_drop_down, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 8),
                 Tooltip(
                   message: _sortAscending
                       ? l10n.sortOrderAscending
@@ -213,6 +299,12 @@ class _MessagesViewState extends State<MessagesView> {
                     ),
                     onPressed: _toggleSortOrder,
                   ),
+                ),
+                const SizedBox(width: 8),
+                ViewModeSwitcher(
+                  activeView: _activeView,
+                  onViewChanged: _onViewModeChanged,
+                  showSchemaView: _showSchemaView,
                 ),
                 const SizedBox(width: 8),
                 MessageSearchBar(
@@ -287,8 +379,8 @@ class _MessagesViewState extends State<MessagesView> {
           messages: _cachedSortedMessages,
           searchPhrase: _searchPhrase,
           showNonMatches: _showNonMatches,
-          showTopic: true, // Configurable?
-          showStep: true, // Configurable?
+          showTopic: widget.showTopic,
+          showStep: widget.showStep,
           onMessageTap: widget.onMessageTap,
         );
       case 'diff':

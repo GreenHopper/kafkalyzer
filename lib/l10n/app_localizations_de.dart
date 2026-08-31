@@ -472,10 +472,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exportMessages => 'Nachrichten exportieren';
 
   @override
-  String get sortOrderAscending => 'Aufsteigend (älteste zuerst)';
+  String get sortOrderAscending => 'Aufsteigend';
 
   @override
-  String get sortOrderDescending => 'Absteigend (neueste zuerst)';
+  String get sortOrderDescending => 'Absteigend';
+
+  @override
+  String get sortFieldTimestamp => 'Zeitstempel';
+
+  @override
+  String get sortFieldPartition => 'Partition';
+
+  @override
+  String get sortFieldOffset => 'Offset';
+
+  @override
+  String get sortFieldKey => 'Key';
+
+  @override
+  String get sortFieldValue => 'Value';
+
+  @override
+  String get sortFieldTooltip => 'Sortierfeld';
 
   @override
   String get startCondition => 'Startbedingung';

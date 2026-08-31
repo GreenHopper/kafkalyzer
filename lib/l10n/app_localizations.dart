@@ -857,14 +857,50 @@ abstract class AppLocalizations {
   /// No description provided for @sortOrderAscending.
   ///
   /// In en, this message translates to:
-  /// **'Ascending (oldest first)'**
+  /// **'Ascending'**
   String get sortOrderAscending;
 
   /// No description provided for @sortOrderDescending.
   ///
   /// In en, this message translates to:
-  /// **'Descending (newest first)'**
+  /// **'Descending'**
   String get sortOrderDescending;
+
+  /// No description provided for @sortFieldTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamp'**
+  String get sortFieldTimestamp;
+
+  /// No description provided for @sortFieldPartition.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition'**
+  String get sortFieldPartition;
+
+  /// No description provided for @sortFieldOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'Offset'**
+  String get sortFieldOffset;
+
+  /// No description provided for @sortFieldKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get sortFieldKey;
+
+  /// No description provided for @sortFieldValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get sortFieldValue;
+
+  /// No description provided for @sortFieldTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort field'**
+  String get sortFieldTooltip;
 
   /// No description provided for @startCondition.
   ///
