@@ -311,6 +311,193 @@ fn should_stop_for_limit(matched_count: i32, max_results: Option<i32>) -> bool {
     }
 }
 
+/// Evenly split `limit` across `partitions` (`⌊N/P⌋` + remainder to first sorted partitions).
+fn initial_partition_quotas(partitions: &[i32], limit: i32) -> std::collections::HashMap<i32, i32> {
+    let mut sorted = partitions.to_vec();
+    sorted.sort_unstable();
+    let partition_count = sorted.len() as i32;
+    let mut quotas = std::collections::HashMap::new();
+    if partition_count == 0 {
+        return quotas;
+    }
+    let base = limit / partition_count;
+    let remainder = limit % partition_count;
+    for (index, partition) in sorted.into_iter().enumerate() {
+        let share = base + if (index as i32) < remainder { 1 } else { 0 };
+        quotas.insert(partition, share);
+    }
+    quotas
+}
+
+/// Add `unused` quota units to `active` partitions (round-robin over sorted ids).
+/// Returns partitions whose quota increased.
+fn redistribute_unused_quota(
+    quotas: &mut std::collections::HashMap<i32, i32>,
+    active: &[i32],
+    unused: i32,
+) -> Vec<i32> {
+    if unused <= 0 || active.is_empty() {
+        return Vec::new();
+    }
+    let mut sorted_active = active.to_vec();
+    sorted_active.sort_unstable();
+    let mut increased = Vec::new();
+    for index in 0..unused {
+        let partition = sorted_active[(index as usize) % sorted_active.len()];
+        *quotas.entry(partition).or_insert(0) += 1;
+        if !increased.contains(&partition) {
+            increased.push(partition);
+        }
+    }
+    increased
+}
+
+/// Tracks per-partition match quotas for fair limited multi-partition reads.
+struct PartitionQuotaTracker {
+    quotas: std::collections::HashMap<i32, i32>,
+    matched: std::collections::HashMap<i32, i32>,
+    exhausted: std::collections::HashSet<i32>,
+    paused: std::collections::HashSet<i32>,
+    enabled: bool,
+    partitions: Vec<i32>,
+}
+
+impl PartitionQuotaTracker {
+    fn new(partitions: &[i32], max_results: Option<i32>) -> Self {
+        let enabled = max_results.is_some() && partitions.len() > 1;
+        let mut sorted = partitions.to_vec();
+        sorted.sort_unstable();
+        let quotas = if enabled {
+            initial_partition_quotas(&sorted, max_results.unwrap_or(0))
+        } else {
+            std::collections::HashMap::new()
+        };
+        Self {
+            quotas,
+            matched: std::collections::HashMap::new(),
+            exhausted: std::collections::HashSet::new(),
+            paused: std::collections::HashSet::new(),
+            enabled,
+            partitions: sorted,
+        }
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+
+    fn can_accept_match(&self, partition: i32) -> bool {
+        if !self.enabled {
+            return true;
+        }
+        let quota = self.quotas.get(&partition).copied().unwrap_or(0);
+        let got = self.matched.get(&partition).copied().unwrap_or(0);
+        got < quota
+    }
+
+    /// Record a match. Returns `true` if the partition should be paused (quota filled).
+    fn record_match(&mut self, partition: i32) -> bool {
+        if !self.enabled {
+            return false;
+        }
+        let got = self.matched.entry(partition).or_insert(0);
+        *got += 1;
+        let quota = self.quotas.get(&partition).copied().unwrap_or(0);
+        if *got >= quota {
+            self.paused.insert(partition);
+            true
+        } else {
+            false
+        }
+    }
+
+    fn mark_paused(&mut self, partition: i32) {
+        self.paused.insert(partition);
+    }
+
+    fn is_paused(&self, partition: i32) -> bool {
+        self.paused.contains(&partition)
+    }
+
+    /// Mark partition exhausted and redistribute unused quota. Returns partitions to resume.
+    fn mark_exhausted(&mut self, partition: i32) -> Vec<i32> {
+        if !self.enabled || !self.exhausted.insert(partition) {
+            return Vec::new();
+        }
+        let quota = self.quotas.get(&partition).copied().unwrap_or(0);
+        let got = self.matched.get(&partition).copied().unwrap_or(0);
+        let unused = (quota - got).max(0);
+        let active: Vec<i32> = self
+            .partitions
+            .iter()
+            .copied()
+            .filter(|p| !self.exhausted.contains(p))
+            .collect();
+        let increased = redistribute_unused_quota(&mut self.quotas, &active, unused);
+        let mut to_resume = Vec::new();
+        for p in increased {
+            let q = self.quotas.get(&p).copied().unwrap_or(0);
+            let m = self.matched.get(&p).copied().unwrap_or(0);
+            if m < q && self.paused.remove(&p) {
+                to_resume.push(p);
+            }
+        }
+        to_resume
+    }
+
+    /// After initial tail catch-up in stream mode: stop per-partition quotas and resume paused.
+    fn release_fairness_for_live(&mut self) -> Vec<i32> {
+        if !self.enabled {
+            return Vec::new();
+        }
+        self.enabled = false;
+        let was_paused: Vec<i32> = self.paused.iter().copied().collect();
+        self.paused.clear();
+        was_paused
+    }
+}
+
+fn pause_partition(consumer: &BaseConsumer, topic: &str, partition: i32) {
+    let mut tpl = rdkafka::TopicPartitionList::new();
+    tpl.add_partition(topic, partition);
+    if let Err(error) = consumer.pause(&tpl) {
+        eprintln!(
+            "Failed to pause partition {}-{}: {}",
+            topic, partition, error
+        );
+    }
+}
+
+fn resume_partition(consumer: &BaseConsumer, topic: &str, partition: i32) {
+    let mut tpl = rdkafka::TopicPartitionList::new();
+    tpl.add_partition(topic, partition);
+    if let Err(error) = consumer.resume(&tpl) {
+        eprintln!(
+            "Failed to resume partition {}-{}: {}",
+            topic, partition, error
+        );
+    }
+}
+
+fn resume_partitions(consumer: &BaseConsumer, topic: &str, partitions: &[i32]) {
+    for &partition in partitions {
+        resume_partition(consumer, topic, partition);
+    }
+}
+
+fn partitions_caught_up_to_ends(
+    current_offsets: &std::collections::HashMap<i32, i64>,
+    end_offsets: &std::collections::HashMap<i32, i64>,
+) -> bool {
+    end_offsets.iter().all(|(partition, end)| {
+        if *end == 0 {
+            return true;
+        }
+        let tracked = current_offsets.get(partition).copied().unwrap_or(0);
+        tracked >= *end
+    })
+}
+
 fn watermark_high(watermarks: &std::collections::HashMap<i32, (i64, i64)>, partition: i32) -> i64 {
     watermarks
         .get(&partition)
@@ -368,6 +555,21 @@ fn run_poll_loop<'a>(
     let mut current_offsets = start_offsets_map.clone();
     let mut matched_count: i32 = 0;
 
+    let assigned_partitions: Vec<i32> = start_offsets_map.keys().copied().collect();
+    let mut quota_tracker = PartitionQuotaTracker::new(&assigned_partitions, max_results);
+
+    // Empty ranges cannot contribute matches — redistribute their quota immediately.
+    if quota_tracker.is_enabled() {
+        for &partition in &assigned_partitions {
+            let start = start_offsets_map.get(&partition).copied().unwrap_or(0);
+            let end = end_offsets.get(&partition).copied().unwrap_or(0);
+            if range_to_scan(start, end) == 0 {
+                let to_resume = quota_tracker.mark_exhausted(partition);
+                resume_partitions(&consumer, &topic, &to_resume);
+            }
+        }
+    }
+
     loop {
         // Check Limit
         if should_stop_for_limit(matched_count, max_results) {
@@ -382,6 +584,15 @@ fn run_poll_loop<'a>(
             break;
         }
 
+        // Stream mode: after initial tail catch-up, drop per-partition pause quotas.
+        if run_forever
+            && quota_tracker.is_enabled()
+            && partitions_caught_up_to_ends(&current_offsets, &end_offsets)
+        {
+            let to_resume = quota_tracker.release_fairness_for_live();
+            resume_partitions(&consumer, &topic, &to_resume);
+        }
+
         // Log every 5000 messages
         if scanned_count > 0 && scanned_count.is_multiple_of(5000) {
             log_to_dart(&sink, format!("Scanned {} messages.", scanned_count));
@@ -389,15 +600,18 @@ fn run_poll_loop<'a>(
 
         match consumer.poll(std::time::Duration::from_millis(100)) {
             Some(Ok(msg)) => {
-                if let Some(target_end_offset) = end_offsets.get(&msg.partition()) {
+                let partition = msg.partition();
+                if let Some(target_end_offset) = end_offsets.get(&partition) {
                     if should_skip_beyond_end(run_forever, msg.offset(), *target_end_offset) {
-                        current_offsets.insert(msg.partition(), msg.offset() + 1);
-                        continue; // Skip processing and emitting messages beyond boundary
+                        current_offsets.insert(partition, msg.offset() + 1);
+                        let to_resume = quota_tracker.mark_exhausted(partition);
+                        resume_partitions(&consumer, &topic, &to_resume);
+                        continue;
                     }
                 }
 
                 scanned_count += 1;
-                current_offsets.insert(msg.partition(), msg.offset() + 1);
+                current_offsets.insert(partition, msg.offset() + 1);
 
                 if last_report_time.elapsed().as_millis() > 250 {
                     if let Err(e) = send_progress(&sink, &topic, scanned_count, total_to_scan) {
@@ -411,6 +625,13 @@ fn run_poll_loop<'a>(
                 }
 
                 if !run_forever && last_eof_check_time.elapsed().as_millis() >= 500 {
+                    redistribute_newly_done_partitions(
+                        &consumer,
+                        &topic,
+                        &end_offsets,
+                        &current_offsets,
+                        &mut quota_tracker,
+                    );
                     if check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
                         all_done_log(&topic);
                         send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
@@ -420,7 +641,16 @@ fn run_poll_loop<'a>(
                     last_eof_check_time = std::time::Instant::now();
                 }
 
-                let _found_match = process_and_send_message(
+                // Partition already at its match quota — pause and skip emit.
+                if !quota_tracker.can_accept_match(partition) {
+                    if !quota_tracker.is_paused(partition) {
+                        pause_partition(&consumer, &topic, partition);
+                        quota_tracker.mark_paused(partition);
+                    }
+                    continue;
+                }
+
+                let found_match = process_and_send_message(
                     &msg,
                     &tokio_runtime,
                     &decoder,
@@ -433,9 +663,14 @@ fn run_poll_loop<'a>(
                     &sink,
                     &mut matched_count,
                 );
+                if found_match && quota_tracker.record_match(partition) {
+                    pause_partition(&consumer, &topic, partition);
+                }
             }
             Some(Err(e)) => match e {
-                rdkafka::error::KafkaError::PartitionEOF(_) => {
+                rdkafka::error::KafkaError::PartitionEOF(partition) => {
+                    let to_resume = quota_tracker.mark_exhausted(partition);
+                    resume_partitions(&consumer, &topic, &to_resume);
                     if !run_forever
                         && check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink)
                     {
@@ -453,13 +688,20 @@ fn run_poll_loop<'a>(
                 }
             },
             None => {
-                if !run_forever
-                    && check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink)
-                {
-                    all_done_log(&topic);
-                    send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
-                    send_eof(&sink, &topic);
-                    break;
+                if !run_forever {
+                    redistribute_newly_done_partitions(
+                        &consumer,
+                        &topic,
+                        &end_offsets,
+                        &current_offsets,
+                        &mut quota_tracker,
+                    );
+                    if check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
+                        all_done_log(&topic);
+                        send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
+                        send_eof(&sink, &topic);
+                        break;
+                    }
                 }
 
                 // Heartbeat
@@ -483,6 +725,26 @@ fn run_poll_loop<'a>(
         }
     }
     Ok(())
+}
+
+fn redistribute_newly_done_partitions(
+    consumer: &BaseConsumer,
+    topic: &str,
+    end_offsets: &std::collections::HashMap<i32, i64>,
+    current_offsets: &std::collections::HashMap<i32, i64>,
+    quota_tracker: &mut PartitionQuotaTracker,
+) {
+    if !quota_tracker.is_enabled() {
+        return;
+    }
+    for (partition, high) in end_offsets {
+        let tracked = current_offsets.get(partition).copied().unwrap_or(0);
+        let done = *high == 0 || is_partition_done(*high, tracked);
+        if done {
+            let to_resume = quota_tracker.mark_exhausted(*partition);
+            resume_partitions(consumer, topic, &to_resume);
+        }
+    }
 }
 
 fn send_progress(
@@ -760,10 +1022,34 @@ fn resolve_start_offsets(
         );
     }
 
+    let partitions: Vec<i32> = watermarks.keys().copied().collect();
+    let tail_shares = if start_from_tail {
+        match max_results {
+            Some(limit) if partitions.len() > 1 => initial_partition_quotas(&partitions, limit),
+            Some(limit) => {
+                let mut shares = std::collections::HashMap::new();
+                if let Some(&partition) = partitions.first() {
+                    shares.insert(partition, limit);
+                }
+                shares
+            }
+            None => {
+                // Legacy default tail window of 200 per partition when no limit is set.
+                partitions
+                    .iter()
+                    .map(|&partition| (partition, 200))
+                    .collect()
+            }
+        }
+    } else {
+        std::collections::HashMap::new()
+    };
+
     let mut actual_start_offsets = std::collections::HashMap::new();
     for (&partition, &(low, high)) in watermarks {
         let resolved = if start_from_tail {
-            tail_offset_from_watermarks(low, high, max_results)
+            let share = tail_shares.get(&partition).copied().unwrap_or(200);
+            tail_offset_from_watermarks(low, high, Some(share))
         } else {
             start_offset_from_watermarks(start_offset, low, high)
         };
@@ -1442,27 +1728,131 @@ mod tests {
     }
 
     #[test]
+    fn test_initial_partition_quotas_even_split_and_remainder() {
+        let quotas = initial_partition_quotas(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 200);
+        assert_eq!(quotas.values().sum::<i32>(), 200);
+        // 200/12 = 16 remainder 8 → first 8 partitions get 17, rest 16
+        assert_eq!(quotas.get(&0), Some(&17));
+        assert_eq!(quotas.get(&7), Some(&17));
+        assert_eq!(quotas.get(&8), Some(&16));
+        assert_eq!(quotas.get(&11), Some(&16));
+        let min = *quotas.values().min().unwrap();
+        let max = *quotas.values().max().unwrap();
+        assert!(max - min <= 1);
+
+        let single = initial_partition_quotas(&[3], 200);
+        assert_eq!(single.get(&3), Some(&200));
+    }
+
+    #[test]
+    fn test_redistribute_unused_quota_to_active_partitions() {
+        let mut quotas = initial_partition_quotas(&[0, 1, 2], 10);
+        // 10/3 → 4, 3, 3 for partitions 0,1,2
+        assert_eq!(quotas.get(&0), Some(&4));
+        assert_eq!(quotas.get(&1), Some(&3));
+        assert_eq!(quotas.get(&2), Some(&3));
+
+        let increased = redistribute_unused_quota(&mut quotas, &[1, 2], 4);
+        assert_eq!(quotas.values().sum::<i32>(), 14);
+        assert!(increased.contains(&1));
+        assert!(increased.contains(&2));
+        assert_eq!(quotas.get(&1), Some(&5));
+        assert_eq!(quotas.get(&2), Some(&5));
+    }
+
+    #[test]
+    fn test_partition_quota_tracker_fair_admit_and_redistribute() {
+        let partitions = [0, 1, 2];
+        let mut tracker = PartitionQuotaTracker::new(&partitions, Some(6));
+        assert!(tracker.is_enabled());
+        // Initial quotas: 2 each
+        assert!(!tracker.record_match(0)); // 1 of 2
+        assert!(tracker.can_accept_match(0));
+        assert!(tracker.record_match(0)); // 2 of 2 -> pause
+        assert!(!tracker.can_accept_match(0));
+
+        // Partition 1 empty — redistribute its 2 to 0 and 2
+        let resumed = tracker.mark_exhausted(1);
+        assert!(resumed.contains(&0));
+        assert!(tracker.can_accept_match(0));
+
+        // Fill remaining from 0 and 2 up to global 6
+        while tracker.can_accept_match(0) {
+            tracker.record_match(0);
+        }
+        while tracker.can_accept_match(2) {
+            tracker.record_match(2);
+        }
+        let total: i32 = tracker.matched.values().sum();
+        assert_eq!(total, 6);
+        // Counts across contributing partitions differ by at most 1 after redistribution
+        let counts: Vec<i32> = [0, 2]
+            .iter()
+            .map(|p| tracker.matched.get(p).copied().unwrap_or(0))
+            .collect();
+        let min = *counts.iter().min().unwrap();
+        let max = *counts.iter().max().unwrap();
+        assert!(max - min <= 1 || total == 6);
+    }
+
+    #[test]
+    fn test_partition_quota_tracker_disabled_for_single_or_unlimited() {
+        let mut single = PartitionQuotaTracker::new(&[0], Some(200));
+        assert!(!single.is_enabled());
+        assert!(single.can_accept_match(0));
+        assert!(!single.record_match(0));
+
+        let unlimited = PartitionQuotaTracker::new(&[0, 1], None);
+        assert!(!unlimited.is_enabled());
+    }
+
+    #[test]
+    fn test_partition_quota_tracker_release_fairness_for_live() {
+        let mut tracker = PartitionQuotaTracker::new(&[0, 1], Some(4));
+        assert!(!tracker.record_match(0)); // 1 of 2
+        assert!(tracker.record_match(0)); // 2 of 2 -> pause
+        assert!(tracker.is_paused(0));
+        let resumed = tracker.release_fairness_for_live();
+        assert!(resumed.contains(&0));
+        assert!(!tracker.is_enabled());
+        assert!(tracker.can_accept_match(0));
+    }
+
+    #[test]
     fn test_populated_topic_latest_200_tail_offsets() {
         let mut watermarks = std::collections::HashMap::new();
         watermarks.insert(0, (0, 600));
         watermarks.insert(1, (0, 400));
 
+        let partitions = [0, 1];
+        let shares = initial_partition_quotas(&partitions, 200);
+
         let mut start_offsets = std::collections::HashMap::new();
         let mut end_offsets = std::collections::HashMap::new();
         for (&partition, &(low, high)) in &watermarks {
-            start_offsets.insert(partition, tail_offset_from_watermarks(low, high, Some(200)));
+            let share = shares.get(&partition).copied().unwrap_or(200);
+            start_offsets.insert(
+                partition,
+                tail_offset_from_watermarks(low, high, Some(share)),
+            );
             end_offsets.insert(partition, high);
         }
 
-        let mut tpl = rdkafka::TopicPartitionList::new();
-        tpl.add_partition("populated-topic", 0);
-        tpl.add_partition("populated-topic", 1);
-
-        // Partition 0: start 400, end 600 -> range 200
-        // Partition 1: start 200, end 400 -> range 200
+        // Even split: 100 per partition
+        // Partition 0: start 500, end 600 -> range 100
+        // Partition 1: start 300, end 400 -> range 100
+        assert_eq!(start_offsets.get(&0), Some(&500));
+        assert_eq!(start_offsets.get(&1), Some(&300));
         let total = calculate_total_to_scan(&[0, 1], &start_offsets, &end_offsets, None);
-        assert_eq!(total, 400);
+        assert_eq!(total, 200);
         assert!(!should_fast_path_empty(false, total));
+    }
+
+    #[test]
+    fn test_latest_single_partition_keeps_full_limit_tail() {
+        assert_eq!(tail_offset_from_watermarks(0, 600, Some(200)), 400);
+        let shares = initial_partition_quotas(&[5], 200);
+        assert_eq!(shares.get(&5), Some(&200));
     }
 
     #[test]
