@@ -246,6 +246,8 @@
   "raw": "Raw",
   "clear": "Clear",
   "exportMessages": "Export Messages",
+  "sortOrderAscending": "Ascending (oldest first)",
+  "sortOrderDescending": "Descending (newest first)",
   "startCondition": "Start Condition",
   "startConditionLatestTooltip": "Start at the most recent messages (tail of topic according to limit)",
   "startConditionEarliestTooltip": "Start reading from the oldest available message (offset 0)",

@@ -51,13 +51,15 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
     _previousMessages.clear();
     _diffCache.clear();
 
-    // Group messages by key internally to find predecessors
+    // Group messages by key internally to find chronological predecessors.
+    // Display order stays as provided by MessagesView; this ascending sort is
+    // only used to discover the prior message for each key.
     final Map<String, List<KafkaMessage>> keyedMessages = {};
 
-    List<KafkaMessage> sorted = List.from(widget.messages);
-    sorted.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final List<KafkaMessage> sortedChronological = List.from(widget.messages)
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
-    for (var msg in sorted) {
+    for (var msg in sortedChronological) {
       final key = _getCompositeKey(msg);
       keyedMessages.putIfAbsent(key, () => []);
 

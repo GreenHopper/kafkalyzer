@@ -468,6 +468,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportMessages => 'Export Messages';
 
   @override
+  String get sortOrderAscending => 'Ascending (oldest first)';
+
+  @override
+  String get sortOrderDescending => 'Descending (newest first)';
+
+  @override
   String get startCondition => 'Start Condition';
 
   @override

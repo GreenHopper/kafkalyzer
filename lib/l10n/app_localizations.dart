@@ -854,6 +854,18 @@ abstract class AppLocalizations {
   /// **'Export Messages'**
   String get exportMessages;
 
+  /// No description provided for @sortOrderAscending.
+  ///
+  /// In en, this message translates to:
+  /// **'Ascending (oldest first)'**
+  String get sortOrderAscending;
+
+  /// No description provided for @sortOrderDescending.
+  ///
+  /// In en, this message translates to:
+  /// **'Descending (newest first)'**
+  String get sortOrderDescending;
+
   /// No description provided for @startCondition.
   ///
   /// In en, this message translates to:

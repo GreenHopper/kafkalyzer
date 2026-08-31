@@ -165,4 +165,109 @@ void main() {
     expect(fakeExportService.exported.length, 2);
     expect(find.text('Messages exported successfully'), findsOneWidget);
   });
+
+  testWidgets('defaults to descending sort and toggles preference for active view', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    // Default view is table; default sort is descending
+    expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_upward), findsNothing);
+
+    await tester.tap(find.byKey(const Key('message_sort_order_toggle')));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('message_sort_order_table'), 'asc');
+    expect(prefs.getString('message_sort_order_timeline'), isNull);
+  });
+
+  testWidgets('restores independent sort orders when switching view types', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    SharedPreferences.setMockInitialValues({
+      'message_sort_order_table': 'asc',
+      'message_sort_order_timeline': 'desc',
+    });
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    // Table starts ascending from prefs
+    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+
+    // Switch to timeline → descending
+    await tester.tap(find.byIcon(Icons.view_list));
+    await tester.pumpAndSettle();
+    expect(find.byType(MessagesTimelineView), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
+
+    // Back to table → ascending restored
+    await tester.tap(find.byIcon(Icons.table_chart));
+    await tester.pumpAndSettle();
+    expect(find.byType(MessagesTableView), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+  });
+
+  testWidgets('timeline displays newest first when sort is descending', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    SharedPreferences.setMockInitialValues({
+      'my_view_pref': 'timeline',
+      'message_sort_order_timeline': 'desc',
+    });
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        messages: testMessages,
+        onMessageTap: (_) {},
+        preferencesKey: 'my_view_pref',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MessagesTimelineView), findsOneWidget);
+
+    final banana = find.text('banana cake', findRichText: true);
+    final apple = find.text('apple pie', findRichText: true);
+    expect(banana, findsOneWidget);
+    expect(apple, findsOneWidget);
+    expect(
+      tester.getTopLeft(banana).dy,
+      lessThan(tester.getTopLeft(apple).dy),
+    );
+
+    // Toggle to ascending → oldest first
+    await tester.tap(find.byKey(const Key('message_sort_order_toggle')));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getTopLeft(apple).dy,
+      lessThan(tester.getTopLeft(banana).dy),
+    );
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('message_sort_order_timeline'), 'asc');
+  });
 }

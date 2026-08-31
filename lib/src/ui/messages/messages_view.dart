@@ -11,6 +11,17 @@ import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// SharedPreferences key prefix for chronological sort order per view type.
+const String messageSortOrderPrefPrefix = 'message_sort_order_';
+
+/// Supported message result view types that persist their own sort order.
+const List<String> messageSortOrderViews = [
+  'timeline',
+  'table',
+  'diff',
+  'schema',
+];
+
 class MessagesView extends StatefulWidget {
   final List<KafkaMessage> messages;
   final Function(KafkaMessage) onMessageTap;
@@ -36,15 +47,21 @@ class _MessagesViewState extends State<MessagesView> {
   String _searchPhrase = "";
   bool _showNonMatches = false;
 
+  /// Per-view ascending flags. Missing entries mean descending (default).
+  final Map<String, bool> _sortAscendingByView = {};
+
   // Cached lists to prevent re-filtering and re-sorting when just switching views
   List<KafkaMessage> _cachedFilteredMessages = [];
   List<KafkaMessage> _cachedSortedMessages = [];
   int _cachedMatchCount = 0;
 
+  bool get _sortAscending => _sortAscendingByView[_activeView] ?? false;
+
   @override
   void initState() {
     super.initState();
     _updateFilters();
+    _loadSortOrders();
     if (widget.preferencesKey != null) {
       _loadPreferences();
     }
@@ -94,10 +111,32 @@ class _MessagesViewState extends State<MessagesView> {
       }).toList();
     }
 
-    // 2. Sort (For Diff and Timeline views)
+    // 2. Sort by timestamp for the active view's preferred order
+    final ascending = _sortAscending;
     _cachedSortedMessages = List<KafkaMessage>.from(_cachedFilteredMessages)
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      ..sort(
+        (a, b) => ascending
+            ? a.timestamp.compareTo(b.timestamp)
+            : b.timestamp.compareTo(a.timestamp),
+      );
   }
+
+  Future<void> _loadSortOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final view in messageSortOrderViews) {
+      _sortAscendingByView[view] = _parseSortAscending(
+        prefs.getString('$messageSortOrderPrefPrefix$view'),
+      );
+    }
+    if (mounted) {
+      setState(() {
+        _updateFilters();
+      });
+    }
+  }
+
+  /// Missing or invalid values default to descending (ascending = false).
+  static bool _parseSortAscending(String? value) => value == 'asc';
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
@@ -105,6 +144,7 @@ class _MessagesViewState extends State<MessagesView> {
     if (savedView != null && mounted) {
       setState(() {
         _activeView = savedView;
+        _updateFilters();
       });
     }
   }
@@ -112,6 +152,7 @@ class _MessagesViewState extends State<MessagesView> {
   void _onViewModeChanged(String newView) {
     setState(() {
       _activeView = newView;
+      _updateFilters();
     });
     if (widget.preferencesKey != null) {
       SharedPreferences.getInstance().then((prefs) {
@@ -120,11 +161,27 @@ class _MessagesViewState extends State<MessagesView> {
     }
   }
 
+  void _toggleSortOrder() {
+    final nextAscending = !_sortAscending;
+    setState(() {
+      _sortAscendingByView[_activeView] = nextAscending;
+      _updateFilters();
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString(
+        '$messageSortOrderPrefPrefix$_activeView',
+        nextAscending ? 'asc' : 'desc',
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.messages.isEmpty) {
       return const Center(child: Text("No messages to display"));
     }
+
+    final l10n = AppLocalizations.of(context)!;
 
     return Column(
       children: [
@@ -142,7 +199,22 @@ class _MessagesViewState extends State<MessagesView> {
                   onViewChanged: _onViewModeChanged,
                   showSchemaView: _showSchemaView,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: _sortAscending
+                      ? l10n.sortOrderAscending
+                      : l10n.sortOrderDescending,
+                  child: IconButton(
+                    key: const Key('message_sort_order_toggle'),
+                    icon: Icon(
+                      _sortAscending
+                          ? Icons.arrow_upward
+                          : Icons.arrow_downward,
+                    ),
+                    onPressed: _toggleSortOrder,
+                  ),
+                ),
+                const SizedBox(width: 8),
                 MessageSearchBar(
                   searchPhrase: _searchPhrase,
                   onSearchChanged: (val) {
@@ -162,7 +234,7 @@ class _MessagesViewState extends State<MessagesView> {
                 ),
                 const SizedBox(width: 8),
                 Tooltip(
-                  message: AppLocalizations.of(context)!.exportMessages,
+                  message: l10n.exportMessages,
                   child: IconButton(
                     icon: const Icon(Icons.download),
                     onPressed: () async {
@@ -173,11 +245,7 @@ class _MessagesViewState extends State<MessagesView> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                AppLocalizations.of(
-                                  context,
-                                )!.messagesExportedSuccessfully,
-                              ),
+                              content: Text(l10n.messagesExportedSuccessfully),
                             ),
                           );
                         }
@@ -186,9 +254,7 @@ class _MessagesViewState extends State<MessagesView> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                AppLocalizations.of(
-                                  context,
-                                )!.messagesExportFailed(e.toString()),
+                                l10n.messagesExportFailed(e.toString()),
                               ),
                               backgroundColor: Theme.of(
                                 context,
@@ -218,7 +284,7 @@ class _MessagesViewState extends State<MessagesView> {
     switch (_activeView) {
       case 'table':
         return MessagesTableView(
-          messages: _cachedFilteredMessages,
+          messages: _cachedSortedMessages,
           searchPhrase: _searchPhrase,
           showNonMatches: _showNonMatches,
           showTopic: true, // Configurable?
