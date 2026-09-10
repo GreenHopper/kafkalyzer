@@ -10,9 +10,13 @@ class MessageStreamController extends ChangeNotifier {
 
   StreamSubscription<KafkaMessage>? _subscription;
   final List<KafkaMessage> _messages = [];
+  List<KafkaMessage>? _cachedUnmodifiableMessages;
+  Timer? _throttleTimer;
+  bool _hasPendingUiUpdate = false;
   bool _isStreaming = false;
 
-  List<KafkaMessage> get messages => List.unmodifiable(_messages);
+  List<KafkaMessage> get messages =>
+      _cachedUnmodifiableMessages ??= List.unmodifiable(_messages);
   bool get isStreaming => _isStreaming;
   int _totalConsumed = 0;
   int get totalConsumed => _totalConsumed;
@@ -54,6 +58,7 @@ class MessageStreamController extends ChangeNotifier {
     await stopStreaming();
 
     _messages.clear();
+    _cachedUnmodifiableMessages = null;
     _totalConsumed = 0;
     _totalToScan = 0;
     _startTime = DateTime.now();
@@ -112,17 +117,22 @@ class MessageStreamController extends ChangeNotifier {
       return;
     }
     if (payload == "__EOF__") {
+      _flushPendingUiUpdate();
       _isStreaming = false;
       notifyListeners();
       _logger.i("End of topic reached.");
       return;
     }
 
-    _messages.insert(0, message);
+    _messages.add(message);
     if (_messages.length > 1000) {
-      _messages.removeLast();
+      _messages.removeAt(0);
     }
-    notifyListeners();
+    _cachedUnmodifiableMessages = null;
+    if (_totalConsumed < _messages.length) {
+      _totalConsumed = _messages.length;
+    }
+    _scheduleUiUpdate();
 
     if (_maxResults != null && _messages.length >= _maxResults!) {
       _logger.i("Max results $_maxResults reached, stopping stream.");
@@ -130,21 +140,45 @@ class MessageStreamController extends ChangeNotifier {
     }
   }
 
+  void _scheduleUiUpdate() {
+    _hasPendingUiUpdate = true;
+    if (_throttleTimer == null || !_throttleTimer!.isActive) {
+      _throttleTimer = Timer(const Duration(milliseconds: 60), () {
+        if (_hasPendingUiUpdate) {
+          _hasPendingUiUpdate = false;
+          notifyListeners();
+        }
+      });
+    }
+  }
+
+  void _flushPendingUiUpdate() {
+    _throttleTimer?.cancel();
+    _throttleTimer = null;
+    _hasPendingUiUpdate = false;
+  }
+
   void _handleControlMessage(String payload) {
     // __HEARTBEAT__:scanned:total or __PROGRESS__:scanned:total
     final parts = payload.split(":");
     if (parts.length > 1) {
-      _totalConsumed = int.tryParse(parts[1]) ?? _totalConsumed;
+      final parsedScanned = int.tryParse(parts[1]);
+      if (parsedScanned != null) {
+        _totalConsumed = parsedScanned > _messages.length
+            ? parsedScanned
+            : _messages.length;
+      }
       if (parts.length > 2) {
         _totalToScan =
             int.tryParse(parts[2]) ??
             (payload.startsWith("__PROGRESS__") ? 0 : _totalToScan);
       }
-      notifyListeners();
+      _scheduleUiUpdate();
     }
   }
 
   Future<void> stopStreaming() async {
+    _flushPendingUiUpdate();
     // Update UI immediately
     _isStreaming = false;
     _startTime = null;
@@ -155,12 +189,15 @@ class MessageStreamController extends ChangeNotifier {
   }
 
   void clearMessages() {
+    _flushPendingUiUpdate();
     _messages.clear();
+    _cachedUnmodifiableMessages = null;
     notifyListeners();
   }
 
   @override
   void dispose() {
+    _flushPendingUiUpdate();
     stopStreaming();
     super.dispose();
   }

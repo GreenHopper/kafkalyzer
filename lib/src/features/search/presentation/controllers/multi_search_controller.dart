@@ -154,19 +154,25 @@ class MultiSearchController extends ChangeNotifier {
   }
 
   final List<SearchTarget> _targets = [];
-  List<SearchTarget> get targets => List.unmodifiable(_targets);
+  List<SearchTarget>? _cachedUnmodifiableTargets;
+  List<SearchTarget> get targets =>
+      _cachedUnmodifiableTargets ??= List.unmodifiable(_targets);
 
   final Map<SearchTarget, SearchStatus> _status = {};
   Map<SearchTarget, SearchStatus> get status => Map.unmodifiable(_status);
 
   final Map<SearchTarget, List<KafkaMessage>> _results = {};
+  final Map<SearchTarget, List<KafkaMessage>> _cachedUnmodifiableResults = {};
 
   final Map<SearchTarget, SearchProgress> _progress = {};
   Map<SearchTarget, SearchProgress> get progress => Map.unmodifiable(_progress);
 
   List<KafkaMessage> getMessagesFor(SearchTarget? target) {
     if (target != null) {
-      return List.unmodifiable(_results[target] ?? []);
+      return _cachedUnmodifiableResults.putIfAbsent(
+        target,
+        () => List.unmodifiable(_results[target] ?? []),
+      );
     }
     // Aggregate for "All" view
     final all = _results.values.expand((element) => element).toList();
@@ -182,6 +188,7 @@ class MultiSearchController extends ChangeNotifier {
   void addTarget(SearchTarget target) {
     if (!_targets.contains(target)) {
       _targets.add(target);
+      _cachedUnmodifiableTargets = null;
       _startSubscription(target);
       notifyListeners();
     } else {
@@ -197,9 +204,11 @@ class MultiSearchController extends ChangeNotifier {
 
   void removeTarget(SearchTarget target) {
     if (_targets.remove(target)) {
+      _cachedUnmodifiableTargets = null;
       _stopSubscription(target);
       _status.remove(target);
       _results.remove(target);
+      _cachedUnmodifiableResults.remove(target);
       _progress.remove(target);
       notifyListeners();
     }
@@ -296,15 +305,16 @@ class MultiSearchController extends ChangeNotifier {
           if (payload.startsWith("__LOG__")) {
             final logMsg = payload.substring(7); // Remove __LOG__:
             if (_outputDirectory != null) {
-              try {
-                final logFile = File('$_outputDirectory/consumer.log');
-                logFile.writeAsStringSync(
-                  "${DateTime.now().toIso8601String()}: $logMsg\n",
-                  mode: FileMode.append,
-                );
-              } catch (e) {
-                _logger.e("Failed to write to consumer.log", error: e);
-              }
+              final logFile = File('$_outputDirectory/consumer.log');
+              logFile
+                  .writeAsString(
+                    "${DateTime.now().toIso8601String()}: $logMsg\n",
+                    mode: FileMode.append,
+                  )
+                  .catchError((e) {
+                    _logger.e("Failed to write to consumer.log", error: e);
+                    return logFile;
+                  });
             }
             return;
           }
@@ -420,6 +430,7 @@ class MultiSearchController extends ChangeNotifier {
         list.length - 2000,
       ); // Remove oldest (assuming append order)
     }
+    _cachedUnmodifiableResults.remove(target);
     _throttleNotify(target);
   }
 
@@ -429,8 +440,10 @@ class MultiSearchController extends ChangeNotifier {
     }
     _subscriptions.clear();
     _targets.clear();
+    _cachedUnmodifiableTargets = null;
     _status.clear(); // Clear statuses too
     _results.clear();
+    _cachedUnmodifiableResults.clear();
     _progress.clear();
     notifyListeners();
   }

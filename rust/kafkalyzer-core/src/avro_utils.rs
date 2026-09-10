@@ -142,11 +142,13 @@ pub fn convert_avro_value(
             // Duration is 12 bytes: 4 months, 4 days, 4 millis.
             let debug = format!("{:?}", d);
             // Debug format: Duration { months: Months(1), days: Days(2), millis: Millis(3) }
-            let re = Regex::new(
-                r"months:\s*\w+\((\d+)\),\s*days:\s*\w+\((\d+)\),\s*millis:\s*\w+\((\d+)\)",
-            )
-            .unwrap();
-            if let Some(caps) = re.captures(&debug) {
+            static DURATION_RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+                Regex::new(
+                    r"months:\s*\w+\((\d+)\),\s*days:\s*\w+\((\d+)\),\s*millis:\s*\w+\((\d+)\)",
+                )
+                .unwrap()
+            });
+            if let Some(caps) = DURATION_RE.captures(&debug) {
                 let months = caps[1].parse::<u32>().unwrap_or(0);
                 let days = caps[2].parse::<u32>().unwrap_or(0);
                 let millis = caps[3].parse::<u32>().unwrap_or(0);
@@ -182,7 +184,7 @@ pub fn convert_avro_value(
                 };
 
                 let len = plain_digits.len();
-                let scale_usize = scale as usize;
+                let scale_usize = scale;
 
                 if len > scale_usize {
                     // Insert decimal point

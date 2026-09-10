@@ -172,8 +172,10 @@ class PartitionBalanceView extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    'Offsets: ${numberFormat.format(p.earliestOffset)} '
-                                    '.. ${numberFormat.format(p.latestOffset)}',
+                                    p.messageCount > 0
+                                        ? 'Offsets: ${numberFormat.format(p.earliestOffset)} '
+                                              '.. ${numberFormat.format(p.latestOffset)}'
+                                        : 'Offsets: -',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       fontFamily: 'monospace',
                                       color: colorScheme.onSurfaceVariant,

@@ -1,6 +1,7 @@
 # topic-content-analysis Specification
 
 ## Purpose
+
 Provides comprehensive topic content profiling and statistical analysis for Kafka topics, including message counts, production peak hours, partition balance, tombstone detection, key distributions, and structured field frequency analysis.
 
 ## Requirements
@@ -118,3 +119,24 @@ The system SHALL provide real-time visual progress feedback during scanning, inc
 
 - **WHEN** the user presses the cancel/stop button while a scan is in progress
 - **THEN** the system SHALL immediately halt consumer scanning and display the partial analysis results aggregated up to the point of cancellation
+
+### Requirement: Decoupled Progress Reporting
+
+Topic analysis SHALL track scan counts, byte volumes, and partition progress via lightweight atomic counters, emitting periodic progress reports without cloning full nested accumulator maps on every tick.
+
+#### Scenario: Progress reporting during active scan
+
+- **WHEN** topic content analysis is actively scanning messages
+- **THEN** progress updates emitted every 250ms are computed using atomic message and byte counters
+- **AND** the system does not clone or deep-merge the entire 100k+ entry accumulator state on every 250ms progress interval
+- **AND** full analytical reports are synthesized only upon scan completion or user cancellation
+
+### Requirement: Low-Latency Worker Partition Polling
+
+Worker threads scanning multiple partition queues SHALL employ non-blocking polling and adaptive yield backoff without executing unconditional thread sleep delays on active queues.
+
+#### Scenario: Multi-partition worker queue draining
+
+- **WHEN** a worker thread polls multiple partition queues during content analysis
+- **THEN** it does not inject fixed 5ms thread sleeps between consecutive polls when data is flowing or awaiting immediate fetch
+- **AND** yields execution cooperatively only when all assigned queues are idle

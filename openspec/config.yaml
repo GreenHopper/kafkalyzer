@@ -26,6 +26,20 @@ context: |
       - Use structured logging (via Dart's `logger` or `developer.log`) instead of plain `print` statements.
       - Handle all potential exceptions and errors gracefully; do not let operations fail silently.
 
+    - Performance & High-Throughput Engineering:
+      - Hot Loops & Polling: Never compile regular expressions (`Regex::new`), perform blocking async operations (`block_on`), or execute sync file I/O (`writeAsStringSync`) inside message consumption or polling loops. Pre-compile patterns once outside the loop.
+      - Stream Throttling: Streaming data from native Rust streams to Dart UI must be throttled or batched (e.g. 50ms–100ms intervals). Never invoke `notifyListeners()` or trigger widget re-renders per individual message at Kafka throughput.
+      - Data Structures: Avoid $O(N)$ list operations (such as prepending via `insert(0, ...)`) on message collections in Dart. Prefer append operations, ring buffers, or reversed indexing.
+      - Shared Runtimes & Caches: Prefer shared or static Tokio runtimes and thread-safe caches (e.g., for Schema Registry schema lookups) over creating new runtime instances per invocation.
+      - Lazy UI Formatting: Avoid eager string transformations, date formatting, or pretty-printing across entire datasets upfront; defer formatting lazily to viewport item builders.
+
+    - Kafka Consumer Resilience:
+      - Partition Completion: Always set `enable.partition.eof=true` and treat `PartitionEOF` as the authoritative end-of-partition signal. Never infer completion from offset arithmetic (`last_offset + 1 >= high_watermark`) — compacted (`compact,delete`) and transactional topics contain offset gaps (compaction, transaction control markers, aborted records) where offsets are never delivered to clients.
+      - Idle Is Not Done: Never abandon a partition because it was idle for N seconds; under fetch skew or broker throttling, sparse partitions can starve while data is still pending. On prolonged idle, re-query watermarks to distinguish "range deleted by retention" (finalize) from "data still pending" (keep polling).
+      - No Blocking RPCs in Poll Loops: Completion checks and progress reporting inside poll loops must operate on in-memory state only; per-iteration network calls (e.g. `fetch_watermarks` per partition) starve `consumer.poll()` and freeze intake.
+      - Prefetch Memory: Cap `queued.max.messages.kbytes` explicitly (librdkafka defaults to 64MB per partition, which can balloon to hundreds of MB on many-partition topics).
+      - Closed Sink Handling: When a `StreamSink` to Dart reports a closed channel (user stopped the stream), exit the poll loop cleanly and immediately; never attempt further sends or log through the closed sink.
+
     - UI & UX:
         - Material UI Elements: The Flutter package `package:material_ui/material_ui.dart` MUST be used for all Material UI elements.
         - All asynchronous UI actions (e.g., fetching Kafka messages, cluster connection) MUST provide visual feedback (e.g., CircularProgressIndicator or loading states).
@@ -43,6 +57,7 @@ rules:
   design:
     - Material UI Elements: Ensure all Material UI elements use `package:material_ui/material_ui.dart`.
     - Do not modify existing Dart/Flutter UI code unless explicitly requested or necessary.
+    - Performance Guardrails: Design streaming APIs and UI consumers with throttling/batching, amortized $O(1)$ updates, and non-blocking I/O.
     - Maintain backwards compatibility of all existing Flutter/Dart integrations and Rust-Dart API signatures.
     - Status Access: For accessing global state (like the active cluster or settings), prefer using `ActiveConnectionController` or `getIt` over deep prop-drilling unless a widget is purely presentational.
     - Detail design choices, state flow, and any alternatives considered.

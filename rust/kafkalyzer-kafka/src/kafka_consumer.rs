@@ -6,9 +6,54 @@ use schema_registry_converter::async_impl::avro::AvroDecoder;
 use schema_registry_converter::async_impl::json::JsonDecoder;
 use schema_registry_converter::async_impl::proto_decoder::ProtoDecoder;
 use schema_registry_converter::async_impl::schema_registry::{get_all_subjects, SrSettings};
+use std::sync::{LazyLock, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use tokio::runtime::Runtime;
+
+static SHARED_TOKIO_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("Failed to initialize shared Tokio runtime")
+});
+
+pub(crate) fn shared_runtime() -> &'static Runtime {
+    &SHARED_TOKIO_RUNTIME
+}
+
+static SCHEMA_CACHE: LazyLock<
+    Mutex<
+        std::collections::HashMap<
+            u32,
+            schema_registry_converter::schema_registry_common::RegisteredSchema,
+        >,
+    >,
+> = LazyLock::new(|| Mutex::new(std::collections::HashMap::new()));
+
+fn get_cached_schema(
+    tokio_runtime: &Runtime,
+    settings: &SrSettings,
+    schema_id: u32,
+) -> Option<schema_registry_converter::schema_registry_common::RegisteredSchema> {
+    if let Ok(guard) = SCHEMA_CACHE.lock() {
+        if let Some(schema) = guard.get(&schema_id) {
+            return Some(schema.clone());
+        }
+    }
+
+    let schema_future = schema_registry_converter::async_impl::schema_registry::get_schema_by_id(
+        schema_id, settings,
+    );
+    if let Ok(registered_schema) = tokio_runtime.block_on(schema_future) {
+        if let Ok(mut guard) = SCHEMA_CACHE.lock() {
+            guard.insert(schema_id, registered_schema.clone());
+        }
+        Some(registered_schema)
+    } else {
+        None
+    }
+}
 
 use crate::kafka_utils::{create_config, murmur2, to_positive};
 use kafkalyzer_core::kafka_types::{ClusterProfile, FilterType, KafkaMessage, SearchScope};
@@ -54,12 +99,12 @@ pub fn consume_with_filter(
     sink: StreamSink<KafkaMessage>,
 ) -> Result<()> {
     // 1. Setup Runtime & Config
-    let tokio_runtime = Runtime::new()?;
+    let tokio_runtime = shared_runtime();
 
     // 2. Setup Schema Registry (Optional)
     let sr_settings = create_sr_settings(&profile);
     let (decoders, key_is_avro, value_is_avro) = if let Some(ref settings) = sr_settings {
-        setup_schema_registry(&tokio_runtime, settings, &topic)?
+        setup_schema_registry(tokio_runtime, settings, &topic)?
     } else {
         (None, false, false)
     };
@@ -147,10 +192,10 @@ pub fn consume_with_filter(
         .assign(&topic_partition_list)
         .map_err(|error| anyhow::anyhow!("Assign error: {}", error))?;
 
-    // Also apply explicit seeks as a safeguard
-    if start_offset.is_some() || start_timestamp.is_some() || start_from_tail {
-        apply_start_seeks(&consumer, &topic, &start_offsets_map_result, timeout, &sink);
-    }
+    log_to_dart(
+        &sink,
+        format!("Start Offsets: {:?}", start_offsets_map_result),
+    );
 
     // 10. Run Main Loop
     run_poll_loop(
@@ -262,6 +307,20 @@ fn create_consumer(profile: &ClusterProfile, is_seeking: bool) -> Result<BaseCon
 
     let reset_strategy = if is_seeking { "earliest" } else { "latest" };
     client_config.set("auto.offset.reset", reset_strategy);
+
+    // Fast and responsive fetching for topic consumption
+    client_config.set("fetch.wait.max.ms", "50");
+    client_config.set("fetch.message.max.bytes", "10485760"); // 10MB
+    client_config.set("queued.min.messages", "50000");
+    // Cap prefetch memory per partition (librdkafka default is 64MB/partition)
+    client_config.set("queued.max.messages.kbytes", "16384"); // 16MB
+
+    // Deterministic per-partition end-of-log signal. Without this, PartitionEOF
+    // events are never emitted and "done" detection must rely on offset
+    // arithmetic, which breaks on compacted topics and transactional topics
+    // (control markers / aborted records occupy offsets that are never
+    // delivered to the client).
+    client_config.set("enable.partition.eof", "true");
 
     let consumer: BaseConsumer = client_config.create()?;
     Ok(consumer)
@@ -542,7 +601,7 @@ fn run_poll_loop<'a>(
     max_results: Option<i32>,
     run_forever: bool,
     sink: StreamSink<KafkaMessage>,
-    tokio_runtime: Runtime,
+    tokio_runtime: &'static Runtime,
     decoder: Option<SrDecoders<'a>>,
     key_is_avro: bool,
     value_is_avro: bool,
@@ -557,6 +616,9 @@ fn run_poll_loop<'a>(
 
     let assigned_partitions: Vec<i32> = start_offsets_map.keys().copied().collect();
     let mut quota_tracker = PartitionQuotaTracker::new(&assigned_partitions, max_results);
+    // Partitions that reached their end target and were paused to stop
+    // fetching data that would only be skipped.
+    let mut ended_partitions: std::collections::HashSet<i32> = std::collections::HashSet::new();
 
     // Empty ranges cannot contribute matches — redistribute their quota immediately.
     if quota_tracker.is_enabled() {
@@ -569,6 +631,17 @@ fn run_poll_loop<'a>(
             }
         }
     }
+
+    // Precompile regexes once if filter_type is Regex
+    let compiled_regexes: Vec<Option<Regex>> = if filter_type == FilterType::Regex {
+        if let Some(ref terms) = filter_terms {
+            terms.iter().map(|t| Regex::new(t).ok()).collect()
+        } else {
+            Vec::new()
+        }
+    } else {
+        Vec::new()
+    };
 
     loop {
         // Check Limit
@@ -606,6 +679,11 @@ fn run_poll_loop<'a>(
                         current_offsets.insert(partition, msg.offset() + 1);
                         let to_resume = quota_tracker.mark_exhausted(partition);
                         resume_partitions(&consumer, &topic, &to_resume);
+                        // Stop fetching from this partition entirely — everything
+                        // beyond the end target would only be skipped anyway.
+                        if ended_partitions.insert(partition) {
+                            pause_partition(&consumer, &topic, partition);
+                        }
                         continue;
                     }
                 }
@@ -614,11 +692,8 @@ fn run_poll_loop<'a>(
                 current_offsets.insert(partition, msg.offset() + 1);
 
                 if last_report_time.elapsed().as_millis() > 250 {
-                    if let Err(e) = send_progress(&sink, &topic, scanned_count, total_to_scan) {
-                        log_to_dart(
-                            &sink,
-                            format!("Sink closed (progress), breaking loop. Error: {:?}", e),
-                        );
+                    if send_progress(&sink, &topic, scanned_count, total_to_scan).is_err() {
+                        // Sink closed by client, break immediately without logging to closed sink
                         break;
                     }
                     last_report_time = std::time::Instant::now();
@@ -632,7 +707,7 @@ fn run_poll_loop<'a>(
                         &current_offsets,
                         &mut quota_tracker,
                     );
-                    if check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
+                    if check_done(&end_offsets, &current_offsets) {
                         all_done_log(&topic);
                         send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
                         send_eof(&sink, &topic);
@@ -650,30 +725,45 @@ fn run_poll_loop<'a>(
                     continue;
                 }
 
-                let found_match = process_and_send_message(
+                match process_and_send_message(
                     &msg,
-                    &tokio_runtime,
+                    tokio_runtime,
                     &decoder,
                     key_is_avro,
                     value_is_avro,
                     &filter_terms,
+                    &compiled_regexes,
                     &filter_field,
                     &filter_type,
                     search_scope,
                     &sink,
                     &mut matched_count,
-                );
-                if found_match && quota_tracker.record_match(partition) {
-                    pause_partition(&consumer, &topic, partition);
+                ) {
+                    ProcessMessageResult::Matched => {
+                        if quota_tracker.record_match(partition) {
+                            pause_partition(&consumer, &topic, partition);
+                        }
+                    }
+                    ProcessMessageResult::NotMatched => {}
+                    ProcessMessageResult::SinkClosed => {
+                        break;
+                    }
                 }
             }
             Some(Err(e)) => match e {
                 rdkafka::error::KafkaError::PartitionEOF(partition) => {
                     let to_resume = quota_tracker.mark_exhausted(partition);
                     resume_partitions(&consumer, &topic, &to_resume);
-                    if !run_forever
-                        && check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink)
-                    {
+                    // EOF is the authoritative "nothing more to read" signal.
+                    // Mark the partition as fully consumed up to its end target
+                    // (never move the tracked offset backwards in live mode).
+                    if let Some(target_end_offset) = end_offsets.get(&partition) {
+                        let entry = current_offsets.entry(partition).or_insert(0);
+                        if *entry < *target_end_offset {
+                            *entry = *target_end_offset;
+                        }
+                    }
+                    if !run_forever && check_done(&end_offsets, &current_offsets) {
                         all_done_log(&topic);
                         send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
                         send_eof(&sink, &topic);
@@ -696,7 +786,7 @@ fn run_poll_loop<'a>(
                         &current_offsets,
                         &mut quota_tracker,
                     );
-                    if check_done(&consumer, &end_offsets, &current_offsets, &topic, &sink) {
+                    if check_done(&end_offsets, &current_offsets) {
                         all_done_log(&topic);
                         send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
                         send_eof(&sink, &topic);
@@ -714,11 +804,7 @@ fn run_poll_loop<'a>(
                     timestamp: 0,
                     headers: None,
                 };
-                if let Err(e) = sink.add(heartbeat_msg) {
-                    log_to_dart(
-                        &sink,
-                        format!("Sink closed (heartbeat), breaking. Error: {:?}", e),
-                    );
+                if sink.add(heartbeat_msg).is_err() {
                     break;
                 }
             }
@@ -766,6 +852,12 @@ fn send_progress(
         .map_err(|e| anyhow::anyhow!("Sink Error: {:?}", e))
 }
 
+enum ProcessMessageResult {
+    Matched,
+    NotMatched,
+    SinkClosed,
+}
+
 fn process_and_send_message<'a, M: KafkaMessageTrait>(
     msg: &M,
     tokio_runtime: &Runtime,
@@ -773,12 +865,13 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
     key_is_avro: bool,
     value_is_avro: bool,
     filter_terms: &Option<Vec<String>>,
+    compiled_regexes: &[Option<Regex>],
     filter_field: &Option<String>,
     filter_type: &FilterType,
     search_scope: SearchScope,
     sink: &StreamSink<KafkaMessage>,
     matched_count: &mut i32,
-) -> bool {
+) -> ProcessMessageResult {
     let payload = decode_message_component(
         tokio_runtime,
         decoder,
@@ -802,10 +895,10 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
         filter_field,
         filter_type,
         search_scope,
-        &None,
+        compiled_regexes,
         &Some(sink.clone()),
     ) {
-        return false;
+        return ProcessMessageResult::NotMatched;
     }
 
     use rdkafka::message::Headers;
@@ -836,12 +929,11 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
         headers,
     };
 
-    if let Err(_e) = sink.add(kafka_msg) {
-        // log_to_dart(sink, format!("Sink closed (message send), match found but failed to send. Error: {:?}", e));
-        return true; // it was a match, even if send failed
+    if sink.add(kafka_msg).is_err() {
+        return ProcessMessageResult::SinkClosed;
     }
     *matched_count += 1;
-    true
+    ProcessMessageResult::Matched
 }
 
 fn all_done_log(topic: &str) {
@@ -856,47 +948,21 @@ fn is_partition_done(high: i64, tracked: i64) -> bool {
 }
 
 fn check_done(
-    consumer: &BaseConsumer,
     end_offsets: &std::collections::HashMap<i32, i64>,
     current_offsets: &std::collections::HashMap<i32, i64>,
-    topic: &str,
-    _sink: &StreamSink<KafkaMessage>,
 ) -> bool {
-    let mut all_done = true;
-    let mut pending_partitions = Vec::new();
-
     for (p, high) in end_offsets {
         if *high == 0 {
             continue;
         }
 
-        let mut part_done = false;
-
-        // 1. Check manually tracked offsets (actual consumed progress)
         let tracked = *current_offsets.get(p).unwrap_or(&0);
-        if is_partition_done(*high, tracked) {
-            part_done = true;
-        }
-
-        // 2. Fallback: Check Watermarks (Empty/Expired partitions)
-        if !part_done {
-            if let Ok((low, _)) =
-                consumer.fetch_watermarks(topic, *p, std::time::Duration::from_millis(100))
-            {
-                if low >= *high {
-                    part_done = true;
-                }
-            }
-        }
-
-        if !part_done {
-            all_done = false;
-            let _tracked = *current_offsets.get(p).unwrap_or(&0);
-            pending_partitions.push(format!("P{}: tracked={}/high={}", p, _tracked, high));
+        if !is_partition_done(*high, tracked) {
+            return false;
         }
     }
 
-    all_done
+    true
 }
 
 pub(crate) fn setup_schema_registry<'a>(
@@ -1109,33 +1175,6 @@ fn resolve_start_offsets_for_timestamp(
     }
 }
 
-fn apply_start_seeks(
-    consumer: &BaseConsumer,
-    topic: &str,
-    start_offsets: &std::collections::HashMap<i32, i64>,
-    timeout: std::time::Duration,
-    sink: &StreamSink<KafkaMessage>,
-) {
-    for (&partition, &offset) in start_offsets {
-        if let Err(error) = seek_with_retry(
-            consumer,
-            topic,
-            partition,
-            rdkafka::Offset::Offset(offset),
-            timeout,
-            sink,
-        ) {
-            log_to_dart(
-                sink,
-                format!(
-                    "Error seeking to offset {} in partition {}: {}",
-                    offset, partition, error
-                ),
-            );
-        }
-    }
-}
-
 fn calculate_end_offsets(
     consumer: &BaseConsumer,
     metadata: &rdkafka::metadata::Metadata,
@@ -1209,6 +1248,71 @@ fn calculate_end_offsets(
     Ok(end_offsets)
 }
 
+pub(crate) fn decode_message_to_value<'a>(
+    tokio_runtime: &Runtime,
+    decoders: &Option<SrDecoders<'a>>,
+    data: Option<&[u8]>,
+    has_schema: bool,
+) -> Option<serde_json::Value> {
+    let bytes = data?;
+
+    if has_schema {
+        if let Some(ref sr_decoders) = decoders {
+            if bytes.len() >= 5 && bytes[0] == 0 {
+                let mut id_bytes = [0u8; 4];
+                id_bytes.copy_from_slice(&bytes[1..5]);
+                let schema_id = u32::from_be_bytes(id_bytes);
+
+                if let Some(registered_schema) =
+                    get_cached_schema(tokio_runtime, &sr_decoders.settings, schema_id)
+                {
+                    match registered_schema.schema_type {
+                        schema_registry_converter::schema_registry_common::SchemaType::Avro => {
+                            let future = sr_decoders.avro.decode_with_schema(Some(bytes));
+                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                                let schema = &decoded_result.schema.parsed;
+                                let mut resolved_schemas = std::collections::HashMap::new();
+                                kafkalyzer_core::avro_utils::extract_named_schemas(
+                                    schema,
+                                    &mut resolved_schemas,
+                                );
+                                if let Ok(json_val) =
+                                    kafkalyzer_core::avro_utils::convert_avro_value(
+                                        &decoded_result.value,
+                                        Some(schema),
+                                        &resolved_schemas,
+                                    )
+                                {
+                                    return Some(json_val);
+                                }
+                            }
+                        }
+                        schema_registry_converter::schema_registry_common::SchemaType::Json => {
+                            let future = sr_decoders.json.decode(Some(bytes));
+                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                                return Some(decoded_result.value);
+                            }
+                        }
+                        schema_registry_converter::schema_registry_common::SchemaType::Protobuf => {
+                            let future = sr_decoders.proto.decode_with_context(Some(bytes));
+                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                                let json_val = convert_protofish_message(
+                                    &decoded_result.value,
+                                    &decoded_result.context.context,
+                                );
+                                return Some(json_val);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+
+    serde_json::from_slice::<serde_json::Value>(bytes).ok()
+}
+
 pub(crate) fn decode_message_component<'a>(
     tokio_runtime: &Runtime,
     decoders: &Option<SrDecoders<'a>>,
@@ -1226,12 +1330,9 @@ pub(crate) fn decode_message_component<'a>(
                 id_bytes.copy_from_slice(&bytes[1..5]);
                 let schema_id = u32::from_be_bytes(id_bytes);
 
-                let schema_future =
-                    schema_registry_converter::async_impl::schema_registry::get_schema_by_id(
-                        schema_id,
-                        &sr_decoders.settings,
-                    );
-                if let Ok(registered_schema) = tokio_runtime.block_on(schema_future) {
+                if let Some(registered_schema) =
+                    get_cached_schema(tokio_runtime, &sr_decoders.settings, schema_id)
+                {
                     match registered_schema.schema_type {
                         schema_registry_converter::schema_registry_common::SchemaType::Avro => {
                             let future = sr_decoders.avro.decode_with_schema(Some(bytes));
@@ -1304,7 +1405,7 @@ fn matches_filter(
     filter_field: &Option<String>,
     filter_type: &FilterType,
     search_scope: SearchScope,
-    regex_pattern: &Option<Regex>,
+    compiled_regexes: &[Option<Regex>],
     sink: &Option<StreamSink<KafkaMessage>>,
 ) -> bool {
     let terms = match filter_terms {
@@ -1335,10 +1436,10 @@ fn matches_filter(
             content.to_string()
         };
 
-        for term in terms {
+        for (idx, term) in terms.iter().enumerate() {
             let matched = match filter_type {
                 FilterType::Regex => {
-                    if let Some(re) = regex_pattern {
+                    if let Some(Some(re)) = compiled_regexes.get(idx) {
                         re.is_match(&target_val)
                     } else if let Ok(re) = Regex::new(term) {
                         re.is_match(&target_val)
@@ -1406,7 +1507,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex = None;
+        let regex: Vec<Option<Regex>> = Vec::new();
 
         assert!(matches_filter(
             &key,
@@ -1427,7 +1528,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex = None;
+        let regex: Vec<Option<Regex>> = Vec::new();
 
         assert!(matches_filter(
             &key,
@@ -1448,7 +1549,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]); // Raw search term foo
         let field = None;
         let scope = SearchScope::Key;
-        let regex = None;
+        let regex: Vec<Option<Regex>> = Vec::new();
 
         // SHOULD FAIL: "foo" != foo
         assert!(!matches_filter(
@@ -1470,7 +1571,7 @@ mod tests {
         let terms = Some(vec!["\"foo\"".to_string()]); // Search term includes quotes
         let field = None;
         let scope = SearchScope::Key;
-        let regex = None;
+        let regex: Vec<Option<Regex>> = Vec::new();
 
         // SHOULD PASS: "foo" == "foo"
         assert!(matches_filter(
@@ -1493,7 +1594,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex = None;
+        let regex: Vec<Option<Regex>> = Vec::new();
 
         // SHOULD FAIL: "foo" != foo
         assert!(!matches_filter(
@@ -1517,7 +1618,7 @@ mod tests {
         let terms = Some(vec!["bad\\escape".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex = None;
+        let regex: Vec<Option<Regex>> = Vec::new();
 
         // SHOULD FAIL: "bad\escape" != bad\escape
         assert!(!matches_filter(
@@ -1539,7 +1640,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex = None;
+        let regex: Vec<Option<Regex>> = Vec::new();
 
         assert!(!matches_filter(
             &key,
@@ -1883,36 +1984,6 @@ fn log_to_dart(sink: &StreamSink<KafkaMessage>, message: String) {
         headers: None,
     };
     sink.add(msg).ok();
-}
-
-fn seek_with_retry(
-    consumer: &BaseConsumer,
-    topic: &str,
-    partition: i32,
-    offset: rdkafka::Offset,
-    timeout: std::time::Duration,
-    sink: &StreamSink<KafkaMessage>,
-) -> Result<(), rdkafka::error::KafkaError> {
-    let mut last_error = None;
-    for attempt in 1..=3 {
-        match consumer.seek(topic, partition, offset, timeout) {
-            Ok(_) => return Ok(()),
-            Err(e) => {
-                let msg = format!(
-                    "Seek attempt {}/3 failed for {}-{}: {}",
-                    attempt, topic, partition, e
-                );
-                log_to_dart(sink, msg);
-                std::thread::sleep(std::time::Duration::from_millis(200));
-                last_error = Some(e);
-            }
-        }
-    }
-    if let Some(e) = last_error {
-        Err(e)
-    } else {
-        Ok(())
-    }
 }
 
 fn send_eof(sink: &StreamSink<KafkaMessage>, topic: &str) {

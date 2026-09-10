@@ -125,7 +125,7 @@ class TopicAnalysisController extends ChangeNotifier {
   }) async {
     await stopAnalysis();
 
-    _maxMessages = maxMessages ?? _maxMessages;
+    _maxMessages = maxMessages;
     _sampleFromLatest = sampleFromLatest;
     _isAnalyzing = true;
     _progress = null;
