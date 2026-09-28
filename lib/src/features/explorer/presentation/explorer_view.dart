@@ -393,6 +393,10 @@ class _ExplorerViewState extends State<ExplorerView> {
                     topic,
                     activeController.activeProfile,
                   ),
+                  onDoubleTap: () => activeController.streamTopicWithDefaults(
+                    topic,
+                    activeController.activeProfile,
+                  ),
                   onOpenInNewTab: () => activeController.openTopic(
                     topic: topic,
                     profile: activeController.activeProfile,

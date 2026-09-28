@@ -417,5 +417,84 @@
     }
   },
   "releaseNotes": "Release Notes",
-  "noReleaseNotes": "No release notes available."
+  "noReleaseNotes": "No release notes available.",
+  "dockBottom": "Dock to bottom",
+  "dockSide": "Dock to right",
+  "closeInspector": "Close inspector",
+  "tabPayload": "Payload",
+  "tabKeyAndHeaders": "Key & Headers",
+  "tabRawJson": "Raw JSON",
+  "inspectorTitle": "Message Inspector",
+  "copyHeaders": "Copy all headers",
+  "copyMetadata": "Copy metadata",
+  "copiedHeaders": "All headers copied to clipboard",
+  "copiedHeaderValue": "Copied value of '{key}'",
+  "@copiedHeaderValue": {
+    "placeholders": {
+      "key": { "type": "String" }
+    }
+  },
+  "noHeaders": "No headers present on this message",
+  "copyRawJson": "Copy JSON",
+  "previousMessageTooltip": "Previous message (K)",
+  "nextMessageTooltip": "Next message (J)",
+  "messagePosition": "{current} of {total}",
+  "@messagePosition": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "focusMode": "Maximize (Focus Mode)",
+  "exitFocusMode": "Minimize (Esc)",
+  "searchInMessage": "Search in message...",
+  "nextMatchTooltip": "Next match (Enter)",
+  "previousMatchTooltip": "Previous match (Shift+Enter)",
+  "matchesCount": "{current} of {total}",
+  "@matchesCount": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "noMatches": "No matches",
+  "closeSearch": "Close search",
+  "collapsedRangeLabel": "… {count} hidden items (Index {start} to {end})",
+  "@collapsedRangeLabel": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "start": { "type": "int" },
+      "end": { "type": "int" }
+    }
+  },
+  "showAllArrayItems": "Show all {count}",
+  "@showAllArrayItems": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "reduceToMatchContext": "Focus matches (±1)",
+  "matchesContextBadge": "{matches} matches (Focus: ±1)",
+  "@matchesContextBadge": {
+    "placeholders": {
+      "matches": { "type": "int" }
+    }
+  },
+  "recollapseRange": "Re-collapse range",
+  "pinAsColumn": "Pin as Column",
+  "columnPinned": "Column '{path}' pinned to table",
+  "@columnPinned": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "columnAlreadyPinned": "Column '{path}' is already pinned",
+  "@columnAlreadyPinned": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "removeColumn": "Remove column",
+  "resetColumns": "Reset columns",
+  "columnsReset": "Table columns reset to default"
 }

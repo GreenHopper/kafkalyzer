@@ -356,6 +356,63 @@ void main() {
       ).called(1);
     });
 
+    testWidgets(
+      'double-clicking a topic list item triggers streamTopicWithDefaults',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        const topic = TopicMetadata(
+          name: 'test-topic',
+          partitionCount: 1,
+          replicationFactor: 1,
+        );
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([testProfile]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(false);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(mockActiveConnectionController.error).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+        when(mockActiveConnectionController.topics).thenReturn([topic]);
+        when(mockActiveConnectionController.openTopics).thenReturn([]);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+        when(mockTopicController.getTopics(testProfile)).thenReturn([topic]);
+        when(
+          mockActiveConnectionController.streamTopicWithDefaults(
+            topic,
+            testProfile,
+          ),
+        ).thenReturn(null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+
+        final topicItem = find.text('test-topic');
+        expect(topicItem, findsOneWidget);
+
+        await tester.tap(topicItem);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(topicItem);
+        await tester.pumpAndSettle();
+
+        verify(
+          mockActiveConnectionController.streamTopicWithDefaults(
+            topic,
+            testProfile,
+          ),
+        ).called(1);
+      },
+    );
+
     testWidgets('allows duplicating and closing a tab from the tab bar', (
       tester,
     ) async {

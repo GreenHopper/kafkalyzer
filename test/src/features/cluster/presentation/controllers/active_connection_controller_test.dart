@@ -18,6 +18,16 @@ class MockLogger extends Logger {
   }) {
     // No-op
   }
+
+  @override
+  void e(
+    dynamic message, {
+    DateTime? time,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    // No-op
+  }
 }
 
 class MockKafkaMetadataService extends KafkaMetadataService {
@@ -242,6 +252,30 @@ void main() {
         controller.clearOpenTopics();
         expect(controller.openTopics.isEmpty, isTrue);
         expect(controller.activeTopic, isNull);
+      },
+    );
+
+    test(
+      'streamTopicWithDefaults opens tab, selects it, and starts stream controller',
+      () async {
+        mockMetadataService.shouldValidate = true;
+        await controller.connect(validProfile);
+
+        const topic1 = TopicMetadata(
+          name: 'orders',
+          partitionCount: 3,
+          replicationFactor: 1,
+        );
+
+        final tab = controller.streamTopicWithDefaults(topic1);
+
+        expect(tab, isNotNull);
+        expect(controller.openTopics.length, equals(1));
+        expect(controller.activeTopic?.id, equals(tab?.id));
+        expect(controller.activeTopic?.topic.name, equals('orders'));
+
+        final streamController = controller.getStreamController(tab!.id);
+        expect(streamController, isNotNull);
       },
     );
   });

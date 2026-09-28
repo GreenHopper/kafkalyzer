@@ -310,14 +310,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String matchesCount(int current, int total) {
-    final intl.NumberFormat currentNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String currentString = currentNumberFormat.format(current);
-    final intl.NumberFormat totalNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String totalString = totalNumberFormat.format(total);
-
-    return '$currentString / $totalString Treffer';
+    return '$current von $total';
   }
 
   @override
@@ -911,4 +904,120 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noReleaseNotes => 'Keine Versionshinweise verfügbar.';
+
+  @override
+  String get dockBottom => 'Unten andocken';
+
+  @override
+  String get dockSide => 'Rechts andocken';
+
+  @override
+  String get closeInspector => 'Inspector schließen';
+
+  @override
+  String get tabPayload => 'Payload';
+
+  @override
+  String get tabKeyAndHeaders => 'Key & Header';
+
+  @override
+  String get tabRawJson => 'Rohes JSON';
+
+  @override
+  String get inspectorTitle => 'Nachrichten-Inspector';
+
+  @override
+  String get copyHeaders => 'Alle Header kopieren';
+
+  @override
+  String get copyMetadata => 'Metadaten kopieren';
+
+  @override
+  String get copiedHeaders => 'Alle Header in die Zwischenablage kopiert';
+
+  @override
+  String copiedHeaderValue(String key) {
+    return 'Wert von \'$key\' kopiert';
+  }
+
+  @override
+  String get noHeaders => 'Keine Header in dieser Nachricht vorhanden';
+
+  @override
+  String get copyRawJson => 'JSON kopieren';
+
+  @override
+  String get previousMessageTooltip => 'Vorherige Nachricht (K)';
+
+  @override
+  String get nextMessageTooltip => 'Nächste Nachricht (J)';
+
+  @override
+  String messagePosition(int current, int total) {
+    return '$current von $total';
+  }
+
+  @override
+  String get focusMode => 'Maximieren (Fokus-Modus)';
+
+  @override
+  String get exitFocusMode => 'Minimieren (Esc)';
+
+  @override
+  String get searchInMessage => 'In Nachricht suchen...';
+
+  @override
+  String get nextMatchTooltip => 'Nächster Treffer (Enter)';
+
+  @override
+  String get previousMatchTooltip => 'Vorheriger Treffer (Shift+Enter)';
+
+  @override
+  String get noMatches => 'Keine Treffer';
+
+  @override
+  String get closeSearch => 'Suche schließen';
+
+  @override
+  String collapsedRangeLabel(int count, int start, int end) {
+    return '… $count verborgene Elemente (Index $start bis $end) anzeigen';
+  }
+
+  @override
+  String showAllArrayItems(int count) {
+    return 'Alle $count zeigen';
+  }
+
+  @override
+  String get reduceToMatchContext => 'Auf Treffer reduzieren (±1)';
+
+  @override
+  String matchesContextBadge(int matches) {
+    return '$matches Treffer (Fokus: Treffer ±1)';
+  }
+
+  @override
+  String get recollapseRange => 'Wieder einklappen';
+
+  @override
+  String get pinAsColumn => 'Als Spalte anheften';
+
+  @override
+  String columnPinned(String path) {
+    return 'Spalte \'$path\' an Tabelle angeheftet';
+  }
+
+  @override
+  String columnAlreadyPinned(String path) {
+    return 'Spalte \'$path\' ist bereits angeheftet';
+  }
+
+  @override
+  String get removeColumn => 'Spalte entfernen';
+
+  @override
+  String get resetColumns => 'Spalten zurücksetzen';
+
+  @override
+  String get columnsReset => 'Tabellenspalten auf Standard zurückgesetzt';
 }

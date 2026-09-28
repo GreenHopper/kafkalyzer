@@ -1,8 +1,8 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/ui/hex_viewer.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
-import 'package:material_ui/material_ui.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> awaitIsolates(WidgetTester tester) async {
   await tester.pump();
@@ -43,7 +43,7 @@ void main() {
       expect(find.byType(ToggleButtons), findsNothing);
     });
 
-    testWidgets('renders Cards view by default for valid json', (tester) async {
+    testWidgets('renders Tree view by default for valid json and has only Raw and Tree toggles', (tester) async {
       final jsonStr = '{"key": "value"}';
       await tester.pumpWidget(
         MaterialApp(
@@ -54,14 +54,18 @@ void main() {
       );
       await awaitIsolates(tester);
 
-      expect(find.text('KEY'), findsOneWidget); // Card view uppercases keys
-      expect(find.text('value'), findsOneWidget);
+      expect(find.text('key: '), findsOneWidget);
+      expect(find.text('"value"'), findsOneWidget);
       expect(find.byType(ToggleButtons), findsOneWidget);
 
       final toggleButtons = tester.widget<ToggleButtons>(
         find.byType(ToggleButtons),
       );
-      expect(toggleButtons.isSelected[2], isTrue);
+      expect(toggleButtons.children.length, 2);
+      expect(find.text('Raw'), findsOneWidget);
+      expect(find.text('Tree'), findsOneWidget);
+      expect(find.text('Cards'), findsNothing);
+      expect(toggleButtons.isSelected[1], isTrue); // Tree selected
     });
 
     testWidgets('switches to Raw view', (tester) async {
@@ -75,18 +79,13 @@ void main() {
       );
 
       await awaitIsolates(tester);
-      try {
-        await tester.tap(find.text('Raw'));
-      } catch (e) {
-        debugDumpApp();
-        rethrow;
-      }
+      await tester.tap(find.text('Raw'));
       await tester.pumpAndSettle();
 
       expect(find.text(jsonStr), findsOneWidget);
     });
 
-    testWidgets('persistence restores view mode', (tester) async {
+    testWidgets('persistence restores view mode and maps legacy Cards (2) to Tree (1)', (tester) async {
       SharedPreferences.setMockInitialValues({
         'json_view_mode_testkey': 0, // Saved as Raw
       });
@@ -112,7 +111,7 @@ void main() {
     });
 
     testWidgets('renders Tree view and cycles search results', (tester) async {
-      final jsonStr = '{"user": {"name": "Alice", "age": 30}}';
+      final jsonStr = '{"user": {"account": {"username": "Alice"}}}';
       int matchCount = 0;
       await tester.pumpWidget(
         MaterialApp(
@@ -131,8 +130,6 @@ void main() {
       );
       await awaitIsolates(tester);
 
-      expect(find.text('user'), findsOneWidget);
-      expect(find.text('name'), findsOneWidget);
       expect(matchCount, 1);
 
       final state = tester.state<JsonOrStringViewerState>(
@@ -194,7 +191,7 @@ void main() {
         ),
       );
       await awaitIsolates(tester);
-      expect(find.text('DIRECT'), findsOneWidget);
+      expect(find.text('direct: '), findsOneWidget);
     });
 
     testWidgets('updates when rawContent or searchQuery changes', (
@@ -224,7 +221,7 @@ void main() {
         ),
       );
       await awaitIsolates(tester);
-      expect(find.text('B'), findsOneWidget);
+      expect(find.text('b: '), findsOneWidget);
     });
   });
 }

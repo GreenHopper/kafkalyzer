@@ -12,6 +12,7 @@ class TopicListItem extends StatelessWidget {
   final TopicMetadata topic;
   final bool isSelected;
   final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
   final VoidCallback? onOpenInNewTab;
   final Widget? trailing;
   final ClusterProfile? clusterProfile;
@@ -21,6 +22,7 @@ class TopicListItem extends StatelessWidget {
     required this.topic,
     this.isSelected = false,
     this.onTap,
+    this.onDoubleTap,
     this.onOpenInNewTab,
     this.trailing,
     this.clusterProfile,
@@ -46,18 +48,26 @@ class TopicListItem extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Text(
-          topic.name,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: isSelected
-                ? Theme.of(context).colorScheme.onSecondaryContainer
-                : null,
+        title: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onDoubleTap: onDoubleTap,
+          child: Text(
+            topic.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onSecondaryContainer
+                  : null,
+            ),
           ),
         ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 8.0),
-          child: _buildSubtitle(context),
+        subtitle: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onDoubleTap: onDoubleTap,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: _buildSubtitle(context),
+          ),
         ),
         onTap: onTap,
         trailing: _buildTrailing(context),

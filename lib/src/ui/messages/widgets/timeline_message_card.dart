@@ -11,6 +11,7 @@ class TimelineMessageCard extends StatelessWidget {
   final Widget? customContent;
   final List<MapEntry<String, String>>? extractedValues;
   final bool showPayloadPreview;
+  final bool isSelected;
 
   const TimelineMessageCard({
     super.key,
@@ -20,14 +21,25 @@ class TimelineMessageCard extends StatelessWidget {
     this.customContent,
     this.extractedValues,
     this.showPayloadPreview = true,
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
-      elevation: 0,
+      elevation: isSelected ? 1 : 0,
+      color: isSelected
+          ? colorScheme.primaryContainer.withValues(alpha: 0.2)
+          : null,
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: Theme.of(context).dividerColor),
+        side: BorderSide(
+          color: isSelected
+              ? colorScheme.primary
+              : Theme.of(context).dividerColor,
+          width: isSelected ? 2.0 : 1.0,
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
       margin: EdgeInsets.zero,

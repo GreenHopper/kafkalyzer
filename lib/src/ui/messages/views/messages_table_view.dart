@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
+import 'package:kafkalyzer/src/utils/json_path_extractor.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
@@ -16,6 +18,7 @@ class _TableRowData {
   final String stepStr;
   final String contentPreview;
   final String keyString;
+  final Map<String, String> projectedValues;
 
   _TableRowData({
     required this.message,
@@ -23,6 +26,7 @@ class _TableRowData {
     required this.stepStr,
     required this.contentPreview,
     required this.keyString,
+    required this.projectedValues,
   });
 }
 
@@ -33,6 +37,9 @@ class MessagesTableView extends StatefulWidget {
   final String? searchPhrase;
   final bool showNonMatches;
   final Function(KafkaMessage)? onMessageTap;
+  final KafkaMessage? selectedMessage;
+  final List<ProjectedColumn> projectedColumns;
+  final ValueChanged<ProjectedColumn>? onRemoveProjectedColumn;
 
   const MessagesTableView({
     super.key,
@@ -42,6 +49,9 @@ class MessagesTableView extends StatefulWidget {
     this.searchPhrase,
     this.showNonMatches = false,
     this.onMessageTap,
+    this.selectedMessage,
+    this.projectedColumns = const [],
+    this.onRemoveProjectedColumn,
   });
 
   @override
@@ -65,7 +75,8 @@ class _MessagesTableViewState extends State<MessagesTableView> {
         widget.searchPhrase != oldWidget.searchPhrase ||
         widget.showTopic != oldWidget.showTopic ||
         widget.showStep != oldWidget.showStep ||
-        widget.showNonMatches != oldWidget.showNonMatches) {
+        widget.showNonMatches != oldWidget.showNonMatches ||
+        widget.projectedColumns != oldWidget.projectedColumns) {
       _needsRebuildRows = true;
     }
   }
@@ -82,6 +93,11 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       final stepStr = msg is ScriptResultMessage ? msg.stepName : 'Global';
       final contentPreview = TextPreviewUtils.getPayloadPreview(msg.payload);
       final keyString = msg.key ?? "";
+      final projectedValues = <String, String>{};
+      for (final col in widget.projectedColumns) {
+        projectedValues[col.path] =
+            JsonPathExtractor.extractFromPayload(msg.payload, col.path) ?? '';
+      }
 
       return _TableRowData(
         message: msg,
@@ -89,6 +105,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
         stepStr: stepStr,
         contentPreview: contentPreview,
         keyString: keyString,
+        projectedValues: projectedValues,
       );
     }).toList();
 
@@ -119,6 +136,17 @@ class _MessagesTableViewState extends State<MessagesTableView> {
             break;
           case 6: // Step
             val = data.stepStr;
+            break;
+          default:
+            // Dynamic projected columns (offset by 100 or >= 100)
+            if (entry.key >= 100) {
+              final projIndex = entry.key - 100;
+              if (projIndex >= 0 &&
+                  projIndex < widget.projectedColumns.length) {
+                final col = widget.projectedColumns[projIndex];
+                val = data.projectedValues[col.path] ?? "";
+              }
+            }
             break;
         }
         // Substring
@@ -161,6 +189,17 @@ class _MessagesTableViewState extends State<MessagesTableView> {
           case 6: // Step
             valA = a.stepStr;
             valB = b.stepStr;
+            break;
+          default:
+            if (_sortColumnIndex! >= 100) {
+              final projIndex = _sortColumnIndex! - 100;
+              if (projIndex >= 0 &&
+                  projIndex < widget.projectedColumns.length) {
+                final col = widget.projectedColumns[projIndex];
+                valA = a.projectedValues[col.path] ?? "";
+                valB = b.projectedValues[col.path] ?? "";
+              }
+            }
             break;
         }
 
@@ -252,96 +291,133 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     );
   }
 
-  TableViewCell _buildSortableHeader(String title, int index) {
+  TableViewCell _buildSortableHeader(
+    String title,
+    int index, {
+    ProjectedColumn? projectedColumn,
+  }) {
     final bool isSorted = _sortColumnIndex == index;
     bool isFiltered =
         _columnFilters.containsKey(index) && _columnFilters[index]!.isNotEmpty;
 
     return TableViewCell(
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            if (_sortColumnIndex == index) {
-              _sortAscending = !_sortAscending;
-            } else {
-              _sortColumnIndex = index;
-              _sortAscending = true;
-            }
-            _needsRebuildRows = true;
-          });
-        },
-        child: Container(
-          color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: isFiltered
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurface,
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              if (_sortColumnIndex == index) {
+                _sortAscending = !_sortAscending;
+              } else {
+                _sortColumnIndex = index;
+                _sortAscending = true;
+              }
+              _needsRebuildRows = true;
+            });
+          },
+          child: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Tooltip(
+                    message: projectedColumn?.path ?? title,
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: isFiltered
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 4),
-              InkWell(
-                onTap: () => _showFilterDialog(title, index),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Icon(
-                    isFiltered ? Icons.filter_alt : Icons.filter_list,
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () => _showFilterDialog(title, index),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Icon(
+                      isFiltered ? Icons.filter_alt : Icons.filter_list,
+                      size: 14,
+                      color: isFiltered
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (isSorted)
+                  Icon(
+                    _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
                     size: 14,
-                    color: isFiltered
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                ),
-              ),
-              if (isSorted)
-                Icon(
-                  _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 14,
-                ),
-            ],
+                if (projectedColumn != null &&
+                    widget.onRemoveProjectedColumn != null) ...[
+                  const SizedBox(width: 4),
+                  InkWell(
+                    onTap: () =>
+                        widget.onRemoveProjectedColumn!(projectedColumn),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(
+                        Icons.close,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  TableSpan _buildColumnSpan(int index) {
-    if (!widget.showStep && index >= 1) index++; // Skip Step
-    if (!widget.showTopic && index >= 2) index++; // Skip Topic
+  TableSpan _buildColumnSpan(int visualIndex) {
+    final int preCount = _preProjectedColumnCount;
+    final int projectedCount = widget.projectedColumns.length;
 
-    switch (index) {
-      case 0: // Timestamp
-        return const TableSpan(extent: FixedTableSpanExtent(180));
-      case 1: // Step
-        return const TableSpan(extent: FixedTableSpanExtent(120));
-      case 2: // Topic
-        return const TableSpan(extent: FixedTableSpanExtent(150));
-      case 3: // Partition
-        return const TableSpan(extent: FixedTableSpanExtent(110));
-      case 4: // Offset
-        return const TableSpan(extent: FixedTableSpanExtent(110));
-      case 5: // Key
-        return const TableSpan(
-          extent: FractionalTableSpanExtent(0.33),
-        ); // Like flex: 1
-      case 6: // Content
-        return const TableSpan(
-          extent: FractionalTableSpanExtent(0.67),
-        ); // Like flex: 2
-      default:
-        return const TableSpan(extent: FixedTableSpanExtent(100));
+    if (visualIndex < preCount) {
+      int index = visualIndex;
+      if (!widget.showStep && index >= 1) index++; // Skip Step
+      if (!widget.showTopic && index >= 2) index++; // Skip Topic
+
+      switch (index) {
+        case 0: // Timestamp
+          return const TableSpan(extent: FixedTableSpanExtent(180));
+        case 1: // Step
+          return const TableSpan(extent: FixedTableSpanExtent(120));
+        case 2: // Topic
+          return const TableSpan(extent: FixedTableSpanExtent(150));
+        case 3: // Partition
+          return const TableSpan(extent: FixedTableSpanExtent(110));
+        case 4: // Offset
+          return const TableSpan(extent: FixedTableSpanExtent(110));
+        case 5: // Key
+          return const TableSpan(
+            extent: FractionalTableSpanExtent(0.33),
+          ); // Like flex: 1
+        default:
+          return const TableSpan(extent: FixedTableSpanExtent(100));
+      }
+    } else if (visualIndex < preCount + projectedCount) {
+      final projIndex = visualIndex - preCount;
+      final col = widget.projectedColumns[projIndex];
+      return TableSpan(extent: FixedTableSpanExtent(col.width));
+    } else {
+      // Content column
+      return const TableSpan(
+        extent: FractionalTableSpanExtent(0.67),
+      ); // Like flex: 2
     }
   }
 
@@ -352,6 +428,13 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     return const TableSpan(extent: FixedTableSpanExtent(44)); // Row height
   }
 
+  int get _preProjectedColumnCount {
+    int count = 4; // Timestamp, Partition, Offset, Key
+    if (widget.showStep) count++;
+    if (widget.showTopic) count++;
+    return count;
+  }
+
   TableViewCell _buildCell(
     BuildContext context,
     TableVicinity vicinity,
@@ -359,30 +442,50 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     TextStyle highlightStyle,
   ) {
     final int columnRaw = vicinity.column;
-    // Map visual column index to logical model index based on visibility
+    final int preCount = _preProjectedColumnCount;
+    final int projectedCount = widget.projectedColumns.length;
+
+    final bool isPreProjected = columnRaw < preCount;
+    final bool isProjected =
+        !isPreProjected && (columnRaw < preCount + projectedCount);
+    final int projectedIndex = isProjected ? columnRaw - preCount : -1;
+
+    // Map visual column index to logical standard column index
     int logicalColumn = columnRaw;
-    if (!widget.showStep && logicalColumn >= 1) logicalColumn++;
-    if (!widget.showTopic && logicalColumn >= 2) logicalColumn++;
+    if (isPreProjected) {
+      if (!widget.showStep && logicalColumn >= 1) logicalColumn++;
+      if (!widget.showTopic && logicalColumn >= 2) logicalColumn++;
+    }
 
     // Row 0 is the Header
     if (vicinity.row == 0) {
-      switch (logicalColumn) {
-        case 0:
-          return _buildSortableHeader('Timestamp', 0);
-        case 1:
-          return _buildSortableHeader('Step', 6);
-        case 2:
-          return _buildSortableHeader('Topic', 5);
-        case 3:
-          return _buildSortableHeader('Partition', 1);
-        case 4:
-          return _buildSortableHeader('Offset', 2);
-        case 5:
-          return _buildSortableHeader('Key', 3);
-        case 6:
-          return _buildSortableHeader('Content', 4);
-        default:
-          return TableViewCell(child: const SizedBox.shrink());
+      if (isPreProjected) {
+        switch (logicalColumn) {
+          case 0:
+            return _buildSortableHeader('Timestamp', 0);
+          case 1:
+            return _buildSortableHeader('Step', 6);
+          case 2:
+            return _buildSortableHeader('Topic', 5);
+          case 3:
+            return _buildSortableHeader('Partition', 1);
+          case 4:
+            return _buildSortableHeader('Offset', 2);
+          case 5:
+            return _buildSortableHeader('Key', 3);
+          default:
+            return TableViewCell(child: const SizedBox.shrink());
+        }
+      } else if (isProjected) {
+        final col = widget.projectedColumns[projectedIndex];
+        return _buildSortableHeader(
+          col.label,
+          100 + projectedIndex,
+          projectedColumn: col,
+        );
+      } else {
+        // Content
+        return _buildSortableHeader('Content', 4);
       }
     }
 
@@ -406,80 +509,126 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       final payloadMatch = (msg.payload ?? "").toLowerCase().contains(query);
       final topicMatch = msg.topic.toLowerCase().contains(query);
       final stepMatch = data.stepStr.toLowerCase().contains(query);
-      isMatch = keyMatch || payloadMatch || topicMatch || stepMatch;
+      final projectedMatch = data.projectedValues.values.any(
+        (v) => v.toLowerCase().contains(query),
+      );
+      isMatch =
+          keyMatch || payloadMatch || topicMatch || stepMatch || projectedMatch;
     }
 
     Widget cellContent;
-    switch (logicalColumn) {
-      case 0: // Timestamp
-        cellContent = Text(data.dateStr, style: const TextStyle(fontSize: 12));
-        break;
-      case 1: // Step
-        cellContent = Text(
-          data.stepStr,
-          style: monoStyle,
-          overflow: TextOverflow.ellipsis,
-        );
-        break;
-      case 2: // Topic
-        cellContent = Tooltip(
-          message: msg.topic,
-          child: Text(
-            msg.topic,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: ColorUtils.getColorForString(msg.topic),
+    if (isPreProjected) {
+      switch (logicalColumn) {
+        case 0: // Timestamp
+          cellContent = Text(
+            data.dateStr,
+            style: const TextStyle(fontSize: 12),
+          );
+          break;
+        case 1: // Step
+          cellContent = Text(
+            data.stepStr,
+            style: monoStyle,
+            overflow: TextOverflow.ellipsis,
+          );
+          break;
+        case 2: // Topic
+          cellContent = Tooltip(
+            message: msg.topic,
+            child: Text(
+              msg.topic,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: ColorUtils.getColorForString(msg.topic),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-        break;
-      case 3: // Partition
-        cellContent = Text(msg.partition.toString(), style: monoStyle);
-        break;
-      case 4: // Offset
-        cellContent = Text(msg.offset.toString(), style: monoStyle);
-        break;
-      case 5: // Key
-        cellContent = Tooltip(
-          message: data.keyString,
-          child: RichText(
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            text: TextSpan(
-              children: HighlightTextUtils.buildHighlightedSpans(
-                data.keyString,
-                widget.searchPhrase ?? "",
-                monoStyle,
-                highlightStyle,
+          );
+          break;
+        case 3: // Partition
+          cellContent = Text(msg.partition.toString(), style: monoStyle);
+          break;
+        case 4: // Offset
+          cellContent = Text(msg.offset.toString(), style: monoStyle);
+          break;
+        case 5: // Key
+          cellContent = Tooltip(
+            message: data.keyString,
+            child: RichText(
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              text: TextSpan(
+                children: HighlightTextUtils.buildHighlightedSpans(
+                  data.keyString,
+                  widget.searchPhrase ?? "",
+                  monoStyle,
+                  highlightStyle,
+                ),
               ),
             ),
-          ),
-        );
-        break;
-      case 6: // Content
-        cellContent = RichText(
+          );
+          break;
+        default:
+          cellContent = const SizedBox.shrink();
+      }
+    } else if (isProjected) {
+      final col = widget.projectedColumns[projectedIndex];
+      final val = data.projectedValues[col.path] ?? '';
+      cellContent = Tooltip(
+        message: val,
+        child: RichText(
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           text: TextSpan(
             children: HighlightTextUtils.buildHighlightedSpans(
-              data.contentPreview,
+              val.isEmpty ? '-' : val,
               widget.searchPhrase ?? "",
-              monoStyle,
+              monoStyle.copyWith(
+                color: val.isEmpty
+                    ? Theme.of(context).colorScheme.outline
+                    : null,
+              ),
               highlightStyle,
             ),
           ),
-        );
-        break;
-      default:
-        cellContent = const SizedBox.shrink();
+        ),
+      );
+    } else {
+      // Content column
+      cellContent = RichText(
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        text: TextSpan(
+          children: HighlightTextUtils.buildHighlightedSpans(
+            data.contentPreview,
+            widget.searchPhrase ?? "",
+            monoStyle,
+            highlightStyle,
+          ),
+        ),
+      );
     }
+
+    final isSelected = widget.selectedMessage == msg;
+    final colorScheme = Theme.of(context).colorScheme;
 
     Widget decoratedCell = Container(
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: dividerColor)),
+        color: isSelected
+            ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+            : null,
+        border: Border(
+          bottom: BorderSide(
+            color: isSelected
+                ? colorScheme.primary.withValues(alpha: 0.5)
+                : dividerColor,
+          ),
+          left: (isSelected && logicalColumn == 0)
+              ? BorderSide(color: colorScheme.primary, width: 3.5)
+              : BorderSide.none,
+        ),
       ),
       child: cellContent,
     );
@@ -521,9 +670,13 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       color: Theme.of(context).colorScheme.onTertiaryContainer,
     );
 
-    int totalColumns = 7;
-    if (!widget.showStep) totalColumns--;
-    if (!widget.showTopic) totalColumns--;
+    int totalColumns =
+        5 +
+        widget
+            .projectedColumns
+            .length; // Timestamp, Partition, Offset, Key, Content + projected
+    if (widget.showStep) totalColumns++;
+    if (widget.showTopic) totalColumns++;
 
     return TableView.builder(
       columnCount: totalColumns,

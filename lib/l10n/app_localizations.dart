@@ -593,7 +593,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchesCount.
   ///
   /// In en, this message translates to:
-  /// **'{current} / {total} matches'**
+  /// **'{current} of {total}'**
   String matchesCount(int current, int total);
 
   /// No description provided for @otherResults.
@@ -1675,6 +1675,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No release notes available.'**
   String get noReleaseNotes;
+
+  /// No description provided for @dockBottom.
+  ///
+  /// In en, this message translates to:
+  /// **'Dock to bottom'**
+  String get dockBottom;
+
+  /// No description provided for @dockSide.
+  ///
+  /// In en, this message translates to:
+  /// **'Dock to right'**
+  String get dockSide;
+
+  /// No description provided for @closeInspector.
+  ///
+  /// In en, this message translates to:
+  /// **'Close inspector'**
+  String get closeInspector;
+
+  /// No description provided for @tabPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload'**
+  String get tabPayload;
+
+  /// No description provided for @tabKeyAndHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Key & Headers'**
+  String get tabKeyAndHeaders;
+
+  /// No description provided for @tabRawJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw JSON'**
+  String get tabRawJson;
+
+  /// No description provided for @inspectorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Inspector'**
+  String get inspectorTitle;
+
+  /// No description provided for @copyHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy all headers'**
+  String get copyHeaders;
+
+  /// No description provided for @copyMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy metadata'**
+  String get copyMetadata;
+
+  /// No description provided for @copiedHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'All headers copied to clipboard'**
+  String get copiedHeaders;
+
+  /// No description provided for @copiedHeaderValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied value of \'{key}\''**
+  String copiedHeaderValue(String key);
+
+  /// No description provided for @noHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'No headers present on this message'**
+  String get noHeaders;
+
+  /// No description provided for @copyRawJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy JSON'**
+  String get copyRawJson;
+
+  /// No description provided for @previousMessageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous message (K)'**
+  String get previousMessageTooltip;
+
+  /// No description provided for @nextMessageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next message (J)'**
+  String get nextMessageTooltip;
+
+  /// No description provided for @messagePosition.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String messagePosition(int current, int total);
+
+  /// No description provided for @focusMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximize (Focus Mode)'**
+  String get focusMode;
+
+  /// No description provided for @exitFocusMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize (Esc)'**
+  String get exitFocusMode;
+
+  /// No description provided for @searchInMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Search in message...'**
+  String get searchInMessage;
+
+  /// No description provided for @nextMatchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next match (Enter)'**
+  String get nextMatchTooltip;
+
+  /// No description provided for @previousMatchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous match (Shift+Enter)'**
+  String get previousMatchTooltip;
+
+  /// No description provided for @noMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get noMatches;
+
+  /// No description provided for @closeSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get closeSearch;
+
+  /// No description provided for @collapsedRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'… {count} hidden items (Index {start} to {end})'**
+  String collapsedRangeLabel(int count, int start, int end);
+
+  /// No description provided for @showAllArrayItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all {count}'**
+  String showAllArrayItems(int count);
+
+  /// No description provided for @reduceToMatchContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus matches (±1)'**
+  String get reduceToMatchContext;
+
+  /// No description provided for @matchesContextBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{matches} matches (Focus: ±1)'**
+  String matchesContextBadge(int matches);
+
+  /// No description provided for @recollapseRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-collapse range'**
+  String get recollapseRange;
+
+  /// No description provided for @pinAsColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin as Column'**
+  String get pinAsColumn;
+
+  /// No description provided for @columnPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Column \'{path}\' pinned to table'**
+  String columnPinned(String path);
+
+  /// No description provided for @columnAlreadyPinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Column \'{path}\' is already pinned'**
+  String columnAlreadyPinned(String path);
+
+  /// No description provided for @removeColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove column'**
+  String get removeColumn;
+
+  /// No description provided for @resetColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset columns'**
+  String get resetColumns;
+
+  /// No description provided for @columnsReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Table columns reset to default'**
+  String get columnsReset;
 }
 
 class _AppLocalizationsDelegate

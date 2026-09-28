@@ -97,7 +97,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Linux app
-        run: flutter build linux --release --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        run: flutter build linux --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
@@ -112,7 +112,7 @@ jobs:
             cp changelog.md build/linux/x64/release/bundle/
           fi
 
-          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/linux/x64/release/bundle -e kafkalyzer --icon assets/logo-transparent.png -o velopack_release
+          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/linux/x64/release/bundle -e kafkalyzer --icon assets/logo.png -o velopack_release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -194,7 +194,7 @@ jobs:
       #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
       - name: Build macOS app
-        run: flutter build macos --release --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        run: flutter build macos --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
@@ -300,7 +300,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows app
-        run: flutter build windows --release --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        run: flutter build windows --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk

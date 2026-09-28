@@ -16,6 +16,7 @@ class MessagesTimelineView extends StatelessWidget {
   final String? searchPhrase;
   final bool showNonMatches;
   final Map<String, List<ScriptExtraction>>? stepExtractions;
+  final KafkaMessage? selectedMessage;
 
   const MessagesTimelineView({
     super.key,
@@ -24,6 +25,7 @@ class MessagesTimelineView extends StatelessWidget {
     this.searchPhrase,
     this.showNonMatches = false,
     this.stepExtractions,
+    this.selectedMessage,
   });
 
   @override
@@ -58,6 +60,7 @@ class MessagesTimelineView extends StatelessWidget {
               isMatch: isMatch,
               showNonMatches: showNonMatches,
               searchPhrase: searchPhrase,
+              isSelected: selectedMessage == message,
               onMessageTap: onMessageTap,
             ),
           );
@@ -133,6 +136,7 @@ class _LazyTimelineCard extends StatefulWidget {
   final bool isMatch;
   final bool showNonMatches;
   final String? searchPhrase;
+  final bool isSelected;
   final Function(KafkaMessage) onMessageTap;
 
   const _LazyTimelineCard({
@@ -142,6 +146,7 @@ class _LazyTimelineCard extends StatefulWidget {
     required this.isMatch,
     required this.showNonMatches,
     required this.searchPhrase,
+    this.isSelected = false,
     required this.onMessageTap,
   });
 
@@ -192,6 +197,7 @@ class _LazyTimelineCardState extends State<_LazyTimelineCard> {
         searchPhrase: widget.searchPhrase,
         extractedValues: widget.extractedValues,
         showPayloadPreview: true,
+        isSelected: widget.isSelected,
       ),
     );
   }

@@ -6,17 +6,36 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AppVersionHelper', () {
-    test('version is initialized from package info', () async {
-      PackageInfo.setMockInitialValues(
-        appName: 'kafkalyzer',
-        packageName: 'at.greenhopper.kafkalyzer',
-        version: '1.2.3',
-        buildNumber: '4',
-        buildSignature: '',
-      );
+    test(
+      'version is initialized from package info with build number',
+      () async {
+        PackageInfo.setMockInitialValues(
+          appName: 'kafkalyzer',
+          packageName: 'at.greenhopper.kafkalyzer',
+          version: '1.2.3',
+          buildNumber: '4',
+          buildSignature: '',
+        );
 
-      await AppVersionHelper.init();
-      expect(AppVersionHelper.version, '1.2.3+4');
-    });
+        await AppVersionHelper.init();
+        expect(AppVersionHelper.version, '1.2.3+4');
+      },
+    );
+
+    test(
+      'version is initialized from package info without build number',
+      () async {
+        PackageInfo.setMockInitialValues(
+          appName: 'kafkalyzer',
+          packageName: 'at.greenhopper.kafkalyzer',
+          version: '1.2.3',
+          buildNumber: '',
+          buildSignature: '',
+        );
+
+        await AppVersionHelper.init();
+        expect(AppVersionHelper.version, '1.2.3');
+      },
+    );
   });
 }

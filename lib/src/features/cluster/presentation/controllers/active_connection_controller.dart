@@ -141,6 +141,26 @@ class ActiveConnectionController extends ChangeNotifier {
     return newRecord;
   }
 
+  OpenTopicRecord? streamTopicWithDefaults(
+    TopicMetadata topic, [
+    ClusterProfile? profile,
+  ]) {
+    final record = openTopic(topic: topic, profile: profile, forceNew: false);
+    if (record == null) return null;
+
+    final controller = getStreamController(record.id);
+    controller.startStreaming(
+      record.profile,
+      record.topic.name,
+      filterType: FilterType.contains,
+      searchScope: SearchScope.both,
+      maxResults: 200,
+      startFromTail: true,
+      runForever: false,
+    );
+    return record;
+  }
+
   void setActiveTopic(TopicMetadata? topic, [ClusterProfile? profile]) {
     if (topic != null) {
       openTopic(topic: topic, profile: profile, forceNew: false);

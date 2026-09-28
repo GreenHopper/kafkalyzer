@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:group_button/group_button.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
-import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
 
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 
@@ -143,12 +142,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
                 child: MessagesView(
                   preferencesKey: "topic_detail_view_mode",
                   messages: messages,
-                  onMessageTap: (msg) {
-                    showDialog(
-                      context: context,
-                      builder: (context) => MessageDetailsDialog(message: msg),
-                    );
-                  },
                 ),
               ),
             ] else ...[

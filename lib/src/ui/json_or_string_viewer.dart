@@ -1,22 +1,10 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:json_explorer/json_explorer.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:provider/provider.dart';
-import 'package:kafkalyzer/src/ui/json_card_viewer.dart';
 import 'package:kafkalyzer/src/ui/hex_viewer.dart';
-import 'package:kafkalyzer/src/utils/payload_processing_isolate.dart';
+import 'package:kafkalyzer/src/ui/smart_tree/smart_virtual_json_tree.dart';
 import 'package:kafkalyzer/src/utils/app_fonts.dart';
-
-class MatchRegistry {
-  final List<GlobalKey> _keys = [];
-  int get count => _keys.length;
-  void register(GlobalKey key) => _keys.add(key);
-  GlobalKey? getKey(int index) =>
-      (index >= 0 && index < _keys.length) ? _keys[index] : null;
-  void clear() => _keys.clear();
-}
+import 'package:kafkalyzer/src/utils/payload_processing_isolate.dart';
 
 class JsonOrStringViewer extends StatefulWidget {
   final String? title;
@@ -30,6 +18,7 @@ class JsonOrStringViewer extends StatefulWidget {
   final int? focusedMatchIndex;
   final int? initialViewMode;
   final double? treeViewHeight;
+  final ValueChanged<String>? onPinToColumn;
 
   const JsonOrStringViewer({
     super.key,
@@ -44,6 +33,7 @@ class JsonOrStringViewer extends StatefulWidget {
     this.focusedMatchIndex,
     this.initialViewMode,
     this.treeViewHeight,
+    this.onPinToColumn,
   });
 
   @override
@@ -51,14 +41,14 @@ class JsonOrStringViewer extends StatefulWidget {
 }
 
 class JsonOrStringViewerState extends State<JsonOrStringViewer> {
-  int _viewMode = 0; // 0: Raw, 1: JSON, 2: Cards
+  int _viewMode = 0; // 0: Raw, 1: Tree, 3: Hex
   dynamic _parsedJson;
   bool _isValidJson = false;
   bool _isParsing = true;
 
-  final JsonExplorerStore _store = JsonExplorerStore();
-  final MatchRegistry _matchRegistry = MatchRegistry();
-  final ItemScrollController _itemScrollController = ItemScrollController();
+  final GlobalKey<SmartVirtualJsonTreeState> _treeKey =
+      GlobalKey<SmartVirtualJsonTreeState>();
+  int _treeMatchCount = 0;
   int _rawMatchCount = 0;
   bool _isBinaryHex = false;
   List<int> _binaryBytes = [];
@@ -70,91 +60,19 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
   }
 
   void jumpToMatch(int index) {
-    if (_viewMode == 2) {
-      // Cards
-      final key = _matchRegistry.getKey(index);
-      if (key != null && key.currentContext != null) {
-        Scrollable.ensureVisible(
-          key.currentContext!,
-          alignment: 0.5,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    } else if (_viewMode == 0) {
-      // Raw match jumping not fully supported without line splitting,
-      // but we could try scrolling if we had logic.
-      // For now, no-op or improved later.
-    } else if (_viewMode == 1) {
-      // Tree view jumping:
-      if (index >= 0 && index < _store.searchResults.length) {
-        // 1. Sync store focus to this index so it renders highlighted
-        _syncStoreFocus(index);
-
-        // 2. Scroll to the node containing this match
-        final result = _store.searchResults[index];
-        final nodeIndex = _store.displayNodes.indexOf(result.node);
-
-        if (nodeIndex >= 0) {
-          _itemScrollController.scrollTo(
-            index: nodeIndex,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            alignment: 0.5, // Center the item
-          );
-        }
-      }
-    }
-  }
-
-  void _syncStoreFocus(int targetIndex) {
-    // Helper to move store focus to the target index.
-    // Since we don't have direct setter, we cycle.
-    // Optimization: if we are far, we could just reset search? No, that clears state.
-    // We assume the user navigates sequentially mostly.
-
-    if (_store.searchResults.isEmpty) return;
-
-    // Safety break to prevent infinite loops if something is wrong
-    int attempts = 0;
-    while (_store.focusedSearchResultIndex != targetIndex &&
-        attempts < _store.searchResults.length * 2) {
-      // Decide direction?
-      // focusedSearchResultIndex is 0..N
-      // We can just loop next.
-      _store.focusNextSearchResult(loop: true);
-      attempts++;
+    if (_viewMode == 1) {
+      _treeKey.currentState?.jumpToMatch(index);
     }
   }
 
   void _updateMatchCount() {
-    // Post frame callback to ensure widgets are built and registered
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      int count = 0;
-      if (_viewMode == 2) {
-        // Cards
-        count = _matchRegistry.count;
-      } else if (_viewMode == 0) {
-        // Raw
-        count = _rawMatchCount;
-      } else if (_viewMode == 1) {
-        // Tree View
-        // Count matches in displayNodes
-        // We assume JsonExplorer filters/expands to show matches.
-        // We need to count how many nodes actually CONTAIN the search term in key or value.
-        // Note: JsonExplorer might highlight multiple times in one string?
-        // For simplicity, we count each NODE that matches as 1 match (or 2 if both key and value match?)
-        // Let's count occurrence based.
-
-        final query = widget.searchQuery?.toLowerCase();
-        if (query != null && query.isNotEmpty) {
-          // Use store results directly
-          count = _store.searchResults.length;
-        }
-      }
-      widget.onMatchCountChanged?.call(count);
-    });
+    int count = 0;
+    if (_viewMode == 1) {
+      count = _treeMatchCount;
+    } else if (_viewMode == 0) {
+      count = _rawMatchCount;
+    }
+    widget.onMatchCountChanged?.call(count);
   }
 
   Future<void> _restorePersistence() async {
@@ -162,20 +80,12 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
 
-    // Only restore if current content is valid JSON, otherwise we are forced to Raw (0)
-    // Wait, if it IS valid JSON, parseContent sets it to Cards (2).
-    // So if persistence says 0 (Raw), 1 (Tree), or 2 (Cards), we respect it if valid.
     if (_isValidJson) {
       final savedMode = prefs.getInt('json_view_mode_${widget.persistenceKey}');
-      if (savedMode != null && savedMode >= 0 && savedMode <= 2) {
+      if (savedMode != null) {
         setState(() {
-          _viewMode = savedMode;
-          // Re-trigger search if needed if mode switched to Tree
-          if (_viewMode == 1 &&
-              widget.searchQuery != null &&
-              widget.searchQuery!.isNotEmpty) {
-            _store.search(widget.searchQuery!);
-          }
+          // Mode 2 (legacy Cards) is mapped to 1 (Tree)
+          _viewMode = (savedMode == 2) ? 1 : (savedMode <= 1 ? savedMode : 1);
           _updateMatchCount();
         });
       }
@@ -189,12 +99,6 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
         oldWidget.preParsedJson != widget.preParsedJson) {
       _parseContentAsync();
     } else if (oldWidget.searchQuery != widget.searchQuery) {
-      if (_isValidJson && _viewMode == 1) {
-        _store.search(widget.searchQuery ?? '');
-        if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
-          _store.expandSearchResults();
-        }
-      }
       _updateMatchCount();
     }
   }
@@ -207,8 +111,7 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
     if (widget.preParsedJson != null) {
       _parsedJson = widget.preParsedJson;
       _isValidJson = true;
-      _viewMode = widget.initialViewMode ?? 2; // Default to Cards
-      _store.buildNodes(_parsedJson);
+      _viewMode = widget.initialViewMode ?? 1; // Default to Tree
       _finalizeParsing();
       return;
     }
@@ -242,8 +145,7 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
       if (decoded is Map || decoded is List) {
         _parsedJson = decoded;
         _isValidJson = true;
-        _viewMode = widget.initialViewMode ?? 2; // Default to Cards
-        _store.buildNodes(_parsedJson);
+        _viewMode = widget.initialViewMode ?? 1; // Default to Tree
       } else {
         _isValidJson = false;
         _viewMode = 0;
@@ -258,12 +160,6 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
 
   Future<void> _finalizeParsing() async {
     if (!mounted) return;
-    if (_isValidJson &&
-        widget.searchQuery != null &&
-        widget.searchQuery!.isNotEmpty) {
-      _store.search(widget.searchQuery!);
-      _store.expandSearchResults();
-    }
     await _restorePersistence();
     setState(() {
       _isParsing = false;
@@ -281,86 +177,19 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
     // View Mode Logic
     if (_isBinaryHex) {
       contentWidget = HexViewer(bytes: _binaryBytes);
-    } else if (_isValidJson && _viewMode == 2) {
-      _matchRegistry.clear();
-      contentWidget = JsonCardViewer(
-        json: _parsedJson,
-        searchQuery: widget.searchQuery,
-        focusedMatchIndex: widget.focusedMatchIndex,
-        onMatchFound: _matchRegistry.register,
-      );
     } else if (_isValidJson && _viewMode == 1) {
       contentWidget = SizedBox(
         height: widget.treeViewHeight ?? 300,
-        child: ChangeNotifierProvider.value(
-          value: _store,
-          child: Consumer<JsonExplorerStore>(
-            builder: (context, store, child) {
-              return JsonExplorer(
-                nodes: store.displayNodes,
-                itemScrollController: _itemScrollController,
-                theme: JsonExplorerTheme(
-                  rootKeyTextStyle: AppFonts.robotoMono(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  propertyKeyTextStyle: AppFonts.robotoMono(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  valueTextStyle: AppFonts.robotoMono(
-                    color: colorScheme.onSurface,
-                    fontSize: 13,
-                  ),
-                  indentationLineColor: colorScheme.outlineVariant,
-                  highlightColor: colorScheme.secondaryContainer.withValues(
-                    alpha: 0.5,
-                  ),
-                  keySearchHighlightTextStyle: AppFonts.robotoMono(
-                    color: colorScheme.onTertiaryContainer,
-                    backgroundColor: colorScheme.tertiaryContainer,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  valueSearchHighlightTextStyle: AppFonts.robotoMono(
-                    color: colorScheme.onTertiaryContainer,
-                    backgroundColor: colorScheme.tertiaryContainer,
-                    fontSize: 13,
-                  ),
-                  focusedKeySearchHighlightTextStyle: AppFonts.robotoMono(
-                    color: Colors.black,
-                    backgroundColor: Colors.orange,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  focusedValueSearchHighlightTextStyle: AppFonts.robotoMono(
-                    color: Colors.black,
-                    backgroundColor: Colors.orange,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                valueStyleBuilder: (value, style) {
-                  if (value is num) {
-                    return PropertyOverrides(
-                      style: style.copyWith(color: colorScheme.secondary),
-                    );
-                  } else if (value is bool) {
-                    return PropertyOverrides(
-                      style: style.copyWith(color: colorScheme.tertiary),
-                    );
-                  } else if (value is String) {
-                    return PropertyOverrides(
-                      style: style.copyWith(color: colorScheme.primary),
-                    );
-                  }
-                  return PropertyOverrides(style: style);
-                },
-              );
-            },
-          ),
+        child: SmartVirtualJsonTree(
+          key: _treeKey,
+          json: _parsedJson,
+          searchQuery: widget.searchQuery,
+          focusedMatchIndex: widget.focusedMatchIndex,
+          onMatchCountChanged: (count) {
+            _treeMatchCount = count;
+            _updateMatchCount();
+          },
+          onPinToColumn: widget.onPinToColumn,
         ),
       );
     } else {
@@ -453,17 +282,10 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                     height: 32,
                     child: ToggleButtons(
                       borderRadius: BorderRadius.circular(8),
-                      isSelected: [
-                        _viewMode == 0,
-                        _viewMode == 1,
-                        _viewMode == 2,
-                      ],
+                      isSelected: [_viewMode == 0, _viewMode == 1],
                       onPressed: (index) async {
                         setState(() {
                           _viewMode = index;
-                          if (_viewMode == 1 && widget.searchQuery != null) {
-                            _store.search(widget.searchQuery!);
-                          }
                           _updateMatchCount();
                         });
                         if (widget.persistenceKey != null) {
@@ -482,10 +304,6 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 12),
                           child: Text('Tree', style: TextStyle(fontSize: 12)),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('Cards', style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
@@ -567,14 +385,8 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
       start = index + query.length;
     }
 
-    // Update raw match count if we are in raw mode
     if (_viewMode == 0) {
-      // We can't update state during build easily, but since this is called during build...
-      // We should probably calculate this BEFORE build or use other means.
-      // However, _buildHighlightedText is called once.
-      // Optimisation: check if count changed.
       if (_rawMatchCount != matchCount) {
-        // Schedule update
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _rawMatchCount != matchCount) {
             _rawMatchCount = matchCount;

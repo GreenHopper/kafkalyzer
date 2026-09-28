@@ -25,6 +25,47 @@ static void my_application_activate(GApplication* application) {
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
+  // Set window icon if available across debug, release and bundle layouts
+  g_autofree gchar* exe_path = g_file_read_link("/proc/self/exe", nullptr);
+  gboolean icon_set = FALSE;
+  if (exe_path != nullptr) {
+    g_autofree gchar* exe_dir = g_path_get_dirname(exe_path);
+    // 1. Release bundle path: <exe_dir>/data/flutter_assets/assets/logo.png
+    g_autofree gchar* p1 = g_build_filename(
+        exe_dir, "data", "flutter_assets", "assets", "logo.png", nullptr);
+    // 2. Debug build path: <exe_dir>/../bundle/data/flutter_assets/assets/logo.png
+    g_autofree gchar* p2 = g_build_filename(
+        exe_dir, "..", "bundle", "data", "flutter_assets", "assets", "logo.png",
+        nullptr);
+    // 3. Source tree path from intermediates: <exe_dir>/../../../assets/logo.png
+    g_autofree gchar* p3 = g_build_filename(
+        exe_dir, "..", "..", "..", "assets", "logo.png", nullptr);
+
+    const gchar* candidates[] = {p1, p2, p3};
+    for (size_t i = 0; i < G_N_ELEMENTS(candidates); i++) {
+      if (g_file_test(candidates[i], G_FILE_TEST_EXISTS)) {
+        gtk_window_set_icon_from_file(window, candidates[i], nullptr);
+        gtk_window_set_default_icon_from_file(candidates[i], nullptr);
+        icon_set = TRUE;
+        break;
+      }
+    }
+  }
+
+  if (!icon_set) {
+    const gchar* fallback_paths[] = {
+        "assets/logo.png",
+        "data/flutter_assets/assets/logo.png",
+    };
+    for (size_t i = 0; i < G_N_ELEMENTS(fallback_paths); i++) {
+      if (g_file_test(fallback_paths[i], G_FILE_TEST_EXISTS)) {
+        gtk_window_set_icon_from_file(window, fallback_paths[i], nullptr);
+        gtk_window_set_default_icon_from_file(fallback_paths[i], nullptr);
+        break;
+      }
+    }
+  }
+
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
   // desktop).
@@ -45,11 +86,11 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "kafkalyzer");
+    gtk_header_bar_set_title(header_bar, "Kafkalyzer");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "kafkalyzer");
+    gtk_window_set_title(window, "Kafkalyzer");
   }
 
   gtk_window_set_default_size(window, 1280, 720);
