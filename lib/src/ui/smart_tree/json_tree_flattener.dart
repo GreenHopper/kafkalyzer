@@ -418,26 +418,21 @@ class JsonTreeFlattener {
         final childPath = '$path.$childKey';
         final keyMatches = childKey.toLowerCase().contains(query);
 
-        bool isChildBadge = false;
+        // For list badges, they are terminal (rendered as a single badge row when collapsed),
+        // so if the badge matches, mark ancestor to expand and do NOT descend into child elements.
+        bool isChildListBadge = false;
+        bool badgeMatches = false;
         if (entry.value is List) {
           final listBadge = EntityFormatterRegistry.tryFormatList(entry.value as List);
           if (listBadge != null) {
-            isChildBadge = true;
+            isChildListBadge = true;
             if (listBadge.label.toLowerCase().contains(query)) {
-              badgeMatches = true;
-            }
-          }
-        } else if (entry.value is Map<String, dynamic>) {
-          final mapBadge = EntityFormatterRegistry.tryFormat(entry.value as Map<String, dynamic>);
-          if (mapBadge != null) {
-            isChildBadge = true;
-            if (mapBadge.label.toLowerCase().contains(query)) {
               badgeMatches = true;
             }
           }
         }
 
-        final childMatches = isChildBadge
+        final childMatches = isChildListBadge
             ? false
             : _findMatchingAncestors(
                 entry.value,
