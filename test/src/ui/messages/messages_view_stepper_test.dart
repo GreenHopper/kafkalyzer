@@ -278,6 +278,89 @@ void main() {
     expect(find.byType(MessagesTableView), findsOneWidget);
   });
 
+  testWidgets('arrow keys step messages even when search field has focus', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('order-101', findRichText: true).first);
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 3'), findsOneWidget);
+
+    final searchField = find.byType(TextField).first;
+    await tester.tap(searchField);
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pumpAndSettle();
+    expect(find.text('3 of 3'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 3'), findsOneWidget);
+  });
+
+  testWidgets(
+    'arrow keys step messages when focus is outside the messages view',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final outsideFocusNode = FocusNode();
+      addTearDown(outsideFocusNode.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: const [Locale('en')],
+          home: Scaffold(
+            body: Row(
+              children: [
+                SizedBox(
+                  width: 200,
+                  child: Focus(
+                    focusNode: outsideFocusNode,
+                    child: const ListTile(title: Text('outside-topic')),
+                  ),
+                ),
+                Expanded(child: MessagesView(messages: testMessages)),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('order-101', findRichText: true).first);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      // Simulate explorer/topic focus stealing shortcuts away.
+      outsideFocusNode.requestFocus();
+      await tester.pumpAndSettle();
+      expect(outsideFocusNode.hasFocus, isTrue);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      expect(find.text('3 of 3'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'stepping through messages in table view auto-scrolls to keep active row visible',
     (tester) async {

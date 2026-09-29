@@ -82,6 +82,9 @@ class _MessagesViewState extends State<MessagesView> {
   final GlobalKey _tableViewKey = GlobalKey();
   final GlobalKey _timelineViewKey = GlobalKey();
   final GlobalKey _diffViewKey = GlobalKey();
+  final FocusNode _shortcutFocusNode = FocusNode(
+    debugLabel: 'messagesViewShortcuts',
+  );
 
   List<ProjectedColumn> _projectedColumns = [];
   TableColumnConfig _tableColumnConfig = const TableColumnConfig();
@@ -104,6 +107,7 @@ class _MessagesViewState extends State<MessagesView> {
   @override
   void initState() {
     super.initState();
+    HardwareKeyboard.instance.addHandler(_handleInspectorShortcut);
     _updateFilters();
     _loadSortPreferences();
     _loadDockPreference();
@@ -114,6 +118,13 @@ class _MessagesViewState extends State<MessagesView> {
     if (!_showSchemaView && _activeView == 'schema') {
       _activeView = 'timeline';
     }
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleInspectorShortcut);
+    _shortcutFocusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -461,6 +472,73 @@ class _MessagesViewState extends State<MessagesView> {
     return context.widget is EditableText;
   }
 
+  /// Whether this view should own inspector shortcuts right now.
+  ///
+  /// Shortcuts are intentionally focus-independent while the inspector is open
+  /// so topic-list tiles and search-bar icon buttons cannot steal ↑/↓ from
+  /// message stepping. They stay disabled when a dialog/route covers us or
+  /// when the user is typing letter shortcuts into a text field.
+  bool _shouldHandleInspectorShortcuts() {
+    if (!mounted || !_isInspectorOpen) return false;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return false;
+    return true;
+  }
+
+  void _requestShortcutFocus() {
+    if (!mounted) return;
+    if (!_shortcutFocusNode.canRequestFocus) return;
+    _shortcutFocusNode.requestFocus();
+  }
+
+  /// Global handler so ↑/↓/J/K keep working even when focus leaves the
+  /// messages subtree (search chrome, explorer topic list, etc.).
+  bool _handleInspectorShortcut(KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) return false;
+    if (!_shouldHandleInspectorShortcuts()) return false;
+
+    final key = event.logicalKey;
+    final textFocused = _isTextInputFocused();
+
+    if (key == LogicalKeyboardKey.escape) {
+      if (textFocused) {
+        FocusManager.instance.primaryFocus?.unfocus();
+        _requestShortcutFocus();
+        return true;
+      }
+      if (_isMaximized) {
+        setState(() => _isMaximized = false);
+      } else {
+        _closeInspector();
+      }
+      return true;
+    }
+
+    // Letter shortcuts must not fire while typing into a text field.
+    final isLetterShortcut =
+        key == LogicalKeyboardKey.keyJ ||
+        key == LogicalKeyboardKey.keyK ||
+        key == LogicalKeyboardKey.keyF;
+    if (textFocused && isLetterShortcut) return false;
+
+    // Arrow up/down always step messages while the inspector is open so
+    // focus traversal cannot move between search-bar controls or topic
+    // tiles instead. Left/right are left alone for caret movement.
+    if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.keyJ) {
+      _stepNext();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.keyK) {
+      _stepPrevious();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.keyF) {
+      _toggleMaximize();
+      return true;
+    }
+    return false;
+  }
+
   void _closeInspector() {
     setState(() {
       _isInspectorOpen = false;
@@ -474,6 +552,9 @@ class _MessagesViewState extends State<MessagesView> {
       _isInspectorOpen = true;
     });
     widget.onMessageTap?.call(msg);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestShortcutFocus();
+    });
   }
 
   void _onViewModeChanged(String newView) {
@@ -537,191 +618,126 @@ class _MessagesViewState extends State<MessagesView> {
 
     final l10n = AppLocalizations.of(context)!;
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyJ): () {
-          if (!_isTextInputFocused() && _isInspectorOpen) {
-            _stepNext();
-          }
-        },
-        const SingleActivator(LogicalKeyboardKey.arrowDown): () {
-          if (!_isTextInputFocused() && _isInspectorOpen) {
-            _stepNext();
-          }
-        },
-        const SingleActivator(LogicalKeyboardKey.keyK): () {
-          if (!_isTextInputFocused() && _isInspectorOpen) {
-            _stepPrevious();
-          }
-        },
-        const SingleActivator(LogicalKeyboardKey.arrowUp): () {
-          if (!_isTextInputFocused() && _isInspectorOpen) {
-            _stepPrevious();
-          }
-        },
-        const SingleActivator(LogicalKeyboardKey.keyF): () {
-          if (!_isTextInputFocused() && _isInspectorOpen) {
-            _toggleMaximize();
-          }
-        },
-        const SingleActivator(LogicalKeyboardKey.escape): () {
-          if (_isTextInputFocused()) {
-            FocusManager.instance.primaryFocus?.unfocus();
-          } else if (_isInspectorOpen) {
-            if (_isMaximized) {
-              setState(() => _isMaximized = false);
-            } else {
-              _closeInspector();
-            }
-          }
-        },
-      },
-      child: Focus(
-        autofocus: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (widget.showHeader && !_isMaximized) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Tooltip(
-                      message: l10n.sortFieldTooltip,
-                      child: PopupMenuButton<String>(
-                        key: const Key('message_sort_field_selector'),
-                        initialValue: _sortField,
-                        onSelected: _onSortFieldChanged,
-                        itemBuilder: (context) => [
-                          for (final field in messageSortFields)
-                            PopupMenuItem<String>(
-                              value: field,
-                              child: Text(_labelForSortField(l10n, field)),
-                            ),
-                        ],
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_labelForSortField(l10n, _sortField)),
-                              const Icon(Icons.arrow_drop_down, size: 20),
-                            ],
+    return Focus(
+      focusNode: _shortcutFocusNode,
+      autofocus: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.showHeader && !_isMaximized) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Tooltip(
+                    message: l10n.sortFieldTooltip,
+                    child: PopupMenuButton<String>(
+                      key: const Key('message_sort_field_selector'),
+                      initialValue: _sortField,
+                      onSelected: _onSortFieldChanged,
+                      itemBuilder: (context) => [
+                        for (final field in messageSortFields)
+                          PopupMenuItem<String>(
+                            value: field,
+                            child: Text(_labelForSortField(l10n, field)),
                           ),
+                      ],
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_labelForSortField(l10n, _sortField)),
+                            const Icon(Icons.arrow_drop_down, size: 20),
+                          ],
                         ),
                       ),
                     ),
-                    Tooltip(
-                      message: _sortAscending
-                          ? l10n.sortOrderAscending
-                          : l10n.sortOrderDescending,
-                      child: IconButton(
-                        key: const Key('message_sort_order_toggle'),
-                        icon: Icon(
-                          _sortAscending
-                              ? Icons.arrow_upward
-                              : Icons.arrow_downward,
-                        ),
-                        onPressed: _toggleSortOrder,
+                  ),
+                  Tooltip(
+                    message: _sortAscending
+                        ? l10n.sortOrderAscending
+                        : l10n.sortOrderDescending,
+                    child: IconButton(
+                      key: const Key('message_sort_order_toggle'),
+                      icon: Icon(
+                        _sortAscending
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
                       ),
+                      onPressed: _toggleSortOrder,
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  ViewModeSwitcher(
+                    activeView: _activeView,
+                    onViewChanged: _onViewModeChanged,
+                    showSchemaView: _showSchemaView,
+                  ),
+                  const SizedBox(width: 8),
+                  MessageSearchBar(
+                    searchPhrase: _searchPhrase,
+                    onSearchChanged: (val) {
+                      setState(() {
+                        _searchPhrase = val;
+                        _updateFilters();
+                      });
+                    },
+                    matchCount: _cachedMatchCount,
+                    showNonMatches: _showNonMatches,
+                    onShowNonMatchesChanged: (val) {
+                      setState(() {
+                        _showNonMatches = val;
+                        _updateFilters();
+                      });
+                    },
+                  ),
+                  if (_activeView == 'table') ...[
                     const SizedBox(width: 8),
-                    ViewModeSwitcher(
-                      activeView: _activeView,
-                      onViewChanged: _onViewModeChanged,
-                      showSchemaView: _showSchemaView,
-                    ),
-                    const SizedBox(width: 8),
-                    MessageSearchBar(
-                      searchPhrase: _searchPhrase,
-                      onSearchChanged: (val) {
-                        setState(() {
-                          _searchPhrase = val;
-                          _updateFilters();
-                        });
+                    MenuAnchor(
+                      builder: (context, controller, child) {
+                        return Tooltip(
+                          message: l10n.columnsMenu,
+                          child: IconButton(
+                            key: const Key('table_columns_menu_button'),
+                            icon: const Icon(Icons.view_column_outlined),
+                            onPressed: () {
+                              if (controller.isOpen) {
+                                controller.close();
+                              } else {
+                                controller.open();
+                              }
+                            },
+                          ),
+                        );
                       },
-                      matchCount: _cachedMatchCount,
-                      showNonMatches: _showNonMatches,
-                      onShowNonMatchesChanged: (val) {
-                        setState(() {
-                          _showNonMatches = val;
-                          _updateFilters();
-                        });
-                      },
-                    ),
-                    if (_activeView == 'table') ...[
-                      const SizedBox(width: 8),
-                      MenuAnchor(
-                        builder: (context, controller, child) {
-                          return Tooltip(
-                            message: l10n.columnsMenu,
-                            child: IconButton(
-                              key: const Key('table_columns_menu_button'),
-                              icon: const Icon(Icons.view_column_outlined),
-                              onPressed: () {
-                                if (controller.isOpen) {
-                                  controller.close();
-                                } else {
-                                  controller.open();
-                                }
-                              },
-                            ),
-                          );
-                        },
-                        menuChildren: [
-                          // Standard columns
-                          ...(widget.showTopic || widget.showStep
-                                  ? StandardTableColumns.scriptingStandard
-                                  : StandardTableColumns.explorerStandard)
-                              .where((col) {
-                                if (col == StandardTableColumns.step &&
-                                    !widget.showStep) {
-                                  return false;
-                                }
-                                if (col == StandardTableColumns.topic &&
-                                    !widget.showTopic) {
-                                  return false;
-                                }
-                                return true;
-                              })
-                              .map((colId) {
-                                final isVis = _tableColumnConfig.isVisible(
-                                  colId,
-                                );
-                                String label =
-                                    colId[0].toUpperCase() + colId.substring(1);
-                                return MenuItemButton(
-                                  closeOnActivate: false,
-                                  onPressed: () =>
-                                      _toggleColumnVisibility(colId),
-                                  leadingIcon: Icon(
-                                    isVis
-                                        ? Icons.check_box_outlined
-                                        : Icons.check_box_outline_blank,
-                                    size: 18,
-                                    color: isVis
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).colorScheme.outline,
-                                  ),
-                                  child: Text(label),
-                                );
-                              }),
-                          if (_tableColumnConfig
-                              .projectedColumns
-                              .isNotEmpty) ...[
-                            const PopupMenuDivider(),
-                            ..._tableColumnConfig.projectedColumns.map((col) {
-                              final isVis = _tableColumnConfig.isVisible(
-                                col.path,
-                              );
+                      menuChildren: [
+                        // Standard columns
+                        ...(widget.showTopic || widget.showStep
+                                ? StandardTableColumns.scriptingStandard
+                                : StandardTableColumns.explorerStandard)
+                            .where((col) {
+                              if (col == StandardTableColumns.step &&
+                                  !widget.showStep) {
+                                return false;
+                              }
+                              if (col == StandardTableColumns.topic &&
+                                  !widget.showTopic) {
+                                return false;
+                              }
+                              return true;
+                            })
+                            .map((colId) {
+                              final isVis = _tableColumnConfig.isVisible(colId);
+                              String label =
+                                  colId[0].toUpperCase() + colId.substring(1);
                               return MenuItemButton(
                                 closeOnActivate: false,
-                                onPressed: () =>
-                                    _toggleColumnVisibility(col.path),
+                                onPressed: () => _toggleColumnVisibility(colId),
                                 leadingIcon: Icon(
                                   isVis
                                       ? Icons.check_box_outlined
@@ -731,76 +747,97 @@ class _MessagesViewState extends State<MessagesView> {
                                       ? Theme.of(context).colorScheme.primary
                                       : Theme.of(context).colorScheme.outline,
                                 ),
-                                child: Text('${col.label} (${col.path})'),
+                                child: Text(label),
                               );
                             }),
-                          ],
+                        if (_tableColumnConfig.projectedColumns.isNotEmpty) ...[
+                          const PopupMenuDivider(),
+                          ..._tableColumnConfig.projectedColumns.map((col) {
+                            final isVis = _tableColumnConfig.isVisible(
+                              col.path,
+                            );
+                            return MenuItemButton(
+                              closeOnActivate: false,
+                              onPressed: () =>
+                                  _toggleColumnVisibility(col.path),
+                              leadingIcon: Icon(
+                                isVis
+                                    ? Icons.check_box_outlined
+                                    : Icons.check_box_outline_blank,
+                                size: 18,
+                                color: isVis
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.outline,
+                              ),
+                              child: Text('${col.label} (${col.path})'),
+                            );
+                          }),
                         ],
-                      ),
-                    ],
-                    if (_tableColumnConfig.projectedColumns.isNotEmpty ||
-                        _tableColumnConfig.hiddenColumns.isNotEmpty ||
-                        _tableColumnConfig.columnWidths.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Tooltip(
-                        message: l10n.resetColumns,
-                        child: TextButton.icon(
-                          onPressed: resetProjectedColumns,
-                          icon: const Icon(Icons.refresh, size: 16),
-                          label: Text(
-                            l10n.resetColumns,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ],
+                  if (_tableColumnConfig.projectedColumns.isNotEmpty ||
+                      _tableColumnConfig.hiddenColumns.isNotEmpty ||
+                      _tableColumnConfig.columnWidths.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Tooltip(
-                      message: l10n.exportMessages,
-                      child: IconButton(
-                        icon: const Icon(Icons.download),
-                        onPressed: () async {
-                          try {
-                            await getIt<MessageExportService>().exportMessages(
-                              _cachedFilteredMessages,
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    l10n.messagesExportedSuccessfully,
-                                  ),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    l10n.messagesExportFailed(e.toString()),
-                                  ),
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.error,
-                                ),
-                              );
-                            }
-                          }
-                        },
+                      message: l10n.resetColumns,
+                      child: TextButton.icon(
+                        onPressed: resetProjectedColumns,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: Text(
+                          l10n.resetColumns,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
                       ),
                     ),
                   ],
-                ),
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: l10n.exportMessages,
+                    child: IconButton(
+                      icon: const Icon(Icons.download),
+                      onPressed: () async {
+                        try {
+                          await getIt<MessageExportService>().exportMessages(
+                            _cachedFilteredMessages,
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  l10n.messagesExportedSuccessfully,
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  l10n.messagesExportFailed(e.toString()),
+                                ),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.error,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ),
-              const Divider(height: 1),
-            ],
-            Expanded(child: _buildContent()),
+            ),
+            const Divider(height: 1),
           ],
-        ),
+          Expanded(child: _buildContent()),
+        ],
       ),
     );
   }

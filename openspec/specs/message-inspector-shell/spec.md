@@ -151,11 +151,12 @@ The inspector panel SHALL provide sequential navigation controls (stepper) that 
 The message view SHALL support single-key and modifier keyboard shortcuts for rapid navigation and control.
 
 #### Scenario: Navigation shortcuts
-- **WHEN** an inspector panel is open and no text input field currently has keyboard focus
+- **WHEN** an inspector panel is open
 - **AND** the user presses `J` or `ArrowDown`
 - **THEN** the system SHALL step to the next message
 - **WHEN** the user presses `K` or `ArrowUp`
 - **THEN** the system SHALL step to the previous message
+- **AND** these shortcuts SHALL work even when keyboard focus is outside the messages view (for example on the explorer topic list) or on non-text chrome such as search-bar icon buttons
 
 #### Scenario: Dismissal and exit shortcuts
 - **WHEN** the inspector is open and maximized (Focus Mode)
@@ -167,7 +168,8 @@ The message view SHALL support single-key and modifier keyboard shortcuts for ra
 
 #### Scenario: Text field isolation
 - **WHEN** the user is typing into any text field (such as the stream search bar or inspector search bar)
-- **THEN** pressing `J` or `K` SHALL insert those characters into the text field and SHALL NOT trigger message stepping
+- **THEN** pressing `J`, `K`, or `F` SHALL insert those characters into the text field and SHALL NOT trigger message stepping or Focus Mode
+- **AND** pressing `ArrowUp` or `ArrowDown` SHALL still step messages (so focus traversal cannot trap the user in search chrome)
 
 ### Requirement: Maximized Focus Mode
 The inspector panel SHALL support a maximized Focus Mode that occupies 100% of the message results viewport, providing maximum screen space on compact laptop displays while retaining full streaming stepper capabilities.
