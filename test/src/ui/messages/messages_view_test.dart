@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
@@ -46,6 +47,9 @@ void main() {
     bool showHeader = true,
     bool showTopic = false,
     bool showStep = false,
+    Widget Function(BuildContext context, String searchPhrase)?
+    schemaViewBuilder,
+    int Function(KafkaMessage a, KafkaMessage b)? sortComparator,
   }) {
     return MaterialApp(
       localizationsDelegates: const [
@@ -61,6 +65,8 @@ void main() {
           showHeader: showHeader,
           showTopic: showTopic,
           showStep: showStep,
+          schemaViewBuilder: schemaViewBuilder,
+          sortComparator: sortComparator,
         ),
       ),
     );
@@ -414,5 +420,84 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('message_sort_field_timeline'), 'offset');
+  });
+
+  testWidgets('renders custom schema view when schema tab is active', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        messages: testMessages,
+        onMessageTap: (_) {},
+        schemaViewBuilder: (context, searchPhrase) {
+          return Text('custom-schema:$searchPhrase');
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.data_object), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.data_object));
+    await tester.pumpAndSettle();
+
+    expect(find.text('custom-schema:'), findsOneWidget);
+    expect(find.byType(MessagesTableView), findsNothing);
+  });
+
+  testWidgets('filters script results by step name and honors sortComparator', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final scriptMessages = [
+      const ScriptResultMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 1,
+        key: 'z-key',
+        payload: 'payload-z',
+        timestamp: 3000,
+        stepName: 'ExtractOrders',
+        stepId: 's1',
+      ),
+      const ScriptResultMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 2,
+        key: 'a-key',
+        payload: 'payload-a',
+        timestamp: 1000,
+        stepName: 'ValidateOrders',
+        stepId: 's2',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        messages: scriptMessages,
+        onMessageTap: (_) {},
+        sortComparator: (a, b) => (a.key ?? '').compareTo(b.key ?? ''),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final aKey = find.text('a-key', findRichText: true);
+    final zKey = find.text('z-key', findRichText: true);
+    expect(tester.getTopLeft(aKey).dy, lessThan(tester.getTopLeft(zKey).dy));
+
+    await tester.enterText(find.byType(TextField), 'extract');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('payload-z', findRichText: true), findsOneWidget);
+    expect(find.text('payload-a', findRichText: true), findsNothing);
   });
 }

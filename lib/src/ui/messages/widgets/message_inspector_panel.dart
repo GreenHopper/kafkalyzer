@@ -171,6 +171,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
             // Tab Content
             Expanded(
               child: TabBarView(
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
                   // Tab 1: Payload Viewer
                   _buildPayloadTab(context),

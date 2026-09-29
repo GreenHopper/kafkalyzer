@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
@@ -10,9 +11,13 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_run_view.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScriptManagerView extends StatefulWidget {
   const ScriptManagerView({super.key});
+
+  static const String sidebarCollapsedPrefKey =
+      'script_manager_sidebar_collapsed';
 
   @override
   State<ScriptManagerView> createState() => _ScriptManagerViewState();
@@ -25,11 +30,13 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
   Map<String, String>? _rerunParams;
   Key _runViewKey = UniqueKey();
   ScriptRun? _autoOpenRun;
+  bool _isSidebarCollapsed = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadSidebarPreference();
 
     // Attempt to restore state immediately after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -38,6 +45,24 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
 
     // Listen to controller updates (e.g. initial load completion)
     getIt<ScriptController>().addListener(_attemptRestoreState);
+  }
+
+  Future<void> _loadSidebarPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _isSidebarCollapsed =
+          prefs.getBool(ScriptManagerView.sidebarCollapsedPrefKey) ?? false;
+    });
+  }
+
+  Future<void> _toggleSidebar() async {
+    setState(() => _isSidebarCollapsed = !_isSidebarCollapsed);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(
+      ScriptManagerView.sidebarCollapsedPrefKey,
+      _isSidebarCollapsed,
+    );
   }
 
   @override
@@ -88,17 +113,65 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
     final l10n = AppLocalizations.of(context)!;
     final controller = getIt<ScriptController>();
 
-    return Row(
-      children: [
-        // Sidebar List
-        _buildSidebar(context, l10n, controller),
-        // Main Content (Editor/Details)
-        Expanded(
-          child: _selectedScript != null
-              ? _buildSelectedScriptView(l10n)
-              : Center(child: Text(l10n.useSidebarToSelectScript)),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyB, control: true):
+            _toggleSidebar,
+        const SingleActivator(LogicalKeyboardKey.keyB, meta: true):
+            _toggleSidebar,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Row(
+          children: [
+            _buildSidebarArea(context, l10n, controller),
+            Expanded(
+              child: _selectedScript != null
+                  ? _buildSelectedScriptView(l10n)
+                  : Center(child: Text(l10n.useSidebarToSelectScript)),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarArea(
+    BuildContext context,
+    AppLocalizations l10n,
+    ScriptController controller,
+  ) {
+    return ClipRect(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOutCubic,
+        alignment: Alignment.centerLeft,
+        child: _isSidebarCollapsed
+            ? _buildCollapsedSidebarRail(context, l10n)
+            : _buildSidebar(context, l10n, controller),
+      ),
+    );
+  }
+
+  Widget _buildCollapsedSidebarRail(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return SizedBox(
+      width: 40,
+      child: Material(
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            IconButton(
+              key: const Key('script_expand_sidebar'),
+              icon: const Icon(Icons.view_sidebar_outlined),
+              tooltip: l10n.expandScriptCatalog,
+              onPressed: _toggleSidebar,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -168,11 +241,22 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
     ScriptController controller,
   ) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(l10n.scripts, style: Theme.of(context).textTheme.titleLarge),
+          Expanded(
+            child: Text(
+              l10n.scripts,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          IconButton(
+            key: const Key('script_collapse_sidebar'),
+            icon: const Icon(Icons.view_sidebar_outlined),
+            tooltip: l10n.collapseScriptCatalog,
+            visualDensity: VisualDensity.compact,
+            onPressed: _toggleSidebar,
+          ),
           _buildHeaderActions(context, l10n, controller),
         ],
       ),
@@ -302,42 +386,45 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
   }
 
   Widget _buildScriptsTabBarView() {
-    return TabBarView(
-      controller: _tabController,
-      children: [
-        // Run Tab
-        ScriptRunView(
-          key: _runViewKey,
-          script: _selectedScript!,
-          initialValues: _rerunParams,
-          onRunFinished: (ScriptRun run) {
-            if (run.status == ScriptRunStatus.completed) {
-              setState(() {
-                _rerunParams = null; // Clear rerun params if we are done
-                _autoOpenRun = run;
-              });
-              // Navigate to History tab
-              _tabController.animateTo(1);
-            }
-          },
-        ),
-
-        // History Tab
-        ScriptHistoryView(
-          script: _selectedScript!,
-          onRerun: _handleRerun,
-          initialRun: _autoOpenRun, // New param
-        ),
-
-        // Editor Tab
-        ScriptEditor(
-          script: _selectedScript!,
-          onSave: (updated) {
-            getIt<ScriptController>().saveScript(updated);
-            setState(() => _selectedScript = updated);
-          },
-        ),
-      ],
+    // IndexedStack avoids TabBarView's horizontal PageView. Keyboard-driven
+    // Scrollable.ensureVisible on message lists was nudging that PageView and
+    // revealing a sliver of the adjacent tab on the right edge.
+    return ListenableBuilder(
+      listenable: _tabController,
+      builder: (context, _) {
+        return IndexedStack(
+          index: _tabController.index,
+          sizing: StackFit.expand,
+          children: [
+            ScriptRunView(
+              key: _runViewKey,
+              script: _selectedScript!,
+              initialValues: _rerunParams,
+              onRunFinished: (ScriptRun run) {
+                if (run.status == ScriptRunStatus.completed) {
+                  setState(() {
+                    _rerunParams = null;
+                    _autoOpenRun = run;
+                  });
+                  _tabController.animateTo(1);
+                }
+              },
+            ),
+            ScriptHistoryView(
+              script: _selectedScript!,
+              onRerun: _handleRerun,
+              initialRun: _autoOpenRun,
+            ),
+            ScriptEditor(
+              script: _selectedScript!,
+              onSave: (updated) {
+                getIt<ScriptController>().saveScript(updated);
+                setState(() => _selectedScript = updated);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

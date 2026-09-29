@@ -1065,4 +1065,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get expandSearchConfiguration => 'Expand search configuration';
+
+  @override
+  String get collapseSidebar => 'Collapse sidebar';
+
+  @override
+  String get expandSidebar => 'Expand sidebar (Ctrl+B)';
+
+  @override
+  String get collapseScriptCatalog => 'Collapse script catalog';
+
+  @override
+  String get expandScriptCatalog => 'Expand script catalog (Ctrl+B)';
+
+  @override
+  String get toggleRunOverview => 'Toggle run overview';
 }

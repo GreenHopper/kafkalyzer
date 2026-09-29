@@ -518,5 +518,10 @@
   "localTimestampLabel": "Local",
   "searchConfigurationTitle": "Search Configuration",
   "collapseSearchConfiguration": "Collapse search configuration",
-  "expandSearchConfiguration": "Expand search configuration"
+  "expandSearchConfiguration": "Expand search configuration",
+  "collapseSidebar": "Collapse sidebar",
+  "expandSidebar": "Expand sidebar (Ctrl+B)",
+  "collapseScriptCatalog": "Collapse script catalog",
+  "expandScriptCatalog": "Expand script catalog (Ctrl+B)",
+  "toggleRunOverview": "Toggle run overview"
 }

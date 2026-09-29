@@ -8,7 +8,6 @@ import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/color_utils.dart';
-import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
 import 'package:kafkalyzer/src/ui/highlight_text_utils.dart';
 import 'package:kafkalyzer/src/ui/text_preview_utils.dart';
 import 'package:kafkalyzer/src/utils/app_fonts.dart';
@@ -532,17 +531,6 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     );
   }
 
-  void _showMessageDetails(KafkaMessage msg) {
-    showDialog(
-      context: context,
-      builder: (context) => MessageDetailsDialog(
-        message: msg,
-        initialSearchPhrase: widget.searchPhrase,
-      ),
-    );
-  }
-
-  /// Measures text width with a given text style.
   double _measureTextWidth(String text, TextStyle style) {
     final textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
@@ -1005,11 +993,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            if (widget.onMessageTap != null) {
-              widget.onMessageTap!(msg);
-            } else {
-              _showMessageDetails(msg);
-            }
+            widget.onMessageTap?.call(msg);
           },
           child: decoratedCell,
         ),

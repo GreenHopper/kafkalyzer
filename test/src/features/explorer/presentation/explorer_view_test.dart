@@ -10,11 +10,13 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateMocks([
   ClusterListController,
@@ -41,6 +43,7 @@ void main() {
   );
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockClusterListController = MockClusterListController();
     mockActiveConnectionController = MockActiveConnectionController();
     // Use FixedMockTopicController to handle missing hasCachedTopics stub in generated mocks
@@ -99,6 +102,16 @@ void main() {
       ),
     ).thenReturn(null);
   });
+
+  void stubIdleSidebarState() {
+    when(mockClusterListController.isLoading).thenReturn(false);
+    when(mockClusterListController.clusters).thenReturn([testProfile]);
+    when(mockActiveConnectionController.activeProfile).thenReturn(null);
+    when(mockActiveConnectionController.isConnecting).thenReturn(false);
+    when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
+    when(mockActiveConnectionController.error).thenReturn(null);
+    when(mockActiveConnectionController.topicFilter).thenReturn('');
+  }
 
   Widget createWidgetUnderTest() {
     return MaterialApp(
@@ -622,6 +635,92 @@ void main() {
 
       // Tab should close immediately
       verify(mockActiveConnectionController.closeTopicTab('tab-1')).called(1);
+    });
+
+    testWidgets('collapses and expands topic sidebar via toggle buttons', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      stubIdleSidebarState();
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await tester.pump(); // allow SharedPreferences load
+
+      expect(find.text('CLUSTERS'), findsOneWidget);
+      expect(
+        find.byKey(const Key('explorer_collapse_sidebar')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const Key('explorer_collapse_sidebar')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CLUSTERS'), findsNothing);
+      expect(find.byKey(const Key('explorer_expand_sidebar')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('explorer_expand_sidebar')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('CLUSTERS'), findsOneWidget);
+      expect(
+        find.byKey(const Key('explorer_collapse_sidebar')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Ctrl+B toggles topic sidebar', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      stubIdleSidebarState();
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('CLUSTERS'), findsOneWidget);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyB);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      expect(find.text('CLUSTERS'), findsNothing);
+      expect(find.byKey(const Key('explorer_expand_sidebar')), findsOneWidget);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyB);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      expect(find.text('CLUSTERS'), findsOneWidget);
+    });
+
+    testWidgets('persists topic sidebar collapsed preference', (tester) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      stubIdleSidebarState();
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('explorer_collapse_sidebar')));
+      await tester.pumpAndSettle();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(ExplorerView.sidebarCollapsedPrefKey), isTrue);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('CLUSTERS'), findsNothing);
+      expect(find.byKey(const Key('explorer_expand_sidebar')), findsOneWidget);
     });
   });
 }

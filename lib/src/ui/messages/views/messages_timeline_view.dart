@@ -9,6 +9,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/extraction_utils.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_metadata_card.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/timeline_message_card.dart';
+import 'package:kafkalyzer/src/ui/scroll_utils.dart';
 
 class MessagesTimelineView extends StatefulWidget {
   final List<KafkaMessage> messages;
@@ -65,7 +66,7 @@ class _MessagesTimelineViewState extends State<MessagesTimelineView> {
 
       final key = _itemKeys[index];
       if (key?.currentContext != null) {
-        Scrollable.ensureVisible(
+        ensureVisibleVertically(
           key!.currentContext!,
           alignment: 0.3,
           duration: const Duration(milliseconds: 150),
@@ -85,7 +86,7 @@ class _MessagesTimelineViewState extends State<MessagesTimelineView> {
           if (!mounted) return;
           final postKey = _itemKeys[index];
           if (postKey?.currentContext != null) {
-            Scrollable.ensureVisible(
+            ensureVisibleVertically(
               postKey!.currentContext!,
               alignment: 0.3,
               duration: const Duration(milliseconds: 100),

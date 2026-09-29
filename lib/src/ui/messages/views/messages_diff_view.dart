@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/mess
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_widget.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_metadata_card.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/timeline_message_card.dart';
+import 'package:kafkalyzer/src/ui/scroll_utils.dart';
 import 'package:kafkalyzer/src/ui/tombstone_widget.dart';
 import 'package:kafkalyzer/src/ui/text_preview_utils.dart';
 
@@ -71,7 +72,7 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
 
       final key = _itemKeys[index];
       if (key?.currentContext != null) {
-        Scrollable.ensureVisible(
+        ensureVisibleVertically(
           key!.currentContext!,
           alignment: 0.3,
           duration: const Duration(milliseconds: 150),
@@ -91,7 +92,7 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
           if (!mounted) return;
           final postKey = _itemKeys[index];
           if (postKey?.currentContext != null) {
-            Scrollable.ensureVisible(
+            ensureVisibleVertically(
               postKey!.currentContext!,
               alignment: 0.3,
               duration: const Duration(milliseconds: 100),

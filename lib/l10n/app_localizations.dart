@@ -1957,6 +1957,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expand search configuration'**
   String get expandSearchConfiguration;
+
+  /// No description provided for @collapseSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse sidebar'**
+  String get collapseSidebar;
+
+  /// No description provided for @expandSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand sidebar (Ctrl+B)'**
+  String get expandSidebar;
+
+  /// No description provided for @collapseScriptCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse script catalog'**
+  String get collapseScriptCatalog;
+
+  /// No description provided for @expandScriptCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand script catalog (Ctrl+B)'**
+  String get expandScriptCatalog;
+
+  /// No description provided for @toggleRunOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle run overview'**
+  String get toggleRunOverview;
 }
 
 class _AppLocalizationsDelegate

@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
-import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
+import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
 
 class TopicPartitionTable extends StatefulWidget {
   final ClusterProfile profile;
@@ -68,9 +68,22 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
 
       if (mounted) {
         if (message != null) {
+          if (!mounted) return;
           showDialog(
             context: context,
-            builder: (context) => MessageDetailsDialog(message: message!),
+            builder: (dialogContext) => Dialog(
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                width: 720,
+                height: 640,
+                child: MessageInspectorPanel(
+                  message: message!,
+                  dockPosition: InspectorDockPosition.side,
+                  onToggleDockPosition: () {},
+                  onClose: () => Navigator.of(dialogContext).pop(),
+                ),
+              ),
+            ),
           );
         } else {
           final isGerman = Localizations.localeOf(context).languageCode == 'de';

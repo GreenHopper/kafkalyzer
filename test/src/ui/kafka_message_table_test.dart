@@ -1,6 +1,5 @@
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
-import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -208,9 +207,7 @@ void main() {
       expect(find.text('Topic'), findsNothing);
     });
 
-    testWidgets('row tap calls onMessageTap or shows details dialog', (
-      tester,
-    ) async {
+    testWidgets('row tap calls onMessageTap when provided', (tester) async {
       KafkaMessage? tappedMessage;
       await tester.pumpWidget(
         MaterialApp(
@@ -230,18 +227,6 @@ void main() {
 
       expect(tappedMessage, isNotNull);
       expect(tappedMessage!.key, 'key1');
-
-      // Now test showing details dialog when onMessageTap is null
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(body: MessagesTableView(messages: messages)),
-        ),
-      );
-
-      await tester.tap(find.text('key2', findRichText: true));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(MessageDetailsDialog), findsOneWidget);
     });
   });
 }

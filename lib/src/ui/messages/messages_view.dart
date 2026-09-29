@@ -11,6 +11,7 @@ import 'package:kafkalyzer/src/ui/messages/widgets/message_search_bar.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/view_mode_switcher.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
+import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -55,6 +56,13 @@ class MessagesView extends StatefulWidget {
   /// Whether the table view shows the Step column (scripting contexts).
   final bool showStep;
 
+  /// Optional custom schema tab. When non-null, the schema view mode is shown.
+  final Widget Function(BuildContext context, String searchPhrase)?
+  schemaViewBuilder;
+
+  /// Optional ordering override (e.g. script timeline grouping).
+  final int Function(KafkaMessage a, KafkaMessage b)? sortComparator;
+
   const MessagesView({
     super.key,
     required this.messages,
@@ -64,6 +72,8 @@ class MessagesView extends StatefulWidget {
     this.showHeader = true,
     this.showTopic = false,
     this.showStep = false,
+    this.schemaViewBuilder,
+    this.sortComparator,
   });
 
   @override
@@ -130,7 +140,8 @@ class _MessagesViewState extends State<MessagesView> {
   @override
   void didUpdateWidget(covariant MessagesView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.messages != oldWidget.messages) {
+    if (widget.messages != oldWidget.messages ||
+        widget.sortComparator != oldWidget.sortComparator) {
       _updateFilters();
       if (_primaryTopic(widget.messages) != _primaryTopic(oldWidget.messages)) {
         _loadProjectedColumnsPreference();
@@ -322,14 +333,7 @@ class _MessagesViewState extends State<MessagesView> {
     _saveProjectedColumnsPreference();
   }
 
-  bool get _showSchemaView {
-    if (widget.messages.isEmpty) return false;
-    final firstTopic = widget.messages.first.topic;
-    for (int i = 1; i < widget.messages.length; i++) {
-      if (widget.messages[i].topic != firstTopic) return true;
-    }
-    return false;
-  }
+  bool get _showSchemaView => widget.schemaViewBuilder != null;
 
   void _updateFilters() {
     // 1. Filter
@@ -340,10 +344,15 @@ class _MessagesViewState extends State<MessagesView> {
       final query = _searchPhrase.toLowerCase();
       _cachedMatchCount = 0;
       _cachedFilteredMessages = widget.messages.where((msg) {
-        final isMatch =
+        var isMatch =
             (msg.key?.toLowerCase().contains(query) ?? false) ||
             (msg.payload?.toLowerCase().contains(query) ?? false) ||
             msg.topic.toLowerCase().contains(query);
+        if (!isMatch &&
+            msg is ScriptResultMessage &&
+            msg.stepName.toLowerCase().contains(query)) {
+          isMatch = true;
+        }
 
         if (isMatch) _cachedMatchCount++;
         return isMatch || _showNonMatches;
@@ -356,6 +365,9 @@ class _MessagesViewState extends State<MessagesView> {
   }
 
   int _compareMessages(KafkaMessage a, KafkaMessage b) {
+    if (widget.sortComparator != null) {
+      return widget.sortComparator!(a, b);
+    }
     final cmp = switch (_sortField) {
       'partition' => a.partition.compareTo(b.partition),
       'offset' => a.offset.compareTo(b.offset),
@@ -895,6 +907,11 @@ class _MessagesViewState extends State<MessagesView> {
 
   Widget _buildMasterView() {
     switch (_activeView) {
+      case 'schema':
+        if (widget.schemaViewBuilder != null) {
+          return widget.schemaViewBuilder!(context, _searchPhrase);
+        }
+        return const SizedBox.shrink();
       case 'table':
         return MessagesTableView(
           key: _tableViewKey,

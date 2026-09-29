@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:watch_it/watch_it.dart';
@@ -15,9 +16,12 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_ana
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_item.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ExplorerView extends WatchingStatefulWidget {
   const ExplorerView({super.key});
+
+  static const String sidebarCollapsedPrefKey = 'explorer_sidebar_collapsed';
 
   @override
   State<ExplorerView> createState() => _ExplorerViewState();
@@ -26,12 +30,32 @@ class ExplorerView extends WatchingStatefulWidget {
 class _ExplorerViewState extends State<ExplorerView> {
   late TextEditingController _filterController;
   final ScrollController _tabScrollController = ScrollController();
+  bool _isSidebarCollapsed = false;
 
   @override
   void initState() {
     super.initState();
     _filterController = TextEditingController(
       text: getIt<ActiveConnectionController>().topicFilter,
+    );
+    _loadSidebarPreference();
+  }
+
+  Future<void> _loadSidebarPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _isSidebarCollapsed =
+          prefs.getBool(ExplorerView.sidebarCollapsedPrefKey) ?? false;
+    });
+  }
+
+  Future<void> _toggleSidebar() async {
+    setState(() => _isSidebarCollapsed = !_isSidebarCollapsed);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(
+      ExplorerView.sidebarCollapsedPrefKey,
+      _isSidebarCollapsed,
     );
   }
 
@@ -50,34 +74,94 @@ class _ExplorerViewState extends State<ExplorerView> {
     final topicController = watchIt<TopicController>();
     final schemaController = watchIt<SchemaController>();
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSidebar(
-          context,
-          l10n,
-          clusterController,
-          activeController,
-          topicController,
-          schemaController,
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyB, control: true):
+            _toggleSidebar,
+        const SingleActivator(LogicalKeyboardKey.keyB, meta: true):
+            _toggleSidebar,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSidebarArea(
+              context,
+              l10n,
+              clusterController,
+              activeController,
+              topicController,
+              schemaController,
+            ),
+            VerticalDivider(
+              width: 1,
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+            Expanded(
+              child: _buildContent(
+                context,
+                l10n,
+                activeController,
+                topicController,
+                schemaController,
+              ),
+            ),
+          ],
         ),
-        VerticalDivider(
-          width: 1,
-          color: Theme.of(
-            context,
-          ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+      ),
+    );
+  }
+
+  Widget _buildSidebarArea(
+    BuildContext context,
+    AppLocalizations l10n,
+    ClusterListController clusterController,
+    ActiveConnectionController activeController,
+    TopicController topicController,
+    SchemaController schemaController,
+  ) {
+    return ClipRect(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOutCubic,
+        alignment: Alignment.centerLeft,
+        child: _isSidebarCollapsed
+            ? _buildCollapsedSidebarRail(context, l10n)
+            : _buildSidebar(
+                context,
+                l10n,
+                clusterController,
+                activeController,
+                topicController,
+                schemaController,
+              ),
+      ),
+    );
+  }
+
+  Widget _buildCollapsedSidebarRail(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return SizedBox(
+      width: 40,
+      child: Material(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            IconButton(
+              key: const Key('explorer_expand_sidebar'),
+              icon: const Icon(Icons.view_sidebar_outlined),
+              tooltip: l10n.expandSidebar,
+              onPressed: _toggleSidebar,
+            ),
+          ],
         ),
-        // Main Content
-        Expanded(
-          child: _buildContent(
-            context,
-            l10n,
-            activeController,
-            topicController,
-            schemaController,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -129,14 +213,27 @@ class _ExplorerViewState extends State<ExplorerView> {
 
   Widget _buildSidebarHeader(BuildContext context, AppLocalizations l10n) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        l10n.clusters,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.2,
-        ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.clusters,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          IconButton(
+            key: const Key('explorer_collapse_sidebar'),
+            icon: const Icon(Icons.view_sidebar_outlined),
+            tooltip: l10n.collapseSidebar,
+            visualDensity: VisualDensity.compact,
+            onPressed: _toggleSidebar,
+          ),
+        ],
       ),
     );
   }

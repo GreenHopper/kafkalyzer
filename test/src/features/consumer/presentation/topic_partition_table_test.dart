@@ -6,7 +6,7 @@ import 'package:kafkalyzer/src/features/consumer/presentation/topic_partition_ta
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
-import 'package:kafkalyzer/src/ui/message_details_dialog.dart';
+import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,7 +73,7 @@ void main() {
 
   group('TopicPartitionTable', () {
     testWidgets(
-      'displays message details dialog when offset was adjusted to watermark',
+      'displays message inspector when offset was adjusted to watermark',
       (tester) async {
         tester.view.physicalSize = const Size(1920, 1080);
         tester.view.devicePixelRatio = 1.0;
@@ -146,9 +146,9 @@ void main() {
         await tester.pump();
         await awaitIsolates(tester);
 
-        // Verify MessageDetailsDialog is opened with the message
-        expect(find.byType(MessageDetailsDialog), findsOneWidget);
-        expect(find.text('286229286'), findsWidgets);
+        // Verify MessageInspectorPanel is opened with the message
+        expect(find.byType(MessageInspectorPanel), findsOneWidget);
+        expect(find.textContaining('286229286'), findsWidgets);
       },
     );
 
@@ -205,7 +205,7 @@ void main() {
       await tester.pump();
       await awaitIsolates(tester);
 
-      expect(find.byType(MessageDetailsDialog), findsNothing);
+      expect(find.byType(MessageInspectorPanel), findsNothing);
       expect(
         find.textContaining('No message found at or after offset 100'),
         findsOneWidget,
@@ -259,7 +259,7 @@ void main() {
       await tester.pump();
       await awaitIsolates(tester);
 
-      expect(find.byType(MessageDetailsDialog), findsNothing);
+      expect(find.byType(MessageInspectorPanel), findsNothing);
       expect(find.textContaining('Kafka connection lost'), findsOneWidget);
     });
 

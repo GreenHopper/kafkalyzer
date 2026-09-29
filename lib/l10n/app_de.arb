@@ -321,5 +321,10 @@
   "localTimestampLabel": "Lokal",
   "searchConfigurationTitle": "Suchkonfiguration",
   "collapseSearchConfiguration": "Suchkonfiguration einklappen",
-  "expandSearchConfiguration": "Suchkonfiguration ausklappen"
+  "expandSearchConfiguration": "Suchkonfiguration ausklappen",
+  "collapseSidebar": "Seitenleiste einklappen",
+  "expandSidebar": "Seitenleiste ausklappen (Ctrl+B)",
+  "collapseScriptCatalog": "Skriptkatalog einklappen",
+  "expandScriptCatalog": "Skriptkatalog ausklappen (Ctrl+B)",
+  "toggleRunOverview": "Laufübersicht umschalten"
 }

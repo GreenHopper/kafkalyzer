@@ -1072,4 +1072,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get expandSearchConfiguration => 'Suchkonfiguration ausklappen';
+
+  @override
+  String get collapseSidebar => 'Seitenleiste einklappen';
+
+  @override
+  String get expandSidebar => 'Seitenleiste ausklappen (Ctrl+B)';
+
+  @override
+  String get collapseScriptCatalog => 'Skriptkatalog einklappen';
+
+  @override
+  String get expandScriptCatalog => 'Skriptkatalog ausklappen (Ctrl+B)';
+
+  @override
+  String get toggleRunOverview => 'Laufübersicht umschalten';
 }
