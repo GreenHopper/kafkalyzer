@@ -496,5 +496,27 @@
   },
   "removeColumn": "Remove column",
   "resetColumns": "Reset columns",
-  "columnsReset": "Table columns reset to default"
+  "columnsReset": "Table columns reset to default",
+  "columnsMenu": "Columns",
+  "hideColumn": "Hide column",
+  "showColumn": "Show column",
+  "autoFitColumn": "Auto-fit width",
+  "hideEmptyFields": "Hide empty fields",
+  "showEmptyFields": "Show empty fields",
+  "hiddenEmptyFieldsCount": "{count, plural, =1{1 hidden empty field} other{{count} hidden empty fields}}",
+  "@hiddenEmptyFieldsCount": {
+    "description": "Indicates number of hidden null/empty fields",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "rawTimestampLabel": "Raw",
+  "utcTimestampLabel": "UTC",
+  "localTimestampLabel": "Local",
+  "searchConfigurationTitle": "Search Configuration",
+  "collapseSearchConfiguration": "Collapse search configuration",
+  "expandSearchConfiguration": "Expand search configuration"
 }

@@ -1020,4 +1020,56 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get columnsReset => 'Tabellenspalten auf Standard zurückgesetzt';
+
+  @override
+  String get columnsMenu => 'Spalten';
+
+  @override
+  String get hideColumn => 'Spalte ausblenden';
+
+  @override
+  String get showColumn => 'Spalte einblenden';
+
+  @override
+  String get autoFitColumn => 'Breite automatisch anpassen';
+
+  @override
+  String get hideEmptyFields => 'Leere Felder ausblenden';
+
+  @override
+  String get showEmptyFields => 'Leere Felder einblenden';
+
+  @override
+  String hiddenEmptyFieldsCount(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString leere Felder ausgeblendet',
+      one: '1 leeres Feld ausgeblendet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rawTimestampLabel => 'Rohwert';
+
+  @override
+  String get utcTimestampLabel => 'UTC';
+
+  @override
+  String get localTimestampLabel => 'Lokal';
+
+  @override
+  String get searchConfigurationTitle => 'Suchkonfiguration';
+
+  @override
+  String get collapseSearchConfiguration => 'Suchkonfiguration einklappen';
+
+  @override
+  String get expandSearchConfiguration => 'Suchkonfiguration ausklappen';
 }

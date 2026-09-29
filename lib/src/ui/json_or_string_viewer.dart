@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/hex_viewer.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_virtual_json_tree.dart';
 import 'package:kafkalyzer/src/utils/app_fonts.dart';
@@ -45,6 +46,7 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
   dynamic _parsedJson;
   bool _isValidJson = false;
   bool _isParsing = true;
+  bool _hideNullFields = false;
 
   final GlobalKey<SmartVirtualJsonTreeState> _treeKey =
       GlobalKey<SmartVirtualJsonTreeState>();
@@ -87,6 +89,13 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
           // Mode 2 (legacy Cards) is mapped to 1 (Tree)
           _viewMode = (savedMode == 2) ? 1 : (savedMode <= 1 ? savedMode : 1);
           _updateMatchCount();
+        });
+      }
+      final savedHideNull =
+          prefs.getBool('json_hide_null_${widget.persistenceKey}');
+      if (savedHideNull != null) {
+        setState(() {
+          _hideNullFields = savedHideNull;
         });
       }
     }
@@ -185,6 +194,7 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
           json: _parsedJson,
           searchQuery: widget.searchQuery,
           focusedMatchIndex: widget.focusedMatchIndex,
+          hideNullFields: _hideNullFields,
           onMatchCountChanged: (count) {
             _treeMatchCount = count;
             _updateMatchCount();
@@ -277,6 +287,36 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                   },
                 ),
                 if (_isValidJson) ...[
+                  if (_viewMode == 1) ...[
+                    IconButton(
+                      icon: Icon(
+                        _hideNullFields
+                            ? Icons.filter_alt
+                            : Icons.filter_alt_off_outlined,
+                        size: 16,
+                        color: _hideNullFields
+                            ? colorScheme.primary
+                            : colorScheme.outline,
+                      ),
+                      tooltip: _hideNullFields
+                          ? (AppLocalizations.of(context)?.showEmptyFields ??
+                              'Show empty fields')
+                          : (AppLocalizations.of(context)?.hideEmptyFields ??
+                              'Hide empty fields'),
+                      onPressed: () async {
+                        setState(() {
+                          _hideNullFields = !_hideNullFields;
+                        });
+                        if (widget.persistenceKey != null) {
+                          final prefs = await SharedPreferences.getInstance();
+                          prefs.setBool(
+                            'json_hide_null_${widget.persistenceKey}',
+                            _hideNullFields,
+                          );
+                        }
+                      },
+                    ),
+                  ],
                   const SizedBox(width: 8),
                   SizedBox(
                     height: 32,

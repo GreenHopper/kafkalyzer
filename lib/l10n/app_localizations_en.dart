@@ -1013,4 +1013,56 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get columnsReset => 'Table columns reset to default';
+
+  @override
+  String get columnsMenu => 'Columns';
+
+  @override
+  String get hideColumn => 'Hide column';
+
+  @override
+  String get showColumn => 'Show column';
+
+  @override
+  String get autoFitColumn => 'Auto-fit width';
+
+  @override
+  String get hideEmptyFields => 'Hide empty fields';
+
+  @override
+  String get showEmptyFields => 'Show empty fields';
+
+  @override
+  String hiddenEmptyFieldsCount(num count) {
+    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
+      locale: localeName,
+    );
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString hidden empty fields',
+      one: '1 hidden empty field',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rawTimestampLabel => 'Raw';
+
+  @override
+  String get utcTimestampLabel => 'UTC';
+
+  @override
+  String get localTimestampLabel => 'Local';
+
+  @override
+  String get searchConfigurationTitle => 'Search Configuration';
+
+  @override
+  String get collapseSearchConfiguration => 'Collapse search configuration';
+
+  @override
+  String get expandSearchConfiguration => 'Expand search configuration';
 }

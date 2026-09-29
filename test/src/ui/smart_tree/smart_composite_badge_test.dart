@@ -31,8 +31,10 @@ void main() {
         ),
       );
 
-      expect(find.text('address: '), findsOneWidget);
-      expect(find.text('Musterstrasse 1, 1010 Wien'), findsOneWidget);
+      expect(
+        find.text('address: Musterstrasse 1, 1010 Wien'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.location_on_outlined), findsOneWidget);
       expect(find.byIcon(Icons.unfold_more), findsOneWidget);
     });
@@ -87,6 +89,41 @@ void main() {
 
       expect(find.text('1042'), findsNothing);
       expect(find.byIcon(Icons.unfold_more), findsOneWidget);
+    });
+
+    testWidgets('ellipsizes long label under tight width constraints', (
+      tester,
+    ) async {
+      const badgeData = FormattedBadgeData(
+        icon: Icons.location_on_outlined,
+        label:
+            'Musterstrasse 1, 1010 Wien, Austria, very long address '
+            'that would overflow a narrow tree column',
+        color: Colors.blueAccent,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 180,
+              child: SmartCompositeBadge(
+                keyName: 'address',
+                data: <String, dynamic>{
+                  'strasse': 'Musterstrasse 1',
+                  'plz': '1010',
+                  'ort': 'Wien',
+                },
+                badgeInfo: badgeData,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SmartCompositeBadge), findsOneWidget);
     });
 
     testWidgets('initiallyPinned opens popover on mount', (tester) async {

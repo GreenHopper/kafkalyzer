@@ -29,16 +29,20 @@ class TimelineMessageCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      elevation: isSelected ? 1 : 0,
+      elevation: isSelected ? 2 : 0,
       color: isSelected
-          ? colorScheme.primaryContainer.withValues(alpha: 0.2)
+          ? colorScheme.primaryContainer.withValues(
+              alpha: Theme.of(context).brightness == Brightness.dark
+                  ? 0.45
+                  : 0.65,
+            )
           : null,
       shape: RoundedRectangleBorder(
         side: BorderSide(
           color: isSelected
               ? colorScheme.primary
               : Theme.of(context).dividerColor,
-          width: isSelected ? 2.0 : 1.0,
+          width: isSelected ? 2.5 : 1.0,
         ),
         borderRadius: BorderRadius.circular(8),
       ),

@@ -10,7 +10,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/extraction_utils.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_metadata_card.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/timeline_message_card.dart';
 
-class MessagesTimelineView extends StatelessWidget {
+class MessagesTimelineView extends StatefulWidget {
   final List<KafkaMessage> messages;
   final Function(KafkaMessage) onMessageTap;
   final String? searchPhrase;
@@ -29,12 +29,82 @@ class MessagesTimelineView extends StatelessWidget {
   });
 
   @override
+  State<MessagesTimelineView> createState() => _MessagesTimelineViewState();
+}
+
+class _MessagesTimelineViewState extends State<MessagesTimelineView> {
+  final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _itemKeys = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollToSelectedMessage();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant MessagesTimelineView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedMessage != oldWidget.selectedMessage) {
+      _scrollToSelectedMessage();
+    }
+  }
+
+  void _scrollToSelectedMessage() {
+    if (widget.selectedMessage == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final index = widget.messages.indexOf(widget.selectedMessage!);
+      if (index < 0) return;
+
+      final key = _itemKeys[index];
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          alignment: 0.3,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        final estimatedOffset = (index * 160.0).clamp(
+          0.0,
+          _scrollController.position.maxScrollExtent,
+        );
+        _scrollController.animateTo(
+          estimatedOffset,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final postKey = _itemKeys[index];
+          if (postKey?.currentContext != null) {
+            Scrollable.ensureVisible(
+              postKey!.currentContext!,
+              alignment: 0.3,
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.easeOutCubic,
+            );
+          }
+        });
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (messages.isEmpty) {
+    if (widget.messages.isEmpty) {
       return const Center(child: Text("No messages to display"));
     }
 
     return Timeline.tileBuilder(
+      controller: _scrollController,
       theme: TimelineThemeData(
         nodePosition: 0.2, // Offset content to allow room for metadata
         color: Theme.of(context).primaryColor,
@@ -42,9 +112,9 @@ class MessagesTimelineView extends StatelessWidget {
       ),
       builder: TimelineTileBuilder.connected(
         connectionDirection: ConnectionDirection.after,
-        itemCount: messages.length,
+        itemCount: widget.messages.length,
         contentsBuilder: (context, index) {
-          final message = messages[index];
+          final message = widget.messages[index];
           final stepName = message is ScriptResultMessage
               ? message.stepName
               : 'Global (No Step)';
@@ -52,36 +122,37 @@ class MessagesTimelineView extends StatelessWidget {
           final isMatch = _isMatch(message, stepName);
 
           return Padding(
+            key: _itemKeys.putIfAbsent(index, () => GlobalKey()),
             padding: const EdgeInsets.all(8.0),
             child: _LazyTimelineCard(
               message: message,
               stepName: stepName,
               extractedValues: extractedValues,
               isMatch: isMatch,
-              showNonMatches: showNonMatches,
-              searchPhrase: searchPhrase,
-              isSelected: selectedMessage == message,
-              onMessageTap: onMessageTap,
+              showNonMatches: widget.showNonMatches,
+              searchPhrase: widget.searchPhrase,
+              isSelected: widget.selectedMessage == message,
+              onMessageTap: widget.onMessageTap,
             ),
           );
         },
         oppositeContentsBuilder: (context, index) {
-          final message = messages[index];
-          final prevMessage = index > 0 ? messages[index - 1] : null;
+          final message = widget.messages[index];
+          final prevMessage = index > 0 ? widget.messages[index - 1] : null;
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: _buildMetadata(context, message, prevMessage),
           );
         },
         indicatorBuilder: (context, index) {
-          final message = messages[index];
+          final message = widget.messages[index];
           return DotIndicator(
             color: ColorUtils.getColorForString(message.topic),
             size: 15.0,
           );
         },
         connectorBuilder: (context, index, type) {
-          final message = messages[index];
+          final message = widget.messages[index];
           return SolidLineConnector(
             color: ColorUtils.getColorForString(
               message.topic,
@@ -95,9 +166,9 @@ class MessagesTimelineView extends StatelessWidget {
   List<MapEntry<String, String>> _getExtractedValues(KafkaMessage message) {
     List<MapEntry<String, String>> extractedValues = [];
     if (message is ScriptResultMessage &&
-        stepExtractions != null &&
-        stepExtractions!.containsKey(message.stepId)) {
-      final extractions = stepExtractions![message.stepId]!;
+        widget.stepExtractions != null &&
+        widget.stepExtractions!.containsKey(message.stepId)) {
+      final extractions = widget.stepExtractions![message.stepId]!;
       for (final ext in extractions) {
         final val = ExtractionUtils.extract(ext, message);
         if (val != null) {
@@ -109,9 +180,11 @@ class MessagesTimelineView extends StatelessWidget {
   }
 
   bool _isMatch(KafkaMessage message, String stepName) {
-    if (searchPhrase == null || searchPhrase!.isEmpty) return true;
+    if (widget.searchPhrase == null || widget.searchPhrase!.isEmpty) {
+      return true;
+    }
 
-    final query = searchPhrase!.toLowerCase();
+    final query = widget.searchPhrase!.toLowerCase();
     final keyMatch = (message.key ?? "").toLowerCase().contains(query);
     final payloadMatch = (message.payload ?? "").toLowerCase().contains(query);
     final topicMatch = message.topic.toLowerCase().contains(query);

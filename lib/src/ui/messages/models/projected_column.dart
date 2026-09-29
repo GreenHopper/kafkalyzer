@@ -21,11 +21,7 @@ class ProjectedColumn {
 
   /// Creates a [ProjectedColumn] with an automatically generated label derived from [path].
   factory ProjectedColumn.fromPath(String path, {double width = 150.0}) {
-    return ProjectedColumn(
-      path: path,
-      label: deriveLabel(path),
-      width: width,
-    );
+    return ProjectedColumn(path: path, label: deriveLabel(path), width: width);
   }
 
   /// Derives a concise, readable column label from a JSON [path].
@@ -42,11 +38,7 @@ class ProjectedColumn {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'path': path,
-      'label': label,
-      'width': width,
-    };
+    return {'path': path, 'label': label, 'width': width};
   }
 
   factory ProjectedColumn.fromJson(Map<String, dynamic> json) {
@@ -56,11 +48,7 @@ class ProjectedColumn {
     return ProjectedColumn(path: path, label: label, width: width);
   }
 
-  ProjectedColumn copyWith({
-    String? path,
-    String? label,
-    double? width,
-  }) {
+  ProjectedColumn copyWith({String? path, String? label, double? width}) {
     return ProjectedColumn(
       path: path ?? this.path,
       label: label ?? this.label,
@@ -79,5 +67,6 @@ class ProjectedColumn {
   int get hashCode => path.hashCode;
 
   @override
-  String toString() => 'ProjectedColumn(path: $path, label: $label, width: $width)';
+  String toString() =>
+      'ProjectedColumn(path: $path, label: $label, width: $width)';
 }

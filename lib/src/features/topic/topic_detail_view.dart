@@ -60,6 +60,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
   TopicViewMode _viewMode = TopicViewMode.messages;
 
   MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.latest;
+  bool _isSearchConfigExpanded = true;
 
   @override
   void initState() {
@@ -396,13 +397,29 @@ class _TopicDetailViewState extends State<TopicDetailView>
     ColorScheme colorScheme,
     VoidCallback onStart,
   ) {
+    final l10n = AppLocalizations.of(context)!;
+    final toggleTooltip = _isSearchConfigExpanded
+        ? l10n.collapseSearchConfiguration
+        : l10n.expandSearchConfiguration;
+
     return ExpansionTile(
+      key: const Key('search_configuration_panel'),
       initiallyExpanded: true,
-      title: const Text(
-        "Search Configuration",
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      onExpansionChanged: (expanded) {
+        setState(() => _isSearchConfigExpanded = expanded);
+      },
+      leading: Icon(Icons.tune, size: 20, color: colorScheme.primary),
+      title: Text(
+        l10n.searchConfigurationTitle,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
-      trailing: const Icon(Icons.tune, size: 20),
+      trailing: Tooltip(
+        message: toggleTooltip,
+        child: Icon(
+          _isSearchConfigExpanded ? Icons.expand_less : Icons.expand_more,
+          size: 24,
+        ),
+      ),
       childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       backgroundColor: colorScheme.surfaceContainerLowest,
       collapsedBackgroundColor: colorScheme.surface,

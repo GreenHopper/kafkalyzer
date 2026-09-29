@@ -151,4 +151,28 @@ void main() {
 
     expect(find.byType(TombstoneWidget), findsOneWidget);
   });
+
+  testWidgets('filters null fields in JSON payload preview', (
+    WidgetTester tester,
+  ) async {
+    const msg = KafkaMessage(
+      topic: 'test-topic',
+      partition: 1,
+      offset: 100,
+      key: 'my-key',
+      payload: '{"id": 42, "emptyField": null, "name": "Kafka"}',
+      timestamp: 1234567,
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest(message: msg, onTap: () {}));
+
+    expect(
+      find.byWidgetPredicate((w) => findTextInRichText(w, 'emptyField')),
+      findsNothing,
+    );
+    expect(
+      find.byWidgetPredicate((w) => findTextInRichText(w, 'name')),
+      findsOneWidget,
+    );
+  });
 }

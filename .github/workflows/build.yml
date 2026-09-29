@@ -104,10 +104,6 @@ jobs:
 
       - name: Post-build cleanup and Velopack packaging
         run: |
-          find build/linux/x64/release/bundle/ -name "pdfium.wasm" -delete || true
-          find build/linux/x64/release/bundle/ -name "pdfium_worker.js" -delete || true
-          find build/linux/x64/release/bundle/ -name "pdfium_client.js" -delete || true
-
           if [ -f changelog.md ]; then
             cp changelog.md build/linux/x64/release/bundle/
           fi
@@ -310,10 +306,6 @@ jobs:
         run: |
           $releaseDir = "build/windows/x64/runner/Release"
           $vcpkgBin = "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin"
-
-          Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium.wasm" -ErrorAction SilentlyContinue
-          Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium_worker.js" -ErrorAction SilentlyContinue
-          Remove-Item -Path "$releaseDir/data/flutter_assets/packages/pdfrx/assets/pdfium_client.js" -ErrorAction SilentlyContinue
 
           if (Test-Path $vcpkgBin) {
             Copy-Item "$vcpkgBin/*.dll" -Destination $releaseDir -Force -ErrorAction SilentlyContinue

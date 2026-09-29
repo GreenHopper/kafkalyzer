@@ -30,7 +30,11 @@ void main() {
       };
 
       // Initially 'root.user' is not expanded
-      final resultCollapsed = JsonTreeFlattener.flatten(json, expandedPaths: {});
+      final resultCollapsed = JsonTreeFlattener.flatten(
+        json,
+        expandedPaths: {},
+        autoExpandSingleItemCollections: false,
+      );
       expect(resultCollapsed.nodes.length, 1);
       expect(resultCollapsed.nodes[0].key, 'user');
       expect(resultCollapsed.nodes[0].type, JsonNodeType.object);
@@ -40,6 +44,7 @@ void main() {
       final resultExpandedUser = JsonTreeFlattener.flatten(
         json,
         expandedPaths: {'root.user'},
+        autoExpandSingleItemCollections: false,
       );
       expect(resultExpandedUser.nodes.length, 2);
       expect(resultExpandedUser.nodes[0].key, 'user');
@@ -50,6 +55,7 @@ void main() {
       final resultExpandedAll = JsonTreeFlattener.flatten(
         json,
         expandedPaths: {'root.user', 'root.user.details'},
+        autoExpandSingleItemCollections: false,
       );
       expect(resultExpandedAll.nodes.length, 3);
       expect(resultExpandedAll.nodes[2].key, 'bio');
@@ -259,6 +265,119 @@ void main() {
       expect(result.nodes[2].depth, 2);
       expect(result.nodes[3].key, 'qty');
       expect(result.nodes[3].depth, 2);
+    });
+
+    test('omits null fields and counts them when hideNullFields is true', () {
+      final json = {
+        'id': '123',
+        'closingTime': null,
+        'depotName': null,
+        'status': 'ACTIVE',
+        'details': {
+          'subField': 'value',
+          'extra': null,
+        }
+      };
+
+      final resultNoHide = JsonTreeFlattener.flatten(
+        json,
+        expandedPaths: {'root.details'},
+        hideNullFields: false,
+      );
+      expect(resultNoHide.hiddenNullCount, 0);
+      expect(resultNoHide.nodes.any((n) => n.key == 'closingTime'), isTrue);
+
+      final resultHide = JsonTreeFlattener.flatten(
+        json,
+        expandedPaths: {'root.details'},
+        hideNullFields: true,
+      );
+      expect(resultHide.hiddenNullCount, 3);
+      expect(resultHide.nodes.any((n) => n.key == 'closingTime'), isFalse);
+      expect(resultHide.nodes.any((n) => n.key == 'depotName'), isFalse);
+      expect(resultHide.nodes.any((n) => n.key == 'extra'), isFalse);
+      expect(resultHide.nodes.any((n) => n.key == 'id'), isTrue);
+      expect(resultHide.nodes.any((n) => n.key == 'status'), isTrue);
+      expect(resultHide.nodes.any((n) => n.key == 'subField'), isTrue);
+    });
+
+    test('automatically expands single-item arrays and maps by default unless list is compact badge', () {
+      final json = {
+        'complexArray': [
+          {'subKey': 'val', 'otherKey': 'other'}
+        ],
+        'singleMap': {
+          'nestedValue': 42,
+        },
+      };
+
+      final result = JsonTreeFlattener.flatten(
+        json,
+        autoExpandSingleItemCollections: true,
+      );
+
+      // 'complexArray' has 1 complex item, so it should auto-expand and show '[0]'
+      expect(result.nodes.any((n) => n.key == 'complexArray'), isTrue);
+      expect(result.nodes.any((n) => n.key == '[0]'), isTrue);
+
+      // 'singleMap' has 1 entry, so it should auto-expand and show 'nestedValue'
+      expect(result.nodes.any((n) => n.key == 'singleMap'), isTrue);
+      expect(result.nodes.any((n) => n.key == 'nestedValue'), isTrue);
+    });
+
+    test('renders compact 1-3 primitive item list as composite badge without expanding', () {
+      final json = {
+        'aktionsKategorien': ['ENTLADESTELLE'],
+        'tags': ['A', 'B', 'C'],
+      };
+
+      final result = JsonTreeFlattener.flatten(
+        json,
+        autoExpandSingleItemCollections: true,
+      );
+
+      final aktionNode = result.nodes.firstWhere((n) => n.key == 'aktionsKategorien');
+      expect(aktionNode.type, JsonNodeType.compositeBadge);
+      expect(aktionNode.badgeData?.label, '[ "ENTLADESTELLE" ]');
+      expect(result.nodes.any((n) => n.path.contains('aktionsKategorien[0]')), isFalse);
+
+      final tagsNode = result.nodes.firstWhere((n) => n.key == 'tags');
+      expect(tagsNode.type, JsonNodeType.compositeBadge);
+      expect(tagsNode.badgeData?.label, '[ "A", "B", "C" ]');
+      expect(result.nodes.any((n) => n.path.contains('tags[0]')), isFalse);
+    });
+
+    test('expands compact list into child nodes when path is in expandedPaths', () {
+      final json = {
+        'aktionsKategorien': ['ENTLADESTELLE'],
+      };
+
+      final result = JsonTreeFlattener.flatten(
+        json,
+        expandedPaths: {'root.aktionsKategorien'},
+      );
+
+      final aktionNode = result.nodes.firstWhere((n) => n.key == 'aktionsKategorien');
+      expect(aktionNode.type, JsonNodeType.array);
+      expect(aktionNode.isExpanded, isTrue);
+      expect(result.nodes.any((n) => n.key == '[0]' && n.value == 'ENTLADESTELLE'), isTrue);
+    });
+
+    test('respects manuallyCollapsedPaths when autoExpandSingleItemCollections is true', () {
+      final json = {
+        'kundenauftragsIds': [
+          {'id': '8bbe4ce1-50e5', 'deep': true}
+        ],
+      };
+
+      final result = JsonTreeFlattener.flatten(
+        json,
+        manuallyCollapsedPaths: {'root.kundenauftragsIds'},
+        autoExpandSingleItemCollections: true,
+      );
+
+      expect(result.nodes.any((n) => n.key == 'kundenauftragsIds'), isTrue);
+      expect(result.nodes.any((n) => n.key == '[0]'), isFalse);
     });
   });
 }

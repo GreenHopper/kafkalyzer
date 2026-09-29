@@ -60,7 +60,6 @@ dependencies:
   archive: ^4.0.7
   path_provider: ^2.1.2
   url_launcher: ^6.3.2
-  pdfrx: ^2.2.24
   path: ^1.9.1
   scrollable_positioned_list: ^0.3.8
   diff_match_patch: ^0.4.1

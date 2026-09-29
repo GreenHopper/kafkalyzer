@@ -14,12 +14,14 @@ class MessagesDiffView extends StatefulWidget {
   final List<KafkaMessage> messages;
   final Function(KafkaMessage) onMessageTap;
   final String? searchPhrase;
+  final KafkaMessage? selectedMessage;
 
   const MessagesDiffView({
     super.key,
     required this.messages,
     required this.onMessageTap,
     this.searchPhrase,
+    this.selectedMessage,
   });
 
   @override
@@ -33,10 +35,20 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
   // Cache the generated diff futures so they aren't recomputed on scroll
   final Map<String, Future<MessageDiff>> _diffCache = {};
 
+  final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _itemKeys = {};
+
   @override
   void initState() {
     super.initState();
     _groupMessages();
+    _scrollToSelectedMessage();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -45,6 +57,50 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
     if (widget.messages != oldWidget.messages) {
       _groupMessages();
     }
+    if (widget.selectedMessage != oldWidget.selectedMessage) {
+      _scrollToSelectedMessage();
+    }
+  }
+
+  void _scrollToSelectedMessage() {
+    if (widget.selectedMessage == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final index = widget.messages.indexOf(widget.selectedMessage!);
+      if (index < 0) return;
+
+      final key = _itemKeys[index];
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          alignment: 0.3,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        final estimatedOffset = (index * 220.0).clamp(
+          0.0,
+          _scrollController.position.maxScrollExtent,
+        );
+        _scrollController.animateTo(
+          estimatedOffset,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final postKey = _itemKeys[index];
+          if (postKey?.currentContext != null) {
+            Scrollable.ensureVisible(
+              postKey!.currentContext!,
+              alignment: 0.3,
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.easeOutCubic,
+            );
+          }
+        });
+      }
+    });
   }
 
   void _groupMessages() {
@@ -108,6 +164,7 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
     }
 
     return Timeline.tileBuilder(
+      controller: _scrollController,
       theme: TimelineThemeData(
         nodePosition: 0.2, // Offset content to allow room for metadata
         color: Theme.of(context).primaryColor,
@@ -121,6 +178,7 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
           final previousMessage = _findPreviousMessage(message);
 
           return Padding(
+            key: _itemKeys.putIfAbsent(index, () => GlobalKey()),
             padding: const EdgeInsets.all(8.0),
             child: _buildDiffCard(context, message, previousMessage),
           );
@@ -162,6 +220,7 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
       searchPhrase: widget.searchPhrase,
       onTap: () => widget.onMessageTap(current),
       showPayloadPreview: isInitial,
+      isSelected: widget.selectedMessage == current,
       customContent: isInitial
           ? null
           : _LazyDiffViewer(

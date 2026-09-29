@@ -6,11 +6,13 @@ class FlattenResult {
   final List<VirtualJsonNode> nodes;
   final Set<String> expandedPaths;
   final List<int> matchNodeIndices;
+  final int hiddenNullCount;
 
   const FlattenResult({
     required this.nodes,
     required this.expandedPaths,
     required this.matchNodeIndices,
+    this.hiddenNullCount = 0,
   });
 }
 
@@ -19,6 +21,12 @@ class JsonTreeFlattener {
   ///
   /// Respects [expandedPaths]. If [searchQuery] is non-empty, finds matches and automatically
   /// expands ancestor paths so that matching nodes are included in the result.
+  ///
+  /// When [hideNullFields] is true, object properties whose value is `null` are omitted from
+  /// the tree, and [FlattenResult.hiddenNullCount] records the total number of omitted null entries.
+  ///
+  /// When [autoExpandSingleItemCollections] is true, lists with exactly 1 item and maps with
+  /// exactly 1 entry are automatically expanded unless included in [manuallyCollapsedPaths].
   ///
   /// When [enableContextWindowing] is true and search matches exist inside an array,
   /// array items are segmented with a radius of [contextRadius] around matches,
@@ -30,6 +38,7 @@ class JsonTreeFlattener {
   static FlattenResult flatten(
     dynamic root, {
     Set<String>? expandedPaths,
+    Set<String>? manuallyCollapsedPaths,
     String? searchQuery,
     bool defaultExpandRoot = true,
     bool enableContextWindowing = true,
@@ -37,8 +46,11 @@ class JsonTreeFlattener {
     Set<String>? manuallyExpandedRanges,
     Set<String>? forcedShowAllArrays,
     bool enableIndentationFlattening = false,
+    bool hideNullFields = false,
+    bool autoExpandSingleItemCollections = false,
   }) {
     final activeExpanded = Set<String>.from(expandedPaths ?? {});
+    final collapsed = Set<String>.from(manuallyCollapsedPaths ?? {});
 
     // Ensure root path is expanded by default if requested and empty
     if (defaultExpandRoot && activeExpanded.isEmpty) {
@@ -58,6 +70,7 @@ class JsonTreeFlattener {
     // Phase 2: Linear traversal
     final resultNodes = <VirtualJsonNode>[];
     final matchIndices = <int>[];
+    int hiddenNulls = 0;
 
     void traverse(dynamic current, String key, String path, int depth) {
       String displayKey = key;
@@ -107,7 +120,21 @@ class JsonTreeFlattener {
       if (currentNodeValue is Map) {
         final stringMap = <String, dynamic>{};
         for (final entry in currentNodeValue.entries) {
-          stringMap[entry.key.toString()] = entry.value;
+          final k = entry.key.toString();
+          final v = entry.value;
+          if (hideNullFields && v == null) {
+            hiddenNulls++;
+            continue;
+          }
+          stringMap[k] = v;
+        }
+
+        // Auto-expand single-entry collection by default if not manually collapsed
+        if (autoExpandSingleItemCollections &&
+            stringMap.length == 1 &&
+            !collapsed.contains(currentPath) &&
+            !collapsed.contains(path)) {
+          activeExpanded.add(currentPath);
         }
 
         final isExp = activeExpanded.contains(currentPath) ||
@@ -167,8 +194,44 @@ class JsonTreeFlattener {
           }
         }
       } else if (currentNodeValue is List) {
+        final listBadge = EntityFormatterRegistry.tryFormatList(currentNodeValue);
+
+        // Auto-expand single-item list by default if not manually collapsed
+        // UNLESS it is eligible for compact badge rendering
+        if (autoExpandSingleItemCollections &&
+            currentNodeValue.length == 1 &&
+            listBadge == null &&
+            !collapsed.contains(currentPath) &&
+            !collapsed.contains(path)) {
+          activeExpanded.add(currentPath);
+        }
+
         final isExp = activeExpanded.contains(currentPath) ||
             activeExpanded.contains(path);
+
+        if (listBadge != null && !isExp) {
+          if (hasSearch && listBadge.label.toLowerCase().contains(query)) {
+            isNodeMatch = true;
+          }
+          final node = VirtualJsonNode(
+            path: currentPath,
+            key: displayKey,
+            compoundPathKey: displayKey != key ? displayKey : null,
+            value: currentNodeValue,
+            depth: depth,
+            type: JsonNodeType.compositeBadge,
+            badgeData: listBadge,
+            isMatch: isNodeMatch,
+            hasChildren: true,
+            isExpanded: false,
+          );
+          if (isNodeMatch) {
+            matchIndices.add(resultNodes.length);
+          }
+          resultNodes.add(node);
+          return;
+        }
+
         final node = VirtualJsonNode(
           path: currentPath,
           key: displayKey,
@@ -292,7 +355,13 @@ class JsonTreeFlattener {
       if (root is Map) {
         final stringMap = <String, dynamic>{};
         for (final entry in root.entries) {
-          stringMap[entry.key.toString()] = entry.value;
+          final k = entry.key.toString();
+          final v = entry.value;
+          if (hideNullFields && v == null) {
+            hiddenNulls++;
+            continue;
+          }
+          stringMap[k] = v;
         }
         for (final entry in stringMap.entries) {
           traverse(entry.value, entry.key, 'root.${entry.key}', 0);
@@ -310,6 +379,7 @@ class JsonTreeFlattener {
       nodes: resultNodes,
       expandedPaths: activeExpanded,
       matchNodeIndices: matchIndices,
+      hiddenNullCount: hiddenNulls,
     );
   }
 
@@ -347,30 +417,63 @@ class JsonTreeFlattener {
         final childKey = entry.key;
         final childPath = '$path.$childKey';
         final keyMatches = childKey.toLowerCase().contains(query);
-        final childMatches = _findMatchingAncestors(
-          entry.value,
-          childPath,
-          query,
-          ancestorsToExpand,
-        );
 
-        if (keyMatches || childMatches) {
+        bool isChildBadge = false;
+        if (entry.value is List) {
+          final listBadge = EntityFormatterRegistry.tryFormatList(entry.value as List);
+          if (listBadge != null) {
+            isChildBadge = true;
+            if (listBadge.label.toLowerCase().contains(query)) {
+              badgeMatches = true;
+            }
+          }
+        } else if (entry.value is Map<String, dynamic>) {
+          final mapBadge = EntityFormatterRegistry.tryFormat(entry.value as Map<String, dynamic>);
+          if (mapBadge != null) {
+            isChildBadge = true;
+            if (mapBadge.label.toLowerCase().contains(query)) {
+              badgeMatches = true;
+            }
+          }
+        }
+
+        final childMatches = isChildBadge
+            ? false
+            : _findMatchingAncestors(
+                entry.value,
+                childPath,
+                query,
+                ancestorsToExpand,
+              );
+
+        if (keyMatches || childMatches || badgeMatches) {
           hasMatchInSubtree = true;
           ancestorsToExpand.add(path);
         }
       }
     } else if (current is List) {
-      for (int i = 0; i < current.length; i++) {
-        final childPath = '$path[$i]';
-        final childMatches = _findMatchingAncestors(
-          current[i],
-          childPath,
-          query,
-          ancestorsToExpand,
-        );
-        if (childMatches) {
+      final listBadge = EntityFormatterRegistry.tryFormatList(current);
+      if (listBadge != null) {
+        // If the compact list itself matches, we don't expand its internal elements into rows;
+        // we just ensure its parent ancestor path is marked to keep the badge visible.
+        if (listBadge.label.toLowerCase().contains(query)) {
           hasMatchInSubtree = true;
-          ancestorsToExpand.add(path);
+          // Note: do NOT add 'path' to ancestorsToExpand, because 'path' is the list itself.
+          // Adding 'path' would mark the list as isExpanded: true!
+        }
+      } else {
+        for (int i = 0; i < current.length; i++) {
+          final childPath = '$path[$i]';
+          final childMatches = _findMatchingAncestors(
+            current[i],
+            childPath,
+            query,
+            ancestorsToExpand,
+          );
+          if (childMatches) {
+            hasMatchInSubtree = true;
+            ancestorsToExpand.add(path);
+          }
         }
       }
     } else {

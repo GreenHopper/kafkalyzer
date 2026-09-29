@@ -308,5 +308,18 @@
   "columnAlreadyPinned": "Spalte '{path}' ist bereits angeheftet",
   "removeColumn": "Spalte entfernen",
   "resetColumns": "Spalten zurücksetzen",
-  "columnsReset": "Tabellenspalten auf Standard zurückgesetzt"
+  "columnsReset": "Tabellenspalten auf Standard zurückgesetzt",
+  "columnsMenu": "Spalten",
+  "hideColumn": "Spalte ausblenden",
+  "showColumn": "Spalte einblenden",
+  "autoFitColumn": "Breite automatisch anpassen",
+  "hideEmptyFields": "Leere Felder ausblenden",
+  "showEmptyFields": "Leere Felder einblenden",
+  "hiddenEmptyFieldsCount": "{count, plural, =1{1 leeres Feld ausgeblendet} other{{count} leere Felder ausgeblendet}}",
+  "rawTimestampLabel": "Rohwert",
+  "utcTimestampLabel": "UTC",
+  "localTimestampLabel": "Lokal",
+  "searchConfigurationTitle": "Suchkonfiguration",
+  "collapseSearchConfiguration": "Suchkonfiguration einklappen",
+  "expandSearchConfiguration": "Suchkonfiguration ausklappen"
 }

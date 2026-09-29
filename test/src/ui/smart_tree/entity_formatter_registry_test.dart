@@ -151,7 +151,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test('rejects flat map with more than 4 entries', () {
+      test('rejects flat map with more than 4 non-null entries', () {
         final map = {
           'k1': 1,
           'k2': 2,
@@ -161,6 +161,105 @@ void main() {
         };
         final result = EntityFormatterRegistry.tryFormat(map);
         expect(result, isNull);
+      });
+
+      test('formats map with 5 keys where 3 are null or empty list', () {
+        final map = {
+          'art': 'Eintritt',
+          'id': '02440ff5-bb63-f9cf-82da-61b70b0f28e9',
+          'kundenauftragsId': null,
+          'kundenauftragsMeilensteinIds': [],
+          'trailerKennzeichen': null,
+        };
+        final result = EntityFormatterRegistry.tryFormat(map);
+        expect(result, isNotNull);
+        expect(result!.label, contains('Eintritt'));
+        expect(result.label, contains('02440ff5-bb63-f9cf-82da-61b70b0f28e9'));
+      });
+    });
+
+    group('Extended heuristics (nested time, standalone timestamp, routes)', () {
+      test('formats nested timestamp object for planTimestampVon and planTimestampBis', () {
+        final map = {
+          'planTimestampVon': {
+            'timestamp': '2026-09-29T05:00:00+01:00',
+            'zeitQuelle': 'SYSTEM'
+          },
+          'planTimestampBis': {
+            'timestamp': '2026-09-29T19:00:00+01:00',
+            'zeitQuelle': 'SYSTEM'
+          },
+        };
+        final result = EntityFormatterRegistry.tryFormat(map);
+        expect(result, isNotNull);
+        expect(result!.icon, Icons.date_range_outlined);
+        expect(result.label, contains('2026-09-29'));
+        expect(result.label, contains('→'));
+      });
+
+      test('formats standalone timestamp with metadata', () {
+        final map = {
+          'timestamp': '2026-09-29T19:00:00+01:00',
+          'zeitQuelle': 'SYSTEM',
+        };
+        final result = EntityFormatterRegistry.tryFormat(map);
+        expect(result, isNotNull);
+        expect(result!.icon, Icons.schedule_outlined);
+        expect(result.label, contains('2026-09-29 19:00:00 (SYSTEM)'));
+      });
+
+      test('formats route / transport leg entity with von... and nach...', () {
+        final map = {
+          'vonTransportMeilensteinId': '8e435649-a84f',
+          'nachTransportMeilensteinId': '12534add-05cb',
+        };
+        final result = EntityFormatterRegistry.tryFormat(map);
+        expect(result, isNotNull);
+        expect(result!.icon, Icons.alt_route_outlined);
+        expect(result.label, '8e435649-a84f → 12534add-05cb');
+      });
+    });
+
+    group('Compact primitive list heuristic (tryFormatList)', () {
+      test('formats single string list (e.g. aktionsKategorien)', () {
+        final list = ['ENTLADESTELLE'];
+        final result = EntityFormatterRegistry.tryFormatList(list);
+        expect(result, isNotNull);
+        expect(result!.icon, Icons.list_alt);
+        expect(result.label, '[ "ENTLADESTELLE" ]');
+        expect(result.color, Colors.indigoAccent);
+      });
+
+      test('formats 2-3 primitive values including numbers and booleans', () {
+        final list = ['ACTIVE', 42, true];
+        final result = EntityFormatterRegistry.tryFormatList(list);
+        expect(result, isNotNull);
+        expect(result!.label, '[ "ACTIVE", 42, true ]');
+      });
+
+      test('returns null for empty list or list with more than 3 items', () {
+        expect(EntityFormatterRegistry.tryFormatList([]), isNull);
+        expect(EntityFormatterRegistry.tryFormatList(['A', 'B', 'C', 'D']), isNull);
+      });
+
+      test('returns null if items contain complex objects or lists', () {
+        expect(EntityFormatterRegistry.tryFormatList([{'key': 'val'}]), isNull);
+        expect(EntityFormatterRegistry.tryFormatList([['nested']]), isNull);
+      });
+
+      test('returns null if any item is null or empty string', () {
+        expect(EntityFormatterRegistry.tryFormatList([null]), isNull);
+        expect(EntityFormatterRegistry.tryFormatList(['', 'FOO']), isNull);
+        expect(EntityFormatterRegistry.tryFormatList(['   ']), isNull);
+      });
+
+      test('returns null if string length or total length exceeds limit', () {
+        final longStr = 'a' * 51;
+        expect(EntityFormatterRegistry.tryFormatList([longStr]), isNull);
+
+        final str30 = 'a' * 30;
+        // 3 * 30 + brackets & quotes > 80 chars
+        expect(EntityFormatterRegistry.tryFormatList([str30, str30, str30]), isNull);
       });
     });
   });

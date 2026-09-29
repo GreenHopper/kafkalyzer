@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/ui/smart_tree/entity_formatter_registry.dart';
 /// to allow selecting text, inspecting details, and copying values.
 class SmartCompositeBadge extends StatefulWidget {
   final String keyName;
-  final Map<String, dynamic> data;
+  final dynamic data;
   final FormattedBadgeData badgeInfo;
   final bool initiallyPinned;
 
@@ -113,24 +113,30 @@ class _SmartCompositeBadgeState extends State<SmartCompositeBadge> {
                 children: [
                   Icon(widget.badgeInfo.icon, size: 14, color: badgeColor),
                   const SizedBox(width: 5),
-                  if (widget.keyName.isNotEmpty) ...[
-                    Text(
-                      '${widget.keyName}: ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: badgeColor.withValues(alpha: 0.9),
+                  Flexible(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          if (widget.keyName.isNotEmpty)
+                            TextSpan(
+                              text: '${widget.keyName}: ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: badgeColor.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          TextSpan(
+                            text: widget.badgeInfo.label,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 320),
-                    child: Text(
-                      widget.badgeInfo.label,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      maxLines: 1,
+                      softWrap: false,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -222,37 +228,7 @@ class _SmartCompositeBadgeState extends State<SmartCompositeBadge> {
                     child: SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: widget.data.entries.map((entry) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2.5),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 95,
-                                  child: Text(
-                                    entry.key,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: SelectableText(
-                                    entry.value?.toString() ?? 'null',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontFamily: 'monospace',
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                        children: _buildDetailRows(colorScheme),
                       ),
                     ),
                   ),
@@ -263,5 +239,87 @@ class _SmartCompositeBadgeState extends State<SmartCompositeBadge> {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildDetailRows(ColorScheme colorScheme) {
+    if (widget.data is Map) {
+      final map = widget.data as Map;
+      return map.entries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2.5),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 95,
+                child: Text(
+                  entry.key.toString(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SelectableText(
+                  entry.value?.toString() ?? 'null',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList();
+    } else if (widget.data is List) {
+      final list = widget.data as List;
+      return list.asMap().entries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2.5),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 50,
+                child: Text(
+                  '[${entry.key}]',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'monospace',
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: SelectableText(
+                  entry.value?.toString() ?? 'null',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList();
+    }
+
+    return [
+      SelectableText(
+        widget.data?.toString() ?? 'null',
+        style: TextStyle(
+          fontSize: 11,
+          fontFamily: 'monospace',
+          color: colorScheme.onSurface,
+        ),
+      ),
+    ];
   }
 }

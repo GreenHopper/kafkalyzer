@@ -7,6 +7,8 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
+import 'package:kafkalyzer/src/ui/messages/views/messages_timeline_view.dart';
+import 'package:kafkalyzer/src/ui/messages/views/messages_diff_view.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 
@@ -275,4 +277,137 @@ void main() {
     // Should NOT have maximized
     expect(find.byType(MessagesTableView), findsOneWidget);
   });
+
+  testWidgets(
+    'stepping through messages in table view auto-scrolls to keep active row visible',
+    (tester) async {
+      final manyMessages = List.generate(
+        30,
+        (i) => KafkaMessage(
+          topic: 'test-topic',
+          partition: 0,
+          offset: i,
+          key: 'key-$i',
+          payload: '{"index":$i}',
+          timestamp: 1695888000000 + i * 1000,
+        ),
+      );
+
+      tester.view.physicalSize = const Size(1920, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createWidgetUnderTest(messages: manyMessages));
+      await tester.pumpAndSettle();
+
+      // Select first message (newest: key-29)
+      await tester.tap(find.text('key-29', findRichText: true).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 of 30'), findsOneWidget);
+
+      // Step down 10 times via 'J'
+      for (int i = 0; i < 10; i++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+        await tester.pumpAndSettle();
+      }
+
+      expect(find.text('11 of 30'), findsOneWidget);
+      // Row 10 (key-19) must be visible in viewport
+      expect(find.text('key-19', findRichText: true), findsWidgets);
+    },
+  );
+
+  testWidgets('stepping respects interactive column sort in table view', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    // Default timestamp desc: order-102 (idx 0), order-101 (idx 1), order-100 (idx 2)
+    // Click Offset header in MessagesTableView to sort by offset asc:
+    // Offset asc order: order-100 (100), order-101 (101), order-102 (102)
+    final offsetHeader = find.descendant(
+      of: find.byType(MessagesTableView),
+      matching: find.text('Offset'),
+    );
+    await tester.tap(offsetHeader);
+    await tester.pumpAndSettle();
+
+    // Select order-100 (first visual row)
+    await tester.tap(find.text('order-100', findRichText: true).first);
+    await tester.pumpAndSettle();
+    expect(find.text('1 of 3'), findsOneWidget);
+
+    // Step next -> should go to order-101
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 3'), findsOneWidget);
+    expect(find.textContaining('order-101'), findsWidgets);
+    expect(find.text('2 of 3'), findsOneWidget);
+    expect(find.textContaining('order-101'), findsWidgets);
+
+    // Step next -> should go to order-102
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+    await tester.pumpAndSettle();
+    expect(find.text('3 of 3'), findsOneWidget);
+    expect(find.textContaining('order-102'), findsWidgets);
+  });
+
+  testWidgets(
+    'stepping preserves and highlights selection in timeline and diff views',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Select order-101
+      await tester.tap(find.text('order-101', findRichText: true).first);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      // Switch to Timeline view
+      final timelineToggle = find.byTooltip('Timeline View');
+      expect(timelineToggle, findsOneWidget);
+      await tester.tap(timelineToggle);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MessagesTimelineView), findsOneWidget);
+      final timelineView = tester.widget<MessagesTimelineView>(
+        find.byType(MessagesTimelineView),
+      );
+      expect(timelineView.selectedMessage?.key, equals('order-101'));
+
+      // Step next in timeline view
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pumpAndSettle();
+      expect(find.text('3 of 3'), findsOneWidget);
+      final timelineViewUpdated = tester.widget<MessagesTimelineView>(
+        find.byType(MessagesTimelineView),
+      );
+      expect(timelineViewUpdated.selectedMessage?.key, equals('order-100'));
+
+      // Switch to Diff view
+      final diffToggle = find.byTooltip('Diff View');
+      expect(diffToggle, findsOneWidget);
+      await tester.tap(diffToggle);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MessagesDiffView), findsOneWidget);
+      final diffView = tester.widget<MessagesDiffView>(
+        find.byType(MessagesDiffView),
+      );
+      expect(diffView.selectedMessage?.key, equals('order-100'));
+    },
+  );
 }

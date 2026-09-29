@@ -223,5 +223,35 @@ void main() {
       await awaitIsolates(tester);
       expect(find.text('b: '), findsOneWidget);
     });
+
+    testWidgets('toggles hide empty fields in Tree mode', (tester) async {
+      final jsonStr = '{"present": "hello", "missing": null}';
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: JsonOrStringViewer(
+              rawContent: jsonStr,
+              persistenceKey: 'test_hide_null',
+            ),
+          ),
+        ),
+      );
+      await awaitIsolates(tester);
+
+      // Initially null is visible
+      expect(find.text('missing: '), findsOneWidget);
+
+      // Find filter toggle button
+      final filterButton = find.byIcon(Icons.filter_alt_off_outlined);
+      expect(filterButton, findsOneWidget);
+
+      // Tap to hide null fields
+      await tester.tap(filterButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('missing: '), findsNothing);
+      expect(find.text('present: '), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt), findsOneWidget);
+    });
   });
 }

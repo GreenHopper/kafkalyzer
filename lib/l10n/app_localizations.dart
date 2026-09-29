@@ -1879,6 +1879,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Table columns reset to default'**
   String get columnsReset;
+
+  /// No description provided for @columnsMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get columnsMenu;
+
+  /// No description provided for @hideColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide column'**
+  String get hideColumn;
+
+  /// No description provided for @showColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Show column'**
+  String get showColumn;
+
+  /// No description provided for @autoFitColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-fit width'**
+  String get autoFitColumn;
+
+  /// No description provided for @hideEmptyFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide empty fields'**
+  String get hideEmptyFields;
+
+  /// No description provided for @showEmptyFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Show empty fields'**
+  String get showEmptyFields;
+
+  /// Indicates number of hidden null/empty fields
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hidden empty field} other{{count} hidden empty fields}}'**
+  String hiddenEmptyFieldsCount(num count);
+
+  /// No description provided for @rawTimestampLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw'**
+  String get rawTimestampLabel;
+
+  /// No description provided for @utcTimestampLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'UTC'**
+  String get utcTimestampLabel;
+
+  /// No description provided for @localTimestampLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get localTimestampLabel;
+
+  /// No description provided for @searchConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Configuration'**
+  String get searchConfigurationTitle;
+
+  /// No description provided for @collapseSearchConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse search configuration'**
+  String get collapseSearchConfiguration;
+
+  /// No description provided for @expandSearchConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand search configuration'**
+  String get expandSearchConfiguration;
 }
 
 class _AppLocalizationsDelegate

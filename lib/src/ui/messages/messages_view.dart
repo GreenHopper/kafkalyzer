@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_diff_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
@@ -78,7 +79,12 @@ class _MessagesViewState extends State<MessagesView> {
   bool _isMaximized = false;
   InspectorDockPosition _dockPosition = InspectorDockPosition.bottom;
 
+  final GlobalKey _tableViewKey = GlobalKey();
+  final GlobalKey _timelineViewKey = GlobalKey();
+  final GlobalKey _diffViewKey = GlobalKey();
+
   List<ProjectedColumn> _projectedColumns = [];
+  TableColumnConfig _tableColumnConfig = const TableColumnConfig();
 
   /// Per-view ascending flags. Missing entries mean descending (default).
   final Map<String, bool> _sortAscendingByView = {};
@@ -146,19 +152,22 @@ class _MessagesViewState extends State<MessagesView> {
     final raw = prefs.getString(key);
     if (raw != null && raw.isNotEmpty) {
       try {
-        final decoded = jsonDecode(raw) as List;
-        final cols = decoded
-            .map((e) => ProjectedColumn.fromJson(e as Map<String, dynamic>))
-            .toList();
+        final decoded = jsonDecode(raw);
+        final config = TableColumnConfig.fromJson(decoded);
         if (mounted) {
           setState(() {
-            _projectedColumns = cols;
+            _tableColumnConfig = config;
+            _projectedColumns = config.projectedColumns;
           });
         }
       } catch (_) {}
     } else {
-      if (mounted && _projectedColumns.isNotEmpty) {
+      if (mounted &&
+          (_projectedColumns.isNotEmpty ||
+              _tableColumnConfig.hiddenColumns.isNotEmpty ||
+              _tableColumnConfig.columnWidths.isNotEmpty)) {
         setState(() {
+          _tableColumnConfig = const TableColumnConfig();
           _projectedColumns = [];
         });
       }
@@ -169,12 +178,12 @@ class _MessagesViewState extends State<MessagesView> {
     final key = _topicPresetKey;
     if (key == null) return;
     final prefs = await SharedPreferences.getInstance();
-    if (_projectedColumns.isEmpty) {
+    if (_tableColumnConfig.projectedColumns.isEmpty &&
+        _tableColumnConfig.hiddenColumns.isEmpty &&
+        _tableColumnConfig.columnWidths.isEmpty) {
       await prefs.remove(key);
     } else {
-      final encoded = jsonEncode(
-        _projectedColumns.map((c) => c.toJson()).toList(),
-      );
+      final encoded = jsonEncode(_tableColumnConfig.toJson());
       await prefs.setString(key, encoded);
     }
   }
@@ -183,7 +192,9 @@ class _MessagesViewState extends State<MessagesView> {
     final normalized = path.trim();
     if (normalized.isEmpty) return;
 
-    if (_projectedColumns.any((col) => col.path == normalized)) {
+    if (_tableColumnConfig.projectedColumns.any(
+      (col) => col.path == normalized,
+    )) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -197,8 +208,12 @@ class _MessagesViewState extends State<MessagesView> {
     }
 
     final newCol = ProjectedColumn.fromPath(normalized);
+    final updatedList = [..._tableColumnConfig.projectedColumns, newCol];
     setState(() {
-      _projectedColumns = [..._projectedColumns, newCol];
+      _tableColumnConfig = _tableColumnConfig.copyWith(
+        projectedColumns: updatedList,
+      );
+      _projectedColumns = updatedList;
     });
     _saveProjectedColumnsPreference();
 
@@ -214,16 +229,25 @@ class _MessagesViewState extends State<MessagesView> {
   }
 
   void removeProjectedColumn(ProjectedColumn column) {
+    final updatedList = _tableColumnConfig.projectedColumns
+        .where((c) => c.path != column.path)
+        .toList();
+    final updatedWidths = Map<String, double>.from(
+      _tableColumnConfig.columnWidths,
+    )..remove(column.path);
     setState(() {
-      _projectedColumns = _projectedColumns
-          .where((c) => c.path != column.path)
-          .toList();
+      _tableColumnConfig = _tableColumnConfig.copyWith(
+        projectedColumns: updatedList,
+        columnWidths: updatedWidths,
+      );
+      _projectedColumns = updatedList;
     });
     _saveProjectedColumnsPreference();
   }
 
   void resetProjectedColumns() {
     setState(() {
+      _tableColumnConfig = const TableColumnConfig();
       _projectedColumns = [];
     });
     _saveProjectedColumnsPreference();
@@ -237,6 +261,54 @@ class _MessagesViewState extends State<MessagesView> {
         duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  void _onColumnWidthChanged(String columnId, double width) {
+    final updatedWidths = Map<String, double>.from(
+      _tableColumnConfig.columnWidths,
+    );
+    updatedWidths[columnId] = width;
+    setState(() {
+      _tableColumnConfig = _tableColumnConfig.copyWith(
+        columnWidths: updatedWidths,
+      );
+    });
+    _saveProjectedColumnsPreference();
+  }
+
+  void _toggleColumnVisibility(String columnId) {
+    final currentHidden = Set<String>.from(_tableColumnConfig.hiddenColumns);
+    if (currentHidden.contains(columnId)) {
+      currentHidden.remove(columnId);
+    } else {
+      // Safeguard: Ensure at least 1 column remains visible
+      final visibleStandardCount =
+          (widget.showTopic || widget.showStep
+                  ? StandardTableColumns.scriptingStandard
+                  : StandardTableColumns.explorerStandard)
+              .where((col) {
+                if (col == StandardTableColumns.step && !widget.showStep) {
+                  return false;
+                }
+                if (col == StandardTableColumns.topic && !widget.showTopic) {
+                  return false;
+                }
+                return !currentHidden.contains(col);
+              })
+              .length;
+      final visibleCount =
+          visibleStandardCount + _tableColumnConfig.projectedColumns.length;
+      if (visibleCount <= 1) {
+        return;
+      }
+      currentHidden.add(columnId);
+    }
+    setState(() {
+      _tableColumnConfig = _tableColumnConfig.copyWith(
+        hiddenColumns: currentHidden,
+      );
+    });
+    _saveProjectedColumnsPreference();
   }
 
   bool get _showSchemaView {
@@ -349,23 +421,30 @@ class _MessagesViewState extends State<MessagesView> {
     });
   }
 
+  List<KafkaMessage>? _tableVisualOrder;
+
+  List<KafkaMessage> get _activeOrderedMessages =>
+      (_activeView == 'table' && _tableVisualOrder != null)
+      ? _tableVisualOrder!
+      : _cachedSortedMessages;
+
   int get _selectedIndex {
     if (_selectedMessage == null) return -1;
-    return _cachedSortedMessages.indexOf(_selectedMessage!);
+    return _activeOrderedMessages.indexOf(_selectedMessage!);
   }
 
   bool get _hasPrevious => _selectedIndex > 0;
   bool get _hasNext =>
-      _selectedIndex >= 0 && _selectedIndex < _cachedSortedMessages.length - 1;
+      _selectedIndex >= 0 && _selectedIndex < _activeOrderedMessages.length - 1;
 
   void _stepPrevious() {
     if (!_hasPrevious) return;
-    _handleMessageTap(_cachedSortedMessages[_selectedIndex - 1]);
+    _handleMessageTap(_activeOrderedMessages[_selectedIndex - 1]);
   }
 
   void _stepNext() {
     if (!_hasNext) return;
-    _handleMessageTap(_cachedSortedMessages[_selectedIndex + 1]);
+    _handleMessageTap(_activeOrderedMessages[_selectedIndex + 1]);
   }
 
   void _toggleMaximize() {
@@ -400,6 +479,7 @@ class _MessagesViewState extends State<MessagesView> {
   void _onViewModeChanged(String newView) {
     setState(() {
       _activeView = newView;
+      _tableVisualOrder = null;
       _updateFilters();
     });
     if (widget.preferencesKey != null) {
@@ -573,7 +653,94 @@ class _MessagesViewState extends State<MessagesView> {
                         });
                       },
                     ),
-                    if (_projectedColumns.isNotEmpty) ...[
+                    if (_activeView == 'table') ...[
+                      const SizedBox(width: 8),
+                      MenuAnchor(
+                        builder: (context, controller, child) {
+                          return Tooltip(
+                            message: l10n.columnsMenu,
+                            child: IconButton(
+                              key: const Key('table_columns_menu_button'),
+                              icon: const Icon(Icons.view_column_outlined),
+                              onPressed: () {
+                                if (controller.isOpen) {
+                                  controller.close();
+                                } else {
+                                  controller.open();
+                                }
+                              },
+                            ),
+                          );
+                        },
+                        menuChildren: [
+                          // Standard columns
+                          ...(widget.showTopic || widget.showStep
+                                  ? StandardTableColumns.scriptingStandard
+                                  : StandardTableColumns.explorerStandard)
+                              .where((col) {
+                                if (col == StandardTableColumns.step &&
+                                    !widget.showStep) {
+                                  return false;
+                                }
+                                if (col == StandardTableColumns.topic &&
+                                    !widget.showTopic) {
+                                  return false;
+                                }
+                                return true;
+                              })
+                              .map((colId) {
+                                final isVis = _tableColumnConfig.isVisible(
+                                  colId,
+                                );
+                                String label =
+                                    colId[0].toUpperCase() + colId.substring(1);
+                                return MenuItemButton(
+                                  closeOnActivate: false,
+                                  onPressed: () =>
+                                      _toggleColumnVisibility(colId),
+                                  leadingIcon: Icon(
+                                    isVis
+                                        ? Icons.check_box_outlined
+                                        : Icons.check_box_outline_blank,
+                                    size: 18,
+                                    color: isVis
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(context).colorScheme.outline,
+                                  ),
+                                  child: Text(label),
+                                );
+                              }),
+                          if (_tableColumnConfig
+                              .projectedColumns
+                              .isNotEmpty) ...[
+                            const PopupMenuDivider(),
+                            ..._tableColumnConfig.projectedColumns.map((col) {
+                              final isVis = _tableColumnConfig.isVisible(
+                                col.path,
+                              );
+                              return MenuItemButton(
+                                closeOnActivate: false,
+                                onPressed: () =>
+                                    _toggleColumnVisibility(col.path),
+                                leadingIcon: Icon(
+                                  isVis
+                                      ? Icons.check_box_outlined
+                                      : Icons.check_box_outline_blank,
+                                  size: 18,
+                                  color: isVis
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.outline,
+                                ),
+                                child: Text('${col.label} (${col.path})'),
+                              );
+                            }),
+                          ],
+                        ],
+                      ),
+                    ],
+                    if (_tableColumnConfig.projectedColumns.isNotEmpty ||
+                        _tableColumnConfig.hiddenColumns.isNotEmpty ||
+                        _tableColumnConfig.columnWidths.isNotEmpty) ...[
                       const SizedBox(width: 8),
                       Tooltip(
                         message: l10n.resetColumns,
@@ -656,7 +823,7 @@ class _MessagesViewState extends State<MessagesView> {
       onClose: _closeInspector,
       searchPhrase: _searchPhrase,
       messageIndex: _selectedIndex >= 0 ? _selectedIndex : null,
-      totalMessages: _cachedSortedMessages.length,
+      totalMessages: _activeOrderedMessages.length,
       onPreviousMessage: _hasPrevious ? _stepPrevious : null,
       onNextMessage: _hasNext ? _stepNext : null,
       isMaximized: _isMaximized,
@@ -693,6 +860,7 @@ class _MessagesViewState extends State<MessagesView> {
     switch (_activeView) {
       case 'table':
         return MessagesTableView(
+          key: _tableViewKey,
           messages: _cachedSortedMessages,
           searchPhrase: _searchPhrase,
           showNonMatches: _showNonMatches,
@@ -702,19 +870,28 @@ class _MessagesViewState extends State<MessagesView> {
           selectedMessage: _selectedMessage,
           projectedColumns: _projectedColumns,
           onRemoveProjectedColumn: removeProjectedColumn,
+          columnConfig: _tableColumnConfig,
+          onColumnWidthChanged: _onColumnWidthChanged,
+          onToggleColumnVisibility: _toggleColumnVisibility,
+          onVisualOrderChanged: (order) {
+            _tableVisualOrder = order;
+          },
         );
       case 'diff':
         return Padding(
+          key: _diffViewKey,
           padding: const EdgeInsets.all(16),
           child: MessagesDiffView(
             messages: _cachedSortedMessages,
             onMessageTap: _handleMessageTap,
             searchPhrase: _searchPhrase,
+            selectedMessage: _selectedMessage,
           ),
         );
       case 'timeline':
       default:
         return Padding(
+          key: _timelineViewKey,
           padding: const EdgeInsets.all(16),
           child: MessagesTimelineView(
             messages: _cachedSortedMessages,

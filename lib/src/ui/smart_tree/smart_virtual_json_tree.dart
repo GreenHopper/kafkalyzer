@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/json_tree_flattener.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_composite_badge.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/virtual_json_node.dart';
@@ -18,6 +19,8 @@ class SmartVirtualJsonTree extends StatefulWidget {
   final int? focusedMatchIndex;
   final bool enableContextWindowing;
   final bool enableIndentationFlattening;
+  final bool hideNullFields;
+  final bool autoExpandSingleItemCollections;
   final int contextRadius;
   final ValueChanged<String>? onPinToColumn;
 
@@ -29,6 +32,8 @@ class SmartVirtualJsonTree extends StatefulWidget {
     this.focusedMatchIndex,
     this.enableContextWindowing = true,
     this.enableIndentationFlattening = true,
+    this.hideNullFields = false,
+    this.autoExpandSingleItemCollections = true,
     this.contextRadius = 1,
     this.onPinToColumn,
   });
@@ -42,6 +47,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
   final ItemPositionsListener _itemPositionsListener =
       ItemPositionsListener.create();
   final Set<String> _expandedPaths = {};
+  final Set<String> _manuallyCollapsedPaths = {};
   final Set<String> _manuallyExpandedRanges = {};
   final Set<String> _forcedShowAllArrays = {};
 
@@ -63,6 +69,9 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
         widget.enableContextWindowing != oldWidget.enableContextWindowing ||
         widget.enableIndentationFlattening !=
             oldWidget.enableIndentationFlattening ||
+        widget.hideNullFields != oldWidget.hideNullFields ||
+        widget.autoExpandSingleItemCollections !=
+            oldWidget.autoExpandSingleItemCollections ||
         widget.contextRadius != oldWidget.contextRadius) {
       if (widget.searchQuery != oldWidget.searchQuery) {
         _manuallyExpandedRanges.clear();
@@ -77,12 +86,15 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
     _flattenResult = JsonTreeFlattener.flatten(
       widget.json,
       expandedPaths: _expandedPaths,
+      manuallyCollapsedPaths: _manuallyCollapsedPaths,
       searchQuery: widget.searchQuery,
       enableContextWindowing: widget.enableContextWindowing,
       contextRadius: widget.contextRadius,
       manuallyExpandedRanges: _manuallyExpandedRanges,
       forcedShowAllArrays: _forcedShowAllArrays,
       enableIndentationFlattening: widget.enableIndentationFlattening,
+      hideNullFields: widget.hideNullFields,
+      autoExpandSingleItemCollections: widget.autoExpandSingleItemCollections,
     );
 
     _expandedPaths.addAll(_flattenResult.expandedPaths);
@@ -119,6 +131,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
 
   void expandAll() {
     setState(() {
+      _manuallyCollapsedPaths.clear();
       _collectAllExpandablePaths(widget.json, 'root', _expandedPaths);
       _recalculateFlattening();
     });
@@ -128,6 +141,8 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
     setState(() {
       _expandedPaths.clear();
       _expandedPaths.add('root');
+      _manuallyCollapsedPaths.clear();
+      _collectAllExpandablePaths(widget.json, 'root', _manuallyCollapsedPaths);
       _manuallyExpandedRanges.clear();
       _forcedShowAllArrays.clear();
       _recalculateFlattening();
@@ -155,8 +170,10 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
     setState(() {
       if (_expandedPaths.contains(path)) {
         _expandedPaths.remove(path);
+        _manuallyCollapsedPaths.add(path);
       } else {
         _expandedPaths.add(path);
+        _manuallyCollapsedPaths.remove(path);
       }
       _recalculateFlattening();
     });
@@ -430,9 +447,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
           alignment: Alignment.centerLeft,
           child: SmartCompositeBadge(
             keyName: '',
-            data: node.value is Map<String, dynamic>
-                ? node.value as Map<String, dynamic>
-                : <String, dynamic>{},
+            data: node.value,
             badgeInfo: node.badgeData!,
           ),
         );
@@ -539,8 +554,82 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
         );
 
       case JsonNodeType.primitive:
-        return _buildPrimitiveText(node.value, colorScheme);
+        return _buildPrimitiveNode(context, node, colorScheme);
     }
+  }
+
+  static final RegExp _iso8601Regex = RegExp(
+    r'^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$',
+  );
+
+  Widget _buildPrimitiveNode(
+    BuildContext context,
+    VirtualJsonNode node,
+    ColorScheme colorScheme,
+  ) {
+    final value = node.value;
+
+    // Check for datetime string pattern
+    if (value is String && value.length >= 10 && _iso8601Regex.hasMatch(value)) {
+      final parsed = DateTime.tryParse(value);
+      if (parsed != null) {
+        return _buildSmartTimestampWidget(context, value, parsed, colorScheme);
+      }
+    }
+
+    return _buildPrimitiveText(value, colorScheme);
+  }
+
+  Widget _buildSmartTimestampWidget(
+    BuildContext context,
+    String rawValue,
+    DateTime parsedDate,
+    ColorScheme colorScheme,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final localFormatted = DateFormatUtils.formatDateTime(context, parsedDate.toLocal());
+    final utcFormatted = parsedDate.toUtc().toIso8601String();
+    final rawLabel = l10n?.rawTimestampLabel ?? 'Raw';
+    final localLabel = l10n?.localTimestampLabel ?? 'Local';
+    final utcLabel = l10n?.utcTimestampLabel ?? 'UTC';
+
+    final tooltipMessage = '$localLabel: $localFormatted\n$utcLabel: $utcFormatted\n$rawLabel: $rawValue';
+
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 300),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.schedule,
+            size: 13,
+            color: Colors.amber.shade800,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: _buildHighlightedText(
+              localFormatted,
+              AppFonts.robotoMono(
+                fontSize: 13,
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w500,
+              ),
+              colorScheme,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '(${parsedDate.timeZoneOffset.isNegative ? '-' : '+'}${parsedDate.timeZoneOffset.inHours.abs().toString().padLeft(2, '0')}:00)',
+            style: TextStyle(
+              fontSize: 10,
+              color: colorScheme.outline,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildPrimitiveText(dynamic value, ColorScheme colorScheme) {

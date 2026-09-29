@@ -232,4 +232,67 @@ void main() {
       expect(find.text('RF: 2'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Search Configuration panel collapses and expands via header chevron',
+    (WidgetTester tester) async {
+      const topic = TopicMetadata(
+        name: 'test-topic',
+        partitionCount: 3,
+        replicationFactor: 2,
+      );
+      const profile = ClusterProfile(
+        name: 'Test Cluster',
+        bootstrapServers: 'localhost:9092',
+        schemaRegistryUrl: 'http://localhost:8081',
+        securityProtocol: 'plaintext',
+        mechanism: 'plain',
+      );
+      fakeActiveController.topic = topic;
+      fakeActiveController.activeProfile = profile;
+
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: const [Locale('en')],
+          home: Scaffold(
+            body: SizedBox(
+              width: 1200,
+              height: 800,
+              child: TopicDetailView(topic: topic, profile: profile),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.searchConfigurationTitle), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.expand_more), findsNothing);
+      expect(find.text('Values (comma sep.)'), findsOneWidget);
+
+      await tester.tap(find.text(l10n.searchConfigurationTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsNothing);
+      expect(find.text('Values (comma sep.)'), findsNothing);
+
+      await tester.tap(find.text(l10n.searchConfigurationTitle));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.expand_more), findsNothing);
+      expect(find.text('Values (comma sep.)'), findsOneWidget);
+    },
+  );
 }

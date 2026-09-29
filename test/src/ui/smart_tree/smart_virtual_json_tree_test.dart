@@ -53,7 +53,10 @@ void main() {
             body: SizedBox(
               width: 600,
               height: 400,
-              child: SmartVirtualJsonTree(json: json),
+              child: SmartVirtualJsonTree(
+                json: json,
+                autoExpandSingleItemCollections: false,
+              ),
             ),
           ),
         ),
@@ -296,6 +299,102 @@ void main() {
       expect(find.textContaining('transport'), findsOneWidget);
       expect(find.textContaining('order'), findsOneWidget);
       expect(find.textContaining('›'), findsOneWidget);
+    });
+
+    testWidgets('formats ISO-8601 timestamps with clock icon and tooltip', (tester) async {
+      final json = {
+        'createdAt': '2026-09-29T19:00:00+01:00',
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              width: 600,
+              height: 400,
+              child: SmartVirtualJsonTree(json: json),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.schedule), findsOneWidget);
+      expect(find.byType(Tooltip), findsWidgets);
+    });
+
+    testWidgets('renders compact list as composite badge and shows items in popover', (tester) async {
+      final json = {
+        'aktionsKategorien': ['ENTLADESTELLE'],
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              width: 600,
+              height: 400,
+              child: SmartVirtualJsonTree(json: json),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should render compact badge on a single line
+      expect(find.byType(SmartCompositeBadge), findsOneWidget);
+      expect(find.byIcon(Icons.list_alt), findsOneWidget);
+
+      // Tap on the badge to pin and display popover
+      await tester.tap(find.byType(SmartCompositeBadge));
+      await tester.pumpAndSettle();
+
+      // Popover should show index row '[0]' and 'ENTLADESTELLE'
+      expect(find.text('[0]'), findsOneWidget);
+      expect(find.text('ENTLADESTELLE'), findsOneWidget);
+    });
+
+    testWidgets('search query matching compact list badge highlights and jumps to match', (tester) async {
+      final GlobalKey<SmartVirtualJsonTreeState> key = GlobalKey<SmartVirtualJsonTreeState>();
+      final json = {
+        'order': {
+          'aktionsKategorien': ['ENTLADESTELLE'],
+          'other': 'regular_value',
+        }
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              width: 600,
+              height: 400,
+              child: SmartVirtualJsonTree(
+                key: key,
+                json: json,
+                searchQuery: 'ENTLADE',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The ancestor 'order' should be auto-expanded and compact badge rendered
+      expect(find.byType(SmartCompositeBadge), findsOneWidget);
+      expect(find.byIcon(Icons.list_alt), findsOneWidget);
+
+      // Stepper jump to match
+      key.currentState?.jumpToMatch(0);
+      await tester.pumpAndSettle();
+
+      expect(find.text('🎯'), findsOneWidget);
     });
   });
 }
