@@ -342,6 +342,9 @@ jobs:
     permissions:
       contents: write # WICHTIG: Explizite Berechtigung zum Erstellen des Releases
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Download Linux build
         uses: actions/download-artifact@v4
         with:
@@ -366,6 +369,7 @@ jobs:
       - name: Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
 
@@ -376,8 +380,9 @@ jobs:
 
           TAG="${{ github.ref_name }}"
 
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
+          if ! gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
             gh release create "$TAG" \
+              --repo "${{ github.repository }}" \
               --generate-notes \
               --title "$TAG"
           else
@@ -400,7 +405,7 @@ jobs:
             [[ -f "$file" ]] || continue
             uploaded=false
             for attempt in 1 2 3; do
-              if gh release upload "$TAG" "$file" --clobber; then
+              if gh release upload "$TAG" "$file" --clobber --repo "${{ github.repository }}"; then
                 uploaded=true
                 break
               fi
