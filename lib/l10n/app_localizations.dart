@@ -1676,6 +1676,42 @@ abstract class AppLocalizations {
   /// **'No release notes available.'**
   String get noReleaseNotes;
 
+  /// No description provided for @backgroundUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'A new version of Kafkalyzer (v{version}) is available.'**
+  String backgroundUpdateAvailable(String version);
+
+  /// No description provided for @updateAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get updateAction;
+
+  /// No description provided for @updateUnsupportedEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic updates unavailable'**
+  String get updateUnsupportedEnvironment;
+
+  /// No description provided for @updateUnsupportedEnvironmentDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'In-place updates require a packaged installation (AppImage on Linux, installer on Windows/macOS). Download the latest release from GitHub.'**
+  String get updateUnsupportedEnvironmentDescription;
+
+  /// No description provided for @openGitHubReleases.
+  ///
+  /// In en, this message translates to:
+  /// **'Open GitHub Releases'**
+  String get openGitHubReleases;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
   /// No description provided for @dockBottom.
   ///
   /// In en, this message translates to:

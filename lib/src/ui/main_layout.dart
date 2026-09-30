@@ -1,11 +1,13 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/theme_controller.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/script_manager_view.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
+import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:kafkalyzer/src/theme_controller.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -16,6 +18,55 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
+  bool _updateSnackBarShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    getIt<UpdateService>().availableUpdateNotifier.addListener(
+      _onAvailableUpdateChanged,
+    );
+    // Handle update already discovered before this widget mounted.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onAvailableUpdateChanged();
+    });
+  }
+
+  @override
+  void dispose() {
+    getIt<UpdateService>().availableUpdateNotifier.removeListener(
+      _onAvailableUpdateChanged,
+    );
+    super.dispose();
+  }
+
+  void _onAvailableUpdateChanged() {
+    if (!mounted || _updateSnackBarShown) {
+      return;
+    }
+
+    final updateInfo = getIt<UpdateService>().availableUpdateNotifier.value;
+    if (updateInfo == null) {
+      return;
+    }
+
+    _updateSnackBarShown = true;
+    final l10n = AppLocalizations.of(context)!;
+    final version = updateInfo.targetFullRelease.version;
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(l10n.backgroundUpdateAvailable(version)),
+        action: SnackBarAction(
+          label: l10n.updateAction,
+          onPressed: () => UpdateDialog.show(context),
+        ),
+        duration: const Duration(seconds: 12),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

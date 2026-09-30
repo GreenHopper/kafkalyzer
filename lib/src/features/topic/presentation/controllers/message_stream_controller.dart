@@ -1,12 +1,74 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 
+/// Builds a filtered Kafka message stream for [MessageStreamController].
+typedef MessageConsumeStreamFactory =
+    Stream<KafkaMessage> Function({
+      required ClusterProfile profile,
+      required String topic,
+      List<String>? filterTerms,
+      String? filterField,
+      required FilterType filterType,
+      required SearchScope searchScope,
+      String? fastTraceKey,
+      int? startOffset,
+      int? startTimestamp,
+      int? startPartition,
+      int? maxResults,
+      int? endOffset,
+      int? endTimestamp,
+      required bool runForever,
+      bool? startFromTail,
+    });
+
 class MessageStreamController extends ChangeNotifier {
-  final Logger _logger = getIt<Logger>();
+  MessageStreamController({
+    Logger? logger,
+    MessageConsumeStreamFactory? consumeStreamFactory,
+  }) : _logger = logger ?? getIt<Logger>(),
+       _consumeStreamFactory = consumeStreamFactory ?? _defaultConsumeStream;
+
+  final Logger _logger;
+  final MessageConsumeStreamFactory _consumeStreamFactory;
+
+  static Stream<KafkaMessage> _defaultConsumeStream({
+    required ClusterProfile profile,
+    required String topic,
+    List<String>? filterTerms,
+    String? filterField,
+    required FilterType filterType,
+    required SearchScope searchScope,
+    String? fastTraceKey,
+    int? startOffset,
+    int? startTimestamp,
+    int? startPartition,
+    int? maxResults,
+    int? endOffset,
+    int? endTimestamp,
+    required bool runForever,
+    bool? startFromTail,
+  }) => consumeWithFilter(
+    profile: profile,
+    topic: topic,
+    filterTerms: filterTerms,
+    filterField: filterField,
+    filterType: filterType,
+    searchScope: searchScope,
+    fastTraceKey: fastTraceKey,
+    startOffset: startOffset,
+    startTimestamp: startTimestamp,
+    startPartition: startPartition,
+    maxResults: maxResults,
+    endOffset: endOffset,
+    endTimestamp: endTimestamp,
+    runForever: runForever,
+    startFromTail: startFromTail,
+  );
 
   StreamSubscription<KafkaMessage>? _subscription;
   final List<KafkaMessage> _messages = [];
@@ -34,9 +96,6 @@ class MessageStreamController extends ChangeNotifier {
     if (_totalConsumed >= _totalToScan) return 1.0;
     return _totalConsumed / _totalToScan;
   }
-
-  // Removed local filterType state as it will be passed in startStreaming
-  // or we can keep it but it's better to pass it from UI to be stateless-ish in controller regarding UI selection
 
   Future<void> startStreaming(
     ClusterProfile profile,
@@ -67,7 +126,7 @@ class MessageStreamController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final stream = consumeWithFilter(
+      final stream = _consumeStreamFactory(
         profile: profile,
         topic: topic,
         filterTerms: filterTerms,
@@ -125,9 +184,6 @@ class MessageStreamController extends ChangeNotifier {
     }
 
     _messages.add(message);
-    if (_messages.length > 1000) {
-      _messages.removeAt(0);
-    }
     _cachedUnmodifiableMessages = null;
     if (_totalConsumed < _messages.length) {
       _totalConsumed = _messages.length;

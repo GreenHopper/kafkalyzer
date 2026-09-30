@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/app.dart';
@@ -23,6 +25,9 @@ Future<void> main() async {
 
   // Initialize update service in background / safely
   await getIt<UpdateService>().initialize();
+
+  // Non-blocking background update check (delayed inside the service)
+  unawaited(getIt<UpdateService>().runBackgroundCheck());
 
   // Clean up old script runs in background
   getIt<ScriptRunner>().cleanupHistory();

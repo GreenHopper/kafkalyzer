@@ -418,6 +418,17 @@
   },
   "releaseNotes": "Release Notes",
   "noReleaseNotes": "No release notes available.",
+  "backgroundUpdateAvailable": "A new version of Kafkalyzer (v{version}) is available.",
+  "@backgroundUpdateAvailable": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateAction": "Update",
+  "updateUnsupportedEnvironment": "Automatic updates unavailable",
+  "updateUnsupportedEnvironmentDescription": "In-place updates require a packaged installation (AppImage on Linux, installer on Windows/macOS). Download the latest release from GitHub.",
+  "openGitHubReleases": "Open GitHub Releases",
+  "retry": "Retry",
   "dockBottom": "Dock to bottom",
   "dockSide": "Dock to right",
   "closeInspector": "Close inspector",

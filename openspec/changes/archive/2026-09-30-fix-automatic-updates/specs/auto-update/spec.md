@@ -1,9 +1,4 @@
-# auto-update Specification
-
-## Purpose
-Provides in-app checking, downloading, and applying of desktop application updates from GitHub Releases via Velopack, including background startup checks and environment-aware fallbacks for unpackaged builds.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Velopack Initialization & Configuration
 The system SHALL initialize the Velopack auto-update bridge at application startup, configuring `https://github.com/GreenHopper/kafkalyzer` as the update repository source using an `AutoSource` provider capable of querying the GitHub Releases API.
@@ -35,32 +30,7 @@ The system SHALL support querying whether a new release is available from GitHub
 
 ---
 
-### Requirement: Download and Progress Tracking
-The system SHALL support downloading available update packages with real-time progress feedback.
-
-#### Scenario: User initiates update download
-- **WHEN** the user triggers the download in the update dialog
-- **THEN** the system streams the download progress from 0% to 100% and updates the progress indicator accordingly
-
----
-
-### Requirement: Apply Update and Restart
-The system SHALL apply the downloaded update and restart the application upon user confirmation.
-
-#### Scenario: User restarts application after download
-- **WHEN** the download reaches 100% and the user clicks "Restart Now"
-- **THEN** the system invokes Velopack's `updateAndRestart()` to apply the update and relaunch the updated application
-
----
-
-### Requirement: Settings View Update Check
-The system SHALL provide a manual update check trigger and status display in the Settings view.
-
-#### Scenario: User manually checks for updates from Settings
-- **WHEN** the user clicks "Check for Updates" in the Settings view
-- **THEN** the system queries update status and presents the `UpdateDialog` with the result (up-to-date message or available update details with download option)
-
----
+## ADDED Requirements
 
 ### Requirement: Automated Startup Update Check
 The system SHALL automatically check for available updates in the background after application startup without blocking UI responsiveness or startup workflows.

@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 enum _UpdateDialogStatus {
   checking,
@@ -10,6 +12,7 @@ enum _UpdateDialogStatus {
   available,
   downloading,
   readyToRestart,
+  unsupportedEnvironment,
   error,
 }
 
@@ -56,21 +59,29 @@ class _UpdateDialogState extends State<UpdateDialog> {
     final updateService = getIt<UpdateService>();
 
     try {
-      final isAvailable = await updateService.isUpdateAvailable();
+      final result = await updateService.checkForUpdates();
       if (!mounted) return;
 
-      if (isAvailable) {
-        final info = await updateService.getLatestUpdateInfo();
-        if (!mounted) return;
-
-        setState(() {
-          _updateInfo = info;
-          _status = _UpdateDialogStatus.available;
-        });
-      } else {
-        setState(() {
-          _status = _UpdateDialogStatus.upToDate;
-        });
+      switch (result.status) {
+        case UpdateCheckStatus.updateAvailable:
+          setState(() {
+            _updateInfo = result.updateInfo;
+            _status = _UpdateDialogStatus.available;
+          });
+        case UpdateCheckStatus.upToDate:
+          setState(() {
+            _status = _UpdateDialogStatus.upToDate;
+          });
+        case UpdateCheckStatus.unsupportedEnvironment:
+          setState(() {
+            _errorMessage = result.errorMessage;
+            _status = _UpdateDialogStatus.unsupportedEnvironment;
+          });
+        case UpdateCheckStatus.failed:
+          setState(() {
+            _errorMessage = result.errorMessage ?? 'Unknown error';
+            _status = _UpdateDialogStatus.error;
+          });
       }
     } catch (e) {
       if (!mounted) return;
@@ -119,6 +130,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
         _errorMessage = e.toString();
         _status = _UpdateDialogStatus.error;
       });
+    }
+  }
+
+  Future<void> _openGitHubReleases() async {
+    final uri = Uri.parse(UpdateService.releasesUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -309,6 +327,37 @@ class _UpdateDialogState extends State<UpdateDialog> {
           ),
         );
 
+      case _UpdateDialogStatus.unsupportedEnvironment:
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 48,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.updateUnsupportedEnvironment,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.updateUnsupportedEnvironmentDescription,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+        );
+
       case _UpdateDialogStatus.error:
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -349,11 +398,41 @@ class _UpdateDialogState extends State<UpdateDialog> {
         ];
 
       case _UpdateDialogStatus.upToDate:
-      case _UpdateDialogStatus.error:
         return [
           FilledButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(l10n.close),
+          ),
+        ];
+
+      case _UpdateDialogStatus.unsupportedEnvironment:
+        return [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.close),
+          ),
+          FilledButton.icon(
+            onPressed: _openGitHubReleases,
+            icon: const Icon(Icons.open_in_new),
+            label: Text(l10n.openGitHubReleases),
+          ),
+        ];
+
+      case _UpdateDialogStatus.error:
+        return [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.close),
+          ),
+          TextButton.icon(
+            onPressed: _openGitHubReleases,
+            icon: const Icon(Icons.open_in_new),
+            label: Text(l10n.openGitHubReleases),
+          ),
+          FilledButton.icon(
+            onPressed: _checkForUpdates,
+            icon: const Icon(Icons.refresh),
+            label: Text(l10n.retry),
           ),
         ];
 

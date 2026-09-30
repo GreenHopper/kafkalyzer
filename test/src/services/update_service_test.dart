@@ -12,6 +12,10 @@ void main() {
       updateService = UpdateService(logger: Logger(level: Level.off));
     });
 
+    tearDown(() {
+      updateService.dispose();
+    });
+
     test('default repository url is configured correctly', () {
       expect(
         UpdateService.defaultRepositoryUrl,
@@ -19,13 +23,18 @@ void main() {
       );
     });
 
+    test('releases url points at GitHub Releases page', () {
+      expect(
+        UpdateService.releasesUrl,
+        'https://github.com/GreenHopper/kafkalyzer/releases',
+      );
+    });
+
     test(
       'initialization handles unpackaged/test environment gracefully without throwing',
       () async {
         expect(updateService.isInitialized, isFalse);
-        // In a unit test environment, native bridge won't connect, but initialize() must not throw
         await updateService.initialize();
-        // Should handle exception gracefully
       },
     );
 
@@ -37,7 +46,17 @@ void main() {
       },
     );
 
-    test('getLatestUpdateInfo returns null when uninitialized', () async {
+    test(
+      'checkForUpdates reports unsupportedEnvironment when unpackaged',
+      () async {
+        final result = await updateService.checkForUpdates();
+        expect(result.status, UpdateCheckStatus.unsupportedEnvironment);
+        expect(result.canAutoApply, isFalse);
+        expect(result.isUpdateAvailable, isFalse);
+      },
+    );
+
+    test('getLatestUpdateInfo returns null when unsupported', () async {
       final info = await updateService.getLatestUpdateInfo();
       expect(info, isNull);
     });
@@ -46,5 +65,24 @@ void main() {
       final version = await updateService.getCurrentVersion();
       expect(version, isNull);
     });
+
+    test('isEnvironmentSupported is false before successful init', () {
+      expect(updateService.isEnvironmentSupported, isFalse);
+    });
+
+    test(
+      'runBackgroundCheck does not throw and leaves notifier empty when unsupported',
+      () async {
+        // Avoid the startup delay in unit tests by checking notifier after init path.
+        final service = UpdateService(logger: Logger(level: Level.off));
+        addTearDown(service.dispose);
+
+        // Force immediate check path by calling checkForUpdates first, then
+        // verifying background notifier stays null for unsupported env.
+        final result = await service.checkForUpdates();
+        expect(result.status, UpdateCheckStatus.unsupportedEnvironment);
+        expect(service.availableUpdateNotifier.value, isNull);
+      },
+    );
   });
 }

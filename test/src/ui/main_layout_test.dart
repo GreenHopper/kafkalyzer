@@ -18,6 +18,7 @@ import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
+import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
@@ -175,6 +176,9 @@ void main() {
     getIt.registerSingleton<SchemaRegistryService>(FakeSchemaRegistryService());
     getIt.registerSingleton<MessageExportService>(FakeMessageExportService());
     getIt.registerSingleton<ScriptRepository>(FakeScriptRepository());
+    getIt.registerSingleton<UpdateService>(
+      UpdateService(logger: Logger(level: Level.off)),
+    );
 
     final keyNavigator = GlobalKey<NavigatorState>();
     final keyMessenger = GlobalKey<ScaffoldMessengerState>();
@@ -183,6 +187,9 @@ void main() {
   });
 
   tearDown(() async {
+    if (getIt.isRegistered<UpdateService>()) {
+      getIt<UpdateService>().dispose();
+    }
     await getIt.reset();
   });
 

@@ -274,6 +274,17 @@
   "updateError": "Fehler beim Suchen oder Anwenden des Updates: {error}",
   "releaseNotes": "Versionshinweise",
   "noReleaseNotes": "Keine Versionshinweise verfügbar.",
+  "backgroundUpdateAvailable": "Eine neue Version von Kafkalyzer (v{version}) ist verfügbar.",
+  "@backgroundUpdateAvailable": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "updateAction": "Aktualisieren",
+  "updateUnsupportedEnvironment": "Automatische Updates nicht verfügbar",
+  "updateUnsupportedEnvironmentDescription": "In-Place-Updates erfordern eine paketierte Installation (AppImage unter Linux, Installer unter Windows/macOS). Laden Sie die neueste Version von GitHub herunter.",
+  "openGitHubReleases": "GitHub Releases öffnen",
+  "retry": "Erneut versuchen",
   "dockBottom": "Unten andocken",
   "dockSide": "Rechts andocken",
   "closeInspector": "Inspector schließen",

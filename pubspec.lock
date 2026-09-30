@@ -1124,11 +1124,9 @@ packages:
   velopack_flutter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "87f1585f1c72a6be9758877dfca153c3ceb27def"
-      resolved-ref: "87f1585f1c72a6be9758877dfca153c3ceb27def"
-      url: "https://github.com/skillsgo/velopack_flutter.git"
-    source: git
+      path: "packages/velopack_flutter"
+      relative: true
+    source: path
     version: "0.3.2"
   vm_service:
     dependency: transitive

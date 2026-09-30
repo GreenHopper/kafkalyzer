@@ -899,6 +899,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noReleaseNotes => 'No release notes available.';
 
   @override
+  String backgroundUpdateAvailable(String version) {
+    return 'A new version of Kafkalyzer (v$version) is available.';
+  }
+
+  @override
+  String get updateAction => 'Update';
+
+  @override
+  String get updateUnsupportedEnvironment => 'Automatic updates unavailable';
+
+  @override
+  String get updateUnsupportedEnvironmentDescription =>
+      'In-place updates require a packaged installation (AppImage on Linux, installer on Windows/macOS). Download the latest release from GitHub.';
+
+  @override
+  String get openGitHubReleases => 'Open GitHub Releases';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
   String get dockBottom => 'Dock to bottom';
 
   @override
