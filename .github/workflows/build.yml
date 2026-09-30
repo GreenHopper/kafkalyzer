@@ -360,12 +360,55 @@ jobs:
           name: kafkalyzer-windows
           path: release-artifacts/windows
 
+      # softprops/action-gh-release uploads assets in parallel via Octokit and
+      # is prone to "other side closed" with many/large Velopack artifacts.
+      # gh uploads sequentially and has built-in retries.
       - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.ref }}" != refs/tags/v* ]]; then
+            echo "Skipping release creation (ref is not a version tag)"
+            exit 0
+          fi
+
+          TAG="${{ github.ref_name }}"
+
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --generate-notes \
+              --title "$TAG"
+          else
+            echo "Release $TAG already exists; uploading/replacing assets"
+          fi
+
+          shopt -s nullglob
+          files=(
             release-artifacts/linux/*
             release-artifacts/macos/*
             release-artifacts/windows/*
-          draft: false
-          generate_release_notes: true
+          )
+
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No release artifacts found to upload"
+            exit 1
+          fi
+
+          for file in "${files[@]}"; do
+            [[ -f "$file" ]] || continue
+            uploaded=false
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG" "$file" --clobber; then
+                uploaded=true
+                break
+              fi
+              echo "Upload of $(basename "$file") failed (attempt $attempt/3)"
+              sleep $((attempt * 5))
+            done
+            if [[ "$uploaded" != true ]]; then
+              echo "Failed to upload $file after 3 attempts"
+              exit 1
+            fi
+          done
