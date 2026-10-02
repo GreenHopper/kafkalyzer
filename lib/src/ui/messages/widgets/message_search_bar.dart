@@ -75,9 +75,11 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
             ),
           ),
         SizedBox(
+          key: const Key('message_search_bar_container'),
           width: 300,
           height: 36,
           child: TextField(
+            key: const Key('message_search_bar_text_field'),
             controller: _controller,
             decoration: InputDecoration(
               hintText: AppLocalizations.of(context)!.searchResults,

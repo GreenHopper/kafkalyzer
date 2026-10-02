@@ -267,6 +267,19 @@ void main() {
     await tester.tap(searchField);
     await tester.pumpAndSettle();
 
+    // Dispatch hardware key events for J, K, F
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 3'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 3'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await tester.pumpAndSettle();
+    expect(find.byType(MessagesTableView), findsOneWidget);
+
     // Enter text containing 'j', 'k', 'f'
     await tester.enterText(searchField, 'jkf');
     await tester.pumpAndSettle();
@@ -276,7 +289,83 @@ void main() {
     expect(find.textContaining('order-101'), findsWidgets);
     // Should NOT have maximized
     expect(find.byType(MessagesTableView), findsOneWidget);
+
+    // Clear search text and let debounce settle
+    await tester.enterText(searchField, '');
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 3'), findsOneWidget);
+
+    // Escape unfocuses text field without closing the inspector
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 3'), findsOneWidget);
+
+    // Pressing Escape while text field is unfocused closes the inspector
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('2 of 3'), findsNothing);
   });
+
+  testWidgets(
+    'typing J, K, F into an external text field (e.g. topic filter) does not trigger navigation or maximize',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final externalController = TextEditingController();
+      addTearDown(externalController.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: const [Locale('en')],
+          home: Scaffold(
+            body: Row(
+              children: [
+                SizedBox(
+                  width: 250,
+                  child: TextField(
+                    key: const Key('external_topic_filter'),
+                    controller: externalController,
+                  ),
+                ),
+                Expanded(child: MessagesView(messages: testMessages)),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open inspector on order-101 (index 1)
+      await tester.tap(find.text('order-101', findRichText: true).first);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      // Focus external topic filter
+      await tester.tap(find.byKey(const Key('external_topic_filter')));
+      await tester.pumpAndSettle();
+
+      // Send key events for J, K, F
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+      await tester.pumpAndSettle();
+      expect(find.byType(MessagesTableView), findsOneWidget);
+    },
+  );
 
   testWidgets('arrow keys step messages even when search field has focus', (
     tester,

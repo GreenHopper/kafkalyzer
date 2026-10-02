@@ -481,7 +481,8 @@ class _MessagesViewState extends State<MessagesView> {
     if (primaryFocus == null) return false;
     final context = primaryFocus.context;
     if (context == null) return false;
-    return context.widget is EditableText;
+    return context.widget is EditableText ||
+        context.findAncestorWidgetOfExactType<EditableText>() != null;
   }
 
   /// Whether this view should own inspector shortcuts right now.
