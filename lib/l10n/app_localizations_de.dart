@@ -1258,4 +1258,25 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get loadingMessages => 'Nachrichten werden von Kafka geladen...';
+
+  @override
+  String get internalTopicsFilter => 'Interne Topics';
+
+  @override
+  String get streamTopicsFilter => 'Stream-Topics';
+
+  @override
+  String partitionBadge(int count) {
+    return '${count}P';
+  }
+
+  @override
+  String topicTooltip(int partitions, int rf, String retention, String policy) {
+    return 'Partitionen: $partitions • RF: $rf • Retention: $retention • Cleanup: $policy';
+  }
+
+  @override
+  String topicTooltipSimple(int partitions, int rf) {
+    return 'Partitionen: $partitions • RF: $rf';
+  }
 }

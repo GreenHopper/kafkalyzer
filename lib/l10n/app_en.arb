@@ -616,5 +616,29 @@
   "noMessagesLoadedSubtitle": "Fetch the latest messages from this topic or configure your filters above.",
   "fetchLatestMessagesAction": "Fetch Latest 200 Messages",
   "doubleClickTopicTip": "Tip: Double-clicking a topic in the sidebar starts fetching immediately.",
-  "loadingMessages": "Loading messages from Kafka..."
+  "loadingMessages": "Loading messages from Kafka...",
+  "internalTopicsFilter": "Internal Topics",
+  "streamTopicsFilter": "Stream Topics",
+  "partitionBadge": "{count}P",
+  "@partitionBadge": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicTooltip": "Partitions: {partitions} • RF: {rf} • Retention: {retention} • Cleanup: {policy}",
+  "@topicTooltip": {
+    "placeholders": {
+      "partitions": { "type": "int" },
+      "rf": { "type": "int" },
+      "retention": { "type": "String" },
+      "policy": { "type": "String" }
+    }
+  },
+  "topicTooltipSimple": "Partitions: {partitions} • RF: {rf}",
+  "@topicTooltipSimple": {
+    "placeholders": {
+      "partitions": { "type": "int" },
+      "rf": { "type": "int" }
+    }
+  }
 }

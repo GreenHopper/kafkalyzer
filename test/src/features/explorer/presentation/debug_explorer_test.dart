@@ -1,9 +1,11 @@
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -40,6 +42,7 @@ void main() {
     );
     getIt.registerSingleton<TopicController>(mockTopicController);
     getIt.registerSingleton<SchemaController>(mockSchemaController);
+    getIt.registerSingleton<RecentTopicsService>(RecentTopicsService());
 
     // Stub ChangeNotifier methods to prevent watch_it hangs
     when(mockActiveConnectionController.addListener(any)).thenReturn(null);
@@ -90,7 +93,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('CLUSTERS'), findsOneWidget);
-    expect(find.text('test-cluster'), findsOneWidget);
-    expect(find.text('Select a cluster to view topics'), findsOneWidget);
+    expect(find.text('test-cluster'), findsWidgets);
+    expect(find.byType(ExplorerOnboardingView), findsOneWidget);
   });
 }

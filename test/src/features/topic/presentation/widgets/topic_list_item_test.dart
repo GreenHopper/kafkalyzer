@@ -18,6 +18,18 @@ class MockSchemaController extends ChangeNotifier implements SchemaController {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class MockSchemaControllerWithSchema extends ChangeNotifier
+    implements SchemaController {
+  @override
+  List<String>? getSchemas(ClusterProfile cluster) => ['test-topic-value'];
+
+  @override
+  bool isLoading(ClusterProfile cluster) => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   const testTopic = TopicMetadata(
     name: 'test-topic',
@@ -64,16 +76,84 @@ void main() {
     );
   }
 
-  testWidgets('renders topic name, partitions, and retention', (
+  testWidgets('renders topic name, compact partition badge, and tooltip', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
       createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
     );
 
+    // Topic name rendered
     expect(find.text('test-topic'), findsOneWidget);
-    expect(find.text('3 Partitions'), findsOneWidget);
-    expect(find.text('RF: 1'), findsOneWidget);
+    // Micro-badge for 3 partitions
+    expect(find.text('3P'), findsOneWidget);
+    // Old full tags should NOT be on the card face
+    expect(find.text('3 Partitions'), findsNothing);
+    expect(find.text('RF: 1'), findsNothing);
+
+    // Check Tooltip presence and content
+    final tooltipFinder = find.byType(Tooltip);
+    expect(tooltipFinder, findsOneWidget);
+    final tooltip = tester.widget<Tooltip>(tooltipFinder);
+    expect(
+      tooltip.message,
+      'Partitions: 3 • RF: 1 • Retention: 1.0 days • Cleanup: delete',
+    );
+  });
+
+  testWidgets('renders hierarchical segmented topic name', (
+    WidgetTester tester,
+  ) async {
+    const hierarchicalTopic = TopicMetadata(
+      name: 'com.company.orders.incoming',
+      partitionCount: 12,
+      replicationFactor: 3,
+    );
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        topic: hierarchicalTopic,
+        clusterProfile: testProfile,
+      ),
+    );
+
+    // Both prefix and leaf are in the Text.rich widget
+    final textFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is Text &&
+          widget.textSpan?.toPlainText() == 'com.company.orders.incoming',
+    );
+    expect(textFinder, findsOneWidget);
+
+    final textWidget = tester.widget<Text>(textFinder);
+    final rootSpan = textWidget.textSpan as TextSpan;
+    expect(rootSpan.children?.length, 2);
+
+    final prefixSpan = rootSpan.children![0] as TextSpan;
+    expect(prefixSpan.text, 'com.company.orders.');
+    expect(prefixSpan.style?.fontWeight, FontWeight.normal);
+
+    final leafSpan = rootSpan.children![1] as TextSpan;
+    expect(leafSpan.text, 'incoming');
+    expect(leafSpan.style?.fontWeight, FontWeight.bold);
+
+    // Partition badge
+    expect(find.text('12P'), findsOneWidget);
+  });
+
+  testWidgets('renders Avro micro-badge when schema is detected', (
+    WidgetTester tester,
+  ) async {
+    final schemaController = MockSchemaControllerWithSchema();
+    await getIt.reset();
+    getIt.registerLazySingleton<SchemaController>(() => schemaController);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
+    );
+
+    expect(find.text('Avro'), findsOneWidget);
+    expect(find.text('3P'), findsOneWidget);
   });
 
   testWidgets('triggers onTap callback on single tap', (

@@ -419,5 +419,29 @@
   "noMessagesLoadedSubtitle": "Lade die neuesten Nachrichten aus diesem Topic oder passe oben vorab deine Such- und Zeitfilter an.",
   "fetchLatestMessagesAction": "Letzte 200 Nachrichten jetzt abrufen",
   "doubleClickTopicTip": "Tipp: Doppelklick auf ein Topic in der Seitenleiste startet den Abruf sofort.",
-  "loadingMessages": "Nachrichten werden von Kafka geladen..."
+  "loadingMessages": "Nachrichten werden von Kafka geladen...",
+  "internalTopicsFilter": "Interne Topics",
+  "streamTopicsFilter": "Stream-Topics",
+  "partitionBadge": "{count}P",
+  "@partitionBadge": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicTooltip": "Partitionen: {partitions} • RF: {rf} • Retention: {retention} • Cleanup: {policy}",
+  "@topicTooltip": {
+    "placeholders": {
+      "partitions": { "type": "int" },
+      "rf": { "type": "int" },
+      "retention": { "type": "String" },
+      "policy": { "type": "String" }
+    }
+  },
+  "topicTooltipSimple": "Partitionen: {partitions} • RF: {rf}",
+  "@topicTooltipSimple": {
+    "placeholders": {
+      "partitions": { "type": "int" },
+      "rf": { "type": "int" }
+    }
+  }
 }

@@ -2,11 +2,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
-import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
 
 class TopicListItem extends StatelessWidget {
   final TopicMetadata topic;
@@ -32,6 +30,7 @@ class TopicListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       color: isSelected
           ? Theme.of(context).colorScheme.secondaryContainer
           : Theme.of(context).colorScheme.surfaceContainerLowest,
@@ -46,38 +45,82 @@ class TopicListItem extends StatelessWidget {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onDoubleTap: onDoubleTap,
-          child: Text(
-            topic.name,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+      child: Tooltip(
+        message: _buildTooltipMessage(context),
+        waitDuration: const Duration(milliseconds: 350),
+        child: ListTile(
+          dense: true,
+          visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 0,
+          ),
+          title: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onDoubleTap: onDoubleTap,
+            child: _buildTitle(context),
+          ),
+          onTap: onTap,
+          trailing: _buildTrailing(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitle(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final (prefix, leaf) = parseTopicNameSegments(topic.name);
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          if (prefix.isNotEmpty)
+            TextSpan(
+              text: prefix,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isSelected
+                    ? colorScheme.onSecondaryContainer.withValues(alpha: 0.7)
+                    : colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          TextSpan(
+            text: leaf,
+            style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: isSelected
-                  ? Theme.of(context).colorScheme.onSecondaryContainer
-                  : null,
+                  ? colorScheme.onSecondaryContainer
+                  : colorScheme.onSurface,
             ),
           ),
-        ),
-        subtitle: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onDoubleTap: onDoubleTap,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: _buildSubtitle(context),
-          ),
-        ),
-        onTap: onTap,
-        trailing: _buildTrailing(context),
+        ],
       ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
   Widget? _buildTrailing(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final List<Widget> children = [];
+
+    // Micro-badge: Partition count (<N>P)
+    final partitionText = l10n != null
+        ? l10n.partitionBadge(topic.partitionCount)
+        : "${topic.partitionCount}P";
+    children.add(_buildMicroBadge(context, text: partitionText));
+
+    // Micro-badge: Schema badge (Avro)
+    if (clusterProfile != null &&
+        hasSchema(
+          getIt<SchemaController>(),
+          clusterProfile!,
+          topic.name,
+        )) {
+      children.add(_buildMicroBadge(context, text: "Avro", isSchema: true));
+    }
+
     if (isSelected) {
       children.add(const Icon(Icons.check, size: 16));
     }
@@ -108,75 +151,82 @@ class TopicListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitle(BuildContext context) {
-    return Wrap(
-      spacing: 8.0,
-      runSpacing: 4.0,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        TopicTag("${topic.partitionCount} Partitions"),
-        TopicTag("RF: ${topic.replicationFactor}"),
-        if (topic.cleanupPolicy != null || topic.retentionMs != null) ...[
-          if (topic.cleanupPolicy != null)
-            TopicTag(splitPolicy(topic.cleanupPolicy!), isConfig: true),
-          if (topic.retentionMs != null) ...[
-            TopicTag(formatRetention(topic.retentionMs!), isConfig: true),
-          ],
-        ],
-        if (clusterProfile != null &&
-            hasSchema(
-              getIt<SchemaController>(),
-              clusterProfile!,
-              topic.name,
-            )) ...[
-          const TopicTag("Avro", isSchema: true),
-          _buildSchemaButton(context),
-        ],
-      ],
-    );
-  }
+  Widget _buildMicroBadge(
+    BuildContext context, {
+    required String text,
+    bool isSchema = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  Widget _buildSchemaButton(BuildContext context) {
-    return SizedBox(
-      height: 24,
-      child: OutlinedButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => SchemaViewerDialog(
-              profile: clusterProfile!,
-              topicName: topic.name,
-              controller: getIt<SchemaController>(),
-            ),
-          );
-        },
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          minimumSize: const Size(0, 24),
-          visualDensity: VisualDensity.compact,
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.visibility,
-              size: 14,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              "Schema",
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ],
+    Color bgColor;
+    Color textColor;
+
+    if (isSchema) {
+      if (isDark) {
+        bgColor = colorScheme.primaryContainer;
+        textColor = colorScheme.onPrimaryContainer;
+      } else {
+        bgColor = colorScheme.secondaryContainer;
+        textColor = colorScheme.onSecondaryContainer;
+      }
+    } else {
+      bgColor = colorScheme.surfaceContainerHigh;
+      textColor = colorScheme.onSurfaceVariant;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+          letterSpacing: 0.2,
         ),
       ),
     );
+  }
+
+  String _buildTooltipMessage(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final hasExtendedConfig =
+        topic.cleanupPolicy != null || topic.retentionMs != null;
+
+    if (l10n != null) {
+      if (hasExtendedConfig) {
+        return l10n.topicTooltip(
+          topic.partitionCount,
+          topic.replicationFactor,
+          topic.retentionMs != null
+              ? formatRetention(topic.retentionMs!)
+              : "N/A",
+          topic.cleanupPolicy != null
+              ? splitPolicy(topic.cleanupPolicy!)
+              : "N/A",
+        );
+      } else {
+        return l10n.topicTooltipSimple(
+          topic.partitionCount,
+          topic.replicationFactor,
+        );
+      }
+    }
+
+    if (hasExtendedConfig) {
+      final retention = topic.retentionMs != null
+          ? formatRetention(topic.retentionMs!)
+          : "N/A";
+      final cleanup = topic.cleanupPolicy != null
+          ? splitPolicy(topic.cleanupPolicy!)
+          : "N/A";
+      return "Partitions: ${topic.partitionCount} • RF: ${topic.replicationFactor} • Retention: $retention • Cleanup: $cleanup";
+    }
+    return "Partitions: ${topic.partitionCount} • RF: ${topic.replicationFactor}";
   }
 }

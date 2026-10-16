@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/main_layout.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
@@ -19,6 +20,7 @@ import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
@@ -176,6 +178,7 @@ void main() {
     getIt.registerSingleton<SchemaRegistryService>(FakeSchemaRegistryService());
     getIt.registerSingleton<MessageExportService>(FakeMessageExportService());
     getIt.registerSingleton<ScriptRepository>(FakeScriptRepository());
+    getIt.registerSingleton<RecentTopicsService>(RecentTopicsService());
     getIt.registerSingleton<UpdateService>(
       UpdateService(logger: Logger(level: Level.off)),
     );
@@ -221,8 +224,8 @@ void main() {
     // Multi-Search is no longer a standalone rail destination
     expect(find.text('Multi-Search'), findsNothing);
 
-    // Verify ExplorerView is loaded by default
-    expect(find.text('Select a cluster to view topics'), findsOneWidget);
+    // Verify ExplorerView is loaded by default with onboarding state
+    expect(find.byType(ExplorerOnboardingView), findsOneWidget);
 
     // Tap on settings rail item (Settings is the 4th destination, index 3)
     await tester.tap(find.byIcon(Icons.settings_outlined));

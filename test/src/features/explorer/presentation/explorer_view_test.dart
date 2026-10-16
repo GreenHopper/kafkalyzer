@@ -247,7 +247,9 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('toggle internal topics', (tester) async {
+    testWidgets('toggle internal topics and stream topics via filter chips', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -271,13 +273,24 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pump();
 
-      final switches = find.byType(Switch);
-      expect(switches, findsWidgets);
-      await tester.tap(switches.first);
+      final internalChip = find.widgetWithText(FilterChip, 'Internal Topics');
+      final streamChip = find.widgetWithText(FilterChip, 'Stream Topics');
+
+      expect(internalChip, findsOneWidget);
+      expect(streamChip, findsOneWidget);
+
+      await tester.tap(internalChip);
       await tester.pump();
 
       verify(
         mockActiveConnectionController.toggleShowInternalTopics(true),
+      ).called(1);
+
+      await tester.tap(streamChip);
+      await tester.pump();
+
+      verify(
+        mockActiveConnectionController.toggleShowStreamTopics(true),
       ).called(1);
     });
 

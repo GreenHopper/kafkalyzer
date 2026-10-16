@@ -14,6 +14,17 @@ bool hasSchema(
       schemas.contains("$topicName-value");
 }
 
+(String prefix, String leaf) parseTopicNameSegments(String topicName) {
+  final lastDotIndex = topicName.lastIndexOf('.');
+  if (lastDotIndex != -1) {
+    return (
+      topicName.substring(0, lastDotIndex + 1),
+      topicName.substring(lastDotIndex + 1),
+    );
+  }
+  return ('', topicName);
+}
+
 String splitPolicy(String policy) {
   if (policy.length > 15) return "Policy: ...";
   return policy;

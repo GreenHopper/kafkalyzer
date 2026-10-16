@@ -396,37 +396,23 @@ class _ExplorerViewState extends State<ExplorerView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
             children: [
-              Text(
-                "Internal Topics",
-                style: Theme.of(context).textTheme.bodySmall,
+              FilterChip(
+                label: Text(l10n.internalTopicsFilter),
+                selected: activeController.showInternalTopics,
+                onSelected: (val) =>
+                    activeController.toggleShowInternalTopics(val),
+                visualDensity: VisualDensity.compact,
               ),
-              Transform.scale(
-                scale: 0.8,
-                child: Switch(
-                  value: activeController.showInternalTopics,
-                  onChanged: (val) =>
-                      activeController.toggleShowInternalTopics(val),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Kafka Stream Topics",
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              Transform.scale(
-                scale: 0.8,
-                child: Switch(
-                  value: activeController.showStreamTopics,
-                  onChanged: (val) =>
-                      activeController.toggleShowStreamTopics(val),
-                ),
+              FilterChip(
+                label: Text(l10n.streamTopicsFilter),
+                selected: activeController.showStreamTopics,
+                onSelected: (val) =>
+                    activeController.toggleShowStreamTopics(val),
+                visualDensity: VisualDensity.compact,
               ),
             ],
           ),

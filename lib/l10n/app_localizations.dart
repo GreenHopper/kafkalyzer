@@ -2275,6 +2275,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading messages from Kafka...'**
   String get loadingMessages;
+
+  /// No description provided for @internalTopicsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal Topics'**
+  String get internalTopicsFilter;
+
+  /// No description provided for @streamTopicsFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Stream Topics'**
+  String get streamTopicsFilter;
+
+  /// No description provided for @partitionBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}P'**
+  String partitionBadge(int count);
+
+  /// No description provided for @topicTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Partitions: {partitions} • RF: {rf} • Retention: {retention} • Cleanup: {policy}'**
+  String topicTooltip(int partitions, int rf, String retention, String policy);
+
+  /// No description provided for @topicTooltipSimple.
+  ///
+  /// In en, this message translates to:
+  /// **'Partitions: {partitions} • RF: {rf}'**
+  String topicTooltipSimple(int partitions, int rf);
 }
 
 class _AppLocalizationsDelegate
