@@ -347,13 +347,15 @@ The `ScriptRunView` form SHALL constrain parameter input widths to an ergonomic 
 
 ---
 
-### Maßnahme 7: Beseitigung des Sprach-Mixes (Vollständige DE/EN-Lokalisierung) & Discoverability im Inspector (`complete-ui-localization-and-discoverability`)
+#### Maßnahme 7: Beseitigung des Sprach-Mixes (Vollständige DE/EN-Lokalisierung) & Discoverability im Inspector (`complete-ui-localization-and-discoverability`)
 
 #### 7.1 Problem im Ist-Zustand (Alle Screenshots)
 Überall in der App sind englische Strings hartcodiert, obwohl `AppLocalizations` (`app_de.arb` / `app_en.arb`) existiert:
 - [`explorer_view.dart:398`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/explorer/presentation/explorer_view.dart#L398): `"Internal Topics"`, `"Kafka Stream Topics"`, `"Select a topic from the sidebar to start"`
 - [`topic_detail_view.dart:339`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/topic/topic_detail_view.dart#L339): `"Scan Progress"`, `"Stream"`, `"Stop"`, `"Clear Messages"`, `"Field (Opt.)"`, `"Values (comma sep.)"`, `"Contains"`, `"Regex"`, `"Exact"`, `"Scope:"`, `"Key"`, `"Value"`, `"Both"`, `"Limit"`, `"Partition (Opt.)"`, `"Fast Trace (Hash Key)"`
 - [`script_run_view.dart:141`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_run_view.dart#L141): `"Configuration"`, `"Target Cluster"`, `"Run"`, `"Execution Progress"`, `"New Run"`, `"No variables required."`
+- [`script_editor.dart:432`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_editor.dart#L432) & [`script_step_editor.dart:139`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_step_editor.dart#L139): `"Script Name"`, `"Settings"`, `"Concurrency Limit"`, `"Variables"`, `"New Variable Name"`, `"Steps"`, `"Add Step"`, `"Edit Step"`, `"Step Name"`, `"Filter Template"`, `"Value Extractions"`, `"Add Extraction"`, `"Cancel"`, `"Save"`
+- [`cluster_config_dialog.dart:137`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart#L137) & [`cluster_ssl_form.dart:31`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/cluster/presentation/widgets/config_dialog/cluster_ssl_form.dart#L31): Komplett auf Englisch (`"Edit Cluster"`, `"Security Protocol"`, `"SSL Configuration"`, `"Truststore Location (PEM or JKS)"`, `"Option A: Keystore..."`, `"Option B: Client Certificate..."`).
 - [`messages_view.dart:629`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/ui/messages/messages_view.dart#L629): `"No messages to display"`
 - **Versteckte Zeilen-Aktionen im JSON-Tree (Screenshot 2 & 4):** Im `SmartVirtualJsonTree` sind die beiden Icons rechts (`Copy` und `Pin as Column`) für jede Zeile permanent als winzige graue Symbole sichtbar (`Icons.copy`, `Icons.view_column_outlined`). Neue Nutzer erkennen das 3-Balken-Icon (`view_column_outlined`) nicht als *„Als Spalte anheften“*. Ein kleines Pin-Icon (`Icons.push_pin_outlined`) oder ein kurzer Hover-Button `+ Spalte` macht die Funktion sofort selbsterklärend.
 
@@ -362,29 +364,176 @@ The `ScriptRunView` form SHALL constrain parameter input widths to an ergonomic 
 - [`lib/src/features/explorer/presentation/explorer_view.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/explorer/presentation/explorer_view.dart)
 - [`lib/src/features/topic/topic_detail_view.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/topic/topic_detail_view.dart)
 - [`lib/src/features/scripting/presentation/widgets/script_run_view.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_run_view.dart)
+- [`lib/src/features/scripting/presentation/widgets/script_editor.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_editor.dart)
+- [`lib/src/features/scripting/presentation/widgets/script_step_editor.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_step_editor.dart)
+- [`lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart)
 - [`lib/src/ui/smart_tree/smart_virtual_json_tree.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/ui/smart_tree/smart_virtual_json_tree.dart)
 
 #### 7.3 OpenSpec-Spezifikations-Vorlage (`specs/complete-ui-localization/spec.md`)
 
 ```markdown
-### Requirement: Consistent Localization Across Explorer, Topic Search, and Scripting Views
-All user-facing labels, buttons, empty states, and tooltips in `ExplorerView`, `TopicDetailView`, `MessagesView`, `SchemaViewerDialog`, and `ScriptRunView` SHALL be localized via `AppLocalizations` (`app_en.arb` and `app_de.arb`) without hardcoded English strings.
+### Requirement: Consistent Localization Across Explorer, Topic Search, Cluster Config, and Scripting Views
+All user-facing labels, buttons, empty states, and tooltips in `ExplorerView`, `TopicDetailView`, `MessagesView`, `SchemaViewerDialog`, `ClusterConfigDialog`, `ScriptRunView`, `ScriptEditor`, and `ScriptStepEditor` SHALL be localized via `AppLocalizations` (`app_en.arb` and `app_de.arb`) without hardcoded English strings.
 
-#### Scenario: German locale renders TopicDetailView and ScriptRunView completely in German
+#### Scenario: German locale renders all dialogs and forms completely in German
 - **WHEN** the application locale is set to `de`
-- **THEN** all search filter labels, scope selectors, scan progress indicators, empty states, and script configuration labels SHALL render in German
+- **THEN** all search filter labels, cluster dialog fields, script editor sections, step editor dialogs, and empty states SHALL render in German
+```
+
+---
+
+### Maßnahme 8: Ergonomische Einstellungen & Geführter Cluster-Konfigurationsdialog (`ergonomic-settings-and-cluster-onboarding`)
+
+#### 8.1 Problem im Ist-Zustand (Screenshots 6 & 7: `SettingsView` & `ClusterConfigDialog`)
+1. **Zwei konkurrierende Import/Export-Konzepte direkt untereinander (`SettingsView`):**
+   - Unter `Konfiguration` ([`settings_view.dart:237`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/settings/presentation/settings_view.dart#L237)) dehnen sich zwei riesige Buttons (`Konfiguration exportieren` / `Konfiguration importieren`) über die volle Bildschirmbreite (~1.800 px).
+   - Direkt darunter unter `Cluster-Konfiguration` ([`settings_view.dart:306`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/settings/presentation/settings_view.dart#L306)) befinden sich **erneut** zwei Buttons `Importieren` und `Exportieren (0)`.
+   - Neue Nutzer verstehen nicht, worin der Unterschied besteht (Gesamt-Backup vs. selektiver Cluster-ZIP-Export inkl. Zertifikaten).
+2. **Überbreite Textfelder & fehlende Metadaten in der Cluster-Liste (`SettingsView`):**
+   - Die Textfelder unter `Allgemein` (`Standard-Skript-Ausgabeverzeichnis`, `Max. Anzahl an Skript-Durchläufen: 30`, `Maximale gleichzeitige Lag-Abfragen: 5`) strecken sich unbegrenzt über die gesamte Fensterbreite. Eine kleine Zahl wie `30` oder `5` steht verloren in einem 1.800 px breiten Kasten.
+   - In der Cluster-Liste (`DEV`, `TEST`, `PROD`, `localhost Plain`) sieht man nur den Namen und den Bootstrap-Server – es fehlen informative Badges für das Sicherheitsprotokoll (`SSL`, `SASL_SSL`, `PLAINTEXT`) und ob eine Schema Registry konfiguriert ist (`Schema Registry ✓`).
+3. **Schmerzhafte Zertifikats-Konfiguration im `Edit Cluster`-Modal (`ClusterConfigDialog` & `ClusterSslForm`):**
+   - **Keine Datei-Auswahl-Buttons (`📁 FilePicker`):** In [`ClusterSslForm`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/cluster/presentation/widgets/config_dialog/cluster_ssl_form.dart#L37) (und `ClusterSaslForm` für Keytab/krb5.conf) sind alle 4 Dateipfad-Felder (`Truststore Location`, `Keystore Location`, `Client Certificate PEM Location`, `Client Private Key PEM Location`) nackte `TextFormField`s! Der Nutzer muss Dateipfade wie `/home/kaufmannr/.local/share/at.greenhopper...` händisch im Dateimanager suchen und per Copy-Paste einfügen.
+   - **Gleichzeitige Anzeige von Option A und Option B:** Im schmalen 400px-Dialog werden *Option A: Keystore (PKCS12 / PFX)* und *Option B: Client Certificate & Private Key (PEM)* gleichzeitig untereinander gerendert (7 Textfelder am Stück), obwohl man für mTLS entweder Keystore **oder** PEM-Dateien (oder gar kein Client-Zertifikat) nutzt.
+   - **Kein Passwort-Sichtbarkeits-Toggle (`👁`)** bei `Truststore Password`, `Keystore Password`, `Schema Registry Password` und `SASL Password`.
+   - **Keine `Verbindung testen`-Funktion (`Test Connection`)** direkt im Dialog: Neue Nutzer tragen komplexe SSL-/SASL-Daten ein und müssen blind auf `Save` klicken, in den Explorer wechseln und dort das Cluster anklicken, um zu merken, dass ein Pfad oder Passwort falsch war.
+   - **Optionales Schema-Registry-Auth immer aufgeklappt:** `Schema Registry Username (Optional)` und `Schema Registry Password (Optional)` nehmen permanent Platz weg, selbst wenn gar keine Schema Registry URL eingetragen ist.
+
+#### 8.2 Konkrete UX-Lösung
+1. **Strukturiertes, breitenbegrenztes Einstellungs-Layout (`max-width: 960px`):**
+   - Begrenze den Inhalt der `SettingsView` auf eine angenehme Lesebreite (`ConstrainedBox(maxWidth: 960)`).
+   - Stelle die beiden numerischen Felder (`Max. Anzahl an Skript-Durchläufen` und `Maximale gleichzeitige Lag-Abfragen`) nebeneinander in eine 2-spaltige Zeile.
+   - Fasse Backup/Import/Export klar zusammen oder beschrifte sie eindeutig (*„Gesamte App-Konfiguration sichern/wiederherstellen“* vs. *„Ausgewählte Cluster inkl. Zertifikaten als ZIP exportieren“*).
+   - Zeige in jeder Cluster-Zeile informative Badges (`[SSL]`, `[Schema Registry]`).
+2. **Aufgeräumter `ClusterConfigDialog` (600px Breite) mit FilePicker, Auth-Umschalter & Verbindungstest:**
+   - **FilePicker-Button (`📁`)** in jedem Dateipfad-Feld (`Truststore`, `Keystore`, `PEM Cert`, `PEM Key`, `Kerberos Keytab`).
+   - **SegmentedButton / Auswahl für Client-Auth bei SSL:**
+     - `[ Kein Client-Zertifikat | Keystore (.p12/.jks) | PEM-Zertifikat & Key ]` $\rightarrow$ blendet nur die 2–3 tatsächlich benötigten Felder ein!
+   - **Progressive Disclosure für Schema Registry Auth:** Zeige `Username` & `Password` für die Schema Registry nur an, wenn eine `Schema Registry URL` eingegeben wurde.
+   - **Passwort-Auge (`👁`)** für alle Passwort-Felder.
+   - **`[ 🔌 Verbindung testen ]`-Button** unten links im Dialog-Footer, der direkt einen schnellen Metadaten-/Ping-Check gegen den Broker ausführt und sofort grünes Feedback (*„Verbindung erfolgreich (3 Broker, 466 Topics)“*) oder die konkrete Fehlermeldung anzeigt.
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│ Cluster bearbeiten: DEV                                              [ ✕ ] │
+├────────────────────────────────────────────────────────────────────────────┤
+│ Cluster-Name *                        Bootstrap-Server *                   │
+│ [ DEV                              ]  [ broker.kafka.dev.lkw-walter:9093 ] │
+│                                                                            │
+│ Schema Registry URL (optional)                                             │
+│ [ http://schema-registry.dev.lkw-walter.com/                             ] │
+│   ↳ [▸ Zugangsdaten für Schema Registry (optional)]                        │
+│                                                                            │
+│ Sicherheitsprotokoll: [ PLAINTEXT | SASL_PLAINTEXT | SSL ● | SASL_SSL ]    │
+│                                                                            │
+│ ── SSL / TLS Konfiguration ─────────────────────────────────────────────── │
+│ Server-Truststore (PEM / JKS):                                             │
+│ [ /home/kaufmannr/.local/share/.../truststore.jks                   ] [📁] │
+│ Truststore-Passwort: [ ••••••••••••                                 ] [👁] │
+│                                                                            │
+│ Client-Authentifizierung (mTLS):                                           │
+│ [ Keine ]  [ ● Keystore (PKCS12 / JKS) ]  [ PEM-Zertifikat & Key ]         │
+│                                                                            │
+│ Keystore-Datei (.p12 / .pfx / .jks):                                       │
+│ [ /home/kaufmannr/.local/share/.../keystore.p12                     ] [📁] │
+│ Keystore-Passwort:   [ ••••••••••••••••                             ] [👁] │
+├────────────────────────────────────────────────────────────────────────────┤
+│ [ 🔌 Verbindung testen ]                          [ Abbrechen ] [ Speichern ]│
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 8.3 Betroffene Dateien
+- [`lib/src/features/settings/presentation/settings_view.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/settings/presentation/settings_view.dart)
+- [`lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart)
+- [`lib/src/features/cluster/presentation/widgets/config_dialog/cluster_basic_info_form.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/cluster/presentation/widgets/config_dialog/cluster_basic_info_form.dart)
+- [`lib/src/features/cluster/presentation/widgets/config_dialog/cluster_ssl_form.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/cluster/presentation/widgets/config_dialog/cluster_ssl_form.dart)
+- [`lib/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart)
+
+#### 8.4 OpenSpec-Spezifikations-Vorlage (`specs/ergonomic-settings-and-cluster-onboarding/spec.md`)
+
+```markdown
+### Requirement: Guided SSL Authentication Mode Selector and File Pickers in Cluster Dialog
+The `ClusterConfigDialog` SHALL allow users to select their SSL client authentication method (`None`, `Keystore (PKCS12/JKS)`, or `PEM Certificate & Key`) so only the relevant certificate fields are displayed, and every file path field (Truststore, Keystore, PEM Certificate, PEM Key, Kerberos Keytab/Conf) SHALL include a native file picker action button.
+
+#### Scenario: Switching SSL client authentication mode hides irrelevant fields
+- **WHEN** the user selects `SSL` or `SASL_SSL` in `ClusterConfigDialog`
+- **AND** selects `Keystore (PKCS12/JKS)` as the client authentication mode
+- **THEN** the Keystore location and password fields SHALL be displayed
+- **AND** the PEM Certificate and Private Key fields SHALL be hidden
+
+#### Scenario: Selecting a certificate file via FilePicker
+- **WHEN** the user clicks the folder icon on the Truststore or Keystore location input
+- **THEN** a native file selection dialog SHALL open and populate the selected file path into the input field
+```
+
+---
+
+### Maßnahme 9: Modernisierung des Skript- & Step-Editors (`ScriptEditor` & `ScriptStepEditor` - Screenshot 8) (`modernized-script-and-step-editor`)
+
+#### 9.1 Problem im Ist-Zustand (Screenshot 8: `Definition bearbeiten` & `Edit Step` Modal)
+1. **Kritischer UX-Bug bei der Topic-Auswahl in `Edit Step` ([`script_step_editor.dart:194`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_step_editor.dart#L194)):**
+   - Beim Öffnen von `Edit Step` ruft `initState()` automatisch `topicController.fetchTopics(_selectedCluster!)` auf.
+   - Solange `topicController.isLoading(_selectedCluster!)` `true` ist, ersetzt `_buildTopicSelection()` das **gesamte Topic-Auswahlfeld inklusive aller bereits gespeicherten Topic-Chips** durch einen winzigen `CircularProgressIndicator` (in Screenshot 8 als kleiner blauer Punkt zwischen `Cluster: DEV` und `Filter Template` zu sehen!).
+   - Ist das Cluster (`DEV`) gerade nicht erreichbar oder dauert der Verbindungsaufbau, **verschwinden die konfigurierten Topics des Steps optisch komplett** – der Nutzer sieht nicht einmal, welche Topics in diesem Step hinterlegt sind!
+2. **Alte 12-Felder-Suchmatrix im Step-Editor (`SearchStreamConfiguration`):**
+   - Während die Topic-Detailansicht nun über die moderne `TopicSearchBar` mit 4 klaren Presets und eingeklappten Expertenfiltern verfügt, nutzt `ScriptStepEditor` ([`script_step_editor.dart:270`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_step_editor.dart#L270)) noch das alte `SearchStreamConfiguration`-Widget (`Typ`, `Bereich`, `Schnellsuche`, `Startbedingung`-Box + `Stoppbedingung`-Box). Dadurch ist das `Edit Step`-Modal extrem lang und unübersichtlich.
+3. **Abgeschnittene Dropdowns in `Value Extractions` ([`script_step_editor.dart:414`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_step_editor.dart#L414)):**
+   - In `_buildExtractionHeader` hat das `Source`-Dropdown `flex: 1` neben `Topic` (`flex: 4`) und `Variable Name` (`flex: 2`). Dadurch wird selbst das kurze Wort `"KEY"` auf `"KE..."` abgeschnitten (siehe Screenshot 8 unten)!
+4. **Unübersichtlicher `Definition bearbeiten`-Screen (`ScriptEditor`):**
+   - `Script Name` und `New Variable Name` dehnen sich über die vollen 1.500 px Breite aus.
+   - Das Anlegen einer neuen Variable klebt als unscheinbare Leiste ganz unten am Tabellenrand (`New Variable Name` ... `string ▼` `+`), während `extracted`-Variablen und globale Eingabe-Variablen in derselben Tabelle gemischt werden.
+   - Auch in der Step-Liste (`Steps`) löscht ein Klick auf das Mülleimer-Icon (`🗑️`) einen kompletten Konfigurations-Step **sofort ohne Sicherheitsabfrage** ([`script_editor.dart:689`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_editor.dart#L689)).
+
+#### 9.2 Konkrete UX-Lösung
+1. **Sofort sichtbare Topic-Chips im `ScriptStepEditor` (auch während des Ladens oder Offline):**
+   - Zeige die bereits im Step gespeicherten `_selectedTopics` **immer sofort als Chips** an – unabhängig davon, ob im Hintergrund die vollständige Topic-Liste vom Cluster nachgeladen wird!
+   - Zeige den Ladeindikator dezent als kleines `suffixIcon` im Auswahlfeld (`Topics werden geladen...`), statt das gesamte Feld und die Chips auszublenden, und erlaube auch das manuelle Hinzufügen eines Topic-Namens, falls das Ziel-Cluster gerade offline ist.
+2. **Übernahme der Scan-Modus-Presets & Progressive Disclosure in `ScriptStepEditor`:**
+   - Ersetze die doppelte `Startbedingung`/`Stoppbedingung`-Matrix im `ScriptStepEditor` durch dieselben verständlichen Scan-Modi wie in der `TopicSearchBar` (`⚡ Letzte N Nachrichten`, `🕒 Zeitraum (z.B. {{from}} bis {{to}})`, `🎯 Ab Offset / Anfang`), und klappe Experten-Parameter (`Typ: Enthält/Regex/Exakt`, `Bereich: Key/Value/Beides`, `Partition`, `Fast Trace`) hinter `⚙️ Erweiterte Filter` ein.
+3. **Sauberes 2-Zeilen-Layout für `Value Extractions` (Kein `"KE..."`-Abschneiden mehr):**
+   - Gib dem `Source`-Dropdown (`Key` / `Value` / `Header`) eine feste Mindestbreite (`minWidth: 110px` bzw. sinnvolle Flex-Gewichtung) und gruppiere `Quelle`, `Feld-Pfad (JSONPath)` $\rightarrow$ `Ziel-Variable ({{CORID}})` klar verständlich.
+4. **Aufgeräumter `ScriptEditor` mit Lösch-Schutz für Steps:**
+   - Platziere `Script Name` und `Concurrency Limit` kompakt in einer gemeinsamen Kopfzeile statt in riesigen Einzel-Boxen.
+   - Schütze das Löschen eines Steps (`🗑️`) durch einen Bestätigungsdialog oder eine Undo-SnackBar.
+
+#### 9.3 Betroffene Dateien
+- [`lib/src/features/scripting/presentation/widgets/script_editor.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_editor.dart)
+- [`lib/src/features/scripting/presentation/widgets/script_step_editor.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/scripting/presentation/widgets/script_step_editor.dart)
+- [`lib/src/features/search/presentation/widgets/search_stream_configuration.dart`](file:///home/kaufmannr/git/greenhopper/kafkalyzer/lib/src/features/search/presentation/widgets/search_stream_configuration.dart)
+
+#### 9.4 OpenSpec-Spezifikations-Vorlage (`specs/modernized-script-and-step-editor/spec.md`)
+
+```markdown
+### Requirement: Non-Blocking Topic Display in ScriptStepEditor
+When editing a script step, `ScriptStepEditor` SHALL immediately render the step's currently configured `topicNames` as removable chips and keep the topic field visible even while cluster topic metadata is still loading in the background.
+
+#### Scenario: Opening Edit Step while cluster topics are loading
+- **WHEN** the user opens `ScriptStepEditor` for a step with configured topics
+- **AND** `TopicController.isLoading` is true for the selected cluster
+- **THEN** the configured topic chips and the topic selector input SHALL remain visible
+- **AND** the loading indicator SHALL be shown inline within the topic selector field rather than hiding the section
+
+### Requirement: Ergonomic Extraction Layout and Step Deletion Guard
+In `ScriptStepEditor`, extraction rows SHALL allocate sufficient width to display the extraction source (`KEY` / `VALUE`) without truncation, and deleting a step in `ScriptEditor` SHALL require confirmation or provide an undo action.
+
+#### Scenario: Rendering Value Extractions with multiple topics selected
+- **WHEN** a step has multiple topics selected and defines a value extraction with source `KEY`
+- **THEN** the `Source` dropdown SHALL display the full label `KEY` without ellipsis truncation
 ```
 
 ---
 
 ## 4. Priorisierte Umsetzungs-Roadmap (Empfohlene OpenSpec-Reihenfolge)
 
-| Priorität | OpenSpec Change Name | Fokus & UX-Mehrwert | Aufwand |
+| Priorität | OpenSpec Change Name | Fokus & UX-Mehrwert | Status / Aufwand |
 | :--- | :--- | :--- | :--- |
-| **Phase A (Prio 1)** | `simplified-topic-search-bar` | **Größter Hebel für Einsteiger:** Ersetzt die erschlagende 12-Felder-Matrix in `Suchkonfiguration` durch 4 verständliche Scan-Modi (*Letzte N*, *Live-Stream*, *Zeitraum*, *Offset*), klappt Experten-Optionen ein und platziert den `► Abrufen`-Button direkt am Formular. | Mittel |
+| **Phase A (Prio 1)** | `simplified-topic-search-bar` | **Größter Hebel für Einsteiger:** Ersetzt die erschlagende 12-Felder-Matrix in `Suchkonfiguration` durch 4 verständliche Scan-Modi (*Letzte N*, *Live-Stream*, *Zeitraum*, *Offset*), klappt Experten-Optionen ein und platziert den `► Abrufen`-Button direkt am Formular. | ✅ **Umgesetzt & Archiviert** |
 | **Phase B (Prio 2)** | `explorer-onboarding-and-auto-preview` | **Beseitigt „tote Screens“:** Interaktive Cluster-Karten beim Start (Screenshot 1) und ein direkter `► Letzte 200 Nachrichten laden`-CTA im leeren Topic-Tab. | Klein–Mittel |
 | **Phase C (Prio 3)** | `compact-topic-sidebar` | **2,5× mehr sichtbare Topics:** Schlanke Topic-Karten in der Sidebar ohne redundante Broker-Metadaten (`RF`, `delete`, `90d`) + kompakte Filter-Chips. | Klein |
 | **Phase D (Prio 4)** | `unified-results-toolbar` | **Keine Verwirrung mehr beim Filtern & Sortieren:** Klare Trennung zwischen „Beim Abruf filtern“ vs. „In 200 geladenen Ergebnissen filtern“, Ausblenden des doppelten Sortier-Dropdowns in der Tabellenansicht und beschriftete View-Buttons (`Timeline`, `Tabelle`, `Diff`). | Klein |
-| **Phase E (Prio 5)** | `ergonomic-script-workspace` | **Skripte sofort verstehen & sicher bedienen:** 2-Spalten-Layout mit Pipeline-Vorschau im `Ausführen`-Tab, begrenzte Eingabebreiten und Lösch-Bestätigungsdialog. | Mittel |
-| **Phase F (Prio 6)** | `complete-ui-localization-and-discoverability` | **Politur & Konsistenz:** Beseitigung aller Denglisch-Brüche in DE/EN sowie klarere `+ Spalte`-Affordance im JSON-Tree. | Klein |
-| **Phase G (Prio 7)** | `integrated-schema-inspector` | **Kein 90%-Riesen-Modal mehr:** Schema-Ansicht als Side-Tab im Inspector mit *Click-to-Filter* und *Pin-as-Column*. | Mittel |
+| **Phase E (Prio 5)** | `ergonomic-settings-and-cluster-onboarding` | **Reibungsloses Cluster-Setup (Screenshots 6 & 7):** FilePicker-Buttons (`📁`) für Zertifikate/Keystores, Umschalter für SSL-Option A vs. B, `Verbindung testen`-Button im Dialog, klare Trennung von App-Backup vs. Cluster-Export. | Mittel |
+| **Phase F (Prio 6)** | `modernized-script-and-step-editor` | **Konsistenter Skript- & Step-Editor (Screenshot 8):** Fixt das Verschwinden der Topics beim Laden im `Edit Step`-Dialog, übernimmt die Preset-Logik in den Step-Editor, verhindert das Abschneiden von `"KE..."` bei Extractions und schützt Steps vor versehentlichem Löschen. | Mittel |
+| **Phase G (Prio 7)** | `ergonomic-script-workspace` | **Skripte sofort verstehen & sicher bedienen (Screenshot 5):** 2-Spalten-Layout mit Pipeline-Vorschau im `Ausführen`-Tab, begrenzte Eingabebreiten und Lösch-Bestätigungsdialog. | Mittel |
+| **Phase H (Prio 8)** | `complete-ui-localization-and-discoverability` | **Politur & Konsistenz:** Beseitigung aller Denglisch-Brüche in DE/EN (inkl. `ClusterConfigDialog`, `ScriptEditor`, `ScriptStepEditor`) sowie klarere `+ Spalte`-Affordance im JSON-Tree. | Klein |
+| **Phase I (Prio 9)** | `integrated-schema-inspector` | **Kein 90%-Riesen-Modal mehr:** Schema-Ansicht als Side-Tab im Inspector mit *Click-to-Filter* und *Pin-as-Column*. | Mittel |
+
