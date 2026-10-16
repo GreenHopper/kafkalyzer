@@ -37,12 +37,12 @@ void main() {
       expect(find.text('null'), findsOneWidget);
     });
 
-    testWidgets('clicking chevron expands and collapses nested object', (tester) async {
+    testWidgets('clicking chevron expands and collapses nested object', (
+      tester,
+    ) async {
       final json = {
         'settings': {
-          'theme': {
-            'mode': 'dark',
-          },
+          'theme': {'mode': 'dark'},
           'notifications': false,
         },
       };
@@ -87,13 +87,12 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
-    testWidgets('renders inline SmartCompositeBadge for semantic objects', (tester) async {
+    testWidgets('renders inline SmartCompositeBadge for semantic objects', (
+      tester,
+    ) async {
       final json = {
         'order': 42,
-        'customer': {
-          'id': 1042,
-          'name': 'Acme Corp',
-        },
+        'customer': {'id': 1042, 'name': 'Acme Corp'},
       };
 
       await tester.pumpWidget(
@@ -113,13 +112,12 @@ void main() {
       expect(find.text('1042 • Acme Corp'), findsOneWidget);
     });
 
-    testWidgets('reports match count and highlights search matches', (tester) async {
+    testWidgets('reports match count and highlights search matches', (
+      tester,
+    ) async {
       int matchCount = 0;
       final json = {
-        'server': {
-          'host': 'production-broker',
-          'port': 9092,
-        }
+        'server': {'host': 'production-broker', 'port': 9092},
       };
 
       await tester.pumpWidget(
@@ -147,164 +145,170 @@ void main() {
       expect(find.byType(RichText), findsWidgets);
     });
 
-    testWidgets('renders collapsedRange placeholder and tapping it expands hidden items',
-        (tester) async {
-      final items = List.generate(20, (i) => {'id': i, 'title': 'Task $i'});
-      final json = {'leistungen': items};
+    testWidgets(
+      'renders collapsedRange placeholder and tapping it expands hidden items',
+      (tester) async {
+        final items = List.generate(20, (i) => {'id': i, 'title': 'Task $i'});
+        final json = {'leistungen': items};
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SizedBox(
-              width: 800,
-              height: 800,
-              child: SmartVirtualJsonTree(
-                json: json,
-                searchQuery: 'Task 10',
-                enableContextWindowing: true,
-                contextRadius: 1,
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 800,
+                height: 800,
+                child: SmartVirtualJsonTree(
+                  json: json,
+                  searchQuery: 'Task 10',
+                  enableContextWindowing: true,
+                  contextRadius: 1,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Find collapsed range placeholder
-      expect(find.textContaining('9 hidden items'), findsOneWidget);
-      expect(find.textContaining('8 hidden items'), findsOneWidget);
+        // Find collapsed range placeholder
+        expect(find.textContaining('9 hidden items'), findsOneWidget);
+        expect(find.textContaining('8 hidden items'), findsOneWidget);
 
-      // Tap on the first collapsed placeholder to expand it
-      await tester.tap(find.textContaining('9 hidden items'));
-      await tester.pumpAndSettle();
+        // Tap on the first collapsed placeholder to expand it
+        await tester.tap(find.textContaining('9 hidden items'));
+        await tester.pumpAndSettle();
 
-      // Now the 9 items from range 0..8 should be expanded
-      expect(find.textContaining('9 hidden items'), findsNothing);
-      expect(find.text('[0]: '), findsOneWidget);
-    });
+        // Now the 9 items from range 0..8 should be expanded
+        expect(find.textContaining('9 hidden items'), findsNothing);
+        expect(find.text('[0]: '), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders array match context badge and toggle button switches view mode',
-        (tester) async {
-      final items = List.generate(20, (i) => {'id': i, 'name': 'Item $i'});
-      final json = {'items': items};
+    testWidgets(
+      'renders array match context badge and toggle button switches view mode',
+      (tester) async {
+        final items = List.generate(20, (i) => {'id': i, 'name': 'Item $i'});
+        final json = {'items': items};
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SizedBox(
-              width: 800,
-              height: 800,
-              child: SmartVirtualJsonTree(
-                json: json,
-                searchQuery: 'Item 10',
-                enableContextWindowing: true,
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 800,
+                height: 800,
+                child: SmartVirtualJsonTree(
+                  json: json,
+                  searchQuery: 'Item 10',
+                  enableContextWindowing: true,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Verify array match badge is present
-      expect(find.textContaining('1 matches (Focus: ±1)'), findsOneWidget);
-      expect(find.text('Show all 20'), findsOneWidget);
+        // Verify array match badge is present
+        expect(find.textContaining('1 matches (Focus: ±1)'), findsOneWidget);
+        expect(find.text('Show all 20'), findsOneWidget);
 
-      // Tap 'Show all 20' to expand all
-      await tester.tap(find.text('Show all 20'));
-      await tester.pumpAndSettle();
+        // Tap 'Show all 20' to expand all
+        await tester.tap(find.text('Show all 20'));
+        await tester.pumpAndSettle();
 
-      // Now toggle changes to 'Focus matches (±1)' and collapsed range placeholders disappear
-      expect(find.text('Focus matches (±1)'), findsOneWidget);
-      expect(find.byIcon(Icons.more_horiz), findsNothing);
+        // Now toggle changes to 'Focus matches (±1)' and collapsed range placeholders disappear
+        expect(find.text('Focus matches (±1)'), findsOneWidget);
+        expect(find.byIcon(Icons.more_horiz), findsNothing);
 
-      // Tap 'Focus matches (±1)' to return to context windowing
-      await tester.tap(find.text('Focus matches (±1)'));
-      await tester.pumpAndSettle();
+        // Tap 'Focus matches (±1)' to return to context windowing
+        await tester.tap(find.text('Focus matches (±1)'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Show all 20'), findsOneWidget);
-      expect(find.byIcon(Icons.more_horiz), findsWidgets);
-    });
+        expect(find.text('Show all 20'), findsOneWidget);
+        expect(find.byIcon(Icons.more_horiz), findsWidgets);
+      },
+    );
 
-    testWidgets('jumpToMatch centers target row and applies active match indicator',
-        (tester) async {
-      final key = GlobalKey<SmartVirtualJsonTreeState>();
-      final json = {
-        'items': [
-          {'id': 1, 'name': 'Target A'},
-          {'id': 2, 'name': 'Target B'},
-        ]
-      };
+    testWidgets(
+      'jumpToMatch centers target row and applies active match indicator',
+      (tester) async {
+        final key = GlobalKey<SmartVirtualJsonTreeState>();
+        final json = {
+          'items': [
+            {'id': 1, 'name': 'Target A'},
+            {'id': 2, 'name': 'Target B'},
+          ],
+        };
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SizedBox(
-              width: 600,
-              height: 400,
-              child: SmartVirtualJsonTree(
-                key: key,
-                json: json,
-                searchQuery: 'Target',
-                enableContextWindowing: false,
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 600,
+                height: 400,
+                child: SmartVirtualJsonTree(
+                  key: key,
+                  json: json,
+                  searchQuery: 'Target',
+                  enableContextWindowing: false,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Programmatic jump to match 0
-      key.currentState?.jumpToMatch(0);
-      await tester.pumpAndSettle();
+        // Programmatic jump to match 0
+        key.currentState?.jumpToMatch(0);
+        await tester.pumpAndSettle();
 
-      // Active target indicator 🎯 should be rendered
-      expect(find.text('🎯'), findsOneWidget);
-    });
+        // Active target indicator 🎯 should be rendered
+        expect(find.text('🎯'), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders compound breadcrumb key when enableIndentationFlattening is true',
-        (tester) async {
-      final json = {
-        'transport': {
-          'order': {
-            'code': 'XYZ-999',
-          }
-        }
-      };
+    testWidgets(
+      'renders compound breadcrumb key when enableIndentationFlattening is true',
+      (tester) async {
+        final json = {
+          'transport': {
+            'order': {'code': 'XYZ-999'},
+          },
+        };
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SizedBox(
-              width: 600,
-              height: 400,
-              child: SmartVirtualJsonTree(
-                json: json,
-                enableIndentationFlattening: true,
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 600,
+                height: 400,
+                child: SmartVirtualJsonTree(
+                  json: json,
+                  enableIndentationFlattening: true,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Should display compound breadcrumb 'transport › order'
-      expect(find.textContaining('transport'), findsOneWidget);
-      expect(find.textContaining('order'), findsOneWidget);
-      expect(find.textContaining('›'), findsOneWidget);
-    });
+        // Should display compound breadcrumb 'transport › order'
+        expect(find.textContaining('transport'), findsOneWidget);
+        expect(find.textContaining('order'), findsOneWidget);
+        expect(find.textContaining('›'), findsOneWidget);
+      },
+    );
 
-    testWidgets('formats ISO-8601 timestamps with clock icon and tooltip', (tester) async {
-      final json = {
-        'createdAt': '2026-09-29T19:00:00+01:00',
-      };
+    testWidgets('formats ISO-8601 timestamps with clock icon and tooltip', (
+      tester,
+    ) async {
+      final json = {'createdAt': '2026-09-29T19:00:00+01:00'};
 
       await tester.pumpWidget(
         MaterialApp(
@@ -325,76 +329,83 @@ void main() {
       expect(find.byType(Tooltip), findsWidgets);
     });
 
-    testWidgets('renders compact list as composite badge and shows items in popover', (tester) async {
-      final json = {
-        'aktionsKategorien': ['ENTLADESTELLE'],
-      };
-
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SizedBox(
-              width: 600,
-              height: 400,
-              child: SmartVirtualJsonTree(json: json),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should render compact badge on a single line
-      expect(find.byType(SmartCompositeBadge), findsOneWidget);
-      expect(find.byIcon(Icons.list_alt), findsOneWidget);
-
-      // Tap on the badge to pin and display popover
-      await tester.tap(find.byType(SmartCompositeBadge));
-      await tester.pumpAndSettle();
-
-      // Popover should show index row '[0]' and 'ENTLADESTELLE'
-      expect(find.text('[0]'), findsOneWidget);
-      expect(find.text('ENTLADESTELLE'), findsOneWidget);
-    });
-
-    testWidgets('search query matching compact list badge highlights and jumps to match', (tester) async {
-      final GlobalKey<SmartVirtualJsonTreeState> key = GlobalKey<SmartVirtualJsonTreeState>();
-      final json = {
-        'order': {
+    testWidgets(
+      'renders compact list as composite badge and shows items in popover',
+      (tester) async {
+        final json = {
           'aktionsKategorien': ['ENTLADESTELLE'],
-          'other': 'regular_value',
-        }
-      };
+        };
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SizedBox(
-              width: 600,
-              height: 400,
-              child: SmartVirtualJsonTree(
-                key: key,
-                json: json,
-                searchQuery: 'ENTLADE',
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 600,
+                height: 400,
+                child: SmartVirtualJsonTree(json: json),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // The ancestor 'order' should be auto-expanded and compact badge rendered
-      expect(find.byType(SmartCompositeBadge), findsOneWidget);
-      expect(find.byIcon(Icons.list_alt), findsOneWidget);
+        // Should render compact badge on a single line
+        expect(find.byType(SmartCompositeBadge), findsOneWidget);
+        expect(find.byIcon(Icons.list_alt), findsOneWidget);
 
-      // Stepper jump to match
-      key.currentState?.jumpToMatch(0);
-      await tester.pumpAndSettle();
+        // Tap on the badge to pin and display popover
+        await tester.tap(find.byType(SmartCompositeBadge));
+        await tester.pumpAndSettle();
 
-      expect(find.text('🎯'), findsOneWidget);
-    });
+        // Popover should show index row '[0]' and 'ENTLADESTELLE'
+        expect(find.text('[0]'), findsOneWidget);
+        expect(find.text('ENTLADESTELLE'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'search query matching compact list badge highlights and jumps to match',
+      (tester) async {
+        final GlobalKey<SmartVirtualJsonTreeState> key =
+            GlobalKey<SmartVirtualJsonTreeState>();
+        final json = {
+          'order': {
+            'aktionsKategorien': ['ENTLADESTELLE'],
+            'other': 'regular_value',
+          },
+        };
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 600,
+                height: 400,
+                child: SmartVirtualJsonTree(
+                  key: key,
+                  json: json,
+                  searchQuery: 'ENTLADE',
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The ancestor 'order' should be auto-expanded and compact badge rendered
+        expect(find.byType(SmartCompositeBadge), findsOneWidget);
+        expect(find.byIcon(Icons.list_alt), findsOneWidget);
+
+        // Stepper jump to match
+        key.currentState?.jumpToMatch(0);
+        await tester.pumpAndSettle();
+
+        expect(find.text('🎯'), findsOneWidget);
+      },
+    );
   });
 }

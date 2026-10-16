@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
@@ -61,6 +62,14 @@ class MessagesView extends StatefulWidget {
   final Widget Function(BuildContext context, String searchPhrase)?
   schemaViewBuilder;
 
+  /// Optional custom schema tab builder with pin-to-column callback. When non-null, the schema view mode is shown.
+  final Widget Function(
+    BuildContext context,
+    String searchPhrase,
+    ValueChanged<String> onPinToColumn,
+  )?
+  schemaViewBuilderWithPin;
+
   /// Optional ordering override (e.g. script timeline grouping).
   final int Function(KafkaMessage a, KafkaMessage b)? sortComparator;
 
@@ -69,6 +78,9 @@ class MessagesView extends StatefulWidget {
 
   /// Whether messages are actively streaming/loading.
   final bool isStreaming;
+
+  /// Optional active cluster profile.
+  final ClusterProfile? profile;
 
   const MessagesView({
     super.key,
@@ -80,16 +92,18 @@ class MessagesView extends StatefulWidget {
     this.showTopic = false,
     this.showStep = false,
     this.schemaViewBuilder,
+    this.schemaViewBuilderWithPin,
     this.sortComparator,
     this.onFetchLatest,
     this.isStreaming = false,
+    this.profile,
   });
 
   @override
-  State<MessagesView> createState() => _MessagesViewState();
+  State<MessagesView> createState() => MessagesViewState();
 }
 
-class _MessagesViewState extends State<MessagesView> {
+class MessagesViewState extends State<MessagesView> {
   String _activeView = 'table';
   String _searchPhrase = "";
   bool _showNonMatches = false;
@@ -342,7 +356,13 @@ class _MessagesViewState extends State<MessagesView> {
     _saveProjectedColumnsPreference();
   }
 
-  bool get _showSchemaView => widget.schemaViewBuilder != null;
+  bool get _showSchemaView =>
+      widget.schemaViewBuilder != null ||
+      widget.schemaViewBuilderWithPin != null;
+
+  void setActiveView(String newView) {
+    _onViewModeChanged(newView);
+  }
 
   void _updateFilters() {
     // 1. Filter
@@ -900,6 +920,7 @@ class _MessagesViewState extends State<MessagesView> {
       isMaximized: _isMaximized,
       onToggleMaximize: _toggleMaximize,
       onPinToColumn: addProjectedColumn,
+      profile: widget.profile,
     );
 
     if (_isMaximized) {
@@ -930,6 +951,13 @@ class _MessagesViewState extends State<MessagesView> {
   Widget _buildMasterView() {
     switch (_activeView) {
       case 'schema':
+        if (widget.schemaViewBuilderWithPin != null) {
+          return widget.schemaViewBuilderWithPin!(
+            context,
+            _searchPhrase,
+            addProjectedColumn,
+          );
+        }
         if (widget.schemaViewBuilder != null) {
           return widget.schemaViewBuilder!(context, _searchPhrase);
         }

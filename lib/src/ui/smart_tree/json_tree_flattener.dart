@@ -137,7 +137,8 @@ class JsonTreeFlattener {
           activeExpanded.add(currentPath);
         }
 
-        final isExp = activeExpanded.contains(currentPath) ||
+        final isExp =
+            activeExpanded.contains(currentPath) ||
             activeExpanded.contains(path);
 
         // Check EntityFormatterRegistry for progressive disclosure when collapsed
@@ -194,7 +195,9 @@ class JsonTreeFlattener {
           }
         }
       } else if (currentNodeValue is List) {
-        final listBadge = EntityFormatterRegistry.tryFormatList(currentNodeValue);
+        final listBadge = EntityFormatterRegistry.tryFormatList(
+          currentNodeValue,
+        );
 
         // Auto-expand single-item list by default if not manually collapsed
         // UNLESS it is eligible for compact badge rendering
@@ -206,7 +209,8 @@ class JsonTreeFlattener {
           activeExpanded.add(currentPath);
         }
 
-        final isExp = activeExpanded.contains(currentPath) ||
+        final isExp =
+            activeExpanded.contains(currentPath) ||
             activeExpanded.contains(path);
 
         if (listBadge != null && !isExp) {
@@ -258,8 +262,7 @@ class JsonTreeFlattener {
             final arrayMatches = <int>{};
             for (int i = 0; i < currentNodeValue.length; i++) {
               final item = currentNodeValue[i];
-              if ('[$i]'.contains(query) ||
-                  hasMatchInSubtree(item, query)) {
+              if ('[$i]'.contains(query) || hasMatchInSubtree(item, query)) {
                 arrayMatches.add(i);
               }
             }
@@ -283,12 +286,11 @@ class JsonTreeFlattener {
                     );
 
                   case CollapsedRangeSegment(
-                      :final startIndex,
-                      :final endIndex,
-                      :final count
-                    ):
-                    final rangeKey =
-                        '$currentPath[$startIndex-$endIndex]';
+                    :final startIndex,
+                    :final endIndex,
+                    :final count,
+                  ):
+                    final rangeKey = '$currentPath[$startIndex-$endIndex]';
                     if (manuallyExpandedRanges?.contains(rangeKey) ?? false) {
                       for (int i = startIndex; i <= endIndex; i++) {
                         traverse(
@@ -423,7 +425,9 @@ class JsonTreeFlattener {
         bool isChildListBadge = false;
         bool badgeMatches = false;
         if (entry.value is List) {
-          final listBadge = EntityFormatterRegistry.tryFormatList(entry.value as List);
+          final listBadge = EntityFormatterRegistry.tryFormatList(
+            entry.value as List,
+          );
           if (listBadge != null) {
             isChildListBadge = true;
             if (listBadge.label.toLowerCase().contains(query)) {

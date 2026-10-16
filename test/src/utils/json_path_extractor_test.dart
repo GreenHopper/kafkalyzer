@@ -73,10 +73,7 @@ void main() {
         '42.0',
       );
       expect(
-        JsonPathExtractor.extractFromPayload(
-          samplePayload,
-          'items[0].tags[1]',
-        ),
+        JsonPathExtractor.extractFromPayload(samplePayload, 'items[0].tags[1]'),
         'express',
       );
       // dot index notation
@@ -120,10 +117,7 @@ void main() {
         isNull,
       );
       expect(
-        JsonPathExtractor.extractFromPayload(
-          samplePayload,
-          'items[-1].sku',
-        ),
+        JsonPathExtractor.extractFromPayload(samplePayload, 'items[-1].sku'),
         isNull,
       );
     });

@@ -69,6 +69,12 @@ The inspector panel SHALL organize detailed message contents into tabs:
 1. `Payload`: displays the message payload using `SmartVirtualJsonTree` with progressive disclosure smart badges, in-tree search, formatting, and copy controls.
 2. `Key & Headers`: displays the full message key and a structured list of all Kafka headers with an item count badge.
 3. `Raw JSON`: displays the serialized representation of the complete message for export.
+4. `Schema`: displays the registered Avro Key and Value schemas for the topic of the inspected message, enabling side-by-side comparison with the live payload and supporting field-level column pinning and filtering.
+
+#### Scenario: Inspect topic schema in dedicated inspector tab
+- **WHEN** the user selects the `Schema` tab in `MessageInspectorPanel` while inspecting a Kafka message
+- **THEN** the panel body SHALL render the Key and Value Avro schema for the message's topic
+- **AND** the user SHALL be able to search the schema and pin fields as table columns directly from the inspector panel
 
 #### Scenario: Inspect Kafka headers in dedicated tab
 - **WHEN** the user selects the `Key & Headers` tab for a message containing 3 headers

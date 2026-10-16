@@ -1,12 +1,6 @@
 import 'package:kafkalyzer/src/ui/smart_tree/entity_formatter_registry.dart';
 
-enum JsonNodeType {
-  object,
-  array,
-  primitive,
-  compositeBadge,
-  collapsedRange,
-}
+enum JsonNodeType { object, array, primitive, compositeBadge, collapsedRange }
 
 /// A single flattened row item in the virtualized JSON tree.
 class VirtualJsonNode {

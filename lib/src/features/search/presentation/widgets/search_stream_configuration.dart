@@ -185,10 +185,7 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
               ),
             ),
             const SizedBox(width: 12),
-            SizedBox(
-              width: 140,
-              child: _buildPartitionField(l10n),
-            ),
+            SizedBox(width: 140, child: _buildPartitionField(l10n)),
           ],
         );
       case TopicScanMode.timeRange:
@@ -310,7 +307,7 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
             Text(
               _isAdvancedExpanded
                   ? (l10n?.collapseAdvancedFilters ??
-                      "Collapse advanced filters")
+                        "Collapse advanced filters")
                   : (l10n?.advancedFiltersSection ?? "Advanced Filters"),
               style: TextStyle(
                 fontSize: 13,
@@ -439,9 +436,7 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: _buildPartitionField(l10n),
-        ),
+        Expanded(child: _buildPartitionField(l10n)),
       ],
     );
   }

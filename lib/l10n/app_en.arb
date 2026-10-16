@@ -795,5 +795,22 @@
   "requiredValidation": "Required",
   "bootstrapServersLabel": "Bootstrap Servers (e.g. localhost:9092)",
   "schemaRegistryUrlLabel": "Schema Registry URL (Optional)",
-  "invalidUrlFormat": "Invalid URL format"
+  "invalidUrlFormat": "Invalid URL format",
+  "keySchemaTitle": "Key Schema",
+  "valueSchemaTitle": "Value Schema",
+  "schemaTabTitle": "Schema",
+  "schemaPinAsColumn": "Pin as table column",
+  "schemaPinAsColumnTooltip": "Pin this schema field as a projected table column",
+  "schemaFilterByField": "Filter by this field",
+  "schemaFilterByFieldTooltip": "Filter topic messages by this schema field",
+  "schemaFieldFilterApplied": "Filter field set to '{field}'",
+  "@schemaFieldFilterApplied": {
+    "placeholders": {
+      "field": { "type": "String" }
+    }
+  },
+  "schemaNoRegistryConfigured": "No Schema Registry configured for this cluster.",
+  "schemaConfigureRegistryAction": "Configure Cluster",
+  "schemaRetry": "Retry",
+  "schemaSearchHint": "Search schema fields and types..."
 }

@@ -182,7 +182,10 @@ void main() {
 
     // With the Key trick, it should be expanded now
     expect(find.text('t1'), findsOneWidget);
-    expect(find.text('RUNNING'), findsNWidgets(2)); // One for step, one for topic
+    expect(
+      find.text('RUNNING'),
+      findsNWidgets(2),
+    ); // One for step, one for topic
 
     // Tap Stop
     await tester.tap(find.text('Stop'));
@@ -262,10 +265,12 @@ void main() {
 
     // Verify parameter card constraints: maxWidth 540
     final constrainedBox = tester.widget<ConstrainedBox>(
-      find.ancestor(
-        of: find.text('Parameters & Execution'),
-        matching: find.byType(ConstrainedBox),
-      ).first,
+      find
+          .ancestor(
+            of: find.text('Parameters & Execution'),
+            matching: find.byType(ConstrainedBox),
+          )
+          .first,
     );
     expect(constrainedBox.constraints.maxWidth, 540);
 
@@ -320,9 +325,7 @@ void main() {
         ScriptVariable(name: 'batchSize', type: ScriptVariableType.numeric),
         ScriptVariable(name: 'startTime', type: ScriptVariableType.timestamp),
       ],
-      steps: [
-        ScriptStep(id: 's1', name: 'Step 1', clusterName: 'c1'),
-      ],
+      steps: [ScriptStep(id: 's1', name: 'Step 1', clusterName: 'c1')],
     );
 
     await tester.pumpWidget(buildTestWidget(scriptWithVars));
@@ -348,11 +351,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    const emptyScript = Script(
-      id: '4',
-      name: 'Empty Script',
-      steps: [],
-    );
+    const emptyScript = Script(id: '4', name: 'Empty Script', steps: []);
 
     await tester.pumpWidget(buildTestWidget(emptyScript));
     await tester.pumpAndSettle();

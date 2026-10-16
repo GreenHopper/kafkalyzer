@@ -18,8 +18,6 @@ void main() {
     GetIt.instance.registerSingleton<RecentTopicsService>(recentTopicsService);
   });
 
-
-
   final testCluster = ClusterProfile(
     name: 'TEST-CLUSTER',
     bootstrapServers: 'localhost:9092',
@@ -86,10 +84,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
-      find.text('Recent Topics in TEST-CLUSTER'),
-      findsOneWidget,
-    );
+    expect(find.text('Recent Topics in TEST-CLUSTER'), findsOneWidget);
     expect(find.text('analytics-events'), findsOneWidget);
     expect(find.text('hidden-events'), findsNothing);
 

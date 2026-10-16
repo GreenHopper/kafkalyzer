@@ -163,7 +163,9 @@ void main() {
       expect(result!.bootstrapServers, 'localhost:9092');
     });
 
-    testWidgets('triggers connection test and shows result banner', (tester) async {
+    testWidgets('triggers connection test and shows result banner', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(

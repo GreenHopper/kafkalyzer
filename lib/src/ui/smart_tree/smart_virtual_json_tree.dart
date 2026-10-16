@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/schema/utils/schema_path_utils.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/json_tree_flattener.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_composite_badge.dart';
@@ -23,6 +24,7 @@ class SmartVirtualJsonTree extends StatefulWidget {
   final bool autoExpandSingleItemCollections;
   final int contextRadius;
   final ValueChanged<String>? onPinToColumn;
+  final ValueChanged<String>? onFilterByField;
 
   const SmartVirtualJsonTree({
     super.key,
@@ -36,6 +38,7 @@ class SmartVirtualJsonTree extends StatefulWidget {
     this.autoExpandSingleItemCollections = true,
     this.contextRadius = 1,
     this.onPinToColumn,
+    this.onFilterByField,
   });
 
   @override
@@ -294,8 +297,8 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
           // Quick copy action on row
           IconButton(
             icon: const Icon(Icons.copy, size: 13),
-            tooltip: AppLocalizations.of(context)?.copyValueTooltip ??
-                'Copy value',
+            tooltip:
+                AppLocalizations.of(context)?.copyValueTooltip ?? 'Copy value',
             visualDensity: VisualDensity.compact,
             onPressed: () {
               final valStr = node.value?.toString() ?? 'null';
@@ -304,8 +307,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    l10n?.valueCopiedToClipboard ??
-                        'Value copied to clipboard',
+                    l10n?.valueCopiedToClipboard ?? 'Value copied to clipboard',
                   ),
                   duration: const Duration(seconds: 1),
                 ),
@@ -315,13 +317,32 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
           if (widget.onPinToColumn != null && node.path.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.push_pin_outlined, size: 14),
-              tooltip:
-                  AppLocalizations.of(context)?.pinAsColumn ?? 'Pin as Column',
+              tooltip: (widget.onFilterByField != null)
+                  ? (AppLocalizations.of(context)?.schemaPinAsColumnTooltip ??
+                        AppLocalizations.of(context)?.schemaPinAsColumn ??
+                        'Pin as table column')
+                  : (AppLocalizations.of(context)?.pinAsColumn ??
+                        'Pin as Column'),
               visualDensity: VisualDensity.compact,
               onPressed: () {
-                final normalized = normalizeTreePath(node.path);
+                final normalized = normalizeSchemaFieldPath(node.path);
                 if (normalized.isNotEmpty) {
                   widget.onPinToColumn!(normalized);
+                }
+              },
+            ),
+          if (widget.onFilterByField != null && node.path.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.filter_alt_outlined, size: 14),
+              tooltip:
+                  AppLocalizations.of(context)?.schemaFilterByFieldTooltip ??
+                  AppLocalizations.of(context)?.schemaFilterByField ??
+                  'Filter by this field',
+              visualDensity: VisualDensity.compact,
+              onPressed: () {
+                final normalized = normalizeSchemaFieldPath(node.path);
+                if (normalized.isNotEmpty) {
+                  widget.onFilterByField!(normalized);
                 }
               },
             ),
@@ -576,7 +597,9 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
     final value = node.value;
 
     // Check for datetime string pattern
-    if (value is String && value.length >= 10 && _iso8601Regex.hasMatch(value)) {
+    if (value is String &&
+        value.length >= 10 &&
+        _iso8601Regex.hasMatch(value)) {
       final parsed = DateTime.tryParse(value);
       if (parsed != null) {
         return _buildSmartTimestampWidget(context, value, parsed, colorScheme);
@@ -593,13 +616,17 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
     ColorScheme colorScheme,
   ) {
     final l10n = AppLocalizations.of(context);
-    final localFormatted = DateFormatUtils.formatDateTime(context, parsedDate.toLocal());
+    final localFormatted = DateFormatUtils.formatDateTime(
+      context,
+      parsedDate.toLocal(),
+    );
     final utcFormatted = parsedDate.toUtc().toIso8601String();
     final rawLabel = l10n?.rawTimestampLabel ?? 'Raw';
     final localLabel = l10n?.localTimestampLabel ?? 'Local';
     final utcLabel = l10n?.utcTimestampLabel ?? 'UTC';
 
-    final tooltipMessage = '$localLabel: $localFormatted\n$utcLabel: $utcFormatted\n$rawLabel: $rawValue';
+    final tooltipMessage =
+        '$localLabel: $localFormatted\n$utcLabel: $utcFormatted\n$rawLabel: $rawValue';
 
     return Tooltip(
       message: tooltipMessage,
@@ -607,11 +634,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.schedule,
-            size: 13,
-            color: Colors.amber.shade800,
-          ),
+          Icon(Icons.schedule, size: 13, color: Colors.amber.shade800),
           const SizedBox(width: 4),
           Flexible(
             child: _buildHighlightedText(

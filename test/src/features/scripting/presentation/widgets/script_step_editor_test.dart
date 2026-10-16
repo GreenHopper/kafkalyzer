@@ -480,10 +480,7 @@ void main() {
 
       final sizedBox = tester.widget<SizedBox>(
         find
-            .ancestor(
-              of: sourceDropdown,
-              matching: find.byType(SizedBox),
-            )
+            .ancestor(of: sourceDropdown, matching: find.byType(SizedBox))
             .first,
       );
       expect(sizedBox.width, 120.0);

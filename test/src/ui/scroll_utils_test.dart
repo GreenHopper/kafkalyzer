@@ -43,10 +43,7 @@ void main() {
       expect(pageController.page, closeTo(0.0, 0.001));
       expect(targetKey.currentContext, isNotNull);
 
-      await ensureVisibleVertically(
-        targetKey.currentContext!,
-        alignment: 0.3,
-      );
+      await ensureVisibleVertically(targetKey.currentContext!, alignment: 0.3);
       await tester.pumpAndSettle();
 
       expect(pageController.page, closeTo(0.0, 0.001));

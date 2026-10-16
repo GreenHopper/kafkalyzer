@@ -538,10 +538,7 @@ class _ExplorerViewState extends State<ExplorerView> {
         onSelectRecentTopic: (clusterName, topicName) async {
           final targetCluster = clusterController.clusters
               .cast<ClusterProfile?>()
-              .firstWhere(
-                (c) => c?.name == clusterName,
-                orElse: () => null,
-              );
+              .firstWhere((c) => c?.name == clusterName, orElse: () => null);
           if (targetCluster == null) return;
 
           if (activeController.activeProfile?.name != clusterName) {

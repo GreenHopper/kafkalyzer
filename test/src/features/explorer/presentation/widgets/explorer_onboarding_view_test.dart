@@ -18,8 +18,6 @@ void main() {
     GetIt.instance.registerSingleton<RecentTopicsService>(recentTopicsService);
   });
 
-
-
   final testCluster = ClusterProfile(
     name: 'PROD',
     bootstrapServers: 'kafka-prod:9092',

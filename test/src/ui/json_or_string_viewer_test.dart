@@ -43,30 +43,36 @@ void main() {
       expect(find.byType(ToggleButtons), findsNothing);
     });
 
-    testWidgets('renders Tree view by default for valid json and has only Raw and Tree toggles', (tester) async {
-      final jsonStr = '{"key": "value"}';
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: JsonOrStringViewer(title: 'Test Viewer', rawContent: jsonStr),
+    testWidgets(
+      'renders Tree view by default for valid json and has only Raw and Tree toggles',
+      (tester) async {
+        final jsonStr = '{"key": "value"}';
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: JsonOrStringViewer(
+                title: 'Test Viewer',
+                rawContent: jsonStr,
+              ),
+            ),
           ),
-        ),
-      );
-      await awaitIsolates(tester);
+        );
+        await awaitIsolates(tester);
 
-      expect(find.text('key: '), findsOneWidget);
-      expect(find.text('"value"'), findsOneWidget);
-      expect(find.byType(ToggleButtons), findsOneWidget);
+        expect(find.text('key: '), findsOneWidget);
+        expect(find.text('"value"'), findsOneWidget);
+        expect(find.byType(ToggleButtons), findsOneWidget);
 
-      final toggleButtons = tester.widget<ToggleButtons>(
-        find.byType(ToggleButtons),
-      );
-      expect(toggleButtons.children.length, 2);
-      expect(find.text('Raw'), findsOneWidget);
-      expect(find.text('Tree'), findsOneWidget);
-      expect(find.text('Cards'), findsNothing);
-      expect(toggleButtons.isSelected[1], isTrue); // Tree selected
-    });
+        final toggleButtons = tester.widget<ToggleButtons>(
+          find.byType(ToggleButtons),
+        );
+        expect(toggleButtons.children.length, 2);
+        expect(find.text('Raw'), findsOneWidget);
+        expect(find.text('Tree'), findsOneWidget);
+        expect(find.text('Cards'), findsNothing);
+        expect(toggleButtons.isSelected[1], isTrue); // Tree selected
+      },
+    );
 
     testWidgets('switches to Raw view', (tester) async {
       final jsonStr = '{"key": "value"}';
@@ -85,30 +91,33 @@ void main() {
       expect(find.text(jsonStr), findsOneWidget);
     });
 
-    testWidgets('persistence restores view mode and maps legacy Cards (2) to Tree (1)', (tester) async {
-      SharedPreferences.setMockInitialValues({
-        'json_view_mode_testkey': 0, // Saved as Raw
-      });
+    testWidgets(
+      'persistence restores view mode and maps legacy Cards (2) to Tree (1)',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({
+          'json_view_mode_testkey': 0, // Saved as Raw
+        });
 
-      final jsonStr = '{"key": "value"}';
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: JsonOrStringViewer(
-              title: 'Test Viewer',
-              rawContent: jsonStr,
-              persistenceKey: 'testkey',
+        final jsonStr = '{"key": "value"}';
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: JsonOrStringViewer(
+                title: 'Test Viewer',
+                rawContent: jsonStr,
+                persistenceKey: 'testkey',
+              ),
             ),
           ),
-        ),
-      );
-      await awaitIsolates(tester);
+        );
+        await awaitIsolates(tester);
 
-      final toggleButtons = tester.widget<ToggleButtons>(
-        find.byType(ToggleButtons),
-      );
-      expect(toggleButtons.isSelected[0], isTrue); // Raw selected
-    });
+        final toggleButtons = tester.widget<ToggleButtons>(
+          find.byType(ToggleButtons),
+        );
+        expect(toggleButtons.isSelected[0], isTrue); // Raw selected
+      },
+    );
 
     testWidgets('renders Tree view and cycles search results', (tester) async {
       final jsonStr = '{"user": {"account": {"username": "Alice"}}}';

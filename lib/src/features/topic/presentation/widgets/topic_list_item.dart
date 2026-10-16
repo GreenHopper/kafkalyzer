@@ -113,11 +113,7 @@ class TopicListItem extends StatelessWidget {
 
     // Micro-badge: Schema badge (Avro)
     if (clusterProfile != null &&
-        hasSchema(
-          getIt<SchemaController>(),
-          clusterProfile!,
-          topic.name,
-        )) {
+        hasSchema(getIt<SchemaController>(), clusterProfile!, topic.name)) {
       children.add(_buildMicroBadge(context, text: "Avro", isSchema: true));
     }
 

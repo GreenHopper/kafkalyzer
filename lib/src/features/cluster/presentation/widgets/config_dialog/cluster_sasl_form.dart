@@ -72,8 +72,8 @@ class ClusterSaslForm extends StatelessWidget {
             child: TextFormField(
               controller: kerberosServiceNameController,
               decoration: InputDecoration(
-                labelText: l10n?.kerberosServiceNameLabel ??
-                    'Kerberos Service Name',
+                labelText:
+                    l10n?.kerberosServiceNameLabel ?? 'Kerberos Service Name',
               ),
             ),
           ),
@@ -81,8 +81,8 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: FilePickerFormField(
               controller: kerberosKeytabController,
-              labelText: l10n?.kerberosKeytabPathLabel ??
-                  'Kerberos Keytab Path',
+              labelText:
+                  l10n?.kerberosKeytabPathLabel ?? 'Kerberos Keytab Path',
               allowedExtensions: const ['keytab'],
             ),
           ),
@@ -91,8 +91,7 @@ class ClusterSaslForm extends StatelessWidget {
             child: TextFormField(
               controller: kerberosPrincipalController,
               decoration: InputDecoration(
-                labelText:
-                    l10n?.kerberosPrincipalLabel ?? 'Kerberos Principal',
+                labelText: l10n?.kerberosPrincipalLabel ?? 'Kerberos Principal',
               ),
             ),
           ),
@@ -100,7 +99,8 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: FilePickerFormField(
               controller: kerberosConfController,
-              labelText: l10n?.kerberosConfigPathLabel ??
+              labelText:
+                  l10n?.kerberosConfigPathLabel ??
                   'Kerberos Config (krb5.conf) Path',
               allowedExtensions: const ['conf'],
             ),
@@ -110,8 +110,7 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: PasswordFormField(
               controller: oauthbearerTokenController,
-              labelText:
-                  l10n?.oauthbearerTokenLabel ?? 'OAuthBearer Token',
+              labelText: l10n?.oauthbearerTokenLabel ?? 'OAuthBearer Token',
             ),
           ),
         ] else if (mechanism != "AWS_MSK_IAM") ...[

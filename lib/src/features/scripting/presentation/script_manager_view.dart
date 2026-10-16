@@ -204,8 +204,8 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
                 final filteredScripts = query.isEmpty
                     ? controller.scripts
                     : controller.scripts
-                        .where((s) => s.name.toLowerCase().contains(query))
-                        .toList();
+                          .where((s) => s.name.toLowerCase().contains(query))
+                          .toList();
 
                 return ListView.builder(
                   itemCount: filteredScripts.length,

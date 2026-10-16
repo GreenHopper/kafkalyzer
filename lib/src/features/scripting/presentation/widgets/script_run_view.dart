@@ -143,9 +143,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
                   child: _buildParametersCard(),
                 ),
                 const SizedBox(width: 24),
-                Expanded(
-                  child: _buildPipelinePreview(),
-                ),
+                Expanded(child: _buildPipelinePreview()),
               ],
             ),
           );
@@ -169,7 +167,8 @@ class _ScriptRunViewState extends State<ScriptRunView> {
   Widget _buildParametersCard() {
     final l10n = AppLocalizations.of(context);
     final stepsCount = widget.script.steps.length;
-    final runButtonText = l10n?.runScriptWithSteps(stepsCount) ??
+    final runButtonText =
+        l10n?.runScriptWithSteps(stepsCount) ??
         "Run Script ($stepsCount ${stepsCount == 1 ? 'step' : 'steps'})";
 
     return Card(
@@ -339,7 +338,8 @@ class _ScriptRunViewState extends State<ScriptRunView> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: steps.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
                 itemBuilder: (context, index) =>
                     _buildPipelineStepItem(index, steps[index]),
               ),
@@ -358,15 +358,13 @@ class _ScriptRunViewState extends State<ScriptRunView> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.4),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         border: Border.all(
-          color: Theme.of(context)
-              .colorScheme
-              .outlineVariant
-              .withValues(alpha: 0.6),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.6),
         ),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -424,10 +422,9 @@ class _ScriptRunViewState extends State<ScriptRunView> {
                 color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .outlineVariant
-                      .withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outlineVariant.withValues(alpha: 0.5),
                 ),
               ),
               child: Row(
@@ -460,26 +457,27 @@ class _ScriptRunViewState extends State<ScriptRunView> {
               children: step.extractions
                   .where((e) => e.variableName.isNotEmpty)
                   .map((e) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.subdirectory_arrow_right,
-                      size: 14,
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      "${l10n?.extractedVariables ?? 'Extracted'}: ${e.variableName}",
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.subdirectory_arrow_right,
+                          size: 14,
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          "${l10n?.extractedVariables ?? 'Extracted'}: ${e.variableName}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  })
+                  .toList(),
             ),
           ],
         ],

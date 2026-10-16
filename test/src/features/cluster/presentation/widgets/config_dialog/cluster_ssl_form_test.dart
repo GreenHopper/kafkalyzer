@@ -33,7 +33,9 @@ void main() {
       pemKeyPasswordController.dispose();
     });
 
-    testWidgets('renders SSL fields and switches client auth modes', (tester) async {
+    testWidgets('renders SSL fields and switches client auth modes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -79,57 +81,60 @@ void main() {
       expect(find.text('Client Private Key Password'), findsOneWidget);
     });
 
-    testWidgets('renders German localized SSL fields and switches client auth modes', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            ...GlobalMaterialLocalizations.delegates,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('de'),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: ClusterSslForm(
-                keystoreLocationController: keystoreLocationController,
-                keystorePasswordController: keystorePasswordController,
-                truststoreLocationController: truststoreLocationController,
-                truststorePasswordController: truststorePasswordController,
-                pemCertificateLocationController:
-                    pemCertificateLocationController,
-                pemKeyLocationController: pemKeyLocationController,
-                pemKeyPasswordController: pemKeyPasswordController,
+    testWidgets(
+      'renders German localized SSL fields and switches client auth modes',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('de'),
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ClusterSslForm(
+                  keystoreLocationController: keystoreLocationController,
+                  keystorePasswordController: keystorePasswordController,
+                  truststoreLocationController: truststoreLocationController,
+                  truststorePasswordController: truststorePasswordController,
+                  pemCertificateLocationController:
+                      pemCertificateLocationController,
+                  pemKeyLocationController: pemKeyLocationController,
+                  pemKeyPasswordController: pemKeyPasswordController,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('SSL / TLS Konfiguration'), findsOneWidget);
-      expect(find.text('Server-Truststore (PEM / JKS)'), findsOneWidget);
-      expect(find.text('Truststore-Passwort'), findsOneWidget);
+        expect(find.text('SSL / TLS Konfiguration'), findsOneWidget);
+        expect(find.text('Server-Truststore (PEM / JKS)'), findsOneWidget);
+        expect(find.text('Truststore-Passwort'), findsOneWidget);
 
-      // Initially None mode
-      expect(find.textContaining('Keystore-Datei'), findsNothing);
-      expect(find.text('Client-Zertifikat (PEM)'), findsNothing);
+        // Initially None mode
+        expect(find.textContaining('Keystore-Datei'), findsNothing);
+        expect(find.text('Client-Zertifikat (PEM)'), findsNothing);
 
-      // Switch to Keystore
-      await tester.tap(find.text('Keystore (PKCS12 / JKS)'));
-      await tester.pumpAndSettle();
+        // Switch to Keystore
+        await tester.tap(find.text('Keystore (PKCS12 / JKS)'));
+        await tester.pumpAndSettle();
 
-      expect(find.textContaining('Keystore-Datei'), findsOneWidget);
-      expect(find.text('Keystore-Passwort'), findsOneWidget);
-      expect(find.text('Client-Zertifikat (PEM)'), findsNothing);
+        expect(find.textContaining('Keystore-Datei'), findsOneWidget);
+        expect(find.text('Keystore-Passwort'), findsOneWidget);
+        expect(find.text('Client-Zertifikat (PEM)'), findsNothing);
 
-      // Switch to PEM
-      await tester.tap(find.text('PEM-Zertifikat & Key'));
-      await tester.pumpAndSettle();
+        // Switch to PEM
+        await tester.tap(find.text('PEM-Zertifikat & Key'));
+        await tester.pumpAndSettle();
 
-      expect(find.textContaining('Keystore-Datei'), findsNothing);
-      expect(find.text('Client-Zertifikat (PEM)'), findsOneWidget);
-      expect(find.text('Client Private Key (PEM)'), findsOneWidget);
-      expect(find.text('Private Key Passwort'), findsOneWidget);
-    });
+        expect(find.textContaining('Keystore-Datei'), findsNothing);
+        expect(find.text('Client-Zertifikat (PEM)'), findsOneWidget);
+        expect(find.text('Client Private Key (PEM)'), findsOneWidget);
+        expect(find.text('Private Key Passwort'), findsOneWidget);
+      },
+    );
   });
 }

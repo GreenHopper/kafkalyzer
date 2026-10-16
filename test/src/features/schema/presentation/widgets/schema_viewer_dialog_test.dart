@@ -239,9 +239,7 @@ void main() {
       await awaitIsolates(tester);
 
       expect(
-        find.text(
-          'Fehler beim Laden des Schemas: Exception: Fetch failed',
-        ),
+        find.text('Fehler beim Laden des Schemas: Exception: Fetch failed'),
         findsOneWidget,
       );
     });

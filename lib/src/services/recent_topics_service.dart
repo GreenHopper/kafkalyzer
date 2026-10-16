@@ -160,8 +160,9 @@ class RecentTopicsService extends ChangeNotifier {
   Future<void> _save() async {
     try {
       final prefs = await _getPrefs();
-      final stringList =
-          _recentTopics.map((e) => jsonEncode(e.toJson())).toList();
+      final stringList = _recentTopics
+          .map((e) => jsonEncode(e.toJson()))
+          .toList();
       await prefs.setStringList(prefKey, stringList);
     } catch (e) {
       debugPrint('Error saving recent topics: $e');

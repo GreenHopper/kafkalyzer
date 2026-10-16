@@ -2893,6 +2893,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid URL format'**
   String get invalidUrlFormat;
+
+  /// No description provided for @keySchemaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Schema'**
+  String get keySchemaTitle;
+
+  /// No description provided for @valueSchemaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Value Schema'**
+  String get valueSchemaTitle;
+
+  /// No description provided for @schemaTabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema'**
+  String get schemaTabTitle;
+
+  /// No description provided for @schemaPinAsColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin as table column'**
+  String get schemaPinAsColumn;
+
+  /// No description provided for @schemaPinAsColumnTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin this schema field as a projected table column'**
+  String get schemaPinAsColumnTooltip;
+
+  /// No description provided for @schemaFilterByField.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by this field'**
+  String get schemaFilterByField;
+
+  /// No description provided for @schemaFilterByFieldTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter topic messages by this schema field'**
+  String get schemaFilterByFieldTooltip;
+
+  /// No description provided for @schemaFieldFilterApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter field set to \'{field}\''**
+  String schemaFieldFilterApplied(String field);
+
+  /// No description provided for @schemaNoRegistryConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No Schema Registry configured for this cluster.'**
+  String get schemaNoRegistryConfigured;
+
+  /// No description provided for @schemaConfigureRegistryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure Cluster'**
+  String get schemaConfigureRegistryAction;
+
+  /// No description provided for @schemaRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get schemaRetry;
+
+  /// No description provided for @schemaSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search schema fields and types...'**
+  String get schemaSearchHint;
 }
 
 class _AppLocalizationsDelegate

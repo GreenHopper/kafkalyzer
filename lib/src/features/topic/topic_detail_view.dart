@@ -13,7 +13,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topi
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
-import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
 import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search_bar.dart';
@@ -55,10 +55,19 @@ class _TopicDetailViewState extends State<TopicDetailView>
   late final SchemaController schemaController;
 
   TopicViewMode _viewMode = TopicViewMode.messages;
+  final GlobalKey<MessagesViewState> _messagesViewKey =
+      GlobalKey<MessagesViewState>();
 
   MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.latest;
   TopicScanMode _scanMode = TopicScanMode.latestN;
   TopicSearchParams? _lastAppliedParams;
+
+  void _openSchemaView() {
+    if (_viewMode != TopicViewMode.messages) {
+      setState(() => _viewMode = TopicViewMode.messages);
+    }
+    _messagesViewKey.currentState?.setActiveView('schema');
+  }
 
   @override
   void initState() {
@@ -198,10 +207,27 @@ class _TopicDetailViewState extends State<TopicDetailView>
               ),
               Expanded(
                 child: MessagesView(
+                  key: _messagesViewKey,
                   preferencesKey: "topic_detail_view_mode",
                   messages: messages,
                   onFetchLatest: startStreaming,
                   isStreaming: streamController.isStreaming,
+                  profile: widget.profile,
+                  schemaViewBuilderWithPin:
+                      (context, searchPhrase, onPinToColumn) {
+                        return TopicSchemaInspectorView(
+                          profile: widget.profile,
+                          topicName: widget.topic.name,
+                          searchPhrase: searchPhrase,
+                          controller: schemaController,
+                          onPinToColumn: onPinToColumn,
+                          onFilterByField: (field) {
+                            setState(() {
+                              _filterFieldController.text = field;
+                            });
+                          },
+                        );
+                      },
                 ),
               ),
             ] else ...[
@@ -375,18 +401,9 @@ class _TopicDetailViewState extends State<TopicDetailView>
     return Padding(
       padding: const EdgeInsets.only(left: 16),
       child: OutlinedButton.icon(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => SchemaViewerDialog(
-              profile: widget.profile,
-              topicName: widget.topic.name,
-              controller: schemaController,
-            ),
-          );
-        },
+        onPressed: _openSchemaView,
         style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-        icon: const Icon(Icons.visibility, size: 16),
+        icon: const Icon(Icons.schema_outlined, size: 16),
         label: Text(AppLocalizations.of(context)?.schemaAction ?? "Schema"),
       ),
     );

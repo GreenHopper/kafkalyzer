@@ -54,8 +54,12 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
     _bootstrapServersController = TextEditingController(
       text: c?.bootstrapServers ?? '',
     );
-    _saslUsernameController = TextEditingController(text: c?.saslUsername ?? '');
-    _saslPasswordController = TextEditingController(text: c?.saslPassword ?? '');
+    _saslUsernameController = TextEditingController(
+      text: c?.saslUsername ?? '',
+    );
+    _saslPasswordController = TextEditingController(
+      text: c?.saslPassword ?? '',
+    );
     _schemaRegistryUrlController = TextEditingController(
       text: c?.schemaRegistryUrl ?? '',
     );
@@ -153,30 +157,27 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
           : null,
       sslTruststoreLocation:
           _sslTruststoreLocationController.text.trim().isNotEmpty
-              ? _sslTruststoreLocationController.text.trim()
-              : null,
+          ? _sslTruststoreLocationController.text.trim()
+          : null,
       sslTruststorePassword: _sslTruststorePasswordController.text.isNotEmpty
           ? _sslTruststorePasswordController.text
           : null,
-      schemaRegistryUsername:
-          _schemaRegistryUsernameController.text.isNotEmpty
-              ? _schemaRegistryUsernameController.text
-              : null,
-      schemaRegistryPassword:
-          _schemaRegistryPasswordController.text.isNotEmpty
-              ? _schemaRegistryPasswordController.text
-              : null,
+      schemaRegistryUsername: _schemaRegistryUsernameController.text.isNotEmpty
+          ? _schemaRegistryUsernameController.text
+          : null,
+      schemaRegistryPassword: _schemaRegistryPasswordController.text.isNotEmpty
+          ? _schemaRegistryPasswordController.text
+          : null,
       saslKerberosServiceName:
           _saslKerberosServiceNameController.text.isNotEmpty
-              ? _saslKerberosServiceNameController.text
-              : null,
+          ? _saslKerberosServiceNameController.text
+          : null,
       saslKerberosKeytab: _saslKerberosKeytabController.text.trim().isNotEmpty
           ? _saslKerberosKeytabController.text.trim()
           : null,
-      saslKerberosPrincipal:
-          _saslKerberosPrincipalController.text.isNotEmpty
-              ? _saslKerberosPrincipalController.text
-              : null,
+      saslKerberosPrincipal: _saslKerberosPrincipalController.text.isNotEmpty
+          ? _saslKerberosPrincipalController.text
+          : null,
       saslKerberosConf: _saslKerberosConfController.text.trim().isNotEmpty
           ? _saslKerberosConfController.text.trim()
           : null,
@@ -185,8 +186,8 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
           : null,
       sslPemCertificateLocation:
           _sslPemCertificateLocationController.text.trim().isNotEmpty
-              ? _sslPemCertificateLocationController.text.trim()
-              : null,
+          ? _sslPemCertificateLocationController.text.trim()
+          : null,
       sslPemKeyLocation: _sslPemKeyLocationController.text.trim().isNotEmpty
           ? _sslPemKeyLocationController.text.trim()
           : null,
@@ -220,7 +221,7 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
         _testConnectionStatus = success
             ? (l10n?.connectionSuccessful ?? 'Connection successful!')
             : (l10n?.connectionFailed('Connection check returned false') ??
-                'Connection failed');
+                  'Connection failed');
       });
     } catch (e) {
       if (!mounted) return;
@@ -266,8 +267,7 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                   child: DropdownButtonFormField<String>(
                     initialValue: _securityProtocol,
                     decoration: InputDecoration(
-                      labelText:
-                          l10n?.securityProtocol ?? 'Security Protocol',
+                      labelText: l10n?.securityProtocol ?? 'Security Protocol',
                     ),
                     items: const [
                       DropdownMenuItem(
@@ -328,17 +328,19 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: _isTestingConnection
-                          ? Theme.of(context).colorScheme.surfaceContainerHighest
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest
                           : (_testConnectionSuccess == true
-                              ? Colors.green.withValues(alpha: 0.15)
-                              : Colors.red.withValues(alpha: 0.15)),
+                                ? Colors.green.withValues(alpha: 0.15)
+                                : Colors.red.withValues(alpha: 0.15)),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _isTestingConnection
                             ? Theme.of(context).colorScheme.outlineVariant
                             : (_testConnectionSuccess == true
-                                ? Colors.green
-                                : Colors.red),
+                                  ? Colors.green
+                                  : Colors.red),
                       ),
                     ),
                     child: Row(
@@ -364,14 +366,14 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                           child: Text(
                             _isTestingConnection
                                 ? (l10n?.testingConnection ??
-                                    'Testing Connection...')
+                                      'Testing Connection...')
                                 : (_testConnectionStatus ?? ''),
                             style: TextStyle(
                               color: _isTestingConnection
                                   ? null
                                   : (_testConnectionSuccess == true
-                                      ? Colors.green[800]
-                                      : Colors.red[800]),
+                                        ? Colors.green[800]
+                                        : Colors.red[800]),
                               fontWeight: FontWeight.w500,
                             ),
                           ),

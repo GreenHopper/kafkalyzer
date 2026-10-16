@@ -66,13 +66,14 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
     final l10n = AppLocalizations.of(context);
     final countText = widget.searchPhrase.isNotEmpty
         ? (l10n != null && widget.totalCount > 0
-            ? l10n.matchesOfTotal(widget.matchCount, widget.totalCount)
-            : (l10n?.stepMatches(widget.matchCount) ?? "${widget.matchCount} matches"))
+              ? l10n.matchesOfTotal(widget.matchCount, widget.totalCount)
+              : (l10n?.stepMatches(widget.matchCount) ??
+                    "${widget.matchCount} matches"))
         : (widget.totalCount > 0
-            ? (l10n != null
-                ? l10n.loadedMessagesCount(widget.totalCount)
-                : "${widget.totalCount} loaded messages")
-            : null);
+              ? (l10n != null
+                    ? l10n.loadedMessagesCount(widget.totalCount)
+                    : "${widget.totalCount} loaded messages")
+              : null);
 
     final hintText = widget.totalCount > 0 && l10n != null
         ? l10n.filterInLoadedMessages(widget.totalCount)

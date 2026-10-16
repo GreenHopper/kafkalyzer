@@ -56,10 +56,7 @@ void main() {
       });
 
       test('matches validFrom and validTo', () {
-        final map = {
-          'validFrom': '2026-01-01',
-          'validTo': '2026-12-31',
-        };
+        final map = {'validFrom': '2026-01-01', 'validTo': '2026-12-31'};
         final result = EntityFormatterRegistry.tryFormat(map);
         expect(result, isNotNull);
         expect(result!.label, '2026-01-01 → 2026-12-31');
@@ -68,10 +65,7 @@ void main() {
 
     group('Geo coordinates heuristic', () {
       test('matches lat and lon', () {
-        final map = {
-          'lat': 48.2082,
-          'lon': 16.3738,
-        };
+        final map = {'lat': 48.2082, 'lon': 16.3738};
         final result = EntityFormatterRegistry.tryFormat(map);
         expect(result, isNotNull);
         expect(result!.icon, Icons.pin_drop_outlined);
@@ -80,10 +74,7 @@ void main() {
       });
 
       test('matches latitude and longitude', () {
-        final map = {
-          'latitude': 52.5200,
-          'longitude': 13.4050,
-        };
+        final map = {'latitude': 52.5200, 'longitude': 13.4050};
         final result = EntityFormatterRegistry.tryFormat(map);
         expect(result, isNotNull);
         expect(result!.label, '52.52, 13.405');
@@ -92,10 +83,7 @@ void main() {
 
     group('Generic compact flat object heuristic', () {
       test('formats object with id and name keys compactly', () {
-        final map = {
-          'id': 1042,
-          'name': 'Acme Corp',
-        };
+        final map = {'id': 1042, 'name': 'Acme Corp'};
         final result = EntityFormatterRegistry.tryFormat(map);
         expect(result, isNotNull);
         expect(result!.icon, Icons.data_object);
@@ -104,28 +92,23 @@ void main() {
       });
 
       test('formats object with id, name, and third attribute', () {
-        final map = {
-          'id': 'C-99',
-          'name': 'VIP Customer',
-          'tier': 1,
-        };
+        final map = {'id': 'C-99', 'name': 'VIP Customer', 'tier': 1};
         final result = EntityFormatterRegistry.tryFormat(map);
         expect(result, isNotNull);
         expect(result!.label, 'C-99 • VIP Customer (tier: 1)');
       });
 
-      test('does not format single-entry object as generic composite badge', () {
-        final map = {'status': 'ACTIVE'};
-        final result = EntityFormatterRegistry.tryFormat(map);
-        expect(result, isNull);
-      });
+      test(
+        'does not format single-entry object as generic composite badge',
+        () {
+          final map = {'status': 'ACTIVE'};
+          final result = EntityFormatterRegistry.tryFormat(map);
+          expect(result, isNull);
+        },
+      );
 
       test('formats generic 3-4 entry flat object without id/name', () {
-        final map = {
-          'code': 'XYZ',
-          'priority': 2,
-          'active': true,
-        };
+        final map = {'code': 'XYZ', 'priority': 2, 'active': true};
         final result = EntityFormatterRegistry.tryFormat(map);
         expect(result, isNotNull);
         expect(result!.label, contains('code: XYZ'));
@@ -152,13 +135,7 @@ void main() {
       });
 
       test('rejects flat map with more than 4 non-null entries', () {
-        final map = {
-          'k1': 1,
-          'k2': 2,
-          'k3': 3,
-          'k4': 4,
-          'k5': 5,
-        };
+        final map = {'k1': 1, 'k2': 2, 'k3': 3, 'k4': 4, 'k5': 5};
         final result = EntityFormatterRegistry.tryFormat(map);
         expect(result, isNull);
       });
@@ -179,23 +156,26 @@ void main() {
     });
 
     group('Extended heuristics (nested time, standalone timestamp, routes)', () {
-      test('formats nested timestamp object for planTimestampVon and planTimestampBis', () {
-        final map = {
-          'planTimestampVon': {
-            'timestamp': '2026-09-29T05:00:00+01:00',
-            'zeitQuelle': 'SYSTEM'
-          },
-          'planTimestampBis': {
-            'timestamp': '2026-09-29T19:00:00+01:00',
-            'zeitQuelle': 'SYSTEM'
-          },
-        };
-        final result = EntityFormatterRegistry.tryFormat(map);
-        expect(result, isNotNull);
-        expect(result!.icon, Icons.date_range_outlined);
-        expect(result.label, contains('2026-09-29'));
-        expect(result.label, contains('→'));
-      });
+      test(
+        'formats nested timestamp object for planTimestampVon and planTimestampBis',
+        () {
+          final map = {
+            'planTimestampVon': {
+              'timestamp': '2026-09-29T05:00:00+01:00',
+              'zeitQuelle': 'SYSTEM',
+            },
+            'planTimestampBis': {
+              'timestamp': '2026-09-29T19:00:00+01:00',
+              'zeitQuelle': 'SYSTEM',
+            },
+          };
+          final result = EntityFormatterRegistry.tryFormat(map);
+          expect(result, isNotNull);
+          expect(result!.icon, Icons.date_range_outlined);
+          expect(result.label, contains('2026-09-29'));
+          expect(result.label, contains('→'));
+        },
+      );
 
       test('formats standalone timestamp with metadata', () {
         final map = {
@@ -239,12 +219,25 @@ void main() {
 
       test('returns null for empty list or list with more than 3 items', () {
         expect(EntityFormatterRegistry.tryFormatList([]), isNull);
-        expect(EntityFormatterRegistry.tryFormatList(['A', 'B', 'C', 'D']), isNull);
+        expect(
+          EntityFormatterRegistry.tryFormatList(['A', 'B', 'C', 'D']),
+          isNull,
+        );
       });
 
       test('returns null if items contain complex objects or lists', () {
-        expect(EntityFormatterRegistry.tryFormatList([{'key': 'val'}]), isNull);
-        expect(EntityFormatterRegistry.tryFormatList([['nested']]), isNull);
+        expect(
+          EntityFormatterRegistry.tryFormatList([
+            {'key': 'val'},
+          ]),
+          isNull,
+        );
+        expect(
+          EntityFormatterRegistry.tryFormatList([
+            ['nested'],
+          ]),
+          isNull,
+        );
       });
 
       test('returns null if any item is null or empty string', () {
@@ -259,7 +252,10 @@ void main() {
 
         final str30 = 'a' * 30;
         // 3 * 30 + brackets & quotes > 80 chars
-        expect(EntityFormatterRegistry.tryFormatList([str30, str30, str30]), isNull);
+        expect(
+          EntityFormatterRegistry.tryFormatList([str30, str30, str30]),
+          isNull,
+        );
       });
     });
   });

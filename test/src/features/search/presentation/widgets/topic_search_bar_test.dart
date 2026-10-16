@@ -122,23 +122,24 @@ void main() {
     },
   );
 
-  testWidgets('TopicSearchBar dynamic action button shows Stop when streaming', (
-    tester,
-  ) async {
-    bool stopClicked = false;
-    await tester.pumpWidget(
-      buildTestWidget(isStreaming: true, onStop: () => stopClicked = true),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'TopicSearchBar dynamic action button shows Stop when streaming',
+    (tester) async {
+      bool stopClicked = false;
+      await tester.pumpWidget(
+        buildTestWidget(isStreaming: true, onStop: () => stopClicked = true),
+      );
+      await tester.pumpAndSettle();
 
-    final stopBtn = find.byKey(const Key('search_bar_stop_button'));
-    expect(stopBtn, findsOneWidget);
-    expect(find.text('Stop'), findsOneWidget);
+      final stopBtn = find.byKey(const Key('search_bar_stop_button'));
+      expect(stopBtn, findsOneWidget);
+      expect(find.text('Stop'), findsOneWidget);
 
-    await tester.tap(stopBtn);
-    await tester.pump();
-    expect(stopClicked, isTrue);
-  });
+      await tester.tap(stopBtn);
+      await tester.pump();
+      expect(stopClicked, isTrue);
+    },
+  );
 
   testWidgets('TopicSearchBar toggles progressive disclosure advanced panel', (
     tester,

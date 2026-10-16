@@ -11,11 +11,7 @@ void main() {
         label: 'Musterstrasse 1, 1010 Wien',
         color: Colors.blueAccent,
       );
-      final data = {
-        'strasse': 'Musterstrasse 1',
-        'plz': '1010',
-        'ort': 'Wien',
-      };
+      final data = {'strasse': 'Musterstrasse 1', 'plz': '1010', 'ort': 'Wien'};
 
       await tester.pumpWidget(
         MaterialApp(
@@ -31,65 +27,62 @@ void main() {
         ),
       );
 
-      expect(
-        find.text('address: Musterstrasse 1, 1010 Wien'),
-        findsOneWidget,
-      );
+      expect(find.text('address: Musterstrasse 1, 1010 Wien'), findsOneWidget);
       expect(find.byIcon(Icons.location_on_outlined), findsOneWidget);
       expect(find.byIcon(Icons.unfold_more), findsOneWidget);
     });
 
-    testWidgets('tapping badge pins popover and displays all fields with copy button', (tester) async {
-      const badgeData = FormattedBadgeData(
-        icon: Icons.data_object,
-        label: '1042 • Acme Corp',
-        color: Colors.teal,
-      );
-      final data = {
-        'id': 1042,
-        'name': 'Acme Corp',
-      };
+    testWidgets(
+      'tapping badge pins popover and displays all fields with copy button',
+      (tester) async {
+        const badgeData = FormattedBadgeData(
+          icon: Icons.data_object,
+          label: '1042 • Acme Corp',
+          color: Colors.teal,
+        );
+        final data = {'id': 1042, 'name': 'Acme Corp'};
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SmartCompositeBadge(
-                keyName: 'customer',
-                data: data,
-                badgeInfo: badgeData,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SmartCompositeBadge(
+                  keyName: 'customer',
+                  data: data,
+                  badgeInfo: badgeData,
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Popover is not open initially
-      expect(find.text('id'), findsNothing);
+        // Popover is not open initially
+        expect(find.text('id'), findsNothing);
 
-      // Tap badge to pin
-      await tester.tap(find.byType(SmartCompositeBadge));
-      await tester.pumpAndSettle();
+        // Tap badge to pin
+        await tester.tap(find.byType(SmartCompositeBadge));
+        await tester.pumpAndSettle();
 
-      // Lock icon indicates pinned state
-      expect(find.byIcon(Icons.lock), findsOneWidget);
+        // Lock icon indicates pinned state
+        expect(find.byIcon(Icons.lock), findsOneWidget);
 
-      // Popover shows header and fields
-      expect(find.text('customer'), findsOneWidget);
-      expect(find.text('id'), findsOneWidget);
-      expect(find.text('1042'), findsOneWidget);
-      expect(find.text('name'), findsOneWidget);
-      expect(find.text('Acme Corp'), findsOneWidget);
-      expect(find.byTooltip('Copy whole object'), findsOneWidget);
-      expect(find.byTooltip('Close'), findsOneWidget);
+        // Popover shows header and fields
+        expect(find.text('customer'), findsOneWidget);
+        expect(find.text('id'), findsOneWidget);
+        expect(find.text('1042'), findsOneWidget);
+        expect(find.text('name'), findsOneWidget);
+        expect(find.text('Acme Corp'), findsOneWidget);
+        expect(find.byTooltip('Copy whole object'), findsOneWidget);
+        expect(find.byTooltip('Close'), findsOneWidget);
 
-      // Tap close button dismisses popover
-      await tester.tap(find.byTooltip('Close'));
-      await tester.pumpAndSettle();
+        // Tap close button dismisses popover
+        await tester.tap(find.byTooltip('Close'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('1042'), findsNothing);
-      expect(find.byIcon(Icons.unfold_more), findsOneWidget);
-    });
+        expect(find.text('1042'), findsNothing);
+        expect(find.byIcon(Icons.unfold_more), findsOneWidget);
+      },
+    );
 
     testWidgets('ellipsizes long label under tight width constraints', (
       tester,
@@ -132,10 +125,7 @@ void main() {
         label: '2026-09-01 → 2026-09-30',
         color: Colors.orangeAccent,
       );
-      final data = {
-        'startDate': '2026-09-01',
-        'endDate': '2026-09-30',
-      };
+      final data = {'startDate': '2026-09-01', 'endDate': '2026-09-30'};
 
       await tester.pumpWidget(
         MaterialApp(

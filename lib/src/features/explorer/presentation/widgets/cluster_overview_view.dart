@@ -138,7 +138,7 @@ class ClusterOverviewView extends StatelessWidget {
                                   isLoading
                                       ? '...'
                                       : (l10n?.clusterTopicsCount(topicCount) ??
-                                          '$topicCount Topics'),
+                                            '$topicCount Topics'),
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -179,10 +179,9 @@ class ClusterOverviewView extends StatelessWidget {
                                   ? Icons.schema_outlined
                                   : Icons.schema,
                               size: 32,
-                              color:
-                                  hasSchemaRegistry
-                                      ? colorScheme.primary
-                                      : colorScheme.outline,
+                              color: hasSchemaRegistry
+                                  ? colorScheme.primary
+                                  : colorScheme.outline,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -192,13 +191,11 @@ class ClusterOverviewView extends StatelessWidget {
                                   Text(
                                     hasSchemaRegistry
                                         ? (l10n?.schemaRegistryActive ??
-                                            'Schema Registry Connected')
+                                              'Schema Registry Connected')
                                         : (l10n?.schemaRegistryNotConfigured ??
-                                            'No Schema Registry'),
+                                              'No Schema Registry'),
                                     style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        ?.copyWith(fontWeight: FontWeight.bold),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -229,7 +226,9 @@ class ClusterOverviewView extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.4),
+                  color: colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.4,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -316,7 +315,8 @@ class ClusterOverviewView extends StatelessWidget {
                                   Icons.arrow_forward_ios,
                                   size: 14,
                                 ),
-                                onTap: () => onSelectTopic(clusterRecent[i].topicName),
+                                onTap: () =>
+                                    onSelectTopic(clusterRecent[i].topicName),
                               ),
                             ],
                           ],

@@ -3,11 +3,7 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/file_picker_form_field.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/password_form_field.dart';
 
-enum SslClientAuthMode {
-  none,
-  keystore,
-  pem,
-}
+enum SslClientAuthMode { none, keystore, pem }
 
 class ClusterSslForm extends StatefulWidget {
   final TextEditingController keystoreLocationController;
@@ -68,7 +64,8 @@ class _ClusterSslFormState extends State<ClusterSslForm> {
           padding: const EdgeInsets.all(8.0),
           child: FilePickerFormField(
             controller: widget.truststoreLocationController,
-            labelText: l10n?.truststoreLocationLabel ??
+            labelText:
+                l10n?.truststoreLocationLabel ??
                 'Truststore Location (PEM or JKS)',
             allowedExtensions: const ['pem', 'jks', 'crt', 'truststore'],
           ),
@@ -77,8 +74,7 @@ class _ClusterSslFormState extends State<ClusterSslForm> {
           padding: const EdgeInsets.all(8.0),
           child: PasswordFormField(
             controller: widget.truststorePasswordController,
-            labelText:
-                l10n?.truststorePasswordLabel ?? 'Truststore Password',
+            labelText: l10n?.truststorePasswordLabel ?? 'Truststore Password',
           ),
         ),
         const Divider(),
@@ -124,7 +120,8 @@ class _ClusterSslFormState extends State<ClusterSslForm> {
             padding: const EdgeInsets.all(8.0),
             child: FilePickerFormField(
               controller: widget.keystoreLocationController,
-              labelText: l10n?.keystoreLocationLabel ??
+              labelText:
+                  l10n?.keystoreLocationLabel ??
                   'Keystore Location (.p12/.pfx/.jks)',
               allowedExtensions: const ['p12', 'pfx', 'jks', 'keystore'],
             ),
@@ -133,8 +130,7 @@ class _ClusterSslFormState extends State<ClusterSslForm> {
             padding: const EdgeInsets.all(8.0),
             child: PasswordFormField(
               controller: widget.keystorePasswordController,
-              labelText:
-                  l10n?.keystorePasswordLabel ?? 'Keystore Password',
+              labelText: l10n?.keystorePasswordLabel ?? 'Keystore Password',
             ),
           ),
         ] else if (_authMode == SslClientAuthMode.pem) ...[
@@ -142,7 +138,8 @@ class _ClusterSslFormState extends State<ClusterSslForm> {
             padding: const EdgeInsets.all(8.0),
             child: FilePickerFormField(
               controller: widget.pemCertificateLocationController,
-              labelText: l10n?.clientCertPemLocationLabel ??
+              labelText:
+                  l10n?.clientCertPemLocationLabel ??
                   'Client Certificate PEM Location',
               allowedExtensions: const ['pem', 'crt', 'cer'],
             ),
@@ -151,7 +148,8 @@ class _ClusterSslFormState extends State<ClusterSslForm> {
             padding: const EdgeInsets.all(8.0),
             child: FilePickerFormField(
               controller: widget.pemKeyLocationController,
-              labelText: l10n?.clientKeyPemLocationLabel ??
+              labelText:
+                  l10n?.clientKeyPemLocationLabel ??
                   'Client Private Key PEM Location',
               allowedExtensions: const ['pem', 'key'],
             ),
@@ -160,8 +158,8 @@ class _ClusterSslFormState extends State<ClusterSslForm> {
             padding: const EdgeInsets.all(8.0),
             child: PasswordFormField(
               controller: widget.pemKeyPasswordController,
-              labelText: l10n?.clientKeyPasswordLabel ??
-                  'Client Private Key Password',
+              labelText:
+                  l10n?.clientKeyPasswordLabel ?? 'Client Private Key Password',
             ),
           ),
         ],

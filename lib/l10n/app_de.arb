@@ -598,5 +598,22 @@
   "requiredValidation": "Erforderlich",
   "bootstrapServersLabel": "Bootstrap-Server (z. B. localhost:9092)",
   "schemaRegistryUrlLabel": "Schema Registry URL (optional)",
-  "invalidUrlFormat": "Ungültiges URL-Format"
+  "invalidUrlFormat": "Ungültiges URL-Format",
+  "keySchemaTitle": "Key-Schema",
+  "valueSchemaTitle": "Value-Schema",
+  "schemaTabTitle": "Schema",
+  "schemaPinAsColumn": "Als Tabellenspalte anheften",
+  "schemaPinAsColumnTooltip": "Dieses Schema-Feld als Tabellenspalte anheften",
+  "schemaFilterByField": "Nach diesem Feld filtern",
+  "schemaFilterByFieldTooltip": "Nachrichten nach diesem Schema-Feld filtern",
+  "schemaFieldFilterApplied": "Filterfeld auf '{field}' gesetzt",
+  "@schemaFieldFilterApplied": {
+    "placeholders": {
+      "field": { "type": "String" }
+    }
+  },
+  "schemaNoRegistryConfigured": "Keine Schema Registry für diesen Cluster konfiguriert.",
+  "schemaConfigureRegistryAction": "Cluster konfigurieren",
+  "schemaRetry": "Wiederholen",
+  "schemaSearchHint": "Schema-Felder und Typen suchen..."
 }

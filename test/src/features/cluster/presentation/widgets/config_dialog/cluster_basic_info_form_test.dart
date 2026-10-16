@@ -160,10 +160,7 @@ void main() {
         find.text('Bootstrap-Server (z. B. localhost:9092)'),
         findsOneWidget,
       );
-      expect(
-        find.text('Schema Registry URL (optional)'),
-        findsOneWidget,
-      );
+      expect(find.text('Schema Registry URL (optional)'), findsOneWidget);
 
       // Trigger empty validation on required fields
       formKey.currentState!.validate();
@@ -196,7 +193,9 @@ void main() {
       formKey.currentState!.validate();
       await tester.pump();
       expect(
-        find.text("Möglicher Tippfehler: Verwenden Sie ':' für den Port statt '.'"),
+        find.text(
+          "Möglicher Tippfehler: Verwenden Sie ':' für den Port statt '.'",
+        ),
         findsOneWidget,
       );
     });

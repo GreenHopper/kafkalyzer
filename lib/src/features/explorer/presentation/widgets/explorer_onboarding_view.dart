@@ -149,118 +149,112 @@ class ExplorerOnboardingView extends StatelessWidget {
                 Wrap(
                   spacing: 16,
                   runSpacing: 16,
-                  children:
-                      clusters.map((cluster) {
-                        final hasSchemaRegistry =
-                            cluster.schemaRegistryUrl != null &&
-                            cluster.schemaRegistryUrl!.trim().isNotEmpty;
-                        return SizedBox(
-                          width: 420,
-                          child: Card(
-                            elevation: 0,
-                            color: colorScheme.surfaceContainerLowest,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              side: BorderSide(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
+                  children: clusters.map((cluster) {
+                    final hasSchemaRegistry =
+                        cluster.schemaRegistryUrl != null &&
+                        cluster.schemaRegistryUrl!.trim().isNotEmpty;
+                    return SizedBox(
+                      width: 420,
+                      child: Card(
+                        elevation: 0,
+                        color: colorScheme.surfaceContainerLowest,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(
+                            color: colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(18.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(18.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          cluster.name,
-                                          style: theme.textTheme.titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: colorScheme
-                                              .secondaryContainer
-                                              .withValues(alpha: 0.7),
-                                          borderRadius: BorderRadius.circular(
-                                            6,
+                                  Expanded(
+                                    child: Text(
+                                      cluster.name,
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                        ),
-                                        child: Text(
-                                          cluster.securityProtocol
-                                                  ?.toUpperCase() ??
-                                              'PLAINTEXT',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color:
-                                                    colorScheme
-                                                        .onSecondaryContainer,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    cluster.bootstrapServers,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.outline,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  if (hasSchemaRegistry) ...[
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.schema_outlined,
-                                          size: 14,
-                                          color: colorScheme.primary,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          l10n?.schemaRegistryActive ??
-                                              'Schema Registry Connected',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color: colorScheme.primary,
-                                              ),
-                                        ),
-                                      ],
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
                                     ),
-                                  ],
-                                  const SizedBox(height: 16),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: FilledButton.tonalIcon(
-                                      onPressed: () => onSelectCluster(cluster),
-                                      icon: const Icon(Icons.login, size: 18),
-                                      label: Text(
-                                        l10n?.connectCluster ?? 'Connect',
-                                      ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.secondaryContainer
+                                          .withValues(alpha: 0.7),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      cluster.securityProtocol?.toUpperCase() ??
+                                          'PLAINTEXT',
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: colorScheme
+                                                .onSecondaryContainer,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 6),
+                              Text(
+                                cluster.bootstrapServers,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.outline,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (hasSchemaRegistry) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.schema_outlined,
+                                      size: 14,
+                                      color: colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      l10n?.schemaRegistryActive ??
+                                          'Schema Registry Connected',
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: colorScheme.primary,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 16),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: FilledButton.tonalIcon(
+                                  onPressed: () => onSelectCluster(cluster),
+                                  icon: const Icon(Icons.login, size: 18),
+                                  label: Text(
+                                    l10n?.connectCluster ?? 'Connect',
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
 
@@ -345,11 +339,10 @@ class ExplorerOnboardingView extends StatelessWidget {
                                   Icons.arrow_forward_ios,
                                   size: 14,
                                 ),
-                                onTap:
-                                    () => onSelectRecentTopic(
-                                      recentTopics[i].clusterName,
-                                      recentTopics[i].topicName,
-                                    ),
+                                onTap: () => onSelectRecentTopic(
+                                  recentTopics[i].clusterName,
+                                  recentTopics[i].topicName,
+                                ),
                               ),
                             ],
                           ],

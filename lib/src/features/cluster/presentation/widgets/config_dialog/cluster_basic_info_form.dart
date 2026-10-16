@@ -49,8 +49,9 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final hasSchemaUrl =
-        widget.schemaRegistryUrlController.text.trim().isNotEmpty;
+    final hasSchemaUrl = widget.schemaRegistryUrlController.text
+        .trim()
+        .isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,8 +63,9 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
             decoration: InputDecoration(
               labelText: l10n?.clusterNameLabel ?? 'Cluster Name',
             ),
-            validator: (value) =>
-                value!.isEmpty ? (l10n?.requiredValidation ?? 'Required') : null,
+            validator: (value) => value!.isEmpty
+                ? (l10n?.requiredValidation ?? 'Required')
+                : null,
           ),
         ),
         Padding(
@@ -71,11 +73,13 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
           child: TextFormField(
             controller: widget.bootstrapServersController,
             decoration: InputDecoration(
-              labelText: l10n?.bootstrapServersLabel ??
+              labelText:
+                  l10n?.bootstrapServersLabel ??
                   'Bootstrap Servers (e.g. localhost:9092)',
             ),
-            validator: (value) =>
-                value!.isEmpty ? (l10n?.requiredValidation ?? 'Required') : null,
+            validator: (value) => value!.isEmpty
+                ? (l10n?.requiredValidation ?? 'Required')
+                : null,
           ),
         ),
         Padding(
@@ -83,7 +87,8 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
           child: TextFormField(
             controller: widget.schemaRegistryUrlController,
             decoration: InputDecoration(
-              labelText: l10n?.schemaRegistryUrlLabel ??
+              labelText:
+                  l10n?.schemaRegistryUrlLabel ??
                   'Schema Registry URL (Optional)',
               hintText: 'e.g. http://localhost:8081',
             ),
@@ -132,8 +137,8 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
                     l10n?.schemaRegistryCredentialsOptional ??
                         'Schema Registry Credentials (Optional)',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -145,7 +150,8 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
               child: TextFormField(
                 controller: widget.schemaRegistryUsernameController,
                 decoration: InputDecoration(
-                  labelText: l10n?.schemaRegistryUsernameOptional ??
+                  labelText:
+                      l10n?.schemaRegistryUsernameOptional ??
                       'Schema Registry Username (Optional)',
                 ),
               ),
@@ -154,7 +160,8 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
               padding: const EdgeInsets.all(8.0),
               child: PasswordFormField(
                 controller: widget.schemaRegistryPasswordController,
-                labelText: l10n?.schemaRegistryPasswordOptional ??
+                labelText:
+                    l10n?.schemaRegistryPasswordOptional ??
                     'Schema Registry Password (Optional)',
               ),
             ),

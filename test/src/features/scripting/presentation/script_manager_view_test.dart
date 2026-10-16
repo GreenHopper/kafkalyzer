@@ -27,8 +27,11 @@ class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
 
 void main() {
   const testScript = Script(id: 'script-1', name: 'Demo Script', steps: []);
-  const testScript2 =
-      Script(id: 'script-2', name: 'Analytics Pipeline', steps: []);
+  const testScript2 = Script(
+    id: 'script-2',
+    name: 'Analytics Pipeline',
+    steps: [],
+  );
 
   setUp(() async {
     await getIt.reset();

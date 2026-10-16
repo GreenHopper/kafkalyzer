@@ -60,7 +60,5 @@ void setupDependencyInjection() {
   getIt.registerLazySingleton<TopicAnalysisExportService>(
     () => TopicAnalysisExportService(),
   );
-  getIt.registerLazySingleton<RecentTopicsService>(
-    () => RecentTopicsService(),
-  );
+  getIt.registerLazySingleton<RecentTopicsService>(() => RecentTopicsService());
 }

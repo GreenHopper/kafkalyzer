@@ -1617,4 +1617,45 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get invalidUrlFormat => 'Ungültiges URL-Format';
+
+  @override
+  String get keySchemaTitle => 'Key-Schema';
+
+  @override
+  String get valueSchemaTitle => 'Value-Schema';
+
+  @override
+  String get schemaTabTitle => 'Schema';
+
+  @override
+  String get schemaPinAsColumn => 'Als Tabellenspalte anheften';
+
+  @override
+  String get schemaPinAsColumnTooltip =>
+      'Dieses Schema-Feld als Tabellenspalte anheften';
+
+  @override
+  String get schemaFilterByField => 'Nach diesem Feld filtern';
+
+  @override
+  String get schemaFilterByFieldTooltip =>
+      'Nachrichten nach diesem Schema-Feld filtern';
+
+  @override
+  String schemaFieldFilterApplied(String field) {
+    return 'Filterfeld auf \'$field\' gesetzt';
+  }
+
+  @override
+  String get schemaNoRegistryConfigured =>
+      'Keine Schema Registry für diesen Cluster konfiguriert.';
+
+  @override
+  String get schemaConfigureRegistryAction => 'Cluster konfigurieren';
+
+  @override
+  String get schemaRetry => 'Wiederholen';
+
+  @override
+  String get schemaSearchHint => 'Schema-Felder und Typen suchen...';
 }

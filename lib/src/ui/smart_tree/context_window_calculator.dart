@@ -10,10 +10,7 @@ class VisibleItemSegment extends ListSegment {
   final int index;
   final bool isDirectMatch;
 
-  const VisibleItemSegment({
-    required this.index,
-    required this.isDirectMatch,
-  });
+  const VisibleItemSegment({required this.index, required this.isDirectMatch});
 
   @override
   bool operator ==(Object other) =>
@@ -105,10 +102,12 @@ class ContextWindowCalculator {
 
     while (currentIndex < totalLength) {
       if (visibleIndices.contains(currentIndex)) {
-        segments.add(VisibleItemSegment(
-          index: currentIndex,
-          isDirectMatch: matchIndices.contains(currentIndex),
-        ));
+        segments.add(
+          VisibleItemSegment(
+            index: currentIndex,
+            isDirectMatch: matchIndices.contains(currentIndex),
+          ),
+        );
         currentIndex++;
       } else {
         final collapsedStart = currentIndex;
@@ -116,10 +115,12 @@ class ContextWindowCalculator {
             !visibleIndices.contains(currentIndex)) {
           currentIndex++;
         }
-        segments.add(CollapsedRangeSegment(
-          startIndex: collapsedStart,
-          endIndex: currentIndex - 1,
-        ));
+        segments.add(
+          CollapsedRangeSegment(
+            startIndex: collapsedStart,
+            endIndex: currentIndex - 1,
+          ),
+        );
       }
     }
 

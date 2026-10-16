@@ -20,6 +20,7 @@ class JsonOrStringViewer extends StatefulWidget {
   final int? initialViewMode;
   final double? treeViewHeight;
   final ValueChanged<String>? onPinToColumn;
+  final ValueChanged<String>? onFilterByField;
 
   const JsonOrStringViewer({
     super.key,
@@ -35,6 +36,7 @@ class JsonOrStringViewer extends StatefulWidget {
     this.initialViewMode,
     this.treeViewHeight,
     this.onPinToColumn,
+    this.onFilterByField,
   });
 
   @override
@@ -91,8 +93,9 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
           _updateMatchCount();
         });
       }
-      final savedHideNull =
-          prefs.getBool('json_hide_null_${widget.persistenceKey}');
+      final savedHideNull = prefs.getBool(
+        'json_hide_null_${widget.persistenceKey}',
+      );
       if (savedHideNull != null) {
         setState(() {
           _hideNullFields = savedHideNull;
@@ -200,6 +203,7 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
             _updateMatchCount();
           },
           onPinToColumn: widget.onPinToColumn,
+          onFilterByField: widget.onFilterByField,
         ),
       );
     } else {
@@ -300,9 +304,9 @@ class JsonOrStringViewerState extends State<JsonOrStringViewer> {
                       ),
                       tooltip: _hideNullFields
                           ? (AppLocalizations.of(context)?.showEmptyFields ??
-                              'Show empty fields')
+                                'Show empty fields')
                           : (AppLocalizations.of(context)?.hideEmptyFields ??
-                              'Hide empty fields'),
+                                'Hide empty fields'),
                       onPressed: () async {
                         setState(() {
                           _hideNullFields = !_hideNullFields;

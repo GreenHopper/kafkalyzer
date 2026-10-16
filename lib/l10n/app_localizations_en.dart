@@ -1607,4 +1607,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get invalidUrlFormat => 'Invalid URL format';
+
+  @override
+  String get keySchemaTitle => 'Key Schema';
+
+  @override
+  String get valueSchemaTitle => 'Value Schema';
+
+  @override
+  String get schemaTabTitle => 'Schema';
+
+  @override
+  String get schemaPinAsColumn => 'Pin as table column';
+
+  @override
+  String get schemaPinAsColumnTooltip =>
+      'Pin this schema field as a projected table column';
+
+  @override
+  String get schemaFilterByField => 'Filter by this field';
+
+  @override
+  String get schemaFilterByFieldTooltip =>
+      'Filter topic messages by this schema field';
+
+  @override
+  String schemaFieldFilterApplied(String field) {
+    return 'Filter field set to \'$field\'';
+  }
+
+  @override
+  String get schemaNoRegistryConfigured =>
+      'No Schema Registry configured for this cluster.';
+
+  @override
+  String get schemaConfigureRegistryAction => 'Configure Cluster';
+
+  @override
+  String get schemaRetry => 'Retry';
+
+  @override
+  String get schemaSearchHint => 'Search schema fields and types...';
 }

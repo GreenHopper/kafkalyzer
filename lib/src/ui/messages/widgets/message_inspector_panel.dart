@@ -2,7 +2,11 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
 import 'package:kafkalyzer/src/utils/app_fonts.dart';
@@ -25,6 +29,7 @@ class MessageInspectorPanel extends StatefulWidget {
   final bool isMaximized;
   final VoidCallback? onToggleMaximize;
   final ValueChanged<String>? onPinToColumn;
+  final ClusterProfile? profile;
 
   const MessageInspectorPanel({
     super.key,
@@ -40,6 +45,7 @@ class MessageInspectorPanel extends StatefulWidget {
     this.isMaximized = false,
     this.onToggleMaximize,
     this.onPinToColumn,
+    this.profile,
   });
 
   @override
@@ -155,7 +161,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
         ),
       ),
       child: DefaultTabController(
-        length: 3,
+        length: 4,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -179,6 +185,8 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
                   _buildKeyAndHeadersTab(context, colorScheme, l10n),
                   // Tab 3: Raw JSON
                   _buildRawJsonTab(context, colorScheme, l10n, dateStr),
+                  // Tab 4: Schema Viewer
+                  _buildSchemaTab(context),
                 ],
               ),
             ),
@@ -640,7 +648,9 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
     int headerCount,
   ) {
     return TabBar(
-      labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      labelPadding: const EdgeInsets.symmetric(horizontal: 14),
       labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
       unselectedLabelStyle: const TextStyle(fontSize: 12),
       tabs: [
@@ -658,6 +668,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
           ),
         ),
         Tab(text: l10n.tabRawJson),
+        Tab(text: l10n.schemaTabTitle),
       ],
     );
   }
@@ -845,6 +856,30 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSchemaTab(BuildContext context) {
+    final effectiveProfile =
+        widget.profile ??
+        (getIt.isRegistered<ActiveConnectionController>()
+            ? getIt<ActiveConnectionController>().activeProfile
+            : null);
+
+    if (effectiveProfile == null) {
+      return Center(
+        child: Text(
+          AppLocalizations.of(context)?.selectClusterToViewTopics ??
+              'No active cluster',
+        ),
+      );
+    }
+
+    return TopicSchemaInspectorView(
+      profile: effectiveProfile,
+      topicName: widget.message.topic,
+      isEmbedded: true,
+      onPinToColumn: widget.onPinToColumn,
     );
   }
 }

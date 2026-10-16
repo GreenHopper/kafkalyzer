@@ -69,23 +69,24 @@ void main() {
     },
   );
 
-  testWidgets('renders loaded messages count and dynamic placeholder when empty', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      createWidgetUnderTest(
-        searchPhrase: "",
-        onSearchChanged: (_) {},
-        matchCount: 0,
-        totalCount: 200,
-        showNonMatches: true,
-        onShowNonMatchesChanged: (_) {},
-      ),
-    );
+  testWidgets(
+    'renders loaded messages count and dynamic placeholder when empty',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          searchPhrase: "",
+          onSearchChanged: (_) {},
+          matchCount: 0,
+          totalCount: 200,
+          showNonMatches: true,
+          onShowNonMatchesChanged: (_) {},
+        ),
+      );
 
-    expect(find.text('200 loaded messages'), findsOneWidget);
-    expect(find.text('Filter in 200 loaded messages...'), findsOneWidget);
-  });
+      expect(find.text('200 loaded messages'), findsOneWidget);
+      expect(find.text('Filter in 200 loaded messages...'), findsOneWidget);
+    },
+  );
 
   testWidgets('clears text on pressing clear icon', (
     WidgetTester tester,

@@ -191,7 +191,10 @@ void main() {
 
       // In table mode, toolbar sort controls are hidden
       expect(find.byKey(const Key('message_sort_order_toggle')), findsNothing);
-      expect(find.byKey(const Key('message_sort_field_selector')), findsNothing);
+      expect(
+        find.byKey(const Key('message_sort_field_selector')),
+        findsNothing,
+      );
 
       // Switch to timeline mode
       await tester.tap(find.byIcon(Icons.view_list));
@@ -210,39 +213,43 @@ void main() {
     },
   );
 
-  testWidgets('hides sort controls in table view and restores sort order in timeline view', (
-    WidgetTester tester,
-  ) async {
-    tester.view.physicalSize = const Size(1920, 1080);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'hides sort controls in table view and restores sort order in timeline view',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    SharedPreferences.setMockInitialValues({
-      'message_sort_order_timeline': 'desc',
-    });
+      SharedPreferences.setMockInitialValues({
+        'message_sort_order_timeline': 'desc',
+      });
 
-    await tester.pumpWidget(
-      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+      );
+      await tester.pumpAndSettle();
 
-    // Table view: toolbar sort controls are hidden
-    expect(find.byKey(const Key('message_sort_order_toggle')), findsNothing);
-    expect(find.byKey(const Key('message_sort_field_selector')), findsNothing);
+      // Table view: toolbar sort controls are hidden
+      expect(find.byKey(const Key('message_sort_order_toggle')), findsNothing);
+      expect(
+        find.byKey(const Key('message_sort_field_selector')),
+        findsNothing,
+      );
 
-    // Switch to timeline → sort controls visible with descending
-    await tester.tap(find.byIcon(Icons.view_list));
-    await tester.pumpAndSettle();
-    expect(find.byType(MessagesTimelineView), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
+      // Switch to timeline → sort controls visible with descending
+      await tester.tap(find.byIcon(Icons.view_list));
+      await tester.pumpAndSettle();
+      expect(find.byType(MessagesTimelineView), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
 
-    // Switch back to table → controls hidden again
-    await tester.tap(find.byIcon(Icons.table_chart));
-    await tester.pumpAndSettle();
-    expect(find.byType(MessagesTableView), findsOneWidget);
-    expect(find.byKey(const Key('message_sort_order_toggle')), findsNothing);
-  });
+      // Switch back to table → controls hidden again
+      await tester.tap(find.byIcon(Icons.table_chart));
+      await tester.pumpAndSettle();
+      expect(find.byType(MessagesTableView), findsOneWidget);
+      expect(find.byKey(const Key('message_sort_order_toggle')), findsNothing);
+    },
+  );
 
   testWidgets('timeline displays newest first when sort is descending', (
     WidgetTester tester,
@@ -333,9 +340,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    SharedPreferences.setMockInitialValues({
-      'view_mode_pref': 'timeline',
-    });
+    SharedPreferences.setMockInitialValues({'view_mode_pref': 'timeline'});
 
     await tester.pumpWidget(
       createWidgetUnderTest(
@@ -523,10 +528,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('en'),
         home: const Scaffold(
-          body: MessagesView(
-            messages: [],
-            onMessageTap: _dummyTap,
-          ),
+          body: MessagesView(messages: [], onMessageTap: _dummyTap),
         ),
       ),
     );
@@ -543,10 +545,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('de'),
         home: const Scaffold(
-          body: MessagesView(
-            messages: [],
-            onMessageTap: _dummyTap,
-          ),
+          body: MessagesView(messages: [], onMessageTap: _dummyTap),
         ),
       ),
     );

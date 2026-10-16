@@ -22,10 +22,7 @@ void main() {
     });
 
     test('records topic visit and persists to SharedPreferences', () async {
-      await service.recordVisit(
-        clusterName: 'PROD',
-        topicName: 'orders',
-      );
+      await service.recordVisit(clusterName: 'PROD', topicName: 'orders');
 
       expect(service.recentTopics.length, 1);
       expect(service.recentTopics.first.clusterName, 'PROD');
@@ -76,10 +73,7 @@ void main() {
 
     test('enforces maxRecentTopics limit of 10 items (LRU)', () async {
       for (int i = 0; i < 15; i++) {
-        await service.recordVisit(
-          clusterName: 'PROD',
-          topicName: 'topic-$i',
-        );
+        await service.recordVisit(clusterName: 'PROD', topicName: 'topic-$i');
       }
 
       expect(service.recentTopics.length, RecentTopicsService.maxRecentTopics);

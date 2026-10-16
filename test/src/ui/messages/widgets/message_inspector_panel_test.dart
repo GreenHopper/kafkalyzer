@@ -1,10 +1,40 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
+import 'package:mockito/mockito.dart';
+import '../../../features/schema/presentation/widgets/schema_viewer_dialog_test.mocks.dart';
 
 void main() {
+  late MockSchemaController mockSchemaController;
+
+  final testProfile = ClusterProfile(
+    name: 'test-cluster',
+    bootstrapServers: 'localhost:9092',
+    schemaRegistryUrl: 'http://localhost:8081',
+    securityProtocol: 'plaintext',
+    mechanism: 'plain',
+  );
+
+  setUp(() {
+    mockSchemaController = MockSchemaController();
+    if (getIt.isRegistered<SchemaController>()) {
+      getIt.unregister<SchemaController>();
+    }
+    getIt.registerSingleton<SchemaController>(mockSchemaController);
+  });
+
+  tearDown(() {
+    if (getIt.isRegistered<SchemaController>()) {
+      getIt.unregister<SchemaController>();
+    }
+  });
+
   final testMessage = KafkaMessage(
     topic: 'test-orders',
     partition: 2,
@@ -24,6 +54,8 @@ void main() {
     VoidCallback? onToggleDockPosition,
     VoidCallback? onClose,
     String? searchPhrase,
+    ClusterProfile? profile,
+    ValueChanged<String>? onPinToColumn,
   }) {
     return MaterialApp(
       localizationsDelegates: const [
@@ -38,6 +70,8 @@ void main() {
           onToggleDockPosition: onToggleDockPosition ?? () {},
           onClose: onClose ?? () {},
           searchPhrase: searchPhrase,
+          profile: profile,
+          onPinToColumn: onPinToColumn,
         ),
       ),
     );
@@ -164,4 +198,66 @@ void main() {
       expect(metadataMidpoint, closeTo(600, 20));
     },
   );
+
+  testWidgets(
+    'renders embedded TopicSchemaInspectorView when Schema tab is tapped',
+    (tester) async {
+      when(
+        mockSchemaController.getSchemas(any),
+      ).thenReturn(['test-orders-value']);
+      when(mockSchemaController.fetchSchemas(any)).thenAnswer((_) async {});
+      when(mockSchemaController.fetchSchemaContent(any, any)).thenAnswer(
+        (_) async =>
+            '{"type": "record", "name": "Order", "fields": [{"name": "orderId", "type": "string"}]}',
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(message: testMessage, profile: testProfile),
+      );
+      await tester.pumpAndSettle();
+
+      final schemaTab = find.text('Schema');
+      expect(schemaTab, findsOneWidget);
+
+      await tester.tap(schemaTab);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TopicSchemaInspectorView), findsOneWidget);
+    },
+  );
+
+  testWidgets('passes onPinToColumn callback to TopicSchemaInspectorView', (
+    tester,
+  ) async {
+    String? pinnedColumn;
+    when(
+      mockSchemaController.getSchemas(any),
+    ).thenReturn(['test-orders-value']);
+    when(mockSchemaController.fetchSchemas(any)).thenAnswer((_) async {});
+    when(mockSchemaController.fetchSchemaContent(any, any)).thenAnswer(
+      (_) async =>
+          '{"type": "record", "name": "Order", "fields": [{"name": "orderId", "type": "string"}]}',
+    );
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        message: testMessage,
+        profile: testProfile,
+        onPinToColumn: (col) => pinnedColumn = col,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Schema'));
+    await tester.pumpAndSettle();
+
+    final inspectorFinder = find.byType(TopicSchemaInspectorView);
+    expect(inspectorFinder, findsOneWidget);
+
+    final TopicSchemaInspectorView inspector = tester.widget(inspectorFinder);
+    expect(inspector.onPinToColumn, isNotNull);
+
+    inspector.onPinToColumn!('orderId');
+    expect(pinnedColumn, 'orderId');
+  });
 }

@@ -163,48 +163,51 @@ void main() {
     );
   });
 
-  testWidgets('ScriptEditor renders compact header with script name and concurrency limit', (
-    WidgetTester tester,
-  ) async {
-    final script = Script(
-      id: '1',
-      name: 'Batch Export Flow',
-      concurrencyLimit: 8,
-      variables: [],
-      steps: [],
-    );
+  testWidgets(
+    'ScriptEditor renders compact header with script name and concurrency limit',
+    (WidgetTester tester) async {
+      final script = Script(
+        id: '1',
+        name: 'Batch Export Flow',
+        concurrencyLimit: 8,
+        variables: [],
+        steps: [],
+      );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(
-          useMaterial3: true,
-          splashFactory: InkRipple.splashFactory,
-        ),
-        home: Scaffold(
-          body: ScriptEditor(
-            script: script,
-            onSave: (_) {},
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
+          home: Scaffold(
+            body: ScriptEditor(script: script, onSave: (_) {}),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    final scriptNameField = find.widgetWithText(TextField, 'Batch Export Flow');
-    expect(scriptNameField, findsOneWidget);
+      final scriptNameField = find.widgetWithText(
+        TextField,
+        'Batch Export Flow',
+      );
+      expect(scriptNameField, findsOneWidget);
 
-    final concurrencyField = find.widgetWithText(TextField, '8');
-    expect(concurrencyField, findsOneWidget);
+      final concurrencyField = find.widgetWithText(TextField, '8');
+      expect(concurrencyField, findsOneWidget);
 
-    final headerBox = tester.widget<ConstrainedBox>(
-      find.ancestor(
-        of: scriptNameField,
-        matching: find.byType(ConstrainedBox),
-      ).first,
-    );
-    expect(headerBox.constraints.maxWidth, 1200);
-  });
+      final headerBox = tester.widget<ConstrainedBox>(
+        find
+            .ancestor(
+              of: scriptNameField,
+              matching: find.byType(ConstrainedBox),
+            )
+            .first,
+      );
+      expect(headerBox.constraints.maxWidth, 1200);
+    },
+  );
 
   testWidgets('ScriptEditor requires confirmation before deleting a step', (
     WidgetTester tester,
@@ -264,7 +267,9 @@ void main() {
     expect(find.byType(AlertDialog), findsOneWidget);
     expect(find.text('Delete Step?'), findsOneWidget);
     expect(
-      find.text('Are you sure you want to delete step "Fetch User Event"? This action cannot be undone.'),
+      find.text(
+        'Are you sure you want to delete step "Fetch User Event"? This action cannot be undone.',
+      ),
       findsOneWidget,
     );
 

@@ -207,7 +207,8 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     final l10n = AppLocalizations.of(context);
     final isLoading = topicController.isLoading(_selectedCluster!);
     final loadingHint = l10n?.topicLoadingHint ?? "Loading topics...";
-    final selectHint = l10n?.selectTopicsCount(_selectedTopics.length) ??
+    final selectHint =
+        l10n?.selectTopicsCount(_selectedTopics.length) ??
         "Select Topics (${_selectedTopics.length} selected)";
     final emptyHint = l10n?.selectTopicsCount(0) ?? "Select Topics";
     final topicsLabel = l10n?.topics ?? "Topics";

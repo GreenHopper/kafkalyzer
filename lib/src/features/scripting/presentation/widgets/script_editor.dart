@@ -432,9 +432,9 @@ class _ScriptEditorState extends State<ScriptEditor> {
         color: Theme.of(context).colorScheme.surfaceContainerHigh,
         border: Border(
           bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant.withValues(
-              alpha: 0.5,
-            ),
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
         ),
       ),
@@ -727,7 +727,8 @@ class _ScriptEditorState extends State<ScriptEditor> {
     final step = _steps[index];
     final stepName = step.name.isNotEmpty ? step.name : "Step ${index + 1}";
     final title = l10n?.deleteStepConfirmationTitle ?? "Delete Step?";
-    final message = l10n?.deleteStepConfirmationMessage(stepName) ??
+    final message =
+        l10n?.deleteStepConfirmationMessage(stepName) ??
         'Are you sure you want to delete step "$stepName"? This action cannot be undone.';
     final cancelText = l10n?.cancel ?? "Cancel";
     final deleteText = l10n?.delete ?? "Delete";

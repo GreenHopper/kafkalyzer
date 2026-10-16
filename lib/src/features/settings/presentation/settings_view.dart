@@ -61,9 +61,9 @@ class _SettingsViewState extends State<SettingsView> {
             children: [
               Text(
                 l10n.settings,
-                style: Theme.of(
-                  context,
-                ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 32),
               _buildGeneralSettings(context, l10n),
@@ -520,10 +520,7 @@ class _SettingsViewState extends State<SettingsView> {
                   ),
                 ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(6),
@@ -556,13 +553,17 @@ class _SettingsViewState extends State<SettingsView> {
                       Icon(
                         Icons.schema_outlined,
                         size: 12,
-                        color: Theme.of(context).colorScheme.onTertiaryContainer,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onTertiaryContainer,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         l10n.schemaRegistryConfiguredBadge,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onTertiaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onTertiaryContainer,
                         ),
                       ),
                     ],
