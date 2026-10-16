@@ -2023,6 +2023,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Toggle run overview'**
   String get toggleRunOverview;
+
+  /// No description provided for @scanModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get scanModeLabel;
+
+  /// No description provided for @scanModeLatestN.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest Messages'**
+  String get scanModeLatestN;
+
+  /// No description provided for @scanModeLiveTail.
+  ///
+  /// In en, this message translates to:
+  /// **'Live Stream'**
+  String get scanModeLiveTail;
+
+  /// No description provided for @scanModeTimeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Range'**
+  String get scanModeTimeRange;
+
+  /// No description provided for @scanModeOffsetEarliest.
+  ///
+  /// In en, this message translates to:
+  /// **'Offset / Earliest'**
+  String get scanModeOffsetEarliest;
+
+  /// No description provided for @quickFilterPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter on fetch (key or value)...'**
+  String get quickFilterPlaceholder;
+
+  /// No description provided for @limitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit'**
+  String get limitLabel;
+
+  /// No description provided for @limitAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get limitAll;
+
+  /// No description provided for @advancedFiltersToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get advancedFiltersToggle;
+
+  /// No description provided for @collapseAdvancedFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse advanced filters'**
+  String get collapseAdvancedFilters;
+
+  /// No description provided for @expandAdvancedFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand advanced filters'**
+  String get expandAdvancedFilters;
+
+  /// No description provided for @fetchMessagesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch {count} Messages'**
+  String fetchMessagesCount(int count);
+
+  /// No description provided for @fetchMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch Messages'**
+  String get fetchMessages;
+
+  /// No description provided for @startLiveStream.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Live Stream'**
+  String get startLiveStream;
+
+  /// No description provided for @filterChangedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Parameters changed – Click to fetch new results'**
+  String get filterChangedTooltip;
+
+  /// No description provided for @chipPartition.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition: {partition}'**
+  String chipPartition(String partition);
+
+  /// No description provided for @chipField.
+  ///
+  /// In en, this message translates to:
+  /// **'Field: {field}'**
+  String chipField(String field);
+
+  /// No description provided for @chipFilterType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type: {type}'**
+  String chipFilterType(String type);
+
+  /// No description provided for @chipScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope: {scope}'**
+  String chipScope(String scope);
+
+  /// No description provided for @chipFastTrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast Trace'**
+  String get chipFastTrace;
 }
 
 class _AppLocalizationsDelegate

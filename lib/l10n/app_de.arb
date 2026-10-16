@@ -337,5 +337,50 @@
   "expandSidebar": "Seitenleiste ausklappen (Ctrl+B)",
   "collapseScriptCatalog": "Skriptkatalog einklappen",
   "expandScriptCatalog": "Skriptkatalog ausklappen (Ctrl+B)",
-  "toggleRunOverview": "Laufübersicht umschalten"
+  "toggleRunOverview": "Laufübersicht umschalten",
+  "scanModeLabel": "Modus",
+  "scanModeLatestN": "Neueste Nachrichten",
+  "scanModeLiveTail": "Live-Stream",
+  "scanModeTimeRange": "Zeitraum",
+  "scanModeOffsetEarliest": "Offset / Früheste",
+  "quickFilterPlaceholder": "Beim Abruf filtern (Key oder Wert)...",
+  "limitLabel": "Limit",
+  "limitAll": "Alle",
+  "advancedFiltersToggle": "Erweitert",
+  "collapseAdvancedFilters": "Erweiterte Filter einklappen",
+  "expandAdvancedFilters": "Erweiterte Filter ausklappen",
+  "fetchMessagesCount": "{count} Nachrichten abrufen",
+  "@fetchMessagesCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fetchMessages": "Nachrichten abrufen",
+  "startLiveStream": "Live-Stream starten",
+  "filterChangedTooltip": "Filter geändert – Klicken zum erneuten Abrufen",
+  "chipPartition": "Partition: {partition}",
+  "@chipPartition": {
+    "placeholders": {
+      "partition": { "type": "String" }
+    }
+  },
+  "chipField": "Feld: {field}",
+  "@chipField": {
+    "placeholders": {
+      "field": { "type": "String" }
+    }
+  },
+  "chipFilterType": "Typ: {type}",
+  "@chipFilterType": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "chipScope": "Bereich: {scope}",
+  "@chipScope": {
+    "placeholders": {
+      "scope": { "type": "String" }
+    }
+  },
+  "chipFastTrace": "Fast Trace"
 }

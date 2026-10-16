@@ -15,6 +15,7 @@ import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
+import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search_bar.dart';
 
 class FakeActiveConnectionController extends ChangeNotifier
     implements ActiveConnectionController {
@@ -234,7 +235,7 @@ void main() {
   );
 
   testWidgets(
-    'Search Configuration panel collapses and expands via header chevron',
+    'TopicSearchBar renders in TopicDetailView and toggles advanced filters',
     (WidgetTester tester) async {
       const topic = TopicMetadata(
         name: 'test-topic',
@@ -275,24 +276,20 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.searchConfigurationTitle), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
-      expect(find.byIcon(Icons.expand_more), findsNothing);
-      expect(find.text('Values (comma sep.)'), findsOneWidget);
+      expect(find.byType(TopicSearchBar), findsOneWidget);
+      expect(find.text(l10n.advancedFiltersToggle), findsOneWidget);
+      expect(find.text('Partition (Opt.)'), findsNothing);
 
-      await tester.tap(find.text(l10n.searchConfigurationTitle));
+      await tester.tap(find.text(l10n.advancedFiltersToggle));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less), findsNothing);
-      expect(find.text('Values (comma sep.)'), findsNothing);
+      expect(find.text('Partition (Opt.)'), findsOneWidget);
+      expect(find.text('Fast Trace (Hash Key)'), findsOneWidget);
 
-      await tester.tap(find.text(l10n.searchConfigurationTitle));
+      await tester.tap(find.text(l10n.advancedFiltersToggle));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
-      expect(find.byIcon(Icons.expand_more), findsNothing);
-      expect(find.text('Values (comma sep.)'), findsOneWidget);
+      expect(find.text('Partition (Opt.)'), findsNothing);
     },
   );
 }

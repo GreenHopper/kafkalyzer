@@ -534,5 +534,50 @@
   "expandSidebar": "Expand sidebar (Ctrl+B)",
   "collapseScriptCatalog": "Collapse script catalog",
   "expandScriptCatalog": "Expand script catalog (Ctrl+B)",
-  "toggleRunOverview": "Toggle run overview"
+  "toggleRunOverview": "Toggle run overview",
+  "scanModeLabel": "Mode",
+  "scanModeLatestN": "Latest Messages",
+  "scanModeLiveTail": "Live Stream",
+  "scanModeTimeRange": "Time Range",
+  "scanModeOffsetEarliest": "Offset / Earliest",
+  "quickFilterPlaceholder": "Filter on fetch (key or value)...",
+  "limitLabel": "Limit",
+  "limitAll": "All",
+  "advancedFiltersToggle": "Advanced",
+  "collapseAdvancedFilters": "Collapse advanced filters",
+  "expandAdvancedFilters": "Expand advanced filters",
+  "fetchMessagesCount": "Fetch {count} Messages",
+  "@fetchMessagesCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "fetchMessages": "Fetch Messages",
+  "startLiveStream": "Start Live Stream",
+  "filterChangedTooltip": "Parameters changed – Click to fetch new results",
+  "chipPartition": "Partition: {partition}",
+  "@chipPartition": {
+    "placeholders": {
+      "partition": { "type": "String" }
+    }
+  },
+  "chipField": "Field: {field}",
+  "@chipField": {
+    "placeholders": {
+      "field": { "type": "String" }
+    }
+  },
+  "chipFilterType": "Type: {type}",
+  "@chipFilterType": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "chipScope": "Scope: {scope}",
+  "@chipScope": {
+    "placeholders": {
+      "scope": { "type": "String" }
+    }
+  },
+  "chipFastTrace": "Fast Trace"
 }

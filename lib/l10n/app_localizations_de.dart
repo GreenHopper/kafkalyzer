@@ -1109,4 +1109,75 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get toggleRunOverview => 'Laufübersicht umschalten';
+
+  @override
+  String get scanModeLabel => 'Modus';
+
+  @override
+  String get scanModeLatestN => 'Neueste Nachrichten';
+
+  @override
+  String get scanModeLiveTail => 'Live-Stream';
+
+  @override
+  String get scanModeTimeRange => 'Zeitraum';
+
+  @override
+  String get scanModeOffsetEarliest => 'Offset / Früheste';
+
+  @override
+  String get quickFilterPlaceholder => 'Beim Abruf filtern (Key oder Wert)...';
+
+  @override
+  String get limitLabel => 'Limit';
+
+  @override
+  String get limitAll => 'Alle';
+
+  @override
+  String get advancedFiltersToggle => 'Erweitert';
+
+  @override
+  String get collapseAdvancedFilters => 'Erweiterte Filter einklappen';
+
+  @override
+  String get expandAdvancedFilters => 'Erweiterte Filter ausklappen';
+
+  @override
+  String fetchMessagesCount(int count) {
+    return '$count Nachrichten abrufen';
+  }
+
+  @override
+  String get fetchMessages => 'Nachrichten abrufen';
+
+  @override
+  String get startLiveStream => 'Live-Stream starten';
+
+  @override
+  String get filterChangedTooltip =>
+      'Filter geändert – Klicken zum erneuten Abrufen';
+
+  @override
+  String chipPartition(String partition) {
+    return 'Partition: $partition';
+  }
+
+  @override
+  String chipField(String field) {
+    return 'Feld: $field';
+  }
+
+  @override
+  String chipFilterType(String type) {
+    return 'Typ: $type';
+  }
+
+  @override
+  String chipScope(String scope) {
+    return 'Bereich: $scope';
+  }
+
+  @override
+  String get chipFastTrace => 'Fast Trace';
 }
