@@ -52,17 +52,17 @@ context: |
 # Per-artifact generation rules
 rules:
   proposal:
-    - Clearly document the "Why", "What", and "How" of the changes.
-    - Explicitly detail any new, modified, or deleted capabilities.
+    - 'Clearly document the "Why", "What", and "How" of the changes.'
+    - 'Explicitly detail any new, modified, or deleted capabilities.'
   design:
-    - Material UI Elements: Ensure all Material UI elements use `package:material_ui/material_ui.dart`.
-    - Do not modify existing Dart/Flutter UI code unless explicitly requested or necessary.
-    - Performance Guardrails: Design streaming APIs and UI consumers with throttling/batching, amortized $O(1)$ updates, and non-blocking I/O.
-    - Maintain backwards compatibility of all existing Flutter/Dart integrations and Rust-Dart API signatures.
-    - Status Access: For accessing global state (like the active cluster or settings), prefer using `ActiveConnectionController` or `getIt` over deep prop-drilling unless a widget is purely presentational.
-    - Detail design choices, state flow, and any alternatives considered.
+    - 'Material UI Elements: Ensure all Material UI elements use package:material_ui/material_ui.dart.'
+    - 'Do not modify existing Dart/Flutter UI code unless explicitly requested or necessary.'
+    - 'Performance Guardrails: Design streaming APIs and UI consumers with throttling/batching, amortized $O(1)$ updates, and non-blocking I/O.'
+    - 'Maintain backwards compatibility of all existing Flutter/Dart integrations and Rust-Dart API signatures.'
+    - 'Status Access: For accessing global state (like the active cluster or settings), prefer using ActiveConnectionController or getIt over deep prop-drilling unless a widget is purely presentational.'
+    - 'Detail design choices, state flow, and any alternatives considered.'
   specs:
-    - Delta Documentation: When modifying existing capabilities, clearly distinguish between `ADDED Requirements`, `MODIFIED Requirements`, and `DELETED Requirements`.
+    - 'Delta Documentation: When modifying existing capabilities, clearly distinguish between ADDED Requirements, MODIFIED Requirements, and DELETED Requirements.'
   tasks:
-    - Break down execution steps logically by Rust workspace crates first, then bridge generation, and finally Dart/Flutter integration.
-    - Verify compilation and run tests at each incremental step to avoid cumulative errors.
+    - 'Break down execution steps logically by Rust workspace crates first, then bridge generation, and finally Dart/Flutter integration.'
+    - 'Verify compilation and run tests at each incremental step to avoid cumulative errors.'

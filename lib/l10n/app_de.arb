@@ -382,5 +382,42 @@
       "scope": { "type": "String" }
     }
   },
-  "chipFastTrace": "Fast Trace"
+  "chipFastTrace": "Fast Trace",
+  "welcomeTitle": "Willkommen bei Kafkalyzer",
+  "welcomeSubtitle": "Wähle einen Kafka-Cluster aus, um Topics zu untersuchen, Consumer-Lag zu überwachen und Skripte auszuführen.",
+  "configuredClusters": "Konfigurierte Cluster",
+  "noClustersConfigured": "Noch keine Cluster konfiguriert.",
+  "addClusterAction": "Cluster hinzufügen",
+  "connectCluster": "Verbinden",
+  "recentTopics": "Zuletzt untersuchte Topics",
+  "noRecentTopics": "Noch keine kürzlich untersuchten Topics.",
+  "clearRecentTopics": "Verlauf leeren",
+  "clusterOverviewTitle": "Cluster-Übersicht",
+  "clusterOverviewSubtitle": "Wähle ein Topic aus der Seitenleiste oder öffne ein kürzlich untersuchtes Topic.",
+  "clusterTopicsCount": "{count} Topics",
+  "@clusterTopicsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "schemaRegistryActive": "Schema Registry verbunden",
+  "schemaRegistryNotConfigured": "Keine Schema Registry",
+  "securityProtocolLabel": "Protokoll: {protocol}",
+  "@securityProtocolLabel": {
+    "placeholders": {
+      "protocol": { "type": "String" }
+    }
+  },
+  "selectTopicPrompt": "Wähle ein Topic in der Seitenleiste aus, um Nachrichten abzurufen und Partitionen zu analysieren.",
+  "recentTopicsForCluster": "Kürzlich geöffnete Topics in {cluster}",
+  "@recentTopicsForCluster": {
+    "placeholders": {
+      "cluster": { "type": "String" }
+    }
+  },
+  "noMessagesLoadedTitle": "Noch keine Nachrichten geladen",
+  "noMessagesLoadedSubtitle": "Lade die neuesten Nachrichten aus diesem Topic oder passe oben vorab deine Such- und Zeitfilter an.",
+  "fetchLatestMessagesAction": "Letzte 200 Nachrichten jetzt abrufen",
+  "doubleClickTopicTip": "Tipp: Doppelklick auf ein Topic in der Seitenleiste startet den Abruf sofort.",
+  "loadingMessages": "Nachrichten werden von Kafka geladen..."
 }

@@ -1172,4 +1172,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chipFastTrace => 'Fast Trace';
+
+  @override
+  String get welcomeTitle => 'Welcome to Kafkalyzer';
+
+  @override
+  String get welcomeSubtitle =>
+      'Select a Kafka cluster to explore topics, inspect consumer lag, and run scripts.';
+
+  @override
+  String get configuredClusters => 'Configured Clusters';
+
+  @override
+  String get noClustersConfigured => 'No clusters configured yet.';
+
+  @override
+  String get addClusterAction => 'Add Cluster';
+
+  @override
+  String get connectCluster => 'Connect';
+
+  @override
+  String get recentTopics => 'Recently Viewed Topics';
+
+  @override
+  String get noRecentTopics => 'No recently viewed topics yet.';
+
+  @override
+  String get clearRecentTopics => 'Clear History';
+
+  @override
+  String get clusterOverviewTitle => 'Cluster Overview';
+
+  @override
+  String get clusterOverviewSubtitle =>
+      'Explore topics from the sidebar or open a recently examined topic.';
+
+  @override
+  String clusterTopicsCount(int count) {
+    return '$count Topics';
+  }
+
+  @override
+  String get schemaRegistryActive => 'Schema Registry Connected';
+
+  @override
+  String get schemaRegistryNotConfigured => 'No Schema Registry';
+
+  @override
+  String securityProtocolLabel(String protocol) {
+    return 'Protocol: $protocol';
+  }
+
+  @override
+  String get selectTopicPrompt =>
+      'Select a topic from the sidebar to inspect messages and analyze partitions.';
+
+  @override
+  String recentTopicsForCluster(String cluster) {
+    return 'Recent Topics in $cluster';
+  }
+
+  @override
+  String get noMessagesLoadedTitle => 'No messages loaded yet';
+
+  @override
+  String get noMessagesLoadedSubtitle =>
+      'Fetch the latest messages from this topic or configure your filters above.';
+
+  @override
+  String get fetchLatestMessagesAction => 'Fetch Latest 200 Messages';
+
+  @override
+  String get doubleClickTopicTip =>
+      'Tip: Double-clicking a topic in the sidebar starts fetching immediately.';
+
+  @override
+  String get loadingMessages => 'Loading messages from Kafka...';
 }

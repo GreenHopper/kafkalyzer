@@ -200,6 +200,8 @@ class _TopicDetailViewState extends State<TopicDetailView>
                 child: MessagesView(
                   preferencesKey: "topic_detail_view_mode",
                   messages: messages,
+                  onFetchLatest: startStreaming,
+                  isStreaming: streamController.isStreaming,
                 ),
               ),
             ] else ...[

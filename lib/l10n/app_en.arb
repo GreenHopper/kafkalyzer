@@ -579,5 +579,42 @@
       "scope": { "type": "String" }
     }
   },
-  "chipFastTrace": "Fast Trace"
+  "chipFastTrace": "Fast Trace",
+  "welcomeTitle": "Welcome to Kafkalyzer",
+  "welcomeSubtitle": "Select a Kafka cluster to explore topics, inspect consumer lag, and run scripts.",
+  "configuredClusters": "Configured Clusters",
+  "noClustersConfigured": "No clusters configured yet.",
+  "addClusterAction": "Add Cluster",
+  "connectCluster": "Connect",
+  "recentTopics": "Recently Viewed Topics",
+  "noRecentTopics": "No recently viewed topics yet.",
+  "clearRecentTopics": "Clear History",
+  "clusterOverviewTitle": "Cluster Overview",
+  "clusterOverviewSubtitle": "Explore topics from the sidebar or open a recently examined topic.",
+  "clusterTopicsCount": "{count} Topics",
+  "@clusterTopicsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "schemaRegistryActive": "Schema Registry Connected",
+  "schemaRegistryNotConfigured": "No Schema Registry",
+  "securityProtocolLabel": "Protocol: {protocol}",
+  "@securityProtocolLabel": {
+    "placeholders": {
+      "protocol": { "type": "String" }
+    }
+  },
+  "selectTopicPrompt": "Select a topic from the sidebar to inspect messages and analyze partitions.",
+  "recentTopicsForCluster": "Recent Topics in {cluster}",
+  "@recentTopicsForCluster": {
+    "placeholders": {
+      "cluster": { "type": "String" }
+    }
+  },
+  "noMessagesLoadedTitle": "No messages loaded yet",
+  "noMessagesLoadedSubtitle": "Fetch the latest messages from this topic or configure your filters above.",
+  "fetchLatestMessagesAction": "Fetch Latest 200 Messages",
+  "doubleClickTopicTip": "Tip: Double-clicking a topic in the sidebar starts fetching immediately.",
+  "loadingMessages": "Loading messages from Kafka..."
 }

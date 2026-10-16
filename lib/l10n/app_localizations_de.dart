@@ -1180,4 +1180,82 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chipFastTrace => 'Fast Trace';
+
+  @override
+  String get welcomeTitle => 'Willkommen bei Kafkalyzer';
+
+  @override
+  String get welcomeSubtitle =>
+      'Wähle einen Kafka-Cluster aus, um Topics zu untersuchen, Consumer-Lag zu überwachen und Skripte auszuführen.';
+
+  @override
+  String get configuredClusters => 'Konfigurierte Cluster';
+
+  @override
+  String get noClustersConfigured => 'Noch keine Cluster konfiguriert.';
+
+  @override
+  String get addClusterAction => 'Cluster hinzufügen';
+
+  @override
+  String get connectCluster => 'Verbinden';
+
+  @override
+  String get recentTopics => 'Zuletzt untersuchte Topics';
+
+  @override
+  String get noRecentTopics => 'Noch keine kürzlich untersuchten Topics.';
+
+  @override
+  String get clearRecentTopics => 'Verlauf leeren';
+
+  @override
+  String get clusterOverviewTitle => 'Cluster-Übersicht';
+
+  @override
+  String get clusterOverviewSubtitle =>
+      'Wähle ein Topic aus der Seitenleiste oder öffne ein kürzlich untersuchtes Topic.';
+
+  @override
+  String clusterTopicsCount(int count) {
+    return '$count Topics';
+  }
+
+  @override
+  String get schemaRegistryActive => 'Schema Registry verbunden';
+
+  @override
+  String get schemaRegistryNotConfigured => 'Keine Schema Registry';
+
+  @override
+  String securityProtocolLabel(String protocol) {
+    return 'Protokoll: $protocol';
+  }
+
+  @override
+  String get selectTopicPrompt =>
+      'Wähle ein Topic in der Seitenleiste aus, um Nachrichten abzurufen und Partitionen zu analysieren.';
+
+  @override
+  String recentTopicsForCluster(String cluster) {
+    return 'Kürzlich geöffnete Topics in $cluster';
+  }
+
+  @override
+  String get noMessagesLoadedTitle => 'Noch keine Nachrichten geladen';
+
+  @override
+  String get noMessagesLoadedSubtitle =>
+      'Lade die neuesten Nachrichten aus diesem Topic oder passe oben vorab deine Such- und Zeitfilter an.';
+
+  @override
+  String get fetchLatestMessagesAction =>
+      'Letzte 200 Nachrichten jetzt abrufen';
+
+  @override
+  String get doubleClickTopicTip =>
+      'Tipp: Doppelklick auf ein Topic in der Seitenleiste startet den Abruf sofort.';
+
+  @override
+  String get loadingMessages => 'Nachrichten werden von Kafka geladen...';
 }

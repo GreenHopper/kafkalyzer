@@ -11,11 +11,15 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/dependency_injection.dart';
 
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_item.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/widgets/cluster_overview_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ExplorerView extends WatchingStatefulWidget {
@@ -104,6 +108,7 @@ class _ExplorerViewState extends State<ExplorerView> {
               child: _buildContent(
                 context,
                 l10n,
+                clusterController,
                 activeController,
                 topicController,
                 schemaController,
@@ -523,16 +528,97 @@ class _ExplorerViewState extends State<ExplorerView> {
   Widget _buildContent(
     BuildContext context,
     AppLocalizations l10n,
+    ClusterListController clusterController,
     ActiveConnectionController activeController,
     TopicController topicController,
     SchemaController schemaController,
   ) {
     if (activeController.activeProfile == null) {
-      return _buildNoClusterSelected(context, l10n);
+      return ExplorerOnboardingView(
+        clusters: clusterController.clusters,
+        onAddCluster: () async {
+          final result = await showDialog<ClusterProfile>(
+            context: context,
+            builder: (context) => const ClusterConfigDialog(),
+          );
+          if (result != null) {
+            clusterController.addCluster(result);
+          }
+        },
+        onSelectCluster: (profile) {
+          activeController.connect(profile);
+          schemaController.fetchSchemas(profile);
+        },
+        onSelectRecentTopic: (clusterName, topicName) async {
+          final targetCluster = clusterController.clusters
+              .cast<ClusterProfile?>()
+              .firstWhere(
+                (c) => c?.name == clusterName,
+                orElse: () => null,
+              );
+          if (targetCluster == null) return;
+
+          if (activeController.activeProfile?.name != clusterName) {
+            await activeController.connect(targetCluster);
+            schemaController.fetchSchemas(targetCluster);
+          }
+
+          final allTopics = topicController.getTopics(targetCluster);
+          final metadata = allTopics?.cast<TopicMetadata?>().firstWhere(
+            (t) => t?.name == topicName,
+            orElse: () => null,
+          );
+
+          if (metadata != null) {
+            activeController.openTopic(topic: metadata, profile: targetCluster);
+          } else {
+            activeController.openTopic(
+              topic: TopicMetadata(
+                name: topicName,
+                partitionCount: 0,
+                replicationFactor: 1,
+                cleanupPolicy: 'delete',
+                retentionMs: '0',
+              ),
+              profile: targetCluster,
+            );
+          }
+        },
+      );
     }
 
     if (activeController.openTopics.isEmpty) {
-      return _buildNoTopicSelected(context);
+      final activeProfile = activeController.activeProfile!;
+      final allTopics = topicController.getTopics(activeProfile) ?? [];
+      final isLoading =
+          activeController.isConnecting ||
+          topicController.isLoading(activeProfile);
+
+      return ClusterOverviewView(
+        profile: activeProfile,
+        topicCount: allTopics.length,
+        isLoading: isLoading,
+        onSelectTopic: (topicName) {
+          final metadata = allTopics.cast<TopicMetadata?>().firstWhere(
+            (t) => t?.name == topicName,
+            orElse: () => null,
+          );
+          if (metadata != null) {
+            activeController.openTopic(topic: metadata, profile: activeProfile);
+          } else {
+            activeController.openTopic(
+              topic: TopicMetadata(
+                name: topicName,
+                partitionCount: 0,
+                replicationFactor: 1,
+                cleanupPolicy: 'delete',
+                retentionMs: '0',
+              ),
+              profile: activeProfile,
+            );
+          }
+        },
+      );
     }
 
     final activeIndex = activeController.openTopics.indexWhere(
@@ -545,50 +631,6 @@ class _ExplorerViewState extends State<ExplorerView> {
         _buildTabBar(context, l10n, activeController),
         _buildTabViews(activeController, safeIndex),
       ],
-    );
-  }
-
-  Widget _buildNoClusterSelected(BuildContext context, AppLocalizations l10n) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.hub_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.selectClusterToViewTopics,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoTopicSelected(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.library_books_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            "Select a topic from the sidebar to start",
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

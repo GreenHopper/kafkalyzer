@@ -17,6 +17,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
+import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 
 @GenerateMocks([
   ClusterListController,
@@ -59,6 +61,7 @@ void main() {
     );
     getIt.registerSingleton<TopicController>(mockTopicController);
     getIt.registerSingleton<SchemaController>(mockSchemaController);
+    getIt.registerSingleton<RecentTopicsService>(RecentTopicsService());
 
     // Stub ChangeNotifier methods to prevent watch_it hangs
     when(mockActiveConnectionController.addListener(any)).thenReturn(null);
@@ -142,11 +145,11 @@ void main() {
       await tester.pump(); // Use pump instead of pumpAndSettle to avoid hangs
 
       expect(find.text('CLUSTERS'), findsOneWidget); // Sidebar header
-      expect(find.text('test-cluster'), findsOneWidget);
+      expect(find.text('test-cluster'), findsWidgets);
       expect(
-        find.text('Select a cluster to view topics'),
+        find.byType(ExplorerOnboardingView),
         findsOneWidget,
-      ); // Empty state
+      ); // Onboarding state
     });
 
     testWidgets('shows topics when cluster is active', (tester) async {
@@ -205,7 +208,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pump();
 
-      await tester.tap(find.text('test-cluster'));
+      await tester.tap(find.text('test-cluster').first);
       await tester.pump();
 
       verify(mockActiveConnectionController.connect(testProfile)).called(1);

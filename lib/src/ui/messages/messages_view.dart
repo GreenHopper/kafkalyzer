@@ -14,6 +14,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/ui/messages/widgets/actionable_topic_empty_state.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -63,6 +64,12 @@ class MessagesView extends StatefulWidget {
   /// Optional ordering override (e.g. script timeline grouping).
   final int Function(KafkaMessage a, KafkaMessage b)? sortComparator;
 
+  /// Optional callback to fetch latest messages when the message list is empty.
+  final VoidCallback? onFetchLatest;
+
+  /// Whether messages are actively streaming/loading.
+  final bool isStreaming;
+
   const MessagesView({
     super.key,
     required this.messages,
@@ -74,6 +81,8 @@ class MessagesView extends StatefulWidget {
     this.showStep = false,
     this.schemaViewBuilder,
     this.sortComparator,
+    this.onFetchLatest,
+    this.isStreaming = false,
   });
 
   @override
@@ -626,6 +635,12 @@ class _MessagesViewState extends State<MessagesView> {
   @override
   Widget build(BuildContext context) {
     if (widget.messages.isEmpty) {
+      if (widget.onFetchLatest != null || widget.isStreaming) {
+        return ActionableTopicEmptyState(
+          onFetch: widget.onFetchLatest,
+          isStreaming: widget.isStreaming,
+        );
+      }
       return const Center(child: Text("No messages to display"));
     }
 

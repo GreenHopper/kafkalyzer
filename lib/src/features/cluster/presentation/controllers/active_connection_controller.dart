@@ -6,6 +6,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 
 class OpenTopicRecord {
@@ -121,6 +122,13 @@ class ActiveConnectionController extends ChangeNotifier {
   }) {
     final p = profile ?? _activeProfile;
     if (p == null) return null;
+
+    try {
+      getIt<RecentTopicsService>().recordVisit(
+        clusterName: p.name,
+        topicName: topic.name,
+      );
+    } catch (_) {}
 
     if (!forceNew) {
       final existing = _openTopics.cast<OpenTopicRecord?>().firstWhere(

@@ -2143,6 +2143,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fast Trace'**
   String get chipFastTrace;
+
+  /// No description provided for @welcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Kafkalyzer'**
+  String get welcomeTitle;
+
+  /// No description provided for @welcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a Kafka cluster to explore topics, inspect consumer lag, and run scripts.'**
+  String get welcomeSubtitle;
+
+  /// No description provided for @configuredClusters.
+  ///
+  /// In en, this message translates to:
+  /// **'Configured Clusters'**
+  String get configuredClusters;
+
+  /// No description provided for @noClustersConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No clusters configured yet.'**
+  String get noClustersConfigured;
+
+  /// No description provided for @addClusterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Cluster'**
+  String get addClusterAction;
+
+  /// No description provided for @connectCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get connectCluster;
+
+  /// No description provided for @recentTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently Viewed Topics'**
+  String get recentTopics;
+
+  /// No description provided for @noRecentTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'No recently viewed topics yet.'**
+  String get noRecentTopics;
+
+  /// No description provided for @clearRecentTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear History'**
+  String get clearRecentTopics;
+
+  /// No description provided for @clusterOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster Overview'**
+  String get clusterOverviewTitle;
+
+  /// No description provided for @clusterOverviewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore topics from the sidebar or open a recently examined topic.'**
+  String get clusterOverviewSubtitle;
+
+  /// No description provided for @clusterTopicsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Topics'**
+  String clusterTopicsCount(int count);
+
+  /// No description provided for @schemaRegistryActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry Connected'**
+  String get schemaRegistryActive;
+
+  /// No description provided for @schemaRegistryNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'No Schema Registry'**
+  String get schemaRegistryNotConfigured;
+
+  /// No description provided for @securityProtocolLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Protocol: {protocol}'**
+  String securityProtocolLabel(String protocol);
+
+  /// No description provided for @selectTopicPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a topic from the sidebar to inspect messages and analyze partitions.'**
+  String get selectTopicPrompt;
+
+  /// No description provided for @recentTopicsForCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Topics in {cluster}'**
+  String recentTopicsForCluster(String cluster);
+
+  /// No description provided for @noMessagesLoadedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages loaded yet'**
+  String get noMessagesLoadedTitle;
+
+  /// No description provided for @noMessagesLoadedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch the latest messages from this topic or configure your filters above.'**
+  String get noMessagesLoadedSubtitle;
+
+  /// No description provided for @fetchLatestMessagesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch Latest 200 Messages'**
+  String get fetchLatestMessagesAction;
+
+  /// No description provided for @doubleClickTopicTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: Double-clicking a topic in the sidebar starts fetching immediately.'**
+  String get doubleClickTopicTip;
+
+  /// No description provided for @loadingMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading messages from Kafka...'**
+  String get loadingMessages;
 }
 
 class _AppLocalizationsDelegate

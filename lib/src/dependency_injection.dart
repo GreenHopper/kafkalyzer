@@ -17,6 +17,7 @@ import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -58,5 +59,8 @@ void setupDependencyInjection() {
   );
   getIt.registerLazySingleton<TopicAnalysisExportService>(
     () => TopicAnalysisExportService(),
+  );
+  getIt.registerLazySingleton<RecentTopicsService>(
+    () => RecentTopicsService(),
   );
 }
