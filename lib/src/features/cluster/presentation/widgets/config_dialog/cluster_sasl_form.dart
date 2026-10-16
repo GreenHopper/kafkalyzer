@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/file_picker_form_field.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/password_form_field.dart';
 
 class ClusterSaslForm extends StatelessWidget {
   final String? mechanism;
@@ -71,11 +73,10 @@ class ClusterSaslForm extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextFormField(
+            child: FilePickerFormField(
               controller: kerberosKeytabController,
-              decoration: const InputDecoration(
-                labelText: 'Kerberos Keytab Path',
-              ),
+              labelText: 'Kerberos Keytab Path',
+              allowedExtensions: const ['keytab'],
             ),
           ),
           Padding(
@@ -89,19 +90,18 @@ class ClusterSaslForm extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextFormField(
+            child: FilePickerFormField(
               controller: kerberosConfController,
-              decoration: const InputDecoration(
-                labelText: 'Kerberos Config (krb5.conf) Path',
-              ),
+              labelText: 'Kerberos Config (krb5.conf) Path',
+              allowedExtensions: const ['conf'],
             ),
           ),
         ] else if (mechanism == "OAUTHBEARER") ...[
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextFormField(
+            child: PasswordFormField(
               controller: oauthbearerTokenController,
-              decoration: const InputDecoration(labelText: 'OAuthBearer Token'),
+              labelText: 'OAuthBearer Token',
             ),
           ),
         ] else if (mechanism != "AWS_MSK_IAM") ...[
@@ -114,10 +114,9 @@ class ClusterSaslForm extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextFormField(
+            child: PasswordFormField(
               controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
+              labelText: 'Password',
             ),
           ),
         ],

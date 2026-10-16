@@ -1,6 +1,15 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/file_picker_form_field.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/password_form_field.dart';
 
-class ClusterSslForm extends StatelessWidget {
+enum SslClientAuthMode {
+  none,
+  keystore,
+  pem,
+}
+
+class ClusterSslForm extends StatefulWidget {
   final TextEditingController keystoreLocationController;
   final TextEditingController keystorePasswordController;
   final TextEditingController truststoreLocationController;
@@ -21,8 +30,31 @@ class ClusterSslForm extends StatelessWidget {
   });
 
   @override
+  State<ClusterSslForm> createState() => _ClusterSslFormState();
+}
+
+class _ClusterSslFormState extends State<ClusterSslForm> {
+  late SslClientAuthMode _authMode;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pemCertificateLocationController.text.isNotEmpty ||
+        widget.pemKeyLocationController.text.isNotEmpty) {
+      _authMode = SslClientAuthMode.pem;
+    } else if (widget.keystoreLocationController.text.isNotEmpty) {
+      _authMode = SslClientAuthMode.keystore;
+    } else {
+      _authMode = SslClientAuthMode.none;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Divider(),
         const Padding(
@@ -34,82 +66,98 @@ class ClusterSslForm extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: truststoreLocationController,
-            decoration: const InputDecoration(
-              labelText: 'Truststore Location (PEM or JKS)',
-            ),
+          child: FilePickerFormField(
+            controller: widget.truststoreLocationController,
+            labelText: 'Truststore Location (PEM or JKS)',
+            allowedExtensions: const ['pem', 'jks', 'crt', 'truststore'],
           ),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: truststorePasswordController,
-            decoration: const InputDecoration(labelText: 'Truststore Password'),
-            obscureText: true,
+          child: PasswordFormField(
+            controller: widget.truststorePasswordController,
+            labelText: 'Truststore Password',
           ),
         ),
         const Divider(),
-        const Padding(
-          padding: EdgeInsets.all(8.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
           child: Text(
-            "Option A: Keystore (PKCS12 / PFX)",
-            style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+            l10n?.sslClientAuthMode ?? 'Client Authentication (mTLS)',
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: keystoreLocationController,
-            decoration: const InputDecoration(
-              labelText: 'Keystore Location (.p12/.pfx)',
+          child: SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<SslClientAuthMode>(
+              segments: [
+                ButtonSegment<SslClientAuthMode>(
+                  value: SslClientAuthMode.none,
+                  label: Text(l10n?.sslClientAuthNone ?? 'None'),
+                ),
+                ButtonSegment<SslClientAuthMode>(
+                  value: SslClientAuthMode.keystore,
+                  label: Text(
+                    l10n?.sslClientAuthKeystore ?? 'Keystore (PKCS12 / JKS)',
+                  ),
+                ),
+                ButtonSegment<SslClientAuthMode>(
+                  value: SslClientAuthMode.pem,
+                  label: Text(l10n?.sslClientAuthPem ?? 'PEM Cert & Key'),
+                ),
+              ],
+              selected: {_authMode},
+              onSelectionChanged: (newSelection) {
+                setState(() {
+                  _authMode = newSelection.first;
+                });
+              },
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: keystorePasswordController,
-            decoration: const InputDecoration(labelText: 'Keystore Password'),
-            obscureText: true,
+        if (_authMode == SslClientAuthMode.keystore) ...[
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: FilePickerFormField(
+              controller: widget.keystoreLocationController,
+              labelText: 'Keystore Location (.p12/.pfx/.jks)',
+              allowedExtensions: const ['p12', 'pfx', 'jks', 'keystore'],
+            ),
           ),
-        ),
-        const Divider(),
-        const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Text(
-            "Option B: Client Certificate & Private Key (PEM)",
-            style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: PasswordFormField(
+              controller: widget.keystorePasswordController,
+              labelText: 'Keystore Password',
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: pemCertificateLocationController,
-            decoration: const InputDecoration(
+        ] else if (_authMode == SslClientAuthMode.pem) ...[
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: FilePickerFormField(
+              controller: widget.pemCertificateLocationController,
               labelText: 'Client Certificate PEM Location',
+              allowedExtensions: const ['pem', 'crt', 'cer'],
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: pemKeyLocationController,
-            decoration: const InputDecoration(
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: FilePickerFormField(
+              controller: widget.pemKeyLocationController,
               labelText: 'Client Private Key PEM Location',
+              allowedExtensions: const ['pem', 'key'],
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: pemKeyPasswordController,
-            decoration: const InputDecoration(
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: PasswordFormField(
+              controller: widget.pemKeyPasswordController,
               labelText: 'Client Private Key Password',
             ),
-            obscureText: true,
           ),
-        ),
+        ],
       ],
     );
   }

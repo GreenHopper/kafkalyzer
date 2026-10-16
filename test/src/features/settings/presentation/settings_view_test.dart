@@ -149,6 +149,8 @@ void main() {
       expect(find.text('Cluster Configuration'), findsOneWidget);
       expect(find.text('test-cluster'), findsOneWidget);
       expect(find.text('localhost:9092'), findsOneWidget);
+      expect(find.text('plaintext'), findsOneWidget);
+      expect(find.text('Schema Registry'), findsOneWidget);
     });
 
     testWidgets('calls export configuration', (tester) async {

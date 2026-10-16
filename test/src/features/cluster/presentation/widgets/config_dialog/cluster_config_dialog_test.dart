@@ -93,6 +93,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('SASL Mechanism'), findsNothing);
+      expect(find.text('Truststore Location (PEM or JKS)'), findsOneWidget);
+
+      // Select Keystore mode in segmented button
+      final keystoreSegmentFinder = find.text('Keystore (PKCS12 / JKS)');
+      await tester.ensureVisible(keystoreSegmentFinder);
+      await tester.tap(keystoreSegmentFinder);
+      await tester.pumpAndSettle();
+
       expect(find.textContaining('Keystore Location'), findsOneWidget);
     });
 
@@ -153,6 +161,55 @@ void main() {
       expect(result, isNotNull);
       expect(result!.name, 'New Cluster');
       expect(result!.bootstrapServers, 'localhost:9092');
+    });
+
+    testWidgets('triggers connection test and shows result banner', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
+          home: Scaffold(body: ClusterConfigDialog()),
+        ),
+      );
+
+      expect(find.text('Test Connection'), findsOneWidget);
+
+      // Attempt test connection without filling forms
+      await tester.tap(find.text('Test Connection'));
+      await tester.pumpAndSettle();
+      expect(find.text('Required'), findsNWidgets(2));
+
+      // Fill in valid fields
+      await tester.enterText(
+        find.ancestor(
+          of: find.text('Cluster Name'),
+          matching: find.byType(TextFormField),
+        ),
+        'Test Ping',
+      );
+      await tester.enterText(
+        find.ancestor(
+          of: find.text('Bootstrap Servers (e.g. localhost:9092)'),
+          matching: find.byType(TextFormField),
+        ),
+        'localhost:9092',
+      );
+
+      await tester.tap(find.text('Test Connection'));
+      await tester.pumpAndSettle();
+
+      // Either success or connection error banner should appear without crashing or closing
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == 'Connection successful!' ||
+                  (w.data != null && w.data!.startsWith('Connection failed'))),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

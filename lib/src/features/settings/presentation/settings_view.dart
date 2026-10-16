@@ -53,38 +53,41 @@ class _SettingsViewState extends State<SettingsView> {
     final activeController = watchIt<ActiveConnectionController>();
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: ListView(
-          children: [
-            Text(
-              l10n.settings,
-              style: Theme.of(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 960),
+          child: ListView(
+            padding: const EdgeInsets.all(24.0),
+            children: [
+              Text(
+                l10n.settings,
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 32),
+              _buildGeneralSettings(context, l10n),
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 32),
+              _buildConfigImportExport(context, l10n),
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 32),
+              _buildClusterHeader(context, l10n, clusterController),
+              const SizedBox(height: 16),
+              const Divider(),
+              _buildClusterListContent(
                 context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 32),
-            _buildGeneralSettings(context, l10n),
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 32),
-            _buildConfigImportExport(context, l10n),
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 32),
-            _buildClusterHeader(context, l10n, clusterController),
-            const SizedBox(height: 16),
-            const Divider(),
-            _buildClusterListContent(
-              context,
-              l10n,
-              clusterController,
-              activeController,
-            ),
-            const SizedBox(height: 16),
-            const Divider(),
-            _buildAboutAndUpdates(context, l10n),
-          ],
+                l10n,
+                clusterController,
+                activeController,
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              _buildAboutAndUpdates(context, l10n),
+            ],
+          ),
         ),
       ),
     );
@@ -131,8 +134,6 @@ class _SettingsViewState extends State<SettingsView> {
             final maxRuns = prefs.getInt('scripting_max_run_history') ?? 30;
             final maxLagQueries =
                 prefs.getInt('consumer_max_concurrent_queries') ?? 5;
-            final isGerman =
-                Localizations.localeOf(context).languageCode == 'de';
 
             final controller = TextEditingController(text: defaultDir);
             final maxRunsController = TextEditingController(
@@ -193,25 +194,15 @@ class _SettingsViewState extends State<SettingsView> {
                         },
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
+                    const SizedBox(width: 16),
                     Expanded(
                       child: TextField(
                         controller: maxLagQueriesController,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: isGerman
-                              ? "Maximale gleichzeitige Lag-Abfragen"
-                              : "Maximum Concurrent Lag Queries",
+                          labelText: l10n.maxConcurrentLagQueries,
                           border: const OutlineInputBorder(),
-                          helperText: isGerman
-                              ? "Standard: 5 (Höhere Werte können "
-                                    "zu Lasten der Performance gehen)"
-                              : "Default: 5 (Higher values can "
-                                    "impact performance)",
+                          helperText: l10n.maxConcurrentLagQueriesHelper,
                         ),
                         onChanged: (value) {
                           final val = int.tryParse(value);
@@ -239,6 +230,13 @@ class _SettingsViewState extends State<SettingsView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(l10n.configuration, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 4),
+        Text(
+          l10n.globalConfigDescription,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -308,36 +306,50 @@ class _SettingsViewState extends State<SettingsView> {
     AppLocalizations l10n,
     ClusterListController clusterController,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              l10n.clusterConfiguration,
-              style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              children: [
+                Text(
+                  l10n.clusterConfiguration,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                if (clusterController.clusters.isNotEmpty) ...[
+                  const SizedBox(width: 16),
+                  TextButton.icon(
+                    onPressed: () => _selectAll(clusterController.clusters),
+                    icon: Icon(
+                      _selectedClusterNames.length ==
+                              clusterController.clusters.length
+                          ? Icons.deselect
+                          : Icons.select_all,
+                    ),
+                    label: Text(
+                      _selectedClusterNames.length ==
+                              clusterController.clusters.length
+                          ? l10n.deselectAll
+                          : l10n.selectAll,
+                    ),
+                  ),
+                ],
+              ],
             ),
-            if (clusterController.clusters.isNotEmpty) ...[
-              const SizedBox(width: 16),
-              TextButton.icon(
-                onPressed: () => _selectAll(clusterController.clusters),
-                icon: Icon(
-                  _selectedClusterNames.length ==
-                          clusterController.clusters.length
-                      ? Icons.deselect
-                      : Icons.select_all,
-                ),
-                label: Text(
-                  _selectedClusterNames.length ==
-                          clusterController.clusters.length
-                      ? l10n.deselectAll
-                      : l10n.selectAll,
-                ),
-              ),
-            ],
           ],
         ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.clusterExportDescription,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
         Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             OutlinedButton.icon(
               onPressed: () async {
@@ -481,14 +493,16 @@ class _SettingsViewState extends State<SettingsView> {
             value: isSelected,
             onChanged: (_) => _toggleSelection(cluster.name),
           ),
-          title: Row(
+          title: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               Text(
                 cluster.name,
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              if (isActive) ...[
-                const SizedBox(width: 8),
+              if (isActive)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -505,7 +519,55 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                   ),
                 ),
-              ],
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  (cluster.securityProtocol != null &&
+                          cluster.securityProtocol!.isNotEmpty)
+                      ? cluster.securityProtocol!
+                      : 'PLAINTEXT',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              if (cluster.schemaRegistryUrl != null &&
+                  cluster.schemaRegistryUrl!.trim().isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.schema_outlined,
+                        size: 12,
+                        color: Theme.of(context).colorScheme.onTertiaryContainer,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        l10n.schemaRegistryConfiguredBadge,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onTertiaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
           subtitle: Text(cluster.bootstrapServers),

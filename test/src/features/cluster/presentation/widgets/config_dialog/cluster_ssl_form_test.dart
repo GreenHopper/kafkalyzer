@@ -32,7 +32,7 @@ void main() {
       pemKeyPasswordController.dispose();
     });
 
-    testWidgets('renders all SSL fields', (tester) async {
+    testWidgets('renders SSL fields and switches client auth modes', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -53,10 +53,26 @@ void main() {
       );
 
       expect(find.text('SSL Configuration'), findsOneWidget);
-      expect(find.text('Keystore Location (.p12/.pfx)'), findsOneWidget);
-      expect(find.text('Keystore Password'), findsOneWidget);
       expect(find.text('Truststore Location (PEM or JKS)'), findsOneWidget);
       expect(find.text('Truststore Password'), findsOneWidget);
+
+      // Initially None mode
+      expect(find.textContaining('Keystore Location'), findsNothing);
+      expect(find.text('Client Certificate PEM Location'), findsNothing);
+
+      // Switch to Keystore
+      await tester.tap(find.text('Keystore (PKCS12 / JKS)'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Keystore Location'), findsOneWidget);
+      expect(find.text('Keystore Password'), findsOneWidget);
+      expect(find.text('Client Certificate PEM Location'), findsNothing);
+
+      // Switch to PEM
+      await tester.tap(find.text('PEM Cert & Key'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Keystore Location'), findsNothing);
       expect(find.text('Client Certificate PEM Location'), findsOneWidget);
       expect(find.text('Client Private Key PEM Location'), findsOneWidget);
       expect(find.text('Client Private Key Password'), findsOneWidget);

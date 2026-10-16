@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/password_form_field.dart';
 
-class ClusterBasicInfoForm extends StatelessWidget {
+class ClusterBasicInfoForm extends StatefulWidget {
   final TextEditingController nameController;
   final TextEditingController bootstrapServersController;
   final TextEditingController schemaRegistryUrlController;
@@ -17,13 +19,46 @@ class ClusterBasicInfoForm extends StatelessWidget {
   });
 
   @override
+  State<ClusterBasicInfoForm> createState() => _ClusterBasicInfoFormState();
+}
+
+class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
+  bool _isSchemaExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isSchemaExpanded =
+        widget.schemaRegistryUsernameController.text.isNotEmpty ||
+        widget.schemaRegistryPasswordController.text.isNotEmpty;
+    widget.schemaRegistryUrlController.addListener(_onUrlChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.schemaRegistryUrlController.removeListener(_onUrlChanged);
+    super.dispose();
+  }
+
+  void _onUrlChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final hasSchemaUrl =
+        widget.schemaRegistryUrlController.text.trim().isNotEmpty;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: TextFormField(
-            controller: nameController,
+            controller: widget.nameController,
             decoration: const InputDecoration(labelText: 'Cluster Name'),
             validator: (value) => value!.isEmpty ? 'Required' : null,
           ),
@@ -31,7 +66,7 @@ class ClusterBasicInfoForm extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: TextFormField(
-            controller: bootstrapServersController,
+            controller: widget.bootstrapServersController,
             decoration: const InputDecoration(
               labelText: 'Bootstrap Servers (e.g. localhost:9092)',
             ),
@@ -41,7 +76,7 @@ class ClusterBasicInfoForm extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: TextFormField(
-            controller: schemaRegistryUrlController,
+            controller: widget.schemaRegistryUrlController,
             decoration: const InputDecoration(
               labelText: 'Schema Registry URL (Optional)',
               hintText: 'e.g. http://localhost:8081',
@@ -65,25 +100,54 @@ class ClusterBasicInfoForm extends StatelessWidget {
             },
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: schemaRegistryUsernameController,
-            decoration: const InputDecoration(
-              labelText: 'Schema Registry Username (Optional)',
+        if (hasSchemaUrl || _isSchemaExpanded) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  _isSchemaExpanded = !_isSchemaExpanded;
+                });
+              },
+              child: Row(
+                children: [
+                  Icon(
+                    _isSchemaExpanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.keyboard_arrow_right,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n?.schemaRegistryCredentialsOptional ??
+                        'Schema Registry Credentials (Optional)',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextFormField(
-            controller: schemaRegistryPasswordController,
-            decoration: const InputDecoration(
-              labelText: 'Schema Registry Password (Optional)',
+          if (_isSchemaExpanded) ...[
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextFormField(
+                controller: widget.schemaRegistryUsernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Schema Registry Username (Optional)',
+                ),
+              ),
             ),
-            obscureText: true,
-          ),
-        ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: PasswordFormField(
+                controller: widget.schemaRegistryPasswordController,
+                labelText: 'Schema Registry Password (Optional)',
+              ),
+            ),
+          ],
+        ],
       ],
     );
   }

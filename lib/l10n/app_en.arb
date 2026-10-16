@@ -667,5 +667,28 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+  "sslClientAuthMode": "Client Authentication (mTLS)",
+  "sslClientAuthNone": "None",
+  "sslClientAuthKeystore": "Keystore (PKCS12 / JKS)",
+  "sslClientAuthPem": "PEM Certificate & Key",
+  "browseFiles": "Browse files",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "testConnection": "Test Connection",
+  "testingConnection": "Testing Connection...",
+  "connectionSuccessful": "Connection successful!",
+  "connectionFailed": "Connection failed: {error}",
+  "@connectionFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "schemaRegistryCredentialsOptional": "Schema Registry Credentials (Optional)",
+  "globalConfigDescription": "Backup or restore the entire application state including all cluster configurations and preferences.",
+  "clusterExportDescription": "Export or import selected cluster profiles and their certificates as a portable ZIP archive.",
+  "schemaRegistryConfiguredBadge": "Schema Registry",
+  "maxScriptRuns": "Maximum Script Runs",
+  "maxConcurrentLagQueries": "Maximum Concurrent Lag Queries",
+  "maxConcurrentLagQueriesHelper": "Default: 5 (Higher values can impact performance)"
 }

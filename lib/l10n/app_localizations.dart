@@ -2371,6 +2371,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} loaded messages'**
   String loadedMessagesCount(int count);
+
+  /// No description provided for @sslClientAuthMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Authentication (mTLS)'**
+  String get sslClientAuthMode;
+
+  /// No description provided for @sslClientAuthNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get sslClientAuthNone;
+
+  /// No description provided for @sslClientAuthKeystore.
+  ///
+  /// In en, this message translates to:
+  /// **'Keystore (PKCS12 / JKS)'**
+  String get sslClientAuthKeystore;
+
+  /// No description provided for @sslClientAuthPem.
+  ///
+  /// In en, this message translates to:
+  /// **'PEM Certificate & Key'**
+  String get sslClientAuthPem;
+
+  /// No description provided for @browseFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse files'**
+  String get browseFiles;
+
+  /// No description provided for @showPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePassword;
+
+  /// No description provided for @testConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Connection'**
+  String get testConnection;
+
+  /// No description provided for @testingConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Testing Connection...'**
+  String get testingConnection;
+
+  /// No description provided for @connectionSuccessful.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection successful!'**
+  String get connectionSuccessful;
+
+  /// No description provided for @connectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed: {error}'**
+  String connectionFailed(String error);
+
+  /// No description provided for @schemaRegistryCredentialsOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry Credentials (Optional)'**
+  String get schemaRegistryCredentialsOptional;
+
+  /// No description provided for @globalConfigDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup or restore the entire application state including all cluster configurations and preferences.'**
+  String get globalConfigDescription;
+
+  /// No description provided for @clusterExportDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Export or import selected cluster profiles and their certificates as a portable ZIP archive.'**
+  String get clusterExportDescription;
+
+  /// No description provided for @schemaRegistryConfiguredBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry'**
+  String get schemaRegistryConfiguredBadge;
+
+  /// No description provided for @maxScriptRuns.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Script Runs'**
+  String get maxScriptRuns;
+
+  /// No description provided for @maxConcurrentLagQueries.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Concurrent Lag Queries'**
+  String get maxConcurrentLagQueries;
+
+  /// No description provided for @maxConcurrentLagQueriesHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Default: 5 (Higher values can impact performance)'**
+  String get maxConcurrentLagQueriesHelper;
 }
 
 class _AppLocalizationsDelegate

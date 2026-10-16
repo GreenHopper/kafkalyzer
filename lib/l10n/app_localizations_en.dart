@@ -1309,4 +1309,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String loadedMessagesCount(int count) {
     return '$count loaded messages';
   }
+
+  @override
+  String get sslClientAuthMode => 'Client Authentication (mTLS)';
+
+  @override
+  String get sslClientAuthNone => 'None';
+
+  @override
+  String get sslClientAuthKeystore => 'Keystore (PKCS12 / JKS)';
+
+  @override
+  String get sslClientAuthPem => 'PEM Certificate & Key';
+
+  @override
+  String get browseFiles => 'Browse files';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get testConnection => 'Test Connection';
+
+  @override
+  String get testingConnection => 'Testing Connection...';
+
+  @override
+  String get connectionSuccessful => 'Connection successful!';
+
+  @override
+  String connectionFailed(String error) {
+    return 'Connection failed: $error';
+  }
+
+  @override
+  String get schemaRegistryCredentialsOptional =>
+      'Schema Registry Credentials (Optional)';
+
+  @override
+  String get globalConfigDescription =>
+      'Backup or restore the entire application state including all cluster configurations and preferences.';
+
+  @override
+  String get clusterExportDescription =>
+      'Export or import selected cluster profiles and their certificates as a portable ZIP archive.';
+
+  @override
+  String get schemaRegistryConfiguredBadge => 'Schema Registry';
+
+  @override
+  String get maxScriptRuns => 'Maximum Script Runs';
+
+  @override
+  String get maxConcurrentLagQueries => 'Maximum Concurrent Lag Queries';
+
+  @override
+  String get maxConcurrentLagQueriesHelper =>
+      'Default: 5 (Higher values can impact performance)';
 }

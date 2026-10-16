@@ -1318,4 +1318,64 @@ class AppLocalizationsDe extends AppLocalizations {
   String loadedMessagesCount(int count) {
     return '$count geladene Nachrichten';
   }
+
+  @override
+  String get sslClientAuthMode => 'Client-Authentifizierung (mTLS)';
+
+  @override
+  String get sslClientAuthNone => 'Keine';
+
+  @override
+  String get sslClientAuthKeystore => 'Keystore (PKCS12 / JKS)';
+
+  @override
+  String get sslClientAuthPem => 'PEM-Zertifikat & Key';
+
+  @override
+  String get browseFiles => 'Dateien durchsuchen';
+
+  @override
+  String get showPassword => 'Passwort anzeigen';
+
+  @override
+  String get hidePassword => 'Passwort ausblenden';
+
+  @override
+  String get testConnection => 'Verbindung testen';
+
+  @override
+  String get testingConnection => 'Verbindung wird getestet...';
+
+  @override
+  String get connectionSuccessful => 'Verbindung erfolgreich!';
+
+  @override
+  String connectionFailed(String error) {
+    return 'Verbindung fehlgeschlagen: $error';
+  }
+
+  @override
+  String get schemaRegistryCredentialsOptional =>
+      'Zugangsdaten für Schema Registry (optional)';
+
+  @override
+  String get globalConfigDescription =>
+      'Gesamte App-Konfiguration inklusive aller Cluster-Profile und Einstellungen sichern oder wiederherstellen.';
+
+  @override
+  String get clusterExportDescription =>
+      'Ausgewählte Cluster-Profile inklusive Zertifikaten als portable ZIP-Datei exportieren oder importieren.';
+
+  @override
+  String get schemaRegistryConfiguredBadge => 'Schema Registry';
+
+  @override
+  String get maxScriptRuns => 'Max. Anzahl an Skript-Durchläufen';
+
+  @override
+  String get maxConcurrentLagQueries => 'Maximale gleichzeitige Lag-Abfragen';
+
+  @override
+  String get maxConcurrentLagQueriesHelper =>
+      'Standard: 5 (Höhere Werte können zu Lasten der Performance gehen)';
 }

@@ -470,5 +470,28 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+  "sslClientAuthMode": "Client-Authentifizierung (mTLS)",
+  "sslClientAuthNone": "Keine",
+  "sslClientAuthKeystore": "Keystore (PKCS12 / JKS)",
+  "sslClientAuthPem": "PEM-Zertifikat & Key",
+  "browseFiles": "Dateien durchsuchen",
+  "showPassword": "Passwort anzeigen",
+  "hidePassword": "Passwort ausblenden",
+  "testConnection": "Verbindung testen",
+  "testingConnection": "Verbindung wird getestet...",
+  "connectionSuccessful": "Verbindung erfolgreich!",
+  "connectionFailed": "Verbindung fehlgeschlagen: {error}",
+  "@connectionFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "schemaRegistryCredentialsOptional": "Zugangsdaten für Schema Registry (optional)",
+  "globalConfigDescription": "Gesamte App-Konfiguration inklusive aller Cluster-Profile und Einstellungen sichern oder wiederherstellen.",
+  "clusterExportDescription": "Ausgewählte Cluster-Profile inklusive Zertifikaten als portable ZIP-Datei exportieren oder importieren.",
+  "schemaRegistryConfiguredBadge": "Schema Registry",
+  "maxScriptRuns": "Max. Anzahl an Skript-Durchläufen",
+  "maxConcurrentLagQueries": "Maximale gleichzeitige Lag-Abfragen",
+  "maxConcurrentLagQueriesHelper": "Standard: 5 (Höhere Werte können zu Lasten der Performance gehen)"
 }
