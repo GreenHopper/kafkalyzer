@@ -126,3 +126,7 @@ On Windows, the Kafka client (`librdkafka` with OpenSSL) requires an explicit CA
 
 - **Release Builds**: The automated build scripts bundle `cacert.pem` automatically.
 - **Debug/Local Runs**: Ensure a `cacert.pem` file is present in the same directory as the executable. Without this, SSL verification will fail even if disabled in the cluster profile.
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
