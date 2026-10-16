@@ -8,6 +8,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_ru
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
+import 'package:kafkalyzer/src/ui/timestamp_picker_field.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
@@ -138,26 +139,35 @@ void main() {
     ],
   );
 
+  Widget buildTestWidget(Script testScript) {
+    return MaterialApp(
+      theme: ThemeData(
+        useMaterial3: true,
+        splashFactory: InkRipple.splashFactory,
+      ),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: ScriptRunView(script: testScript)),
+    );
+  }
+
   testWidgets('ScriptRunView switches to monitor on run', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(
-          useMaterial3: true,
-          splashFactory: InkRipple.splashFactory,
-        ),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: ScriptRunView(script: script)),
-      ),
-    );
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-    expect(find.text('Configuration'), findsOneWidget);
-    expect(find.text('Run'), findsOneWidget);
+    await tester.pumpWidget(buildTestWidget(script));
+    await tester.pumpAndSettle();
 
-    // Tap Run
-    await tester.tap(find.text('Run'));
+    expect(find.text('Parameters & Execution'), findsOneWidget);
+    expect(find.text('Pipeline Preview'), findsOneWidget);
+    expect(find.text('Run Script (1 step)'), findsOneWidget);
+
+    // Tap Run button
+    await tester.tap(find.text('Run Script (1 step)'));
     await tester.pump(); // Start run
     await tester.pump(const Duration(milliseconds: 200)); // animation
 
@@ -172,12 +182,7 @@ void main() {
 
     // With the Key trick, it should be expanded now
     expect(find.text('t1'), findsOneWidget);
-    expect(
-      find.text(
-        'RUNNING',
-      ), // Localization might change case? Check implementation.
-      findsNWidgets(2),
-    ); // One for step, one for topic
+    expect(find.text('RUNNING'), findsNWidgets(2)); // One for step, one for topic
 
     // Tap Stop
     await tester.tap(find.text('Stop'));
@@ -190,19 +195,15 @@ void main() {
   testWidgets('ScriptRunView displays match counts for completed steps', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(
-          useMaterial3: true,
-          splashFactory: InkRipple.splashFactory,
-        ),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: ScriptRunView(script: script)),
-      ),
-    );
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.tap(find.text('Run'));
+    await tester.pumpWidget(buildTestWidget(script));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Run Script (1 step)'));
     await tester.pump();
 
     // Set match counts
@@ -214,5 +215,156 @@ void main() {
     // Verify match count text
     // "5 matches found in 1 topics"
     expect(find.text('5 matches found in 1 topics'), findsOneWidget);
+  });
+
+  testWidgets('renders responsive two-column layout on wide screens', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const detailedScript = Script(
+      id: '2',
+      name: 'Order Pipeline',
+      steps: [
+        ScriptStep(
+          id: 's1',
+          name: 'Find Order',
+          clusterName: 'c1',
+          topicNames: ['orders-in'],
+          filterTemplate: '{{orderId}}',
+          extractions: [
+            ScriptExtraction(
+              jsonPath: r'$.customerId',
+              variableName: 'customerId',
+            ),
+          ],
+        ),
+        ScriptStep(
+          id: 's2',
+          name: 'Track Payment',
+          clusterName: 'c1',
+          topicNames: ['payments'],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(buildTestWidget(detailedScript));
+    await tester.pumpAndSettle();
+
+    // Verify 2-column headers and badges
+    expect(find.text('Parameters & Execution'), findsOneWidget);
+    expect(find.text('Pipeline Preview'), findsOneWidget);
+    expect(find.text('2 Steps'), findsOneWidget);
+    expect(find.text('Run Script (2 steps)'), findsOneWidget);
+
+    // Verify parameter card constraints: maxWidth 540
+    final constrainedBox = tester.widget<ConstrainedBox>(
+      find.ancestor(
+        of: find.text('Parameters & Execution'),
+        matching: find.byType(ConstrainedBox),
+      ).first,
+    );
+    expect(constrainedBox.constraints.maxWidth, 540);
+
+    // Verify pipeline preview content
+    expect(find.text('Find Order'), findsOneWidget);
+    expect(find.text('Track Payment'), findsOneWidget);
+    expect(find.text('orders-in'), findsOneWidget);
+    expect(find.text('payments'), findsOneWidget);
+    expect(find.text('Filter: {{orderId}}'), findsOneWidget);
+    expect(find.text('Extracted: customerId'), findsOneWidget);
+  });
+
+  testWidgets('renders stacked single-column layout on narrow screens', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(700, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(buildTestWidget(script));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Parameters & Execution'), findsOneWidget);
+    expect(find.text('Pipeline Preview'), findsOneWidget);
+    expect(find.text('Run Script (1 step)'), findsOneWidget);
+
+    // Verify layout inside SingleChildScrollView is Column
+    final scrollView = find.byType(SingleChildScrollView);
+    expect(scrollView, findsOneWidget);
+
+    final columnInsideScroll = find.descendant(
+      of: scrollView,
+      matching: find.byType(Column),
+    );
+    expect(columnInsideScroll, findsWidgets);
+  });
+
+  testWidgets('displays variable inputs with clean type indicators and icons', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const scriptWithVars = Script(
+      id: '3',
+      name: 'Config Script',
+      variables: [
+        ScriptVariable(name: 'userQuery', type: ScriptVariableType.string),
+        ScriptVariable(name: 'batchSize', type: ScriptVariableType.numeric),
+        ScriptVariable(name: 'startTime', type: ScriptVariableType.timestamp),
+      ],
+      steps: [
+        ScriptStep(id: 's1', name: 'Step 1', clusterName: 'c1'),
+      ],
+    );
+
+    await tester.pumpWidget(buildTestWidget(scriptWithVars));
+    await tester.pumpAndSettle();
+
+    // Verify clean type badges
+    expect(find.text('Text'), findsOneWidget);
+    expect(find.text('Numeric'), findsOneWidget);
+
+    // Verify TimestampPickerField is rendered for timestamp variable
+    expect(find.byType(TimestampPickerField), findsOneWidget);
+
+    // Verify prefix icons
+    expect(find.byIcon(Icons.short_text), findsOneWidget);
+    expect(find.byIcon(Icons.numbers), findsOneWidget);
+  });
+
+  testWidgets('displays empty state when script has no steps', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const emptyScript = Script(
+      id: '4',
+      name: 'Empty Script',
+      steps: [],
+    );
+
+    await tester.pumpWidget(buildTestWidget(emptyScript));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pipeline Preview'), findsOneWidget);
+    expect(find.text('0 Steps'), findsOneWidget);
+    expect(
+      find.text(
+        'No execution steps configured. Use the Edit tab to add steps.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Run Script (0 steps)'), findsOneWidget);
   });
 }

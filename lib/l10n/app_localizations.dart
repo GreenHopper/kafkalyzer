@@ -2563,6 +2563,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Advanced Filters'**
   String get advancedFiltersSection;
+
+  /// No description provided for @deleteScriptConfirmationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Script?'**
+  String get deleteScriptConfirmationTitle;
+
+  /// No description provided for @deleteScriptConfirmationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete script \"{name}\"? This action cannot be undone.'**
+  String deleteScriptConfirmationMessage(String name);
+
+  /// No description provided for @searchScripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Search scripts...'**
+  String get searchScripts;
+
+  /// No description provided for @pipelinePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Pipeline Preview'**
+  String get pipelinePreview;
+
+  /// No description provided for @pipelineStepsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Step} other{{count} Steps}}'**
+  String pipelineStepsCount(int count);
+
+  /// No description provided for @noStepsInPipeline.
+  ///
+  /// In en, this message translates to:
+  /// **'No execution steps configured. Use the Edit tab to add steps.'**
+  String get noStepsInPipeline;
+
+  /// No description provided for @parametersAndExecution.
+  ///
+  /// In en, this message translates to:
+  /// **'Parameters & Execution'**
+  String get parametersAndExecution;
+
+  /// No description provided for @runScriptWithSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Script ({count, plural, =1{1 step} other{{count} steps}})'**
+  String runScriptWithSteps(int count);
+
+  /// No description provided for @variableTypeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get variableTypeText;
+
+  /// No description provided for @variableTypeTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamp'**
+  String get variableTypeTimestamp;
+
+  /// No description provided for @variableTypeNumeric.
+  ///
+  /// In en, this message translates to:
+  /// **'Numeric'**
+  String get variableTypeNumeric;
+
+  /// No description provided for @stepNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {number}'**
+  String stepNumber(int number);
+
+  /// No description provided for @targetCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'Target Cluster'**
+  String get targetCluster;
+
+  /// No description provided for @extractedVariables.
+  ///
+  /// In en, this message translates to:
+  /// **'Extracted'**
+  String get extractedVariables;
+
+  /// No description provided for @filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filter;
 }
 
 class _AppLocalizationsDelegate

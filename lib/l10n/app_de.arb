@@ -517,5 +517,41 @@
   "extractionJsonPath": "JSONPath (z.B. $.id)",
   "scriptProperties": "Skript-Eigenschaften",
   "concurrencyLimit": "Gleichzeitige Durchläufe",
-  "advancedFiltersSection": "Erweiterte Filter"
+  "advancedFiltersSection": "Erweiterte Filter",
+  "deleteScriptConfirmationTitle": "Skript löschen?",
+  "deleteScriptConfirmationMessage": "Möchten Sie das Skript \"{name}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "@deleteScriptConfirmationMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "searchScripts": "Skripte durchsuchen...",
+  "pipelinePreview": "Pipeline-Vorschau",
+  "pipelineStepsCount": "{count, plural, =1{1 Schritt} other{{count} Schritte}}",
+  "@pipelineStepsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noStepsInPipeline": "Keine Ablauf-Schritte definiert. Wechseln Sie zum Bearbeiten-Tab, um Schritte hinzuzufügen.",
+  "parametersAndExecution": "Skript-Parameter & Start",
+  "runScriptWithSteps": "Skript starten ({count, plural, =1{1 Schritt} other{{count} Schritte}})",
+  "@runScriptWithSteps": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "variableTypeText": "Text",
+  "variableTypeTimestamp": "Zeitstempel",
+  "variableTypeNumeric": "Zahl",
+  "stepNumber": "Schritt {number}",
+  "@stepNumber": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "targetCluster": "Ziel-Cluster",
+  "extractedVariables": "Extrahiert",
+  "noVariablesRequired": "Keine Parameter erforderlich.",
+  "filter": "Filter"
 }

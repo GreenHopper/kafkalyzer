@@ -31,6 +31,8 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
   Key _runViewKey = UniqueKey();
   ScriptRun? _autoOpenRun;
   bool _isSidebarCollapsed = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
 
   @override
   void initState() {
@@ -67,6 +69,7 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
 
   @override
   void dispose() {
+    _searchController.dispose();
     getIt<ScriptController>().removeListener(_attemptRestoreState);
     _tabController.dispose();
     super.dispose();
@@ -197,10 +200,17 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
                 if (controller.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                final query = _searchQuery.toLowerCase();
+                final filteredScripts = query.isEmpty
+                    ? controller.scripts
+                    : controller.scripts
+                        .where((s) => s.name.toLowerCase().contains(query))
+                        .toList();
+
                 return ListView.builder(
-                  itemCount: controller.scripts.length,
+                  itemCount: filteredScripts.length,
                   itemBuilder: (context, index) {
-                    final script = controller.scripts[index];
+                    final script = filteredScripts[index];
                     return Material(
                       type: MaterialType.transparency,
                       child: ListTile(
@@ -218,8 +228,13 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, size: 18),
-                              onPressed: () =>
-                                  controller.deleteScript(script.id),
+                              tooltip: l10n.delete,
+                              onPressed: () => _confirmDeleteScript(
+                                context,
+                                l10n,
+                                controller,
+                                script,
+                              ),
                             ),
                           ],
                         ),
@@ -241,26 +256,93 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
     ScriptController controller,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              l10n.scripts,
-              style: Theme.of(context).textTheme.titleLarge,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.scripts,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              IconButton(
+                key: const Key('script_collapse_sidebar'),
+                icon: const Icon(Icons.view_sidebar_outlined),
+                tooltip: l10n.collapseScriptCatalog,
+                visualDensity: VisualDensity.compact,
+                onPressed: _toggleSidebar,
+              ),
+              _buildHeaderActions(context, l10n, controller),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: l10n.searchScripts,
+              isDense: true,
+              prefixIcon: const Icon(Icons.search, size: 18),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 16),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = "");
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
             ),
+            onChanged: (val) => setState(() => _searchQuery = val.trim()),
           ),
-          IconButton(
-            key: const Key('script_collapse_sidebar'),
-            icon: const Icon(Icons.view_sidebar_outlined),
-            tooltip: l10n.collapseScriptCatalog,
-            visualDensity: VisualDensity.compact,
-            onPressed: _toggleSidebar,
-          ),
-          _buildHeaderActions(context, l10n, controller),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteScript(
+    BuildContext context,
+    AppLocalizations l10n,
+    ScriptController controller,
+    Script script,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deleteScriptConfirmationTitle),
+        content: Text(l10n.deleteScriptConfirmationMessage(script.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await controller.deleteScript(script.id);
+      if (_selectedScript?.id == script.id) {
+        setState(() => _selectedScript = null);
+      }
+    }
   }
 
   Widget _buildHeaderActions(

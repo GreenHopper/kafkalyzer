@@ -714,5 +714,41 @@
   "extractionJsonPath": "JSONPath (e.g. $.id)",
   "scriptProperties": "Script Properties",
   "concurrencyLimit": "Concurrency Limit",
-  "advancedFiltersSection": "Advanced Filters"
+  "advancedFiltersSection": "Advanced Filters",
+  "deleteScriptConfirmationTitle": "Delete Script?",
+  "deleteScriptConfirmationMessage": "Are you sure you want to delete script \"{name}\"? This action cannot be undone.",
+  "@deleteScriptConfirmationMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "searchScripts": "Search scripts...",
+  "pipelinePreview": "Pipeline Preview",
+  "pipelineStepsCount": "{count, plural, =1{1 Step} other{{count} Steps}}",
+  "@pipelineStepsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noStepsInPipeline": "No execution steps configured. Use the Edit tab to add steps.",
+  "parametersAndExecution": "Parameters & Execution",
+  "runScriptWithSteps": "Run Script ({count, plural, =1{1 step} other{{count} steps}})",
+  "@runScriptWithSteps": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "variableTypeText": "Text",
+  "variableTypeTimestamp": "Timestamp",
+  "variableTypeNumeric": "Numeric",
+  "stepNumber": "Step {number}",
+  "@stepNumber": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "targetCluster": "Target Cluster",
+  "extractedVariables": "Extracted",
+  "noVariablesRequired": "No variables required.",
+  "filter": "Filter"
 }

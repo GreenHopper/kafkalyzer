@@ -27,11 +27,16 @@ class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
 
 void main() {
   const testScript = Script(id: 'script-1', name: 'Demo Script', steps: []);
+  const testScript2 =
+      Script(id: 'script-2', name: 'Analytics Pipeline', steps: []);
 
   setUp(() async {
     await getIt.reset();
     SharedPreferences.setMockInitialValues({
-      'saved_scripts_v1': jsonEncode([testScript.toJson()]),
+      'saved_scripts_v1': jsonEncode([
+        testScript.toJson(),
+        testScript2.toJson(),
+      ]),
     });
     getIt.registerSingleton<Logger>(Logger());
     getIt.registerSingleton<ScriptRepository>(ScriptRepository());
@@ -129,5 +134,121 @@ void main() {
 
     expect(find.text('Scripts'), findsNothing);
     expect(find.byKey(const Key('script_expand_sidebar')), findsOneWidget);
+  });
+
+  testWidgets('filters script catalog by search query in real time', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Demo Script'), findsOneWidget);
+    expect(find.text('Analytics Pipeline'), findsOneWidget);
+
+    // Enter search text
+    final searchField = find.byType(TextField);
+    expect(searchField, findsOneWidget);
+    await tester.enterText(searchField, 'Analytics');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Analytics Pipeline'), findsOneWidget);
+    expect(find.text('Demo Script'), findsNothing);
+
+    // Clear search using clear button
+    final clearButton = find.byIcon(Icons.clear);
+    expect(clearButton, findsOneWidget);
+    await tester.tap(clearButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Demo Script'), findsOneWidget);
+    expect(find.text('Analytics Pipeline'), findsOneWidget);
+  });
+
+  testWidgets('canceling delete dialog preserves the script', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Demo Script'), findsOneWidget);
+
+    // Find delete button specifically for Demo Script
+    final demoScriptTile = find.ancestor(
+      of: find.text('Demo Script'),
+      matching: find.byType(ListTile),
+    );
+    final deleteButton = find.descendant(
+      of: demoScriptTile,
+      matching: find.byIcon(Icons.delete),
+    );
+    await tester.tap(deleteButton);
+    await tester.pumpAndSettle();
+
+    // Verify confirmation dialog is shown
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('Delete Script?'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.textContaining('Demo Script'),
+      ),
+      findsOneWidget,
+    );
+
+    // Tap Cancel
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    // Dialog is closed and Demo Script remains
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Demo Script'), findsOneWidget);
+  });
+
+  testWidgets('confirming delete dialog deletes the script', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Demo Script'), findsOneWidget);
+
+    // Find delete button specifically for Demo Script
+    final demoScriptTile = find.ancestor(
+      of: find.text('Demo Script'),
+      matching: find.byType(ListTile),
+    );
+    final deleteButton = find.descendant(
+      of: demoScriptTile,
+      matching: find.byIcon(Icons.delete),
+    );
+    await tester.tap(deleteButton);
+    await tester.pumpAndSettle();
+
+    // Verify confirmation dialog is shown
+    expect(find.byType(AlertDialog), findsOneWidget);
+
+    // Tap Delete in dialog (descendant of AlertDialog)
+    final deleteConfirmBtn = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.text('Delete'),
+    );
+    await tester.tap(deleteConfirmBtn);
+    await tester.pumpAndSettle();
+
+    // Dialog closed and Demo Script deleted
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Demo Script'), findsNothing);
+    expect(find.text('Analytics Pipeline'), findsOneWidget);
   });
 }

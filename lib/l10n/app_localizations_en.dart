@@ -1415,4 +1415,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get advancedFiltersSection => 'Advanced Filters';
+
+  @override
+  String get deleteScriptConfirmationTitle => 'Delete Script?';
+
+  @override
+  String deleteScriptConfirmationMessage(String name) {
+    return 'Are you sure you want to delete script \"$name\"? This action cannot be undone.';
+  }
+
+  @override
+  String get searchScripts => 'Search scripts...';
+
+  @override
+  String get pipelinePreview => 'Pipeline Preview';
+
+  @override
+  String pipelineStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Steps',
+      one: '1 Step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noStepsInPipeline =>
+      'No execution steps configured. Use the Edit tab to add steps.';
+
+  @override
+  String get parametersAndExecution => 'Parameters & Execution';
+
+  @override
+  String runScriptWithSteps(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count steps',
+      one: '1 step',
+    );
+    return 'Run Script ($_temp0)';
+  }
+
+  @override
+  String get variableTypeText => 'Text';
+
+  @override
+  String get variableTypeTimestamp => 'Timestamp';
+
+  @override
+  String get variableTypeNumeric => 'Numeric';
+
+  @override
+  String stepNumber(int number) {
+    return 'Step $number';
+  }
+
+  @override
+  String get targetCluster => 'Target Cluster';
+
+  @override
+  String get extractedVariables => 'Extracted';
+
+  @override
+  String get filter => 'Filter';
 }

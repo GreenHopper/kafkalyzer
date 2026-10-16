@@ -664,7 +664,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get usedIn => 'Verwendet in';
 
   @override
-  String get noVariablesRequired => 'Keine Variablen erforderlich.';
+  String get noVariablesRequired => 'Keine Parameter erforderlich.';
 
   @override
   String get addExtraction => 'Extraktion hinzufügen';
@@ -1424,4 +1424,70 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get advancedFiltersSection => 'Erweiterte Filter';
+
+  @override
+  String get deleteScriptConfirmationTitle => 'Skript löschen?';
+
+  @override
+  String deleteScriptConfirmationMessage(String name) {
+    return 'Möchten Sie das Skript \"$name\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.';
+  }
+
+  @override
+  String get searchScripts => 'Skripte durchsuchen...';
+
+  @override
+  String get pipelinePreview => 'Pipeline-Vorschau';
+
+  @override
+  String pipelineStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Schritte',
+      one: '1 Schritt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noStepsInPipeline =>
+      'Keine Ablauf-Schritte definiert. Wechseln Sie zum Bearbeiten-Tab, um Schritte hinzuzufügen.';
+
+  @override
+  String get parametersAndExecution => 'Skript-Parameter & Start';
+
+  @override
+  String runScriptWithSteps(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Schritte',
+      one: '1 Schritt',
+    );
+    return 'Skript starten ($_temp0)';
+  }
+
+  @override
+  String get variableTypeText => 'Text';
+
+  @override
+  String get variableTypeTimestamp => 'Zeitstempel';
+
+  @override
+  String get variableTypeNumeric => 'Zahl';
+
+  @override
+  String stepNumber(int number) {
+    return 'Schritt $number';
+  }
+
+  @override
+  String get targetCluster => 'Ziel-Cluster';
+
+  @override
+  String get extractedVariables => 'Extrahiert';
+
+  @override
+  String get filter => 'Filter';
 }
