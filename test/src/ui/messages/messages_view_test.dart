@@ -177,7 +177,7 @@ void main() {
   });
 
   testWidgets(
-    'defaults to descending sort and toggles preference for active view',
+    'defaults to descending sort and toggles preference in timeline view',
     (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.0;
@@ -189,7 +189,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Default view is table; default sort is descending
+      // In table mode, toolbar sort controls are hidden
+      expect(find.byKey(const Key('message_sort_order_toggle')), findsNothing);
+      expect(find.byKey(const Key('message_sort_field_selector')), findsNothing);
+
+      // Switch to timeline mode
+      await tester.tap(find.byIcon(Icons.view_list));
+      await tester.pumpAndSettle();
+
+      // Default sort in timeline is descending
       expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
       expect(find.byIcon(Icons.arrow_upward), findsNothing);
 
@@ -198,12 +206,11 @@ void main() {
 
       expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('message_sort_order_table'), 'asc');
-      expect(prefs.getString('message_sort_order_timeline'), isNull);
+      expect(prefs.getString('message_sort_order_timeline'), 'asc');
     },
   );
 
-  testWidgets('restores independent sort orders when switching view types', (
+  testWidgets('hides sort controls in table view and restores sort order in timeline view', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(1920, 1080);
@@ -212,7 +219,6 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     SharedPreferences.setMockInitialValues({
-      'message_sort_order_table': 'asc',
       'message_sort_order_timeline': 'desc',
     });
 
@@ -221,20 +227,21 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Table starts ascending from prefs
-    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+    // Table view: toolbar sort controls are hidden
+    expect(find.byKey(const Key('message_sort_order_toggle')), findsNothing);
+    expect(find.byKey(const Key('message_sort_field_selector')), findsNothing);
 
-    // Switch to timeline → descending
+    // Switch to timeline → sort controls visible with descending
     await tester.tap(find.byIcon(Icons.view_list));
     await tester.pumpAndSettle();
     expect(find.byType(MessagesTimelineView), findsOneWidget);
     expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
 
-    // Back to table → ascending restored
+    // Switch back to table → controls hidden again
     await tester.tap(find.byIcon(Icons.table_chart));
     await tester.pumpAndSettle();
     expect(find.byType(MessagesTableView), findsOneWidget);
-    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+    expect(find.byKey(const Key('message_sort_order_toggle')), findsNothing);
   });
 
   testWidgets('timeline displays newest first when sort is descending', (
@@ -318,7 +325,7 @@ void main() {
     expect(find.text('Topic'), findsOneWidget);
   });
 
-  testWidgets('defaults to timestamp sort field before view mode controls', (
+  testWidgets('renders sort field before view mode controls in timeline mode', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(1920, 1080);
@@ -326,8 +333,16 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    SharedPreferences.setMockInitialValues({
+      'view_mode_pref': 'timeline',
+    });
+
     await tester.pumpWidget(
-      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+      createWidgetUnderTest(
+        messages: testMessages,
+        onMessageTap: (_) {},
+        preferencesKey: 'view_mode_pref',
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -346,7 +361,7 @@ void main() {
     );
   });
 
-  testWidgets('persists sort field per view type independently', (
+  testWidgets('persists sort field for timeline view type', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(1920, 1080);
@@ -355,7 +370,6 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     SharedPreferences.setMockInitialValues({
-      'message_sort_field_table': 'offset',
       'message_sort_field_timeline': 'key',
     });
 
@@ -364,15 +378,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Table shows Offset as selected field label in the selector child
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('message_sort_field_selector')),
-        matching: find.text('Offset'),
-      ),
-      findsOneWidget,
-    );
+    // Table view: sort selector is hidden
+    expect(find.byKey(const Key('message_sort_field_selector')), findsNothing);
 
+    // Switch to timeline: selector is visible with 'Key'
     await tester.tap(find.byIcon(Icons.view_list));
     await tester.pumpAndSettle();
 

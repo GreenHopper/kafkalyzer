@@ -6,6 +6,7 @@ class MessageSearchBar extends StatefulWidget {
   final String searchPhrase;
   final ValueChanged<String> onSearchChanged;
   final int matchCount;
+  final int totalCount;
   final bool showNonMatches;
   final ValueChanged<bool> onShowNonMatchesChanged;
 
@@ -14,6 +15,7 @@ class MessageSearchBar extends StatefulWidget {
     required this.searchPhrase,
     required this.onSearchChanged,
     required this.matchCount,
+    this.totalCount = 0,
     required this.showNonMatches,
     required this.onShowNonMatchesChanged,
   });
@@ -61,14 +63,29 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final countText = widget.searchPhrase.isNotEmpty
+        ? (l10n != null && widget.totalCount > 0
+            ? l10n.matchesOfTotal(widget.matchCount, widget.totalCount)
+            : (l10n?.stepMatches(widget.matchCount) ?? "${widget.matchCount} matches"))
+        : (widget.totalCount > 0
+            ? (l10n != null
+                ? l10n.loadedMessagesCount(widget.totalCount)
+                : "${widget.totalCount} loaded messages")
+            : null);
+
+    final hintText = widget.totalCount > 0 && l10n != null
+        ? l10n.filterInLoadedMessages(widget.totalCount)
+        : (l10n?.searchResults ?? "Search results...");
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.searchPhrase.isNotEmpty)
+        if (countText != null)
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: Text(
-              AppLocalizations.of(context)!.stepMatches(widget.matchCount),
+              countText,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -82,7 +99,7 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
             key: const Key('message_search_bar_text_field'),
             controller: _controller,
             decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.searchResults,
+              hintText: hintText,
               prefixIcon: const Icon(Icons.search, size: 16),
               contentPadding: const EdgeInsets.symmetric(
                 vertical: 0,

@@ -8,6 +8,7 @@ void main() {
     required String searchPhrase,
     required ValueChanged<String> onSearchChanged,
     required int matchCount,
+    int totalCount = 0,
     required bool showNonMatches,
     required ValueChanged<bool> onShowNonMatchesChanged,
   }) {
@@ -22,6 +23,7 @@ void main() {
           searchPhrase: searchPhrase,
           onSearchChanged: onSearchChanged,
           matchCount: matchCount,
+          totalCount: totalCount,
           showNonMatches: showNonMatches,
           onShowNonMatchesChanged: onShowNonMatchesChanged,
         ),
@@ -40,13 +42,14 @@ void main() {
           searchPhrase: "initial",
           onSearchChanged: (val) => searchResult = val,
           matchCount: 12,
+          totalCount: 200,
           showNonMatches: false,
           onShowNonMatchesChanged: (val) => toggleResult = val,
         ),
       );
 
-      // Verify initial state
-      expect(find.text('12 matches'), findsOneWidget);
+      // Verify initial state with 12 of 200 matches
+      expect(find.text('12 of 200 matches'), findsOneWidget);
       expect(find.text('initial'), findsOneWidget);
 
       // Enter new text
@@ -65,6 +68,24 @@ void main() {
       expect(toggleResult, true);
     },
   );
+
+  testWidgets('renders loaded messages count and dynamic placeholder when empty', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        searchPhrase: "",
+        onSearchChanged: (_) {},
+        matchCount: 0,
+        totalCount: 200,
+        showNonMatches: true,
+        onShowNonMatchesChanged: (_) {},
+      ),
+    );
+
+    expect(find.text('200 loaded messages'), findsOneWidget);
+    expect(find.text('Filter in 200 loaded messages...'), findsOneWidget);
+  });
 
   testWidgets('clears text on pressing clear icon', (
     WidgetTester tester,

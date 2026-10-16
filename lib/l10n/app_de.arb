@@ -443,5 +443,32 @@
       "partitions": { "type": "int" },
       "rf": { "type": "int" }
     }
+  },
+  "viewModeTable": "Tabelle",
+  "viewModeTableTooltip": "Tabellenansicht",
+  "viewModeTimeline": "Zeitverlauf",
+  "viewModeTimelineTooltip": "Zeitverlaufsansicht",
+  "viewModeDiff": "Vergleich",
+  "viewModeDiffTooltip": "Vergleichsansicht (Diff)",
+  "viewModeSchema": "Schema",
+  "viewModeSchemaTooltip": "Schemaansicht",
+  "filterInLoadedMessages": "In {count} geladenen Nachrichten filtern...",
+  "@filterInLoadedMessages": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "matchesOfTotal": "{matchCount} von {totalCount} Treffern",
+  "@matchesOfTotal": {
+    "placeholders": {
+      "matchCount": { "type": "int" },
+      "totalCount": { "type": "int" }
+    }
+  },
+  "loadedMessagesCount": "{count} geladene Nachrichten",
+  "@loadedMessagesCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
   }
 }

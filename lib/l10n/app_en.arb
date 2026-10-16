@@ -640,5 +640,32 @@
       "partitions": { "type": "int" },
       "rf": { "type": "int" }
     }
+  },
+  "viewModeTable": "Table",
+  "viewModeTableTooltip": "Table View",
+  "viewModeTimeline": "Timeline",
+  "viewModeTimelineTooltip": "Timeline View",
+  "viewModeDiff": "Diff",
+  "viewModeDiffTooltip": "Diff View",
+  "viewModeSchema": "Schema",
+  "viewModeSchemaTooltip": "Schema View",
+  "filterInLoadedMessages": "Filter in {count} loaded messages...",
+  "@filterInLoadedMessages": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "matchesOfTotal": "{matchCount} of {totalCount} matches",
+  "@matchesOfTotal": {
+    "placeholders": {
+      "matchCount": { "type": "int" },
+      "totalCount": { "type": "int" }
+    }
+  },
+  "loadedMessagesCount": "{count} loaded messages",
+  "@loadedMessagesCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
   }
 }

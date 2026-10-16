@@ -661,46 +661,48 @@ class _MessagesViewState extends State<MessagesView> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Tooltip(
-                    message: l10n.sortFieldTooltip,
-                    child: PopupMenuButton<String>(
-                      key: const Key('message_sort_field_selector'),
-                      initialValue: _sortField,
-                      onSelected: _onSortFieldChanged,
-                      itemBuilder: (context) => [
-                        for (final field in messageSortFields)
-                          PopupMenuItem<String>(
-                            value: field,
-                            child: Text(_labelForSortField(l10n, field)),
+                  if (_activeView != 'table') ...[
+                    Tooltip(
+                      message: l10n.sortFieldTooltip,
+                      child: PopupMenuButton<String>(
+                        key: const Key('message_sort_field_selector'),
+                        initialValue: _sortField,
+                        onSelected: _onSortFieldChanged,
+                        itemBuilder: (context) => [
+                          for (final field in messageSortFields)
+                            PopupMenuItem<String>(
+                              value: field,
+                              child: Text(_labelForSortField(l10n, field)),
+                            ),
+                        ],
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_labelForSortField(l10n, _sortField)),
+                              const Icon(Icons.arrow_drop_down, size: 20),
+                            ],
                           ),
-                      ],
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_labelForSortField(l10n, _sortField)),
-                            const Icon(Icons.arrow_drop_down, size: 20),
-                          ],
                         ),
                       ),
                     ),
-                  ),
-                  Tooltip(
-                    message: _sortAscending
-                        ? l10n.sortOrderAscending
-                        : l10n.sortOrderDescending,
-                    child: IconButton(
-                      key: const Key('message_sort_order_toggle'),
-                      icon: Icon(
-                        _sortAscending
-                            ? Icons.arrow_upward
-                            : Icons.arrow_downward,
+                    Tooltip(
+                      message: _sortAscending
+                          ? l10n.sortOrderAscending
+                          : l10n.sortOrderDescending,
+                      child: IconButton(
+                        key: const Key('message_sort_order_toggle'),
+                        icon: Icon(
+                          _sortAscending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
+                        ),
+                        onPressed: _toggleSortOrder,
                       ),
-                      onPressed: _toggleSortOrder,
                     ),
-                  ),
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 8),
+                  ],
                   ViewModeSwitcher(
                     activeView: _activeView,
                     onViewChanged: _onViewModeChanged,
@@ -716,6 +718,7 @@ class _MessagesViewState extends State<MessagesView> {
                       });
                     },
                     matchCount: _cachedMatchCount,
+                    totalCount: widget.messages.length,
                     showNonMatches: _showNonMatches,
                     onShowNonMatchesChanged: (val) {
                       setState(() {

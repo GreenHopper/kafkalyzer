@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/view_mode_switcher.dart';
 
 void main() {
@@ -9,6 +10,11 @@ void main() {
     bool showSchemaView = true,
   }) {
     return MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      supportedLocales: const [Locale('en')],
       home: Scaffold(
         body: ViewModeSwitcher(
           activeView: activeView,
@@ -19,7 +25,7 @@ void main() {
     );
   }
 
-  testWidgets('renders correct selected state and triggers callbacks', (
+  testWidgets('renders correct selected state, text labels, and triggers callbacks', (
     WidgetTester tester,
   ) async {
     String changedView = "";
@@ -37,6 +43,12 @@ void main() {
       find.byType(ToggleButtons),
     );
     expect(toggleButtons.isSelected, [false, true, false, false]);
+
+    // Verify text labels are rendered
+    expect(find.text('Table'), findsOneWidget);
+    expect(find.text('Timeline'), findsOneWidget);
+    expect(find.text('Diff'), findsOneWidget);
+    expect(find.text('Schema'), findsOneWidget);
 
     // Tap table icon (index 0)
     await tester.tap(find.byIcon(Icons.table_chart));

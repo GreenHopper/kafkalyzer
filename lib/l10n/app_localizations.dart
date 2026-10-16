@@ -2305,6 +2305,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Partitions: {partitions} • RF: {rf}'**
   String topicTooltipSimple(int partitions, int rf);
+
+  /// No description provided for @viewModeTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Table'**
+  String get viewModeTable;
+
+  /// No description provided for @viewModeTableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Table View'**
+  String get viewModeTableTooltip;
+
+  /// No description provided for @viewModeTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get viewModeTimeline;
+
+  /// No description provided for @viewModeTimelineTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline View'**
+  String get viewModeTimelineTooltip;
+
+  /// No description provided for @viewModeDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Diff'**
+  String get viewModeDiff;
+
+  /// No description provided for @viewModeDiffTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Diff View'**
+  String get viewModeDiffTooltip;
+
+  /// No description provided for @viewModeSchema.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema'**
+  String get viewModeSchema;
+
+  /// No description provided for @viewModeSchemaTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema View'**
+  String get viewModeSchemaTooltip;
+
+  /// No description provided for @filterInLoadedMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter in {count} loaded messages...'**
+  String filterInLoadedMessages(int count);
+
+  /// No description provided for @matchesOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{matchCount} of {totalCount} matches'**
+  String matchesOfTotal(int matchCount, int totalCount);
+
+  /// No description provided for @loadedMessagesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} loaded messages'**
+  String loadedMessagesCount(int count);
 }
 
 class _AppLocalizationsDelegate

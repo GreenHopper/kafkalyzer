@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 class ViewModeSwitcher extends StatelessWidget {
   final String activeView;
@@ -15,6 +16,8 @@ class ViewModeSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return ToggleButtons(
       isSelected: [
         activeView == 'table',
@@ -38,23 +41,62 @@ class ViewModeSwitcher extends StatelessWidget {
         onViewChanged(newView);
       },
       borderRadius: BorderRadius.circular(8),
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 36),
+      constraints: const BoxConstraints(minHeight: 32),
       children: [
-        Tooltip(
-          message: "Table View",
-          child: Icon(Icons.table_chart, size: 20),
+        _buildSegment(
+          context,
+          icon: Icons.table_chart,
+          label: l10n?.viewModeTable ?? "Table",
+          tooltip: l10n?.viewModeTableTooltip ?? "Table View",
         ),
-        Tooltip(
-          message: "Timeline View",
-          child: Icon(Icons.view_list, size: 20),
+        _buildSegment(
+          context,
+          icon: Icons.view_list,
+          label: l10n?.viewModeTimeline ?? "Timeline",
+          tooltip: l10n?.viewModeTimelineTooltip ?? "Timeline View",
         ),
-        Tooltip(message: "Diff View", child: Icon(Icons.difference, size: 20)),
+        _buildSegment(
+          context,
+          icon: Icons.difference,
+          label: l10n?.viewModeDiff ?? "Diff",
+          tooltip: l10n?.viewModeDiffTooltip ?? "Diff View",
+        ),
         if (showSchemaView)
-          Tooltip(
-            message: "Schema View",
-            child: Icon(Icons.data_object, size: 20),
+          _buildSegment(
+            context,
+            icon: Icons.data_object,
+            label: l10n?.viewModeSchema ?? "Schema",
+            tooltip: l10n?.viewModeSchemaTooltip ?? "Schema View",
           ),
       ],
+    );
+  }
+
+  Widget _buildSegment(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

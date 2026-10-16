@@ -1279,4 +1279,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String topicTooltipSimple(int partitions, int rf) {
     return 'Partitionen: $partitions • RF: $rf';
   }
+
+  @override
+  String get viewModeTable => 'Tabelle';
+
+  @override
+  String get viewModeTableTooltip => 'Tabellenansicht';
+
+  @override
+  String get viewModeTimeline => 'Zeitverlauf';
+
+  @override
+  String get viewModeTimelineTooltip => 'Zeitverlaufsansicht';
+
+  @override
+  String get viewModeDiff => 'Vergleich';
+
+  @override
+  String get viewModeDiffTooltip => 'Vergleichsansicht (Diff)';
+
+  @override
+  String get viewModeSchema => 'Schema';
+
+  @override
+  String get viewModeSchemaTooltip => 'Schemaansicht';
+
+  @override
+  String filterInLoadedMessages(int count) {
+    return 'In $count geladenen Nachrichten filtern...';
+  }
+
+  @override
+  String matchesOfTotal(int matchCount, int totalCount) {
+    return '$matchCount von $totalCount Treffern';
+  }
+
+  @override
+  String loadedMessagesCount(int count) {
+    return '$count geladene Nachrichten';
+  }
 }
