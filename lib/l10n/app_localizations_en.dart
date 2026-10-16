@@ -1369,4 +1369,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get maxConcurrentLagQueriesHelper =>
       'Default: 5 (Higher values can impact performance)';
+
+  @override
+  String get deleteStepConfirmationTitle => 'Delete Step?';
+
+  @override
+  String deleteStepConfirmationMessage(String name) {
+    return 'Are you sure you want to delete step \"$name\"? This action cannot be undone.';
+  }
+
+  @override
+  String get addTopicManually => 'Add Topic Manually';
+
+  @override
+  String get manualTopicNamePrompt => 'Enter topic name';
+
+  @override
+  String get addTopicAction => 'Add Topic';
+
+  @override
+  String get topicLoadingHint => 'Loading topics...';
+
+  @override
+  String selectTopicsCount(int count) {
+    return 'Select Topics ($count selected)';
+  }
+
+  @override
+  String get extractionSource => 'Source';
+
+  @override
+  String get extractionTopic => 'Topic';
+
+  @override
+  String get extractionVariableName => 'Variable Name';
+
+  @override
+  String get extractionJsonPath => 'JSONPath (e.g. \$.id)';
+
+  @override
+  String get scriptProperties => 'Script Properties';
+
+  @override
+  String get concurrencyLimit => 'Concurrency Limit';
+
+  @override
+  String get advancedFiltersSection => 'Advanced Filters';
 }

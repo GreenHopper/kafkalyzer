@@ -493,5 +493,29 @@
   "schemaRegistryConfiguredBadge": "Schema Registry",
   "maxScriptRuns": "Max. Anzahl an Skript-Durchläufen",
   "maxConcurrentLagQueries": "Maximale gleichzeitige Lag-Abfragen",
-  "maxConcurrentLagQueriesHelper": "Standard: 5 (Höhere Werte können zu Lasten der Performance gehen)"
+  "maxConcurrentLagQueriesHelper": "Standard: 5 (Höhere Werte können zu Lasten der Performance gehen)",
+  "deleteStepConfirmationTitle": "Schritt löschen?",
+  "deleteStepConfirmationMessage": "Möchten Sie den Schritt „{name}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "@deleteStepConfirmationMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "addTopicManually": "Topic manuell hinzufügen",
+  "manualTopicNamePrompt": "Topic-Namen eingeben",
+  "addTopicAction": "Topic hinzufügen",
+  "topicLoadingHint": "Topics werden geladen...",
+  "selectTopicsCount": "Topics auswählen ({count} ausgewählt)",
+  "@selectTopicsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "extractionSource": "Quelle",
+  "extractionTopic": "Topic",
+  "extractionVariableName": "Variablenname",
+  "extractionJsonPath": "JSONPath (z.B. $.id)",
+  "scriptProperties": "Skript-Eigenschaften",
+  "concurrencyLimit": "Gleichzeitige Durchläufe",
+  "advancedFiltersSection": "Erweiterte Filter"
 }

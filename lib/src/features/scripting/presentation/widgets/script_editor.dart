@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_step_editor.dart';
 import 'package:uuid/uuid.dart';
@@ -403,15 +404,18 @@ class _ScriptEditorState extends State<ScriptEditor> {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSettingsCard(context),
-                const SizedBox(height: 16),
-                _buildVariablesCard(context),
-                const SizedBox(height: 16),
-                _buildStepsList(context),
-              ],
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildVariablesCard(context),
+                    const SizedBox(height: 16),
+                    _buildStepsList(context),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -420,53 +424,53 @@ class _ScriptEditorState extends State<ScriptEditor> {
   }
 
   Widget _buildToolbar(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final concurrencyLabel = l10n?.concurrencyLimit ?? "Concurrency Limit";
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: "Script Name",
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (_) => _save(),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant.withValues(
+              alpha: 0.5,
             ),
           ),
-        ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildSettingsCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Settings", style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                SizedBox(
-                  width: 180,
-                  child: TextField(
-                    controller: _concurrencyController,
-                    decoration: const InputDecoration(
-                      labelText: "Concurrency Limit",
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => _save(),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: "Script Name",
+                    isDense: true,
+                    border: OutlineInputBorder(),
                   ),
+                  onChanged: (_) => _save(),
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: 180,
+                child: TextField(
+                  controller: _concurrencyController,
+                  decoration: InputDecoration(
+                    labelText: concurrencyLabel,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    prefixIcon: const Icon(Icons.speed, size: 18),
+                  ),
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => _save(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -645,10 +649,7 @@ class _ScriptEditorState extends State<ScriptEditor> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    setState(() => _steps.removeAt(index));
-                    _save();
-                  },
+                  onPressed: () => _confirmDeleteStep(index),
                 ),
                 ReorderableDragStartListener(
                   index: index,
@@ -719,5 +720,43 @@ class _ScriptEditorState extends State<ScriptEditor> {
         ),
       ],
     );
+  }
+
+  Future<void> _confirmDeleteStep(int index) async {
+    final l10n = AppLocalizations.of(context);
+    final step = _steps[index];
+    final stepName = step.name.isNotEmpty ? step.name : "Step ${index + 1}";
+    final title = l10n?.deleteStepConfirmationTitle ?? "Delete Step?";
+    final message = l10n?.deleteStepConfirmationMessage(stepName) ??
+        'Are you sure you want to delete step "$stepName"? This action cannot be undone.';
+    final cancelText = l10n?.cancel ?? "Cancel";
+    final deleteText = l10n?.delete ?? "Delete";
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(cancelText),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(deleteText),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _steps.removeAt(index));
+      _save();
+    }
   }
 }

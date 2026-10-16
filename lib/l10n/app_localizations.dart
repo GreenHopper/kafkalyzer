@@ -2479,6 +2479,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Default: 5 (Higher values can impact performance)'**
   String get maxConcurrentLagQueriesHelper;
+
+  /// No description provided for @deleteStepConfirmationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Step?'**
+  String get deleteStepConfirmationTitle;
+
+  /// No description provided for @deleteStepConfirmationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete step \"{name}\"? This action cannot be undone.'**
+  String deleteStepConfirmationMessage(String name);
+
+  /// No description provided for @addTopicManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Topic Manually'**
+  String get addTopicManually;
+
+  /// No description provided for @manualTopicNamePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter topic name'**
+  String get manualTopicNamePrompt;
+
+  /// No description provided for @addTopicAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Topic'**
+  String get addTopicAction;
+
+  /// No description provided for @topicLoadingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading topics...'**
+  String get topicLoadingHint;
+
+  /// No description provided for @selectTopicsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Topics ({count} selected)'**
+  String selectTopicsCount(int count);
+
+  /// No description provided for @extractionSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get extractionSource;
+
+  /// No description provided for @extractionTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic'**
+  String get extractionTopic;
+
+  /// No description provided for @extractionVariableName.
+  ///
+  /// In en, this message translates to:
+  /// **'Variable Name'**
+  String get extractionVariableName;
+
+  /// No description provided for @extractionJsonPath.
+  ///
+  /// In en, this message translates to:
+  /// **'JSONPath (e.g. \$.id)'**
+  String get extractionJsonPath;
+
+  /// No description provided for @scriptProperties.
+  ///
+  /// In en, this message translates to:
+  /// **'Script Properties'**
+  String get scriptProperties;
+
+  /// No description provided for @concurrencyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Concurrency Limit'**
+  String get concurrencyLimit;
+
+  /// No description provided for @advancedFiltersSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Filters'**
+  String get advancedFiltersSection;
 }
 
 class _AppLocalizationsDelegate

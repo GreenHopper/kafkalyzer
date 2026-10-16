@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_selection_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
@@ -50,6 +52,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   late TextEditingController _endTimestampController;
   late TextEditingController _maxResultsController;
 
+  late TopicScanMode _scanMode;
   MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.latest;
   MultiSearchEndStrategy _endStrategy = MultiSearchEndStrategy.latest;
   bool _limitResults = true;
@@ -74,6 +77,10 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     _startStrategy = widget.step.startStrategy;
     _endStrategy = widget.step.endStrategy;
     _fastTraceEnabled = widget.step.fastTraceEnabled;
+    _scanMode = TopicScanMode.fromStrategies(
+      startStrategy: _startStrategy,
+      endStrategy: _endStrategy,
+    );
 
     // Controllers
     _startOffsetController = TextEditingController(
@@ -191,59 +198,76 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     return ListenableBuilder(
       listenable: topicController,
       builder: (context, _) {
-        if (topicController.isLoading(_selectedCluster!)) {
-          return const Center(child: CircularProgressIndicator());
-        }
         return _buildTopicField(topicController);
       },
     );
   }
 
   Widget _buildTopicField(TopicController topicController) {
+    final l10n = AppLocalizations.of(context);
+    final isLoading = topicController.isLoading(_selectedCluster!);
+    final loadingHint = l10n?.topicLoadingHint ?? "Loading topics...";
+    final selectHint = l10n?.selectTopicsCount(_selectedTopics.length) ??
+        "Select Topics (${_selectedTopics.length} selected)";
+    final emptyHint = l10n?.selectTopicsCount(0) ?? "Select Topics";
+    final topicsLabel = l10n?.topics ?? "Topics";
+    final addTopicTooltip = l10n?.addTopicManually ?? "Add Topic Manually";
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextFormField(
-          readOnly: true,
-          enabled: !topicController.isLoading(_selectedCluster!),
-          controller: TextEditingController(
-            text: topicController.isLoading(_selectedCluster!)
-                ? "Loading topics..."
-                : "Select Topics (${_selectedTopics.length} selected)",
-          ),
-          decoration: InputDecoration(
-            labelText: "Topics",
-            hintText: "Select Topics",
-            border: const OutlineInputBorder(),
-            suffixIcon: topicController.isLoading(_selectedCluster!)
-                ? const Padding(
-                    padding: EdgeInsets.all(12.0),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                readOnly: true,
+                enabled: !isLoading,
+                controller: TextEditingController(
+                  text: isLoading ? loadingHint : selectHint,
+                ),
+                decoration: InputDecoration(
+                  labelText: topicsLabel,
+                  hintText: emptyHint,
+                  border: const OutlineInputBorder(),
+                  suffixIcon: isLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : const Icon(Icons.arrow_drop_down),
+                ),
+                onTap: () async {
+                  if (isLoading) return;
+                  final topics =
+                      topicController.getTopics(_selectedCluster!) ?? [];
+                  final selected = await showDialog<List<TopicMetadata>>(
+                    context: context,
+                    builder: (c) => TopicSelectionDialog(
+                      topics: topics,
+                      multiSelect: true,
+                      initialSelection: _selectedTopics,
+                      clusterProfile: _selectedCluster,
                     ),
-                  )
-                : const Icon(Icons.arrow_drop_down),
-          ),
-          onTap: () async {
-            if (topicController.isLoading(_selectedCluster!)) return;
-            final topics = topicController.getTopics(_selectedCluster!) ?? [];
-            final selected = await showDialog<List<TopicMetadata>>(
-              context: context,
-              builder: (c) => TopicSelectionDialog(
-                topics: topics,
-                multiSelect: true,
-                initialSelection: _selectedTopics,
-                clusterProfile: _selectedCluster,
+                  );
+                  if (selected != null) {
+                    setState(() {
+                      _selectedTopics = selected.map((t) => t.name).toList();
+                    });
+                  }
+                },
               ),
-            );
-            if (selected != null) {
-              setState(() {
-                _selectedTopics = selected.map((t) => t.name).toList();
-              });
-            }
-          },
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: addTopicTooltip,
+              onPressed: _promptAddManualTopic,
+            ),
+          ],
         ),
         if (_selectedTopics.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -266,8 +290,65 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     );
   }
 
+  Future<void> _promptAddManualTopic() async {
+    final l10n = AppLocalizations.of(context);
+    final title = l10n?.addTopicManually ?? "Add Topic Manually";
+    final prompt = l10n?.manualTopicNamePrompt ?? "Enter topic name";
+    final cancel = l10n?.cancel ?? "Cancel";
+    final addAction = l10n?.addTopicAction ?? "Add Topic";
+
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: prompt,
+            border: const OutlineInputBorder(),
+          ),
+          onSubmitted: (val) => Navigator.of(ctx).pop(val.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: Text(addAction),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null &&
+        result.isNotEmpty &&
+        !_selectedTopics.contains(result)) {
+      setState(() {
+        _selectedTopics.add(result);
+      });
+    }
+  }
+
   Widget _buildSearchConfiguration() {
     return SearchStreamConfiguration(
+      scanMode: _scanMode,
+      onScanModeChanged: (newMode) => setState(() {
+        _scanMode = newMode;
+        _startStrategy = newMode.defaultStartStrategy;
+        _endStrategy = newMode.defaultEndStrategy;
+        if (newMode == TopicScanMode.latestN) {
+          _limitResults = true;
+          if (_maxResultsController.text.isEmpty) {
+            _maxResultsController.text = "200";
+          }
+        } else if (newMode == TopicScanMode.liveTail) {
+          _limitResults = false;
+        }
+      }),
       filterInput: _buildTextFieldWithVar(
         "Filter Template",
         _filterTemplateController,
@@ -367,11 +448,12 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
 
   Widget _buildExtractionHeader(int index) {
     final extraction = _extractions[index];
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         if (_selectedTopics.length > 1) ...[
           Expanded(
-            flex: 4,
+            flex: 3,
             child: DropdownButtonFormField<String>(
               isExpanded: true,
               initialValue:
@@ -379,11 +461,11 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
                       _selectedTopics.contains(extraction.topic)
                   ? extraction.topic
                   : null,
-              decoration: const InputDecoration(
-                labelText: "Topic",
+              decoration: InputDecoration(
+                labelText: l10n?.extractionTopic ?? "Topic",
                 isDense: true,
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 12,
                 ),
@@ -410,16 +492,19 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
           ),
           const SizedBox(width: 8),
         ],
-        Expanded(
-          flex: 1,
+        SizedBox(
+          width: 120,
           child: DropdownButtonFormField<ScriptExtractionSource>(
             isExpanded: true,
             initialValue: extraction.source,
-            decoration: const InputDecoration(
-              labelText: "Source",
+            decoration: InputDecoration(
+              labelText: l10n?.extractionSource ?? "Source",
               isDense: true,
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 12,
+              ),
             ),
             items: ScriptExtractionSource.values
                 .map(
@@ -445,11 +530,11 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
         Expanded(
           flex: 2,
           child: TextField(
-            decoration: const InputDecoration(
-              labelText: "Variable Name",
+            decoration: InputDecoration(
+              labelText: l10n?.extractionVariableName ?? "Variable Name",
               isDense: true,
-              border: OutlineInputBorder(),
-              contentPadding: EdgeInsets.all(12),
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.all(12),
             ),
             controller: TextEditingController(text: extraction.variableName)
               ..selection = TextSelection.collapsed(
@@ -471,6 +556,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
 
   Widget _buildExtractionJsonPath(int index) {
     final extraction = _extractions[index];
+    final l10n = AppLocalizations.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         return Autocomplete<String>(
@@ -501,12 +587,12 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
             return TextField(
               controller: controller,
               focusNode: focusNode,
-              decoration: const InputDecoration(
-                labelText: "Field Path (Optional - empty for full API)",
+              decoration: InputDecoration(
+                labelText: l10n?.extractionJsonPath ?? "JSON Path",
                 hintText: "e.g. data.id",
                 isDense: true,
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.all(12),
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.all(12),
               ),
               onChanged: (val) => setState(
                 () => _extractions[index] = extraction.copyWith(jsonPath: val),
