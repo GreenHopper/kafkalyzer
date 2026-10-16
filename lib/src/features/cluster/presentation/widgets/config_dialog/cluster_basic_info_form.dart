@@ -59,41 +59,51 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
           padding: const EdgeInsets.all(8.0),
           child: TextFormField(
             controller: widget.nameController,
-            decoration: const InputDecoration(labelText: 'Cluster Name'),
-            validator: (value) => value!.isEmpty ? 'Required' : null,
+            decoration: InputDecoration(
+              labelText: l10n?.clusterNameLabel ?? 'Cluster Name',
+            ),
+            validator: (value) =>
+                value!.isEmpty ? (l10n?.requiredValidation ?? 'Required') : null,
           ),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: TextFormField(
             controller: widget.bootstrapServersController,
-            decoration: const InputDecoration(
-              labelText: 'Bootstrap Servers (e.g. localhost:9092)',
+            decoration: InputDecoration(
+              labelText: l10n?.bootstrapServersLabel ??
+                  'Bootstrap Servers (e.g. localhost:9092)',
             ),
-            validator: (value) => value!.isEmpty ? 'Required' : null,
+            validator: (value) =>
+                value!.isEmpty ? (l10n?.requiredValidation ?? 'Required') : null,
           ),
         ),
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: TextFormField(
             controller: widget.schemaRegistryUrlController,
-            decoration: const InputDecoration(
-              labelText: 'Schema Registry URL (Optional)',
+            decoration: InputDecoration(
+              labelText: l10n?.schemaRegistryUrlLabel ??
+                  'Schema Registry URL (Optional)',
               hintText: 'e.g. http://localhost:8081',
             ),
             validator: (value) {
               if (value == null || value.isEmpty) return null;
               final trimmed = value.trim();
               final uri = Uri.tryParse(trimmed);
-              if (uri == null) return "Invalid URL format";
+              if (uri == null) {
+                return l10n?.invalidUrlFormat ?? "Invalid URL format";
+              }
 
               if (trimmed.contains(RegExp(r'\.\d{4,5}$'))) {
-                return "Likely typo: use ':' for port instead of '.'";
+                return l10n?.schemaRegistryUrlTypoPort ??
+                    "Likely typo: use ':' for port instead of '.'";
               }
 
               if (!trimmed.startsWith("http://") &&
                   !trimmed.startsWith("https://")) {
-                return "Missing protocol (http:// or https://)";
+                return l10n?.schemaRegistryUrlMissingProtocol ??
+                    "Missing protocol (http:// or https://)";
               }
 
               return null;
@@ -134,8 +144,9 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
               padding: const EdgeInsets.all(8.0),
               child: TextFormField(
                 controller: widget.schemaRegistryUsernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Schema Registry Username (Optional)',
+                decoration: InputDecoration(
+                  labelText: l10n?.schemaRegistryUsernameOptional ??
+                      'Schema Registry Username (Optional)',
                 ),
               ),
             ),
@@ -143,7 +154,8 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
               padding: const EdgeInsets.all(8.0),
               child: PasswordFormField(
                 controller: widget.schemaRegistryPasswordController,
-                labelText: 'Schema Registry Password (Optional)',
+                labelText: l10n?.schemaRegistryPasswordOptional ??
+                    'Schema Registry Password (Optional)',
               ),
             ),
           ],

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/file_picker_form_field.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/password_form_field.dart';
 
@@ -28,13 +29,17 @@ class ClusterSaslForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: DropdownButtonFormField<String>(
             initialValue: mechanism,
-            decoration: const InputDecoration(labelText: 'SASL Mechanism'),
+            decoration: InputDecoration(
+              labelText: l10n?.saslMechanismLabel ?? 'SASL Mechanism',
+            ),
             items: const [
               DropdownMenuItem(value: "PLAIN", child: Text("PLAIN")),
               DropdownMenuItem(
@@ -66,8 +71,9 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: TextFormField(
               controller: kerberosServiceNameController,
-              decoration: const InputDecoration(
-                labelText: 'Kerberos Service Name',
+              decoration: InputDecoration(
+                labelText: l10n?.kerberosServiceNameLabel ??
+                    'Kerberos Service Name',
               ),
             ),
           ),
@@ -75,7 +81,8 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: FilePickerFormField(
               controller: kerberosKeytabController,
-              labelText: 'Kerberos Keytab Path',
+              labelText: l10n?.kerberosKeytabPathLabel ??
+                  'Kerberos Keytab Path',
               allowedExtensions: const ['keytab'],
             ),
           ),
@@ -83,8 +90,9 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: TextFormField(
               controller: kerberosPrincipalController,
-              decoration: const InputDecoration(
-                labelText: 'Kerberos Principal',
+              decoration: InputDecoration(
+                labelText:
+                    l10n?.kerberosPrincipalLabel ?? 'Kerberos Principal',
               ),
             ),
           ),
@@ -92,7 +100,8 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: FilePickerFormField(
               controller: kerberosConfController,
-              labelText: 'Kerberos Config (krb5.conf) Path',
+              labelText: l10n?.kerberosConfigPathLabel ??
+                  'Kerberos Config (krb5.conf) Path',
               allowedExtensions: const ['conf'],
             ),
           ),
@@ -101,7 +110,8 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: PasswordFormField(
               controller: oauthbearerTokenController,
-              labelText: 'OAuthBearer Token',
+              labelText:
+                  l10n?.oauthbearerTokenLabel ?? 'OAuthBearer Token',
             ),
           ),
         ] else if (mechanism != "AWS_MSK_IAM") ...[
@@ -109,14 +119,16 @@ class ClusterSaslForm extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: TextFormField(
               controller: usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
+              decoration: InputDecoration(
+                labelText: l10n?.saslUsernameLabel ?? 'Username',
+              ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: PasswordFormField(
               controller: passwordController,
-              labelText: 'Password',
+              labelText: l10n?.saslPasswordLabel ?? 'Password',
             ),
           ),
         ],

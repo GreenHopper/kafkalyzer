@@ -509,4 +509,50 @@ void main() {
     expect(find.text('payload-z', findRichText: true), findsOneWidget);
     expect(find.text('payload-a', findRichText: true), findsNothing);
   });
+
+  testWidgets('renders localized empty message in German and English', (
+    WidgetTester tester,
+  ) async {
+    // English
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: const Scaffold(
+          body: MessagesView(
+            messages: [],
+            onMessageTap: _dummyTap,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('No messages to display'), findsOneWidget);
+
+    // German
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('de'),
+        home: const Scaffold(
+          body: MessagesView(
+            messages: [],
+            onMessageTap: _dummyTap,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Keine Nachrichten zum Anzeigen'), findsOneWidget);
+  });
 }
+
+void _dummyTap(KafkaMessage message) {}

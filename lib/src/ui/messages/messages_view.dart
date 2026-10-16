@@ -641,7 +641,10 @@ class _MessagesViewState extends State<MessagesView> {
           isStreaming: widget.isStreaming,
         );
       }
-      return const Center(child: Text("No messages to display"));
+      final l10n = AppLocalizations.of(context);
+      return Center(
+        child: Text(l10n?.noMessagesToDisplay ?? "No messages to display"),
+      );
     }
 
     final l10n = AppLocalizations.of(context)!;

@@ -324,6 +324,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
   }
 
   Widget _buildTopicTitleRow(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       children: [
         Flexible(
@@ -338,13 +339,13 @@ class _TopicDetailViewState extends State<TopicDetailView>
         const SizedBox(width: 8),
         IconButton(
           icon: const Icon(Icons.copy, size: 18),
-          tooltip: "Copy Topic Name",
+          tooltip: l10n?.copyTopicName ?? "Copy Topic Name",
           onPressed: () {
             Clipboard.setData(ClipboardData(text: widget.topic.name));
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Topic name copied"),
-                duration: Duration(seconds: 1),
+              SnackBar(
+                content: Text(l10n?.topicNameCopied ?? "Topic name copied"),
+                duration: const Duration(seconds: 1),
               ),
             );
           },
@@ -386,16 +387,17 @@ class _TopicDetailViewState extends State<TopicDetailView>
         },
         style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
         icon: const Icon(Icons.visibility, size: 16),
-        label: const Text("Schema"),
+        label: Text(AppLocalizations.of(context)?.schemaAction ?? "Schema"),
       ),
     );
   }
 
   Widget _buildProgressTile(BuildContext context, ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 600),
       child: TopicProgressTile(
-        topic: "Scan Progress",
+        topic: l10n?.scanProgressTitle ?? "Scan Progress",
         status: streamController.isStreaming
             ? StepStatus.running
             : (streamController.totalConsumed > 0
@@ -415,6 +417,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
   }
 
   Widget _buildProgressActions(BuildContext context, ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -422,7 +425,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
           FilledButton.icon(
             onPressed: () => streamController.stopStreaming(),
             icon: const Icon(Icons.stop, size: 16),
-            label: const Text('Stop'),
+            label: Text(l10n?.stop ?? 'Stop'),
             style: FilledButton.styleFrom(
               backgroundColor: colorScheme.error,
               visualDensity: VisualDensity.compact,
@@ -433,7 +436,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
           FilledButton.icon(
             onPressed: startStreaming,
             icon: const Icon(Icons.play_arrow, size: 16),
-            label: const Text('Stream'),
+            label: Text(l10n?.stream ?? 'Stream'),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.green.shade700,
               visualDensity: VisualDensity.compact,
@@ -444,7 +447,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
         IconButton.filledTonal(
           onPressed: streamController.clearMessages,
           icon: const Icon(Icons.delete_sweep, size: 16),
-          tooltip: "Clear Messages",
+          tooltip: l10n?.clearMessagesTooltip ?? "Clear Messages",
           style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
       ],

@@ -1481,4 +1481,130 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get filter => 'Filter';
+
+  @override
+  String get schemaAction => 'Schema';
+
+  @override
+  String get scanProgressTitle => 'Scan Progress';
+
+  @override
+  String get clearMessagesTooltip => 'Clear Messages';
+
+  @override
+  String get editCluster => 'Edit Cluster';
+
+  @override
+  String get add => 'Add';
+
+  @override
+  String get securityProtocol => 'Security Protocol';
+
+  @override
+  String get sslConfigurationTitle => 'SSL Configuration';
+
+  @override
+  String get truststoreLocationLabel => 'Truststore Location (PEM or JKS)';
+
+  @override
+  String get truststorePasswordLabel => 'Truststore Password';
+
+  @override
+  String get keystoreLocationLabel => 'Keystore Location (.p12/.pfx/.jks)';
+
+  @override
+  String get keystorePasswordLabel => 'Keystore Password';
+
+  @override
+  String get clientCertPemLocationLabel => 'Client Certificate PEM Location';
+
+  @override
+  String get clientKeyPemLocationLabel => 'Client Private Key PEM Location';
+
+  @override
+  String get clientKeyPasswordLabel => 'Client Private Key Password';
+
+  @override
+  String get saslMechanismLabel => 'SASL Mechanism';
+
+  @override
+  String get kerberosServiceNameLabel => 'Kerberos Service Name';
+
+  @override
+  String get kerberosKeytabPathLabel => 'Kerberos Keytab Path';
+
+  @override
+  String get kerberosPrincipalLabel => 'Kerberos Principal';
+
+  @override
+  String get kerberosConfigPathLabel => 'Kerberos Config (krb5.conf) Path';
+
+  @override
+  String get oauthbearerTokenLabel => 'OAuthbearer Token';
+
+  @override
+  String get saslUsernameLabel => 'SASL Username';
+
+  @override
+  String get saslPasswordLabel => 'SASL Password';
+
+  @override
+  String get schemaRegistryUsernameOptional =>
+      'Schema Registry Username (Optional)';
+
+  @override
+  String get schemaRegistryPasswordOptional =>
+      'Schema Registry Password (Optional)';
+
+  @override
+  String get schemaRegistryUrlTypoPort =>
+      'Likely typo: use \':\' for port instead of \'.\'';
+
+  @override
+  String get schemaRegistryUrlMissingProtocol =>
+      'Missing protocol (http:// or https://)';
+
+  @override
+  String get schemaViewerTitle => 'Schema Viewer';
+
+  @override
+  String get noAvroSchemaFound => 'No Avro schema found for this topic.';
+
+  @override
+  String errorLoadingSchema(String error) {
+    return 'Error loading schema: $error';
+  }
+
+  @override
+  String get noMessagesToDisplay => 'No messages to display';
+
+  @override
+  String get copyValueTooltip => 'Copy value';
+
+  @override
+  String get valueCopiedToClipboard => 'Value copied to clipboard';
+
+  @override
+  String get emptyJson => 'Empty JSON';
+
+  @override
+  String get topicNameCopied => 'Topic name copied';
+
+  @override
+  String get copyTopicName => 'Copy Topic Name';
+
+  @override
+  String get clusterNameLabel => 'Cluster Name';
+
+  @override
+  String get requiredValidation => 'Required';
+
+  @override
+  String get bootstrapServersLabel => 'Bootstrap Servers (e.g. localhost:9092)';
+
+  @override
+  String get schemaRegistryUrlLabel => 'Schema Registry URL (Optional)';
+
+  @override
+  String get invalidUrlFormat => 'Invalid URL format';
 }

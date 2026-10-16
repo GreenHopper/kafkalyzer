@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 @GenerateMocks([SchemaController])
 import 'schema_viewer_dialog_test.mocks.dart';
@@ -172,6 +173,77 @@ void main() {
 
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Search...'), findsOneWidget);
+    });
+
+    testWidgets('renders German localized titles and empty schema message', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      when(mockController.getSchemas(any)).thenReturn(['other-topic-key']);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('de'),
+          home: SchemaViewerDialog(
+            profile: testProfile,
+            topicName: 'test-topic',
+            controller: mockController,
+          ),
+        ),
+      );
+      await awaitIsolates(tester);
+
+      expect(find.text('Schema-Viewer'), findsOneWidget);
+      expect(
+        find.text('Kein Avro-Schema für dieses Topic gefunden.'),
+        findsOneWidget,
+      );
+      expect(find.text('Topic: test-topic'), findsOneWidget);
+    });
+
+    testWidgets('renders German localized error message on fetch failure', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      when(mockController.getSchemas(any)).thenReturn(['test-topic-key']);
+      when(
+        mockController.fetchSchemaContent(any, 'test-topic-key'),
+      ).thenThrow(Exception('Fetch failed'));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('de'),
+          home: SchemaViewerDialog(
+            profile: testProfile,
+            topicName: 'test-topic',
+            controller: mockController,
+          ),
+        ),
+      );
+      await awaitIsolates(tester);
+
+      expect(
+        find.text(
+          'Fehler beim Laden des Schemas: Exception: Fetch failed',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

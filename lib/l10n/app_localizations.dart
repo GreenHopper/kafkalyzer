@@ -2653,6 +2653,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter'**
   String get filter;
+
+  /// No description provided for @schemaAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema'**
+  String get schemaAction;
+
+  /// No description provided for @scanProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Progress'**
+  String get scanProgressTitle;
+
+  /// No description provided for @clearMessagesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Messages'**
+  String get clearMessagesTooltip;
+
+  /// No description provided for @editCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Cluster'**
+  String get editCluster;
+
+  /// No description provided for @add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// No description provided for @securityProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'Security Protocol'**
+  String get securityProtocol;
+
+  /// No description provided for @sslConfigurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SSL Configuration'**
+  String get sslConfigurationTitle;
+
+  /// No description provided for @truststoreLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Truststore Location (PEM or JKS)'**
+  String get truststoreLocationLabel;
+
+  /// No description provided for @truststorePasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Truststore Password'**
+  String get truststorePasswordLabel;
+
+  /// No description provided for @keystoreLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Keystore Location (.p12/.pfx/.jks)'**
+  String get keystoreLocationLabel;
+
+  /// No description provided for @keystorePasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Keystore Password'**
+  String get keystorePasswordLabel;
+
+  /// No description provided for @clientCertPemLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Certificate PEM Location'**
+  String get clientCertPemLocationLabel;
+
+  /// No description provided for @clientKeyPemLocationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Private Key PEM Location'**
+  String get clientKeyPemLocationLabel;
+
+  /// No description provided for @clientKeyPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Private Key Password'**
+  String get clientKeyPasswordLabel;
+
+  /// No description provided for @saslMechanismLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SASL Mechanism'**
+  String get saslMechanismLabel;
+
+  /// No description provided for @kerberosServiceNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerberos Service Name'**
+  String get kerberosServiceNameLabel;
+
+  /// No description provided for @kerberosKeytabPathLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerberos Keytab Path'**
+  String get kerberosKeytabPathLabel;
+
+  /// No description provided for @kerberosPrincipalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerberos Principal'**
+  String get kerberosPrincipalLabel;
+
+  /// No description provided for @kerberosConfigPathLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Kerberos Config (krb5.conf) Path'**
+  String get kerberosConfigPathLabel;
+
+  /// No description provided for @oauthbearerTokenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OAuthbearer Token'**
+  String get oauthbearerTokenLabel;
+
+  /// No description provided for @saslUsernameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SASL Username'**
+  String get saslUsernameLabel;
+
+  /// No description provided for @saslPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'SASL Password'**
+  String get saslPasswordLabel;
+
+  /// No description provided for @schemaRegistryUsernameOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry Username (Optional)'**
+  String get schemaRegistryUsernameOptional;
+
+  /// No description provided for @schemaRegistryPasswordOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry Password (Optional)'**
+  String get schemaRegistryPasswordOptional;
+
+  /// No description provided for @schemaRegistryUrlTypoPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Likely typo: use \':\' for port instead of \'.\''**
+  String get schemaRegistryUrlTypoPort;
+
+  /// No description provided for @schemaRegistryUrlMissingProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing protocol (http:// or https://)'**
+  String get schemaRegistryUrlMissingProtocol;
+
+  /// No description provided for @schemaViewerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Viewer'**
+  String get schemaViewerTitle;
+
+  /// No description provided for @noAvroSchemaFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No Avro schema found for this topic.'**
+  String get noAvroSchemaFound;
+
+  /// No description provided for @errorLoadingSchema.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading schema: {error}'**
+  String errorLoadingSchema(String error);
+
+  /// No description provided for @noMessagesToDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages to display'**
+  String get noMessagesToDisplay;
+
+  /// No description provided for @copyValueTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy value'**
+  String get copyValueTooltip;
+
+  /// No description provided for @valueCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Value copied to clipboard'**
+  String get valueCopiedToClipboard;
+
+  /// No description provided for @emptyJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty JSON'**
+  String get emptyJson;
+
+  /// No description provided for @topicNameCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic name copied'**
+  String get topicNameCopied;
+
+  /// No description provided for @copyTopicName.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Topic Name'**
+  String get copyTopicName;
+
+  /// No description provided for @clusterNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster Name'**
+  String get clusterNameLabel;
+
+  /// No description provided for @requiredValidation.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get requiredValidation;
+
+  /// No description provided for @bootstrapServersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bootstrap Servers (e.g. localhost:9092)'**
+  String get bootstrapServersLabel;
+
+  /// No description provided for @schemaRegistryUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry URL (Optional)'**
+  String get schemaRegistryUrlLabel;
+
+  /// No description provided for @invalidUrlFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid URL format'**
+  String get invalidUrlFormat;
 }
 
 class _AppLocalizationsDelegate

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
@@ -143,6 +144,7 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
                   const SizedBox(width: 16),
                   IconButton(
                     icon: const Icon(Icons.close),
+                    tooltip: AppLocalizations.of(context)?.close ?? 'Close',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -157,12 +159,16 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Schema Viewer", style: Theme.of(context).textTheme.titleLarge),
         Text(
-          "Topic: ${widget.topicName}",
+          l10n?.schemaViewerTitle ?? "Schema Viewer",
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        Text(
+          "${l10n?.topicCol ?? 'Topic'}: ${widget.topicName}",
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.outline,
           ),
@@ -173,6 +179,7 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
   }
 
   Widget _buildSearchBar(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: 400,
       height: 40,
@@ -210,7 +217,7 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
               onPressed: _jumpToPreviousMatch,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              tooltip: "Previous match",
+              tooltip: l10n?.previousMatchTooltip ?? "Previous match",
             ),
             const SizedBox(width: 4),
             IconButton(
@@ -218,7 +225,7 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
               onPressed: _jumpToNextMatch,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              tooltip: "Next match",
+              tooltip: l10n?.nextMatchTooltip ?? "Next match",
             ),
             const SizedBox(width: 8),
           ],
@@ -228,13 +235,16 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
   }
 
   Widget _buildContent(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
       return Center(
         child: Text(
-          "Error loading schema: $_error",
+          l10n != null
+              ? l10n.errorLoadingSchema(_error!)
+              : "Error loading schema: $_error",
           style: TextStyle(color: Theme.of(context).colorScheme.error),
         ),
       );
@@ -297,7 +307,12 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
               ),
             ),
           if (_keySchema == null && _valueSchema == null)
-            const Center(child: Text("No Avro schema found for this topic.")),
+            Center(
+              child: Text(
+                l10n?.noAvroSchemaFound ??
+                    "No Avro schema found for this topic.",
+              ),
+            ),
         ],
       ),
     );

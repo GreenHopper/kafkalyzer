@@ -238,7 +238,11 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
     final l10n = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: Text(widget.cluster == null ? 'Add Cluster' : 'Edit Cluster'),
+      title: Text(
+        widget.cluster == null
+            ? (l10n?.addCluster ?? 'Add Cluster')
+            : (l10n?.editCluster ?? 'Edit Cluster'),
+      ),
       content: SingleChildScrollView(
         child: SizedBox(
           width: 600,
@@ -261,8 +265,9 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                   padding: const EdgeInsets.all(8.0),
                   child: DropdownButtonFormField<String>(
                     initialValue: _securityProtocol,
-                    decoration: const InputDecoration(
-                      labelText: 'Security Protocol',
+                    decoration: InputDecoration(
+                      labelText:
+                          l10n?.securityProtocol ?? 'Security Protocol',
                     ),
                     items: const [
                       DropdownMenuItem(
@@ -393,7 +398,7 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+                  child: Text(l10n?.cancel ?? 'Cancel'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
@@ -403,7 +408,11 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                       Navigator.pop(context, profile);
                     }
                   },
-                  child: Text(widget.cluster == null ? 'Add' : 'Save'),
+                  child: Text(
+                    widget.cluster == null
+                        ? (l10n?.add ?? 'Add')
+                        : (l10n?.save ?? 'Save'),
+                  ),
                 ),
               ],
             ),

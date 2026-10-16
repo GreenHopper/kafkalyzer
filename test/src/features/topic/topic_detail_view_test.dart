@@ -110,8 +110,10 @@ class FakeMessageStreamController extends ChangeNotifier
 }
 
 class FakeSchemaController extends ChangeNotifier implements SchemaController {
+  List<String> schemas = [];
+
   @override
-  List<String>? getSchemas(ClusterProfile profile) => [];
+  List<String>? getSchemas(ClusterProfile profile) => schemas;
 
   @override
   Future<void> fetchSchemas(
@@ -290,6 +292,56 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Partition (Opt.)'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'renders localized actions in German (Schema, Stream, tooltips)',
+    (tester) async {
+      const topic = TopicMetadata(
+        name: 'test-topic',
+        partitionCount: 3,
+        replicationFactor: 2,
+      );
+      const profile = ClusterProfile(
+        name: 'Test Cluster',
+        bootstrapServers: 'localhost:9092',
+        schemaRegistryUrl: 'http://localhost:8081',
+        securityProtocol: 'plaintext',
+        mechanism: 'plain',
+      );
+      fakeActiveController.topic = topic;
+      fakeActiveController.activeProfile = profile;
+      fakeSchemaController.schemas = ['test-topic-value'];
+
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('de'),
+          home: Scaffold(
+            body: SizedBox(
+              width: 1200,
+              height: 800,
+              child: TopicDetailView(topic: topic, profile: profile),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Schema'), findsOneWidget);
+      expect(find.text('Stream'), findsOneWidget);
+      expect(find.byTooltip('Nachrichten leeren'), findsOneWidget);
+      expect(find.byTooltip('Topic-Name kopieren'), findsOneWidget);
     },
   );
 }

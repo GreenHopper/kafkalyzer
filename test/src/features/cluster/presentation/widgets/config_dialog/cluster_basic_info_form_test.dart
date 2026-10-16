@@ -1,6 +1,7 @@
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_basic_info_form.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 void main() {
   group('ClusterBasicInfoForm', () {
@@ -120,6 +121,83 @@ void main() {
       expect(
         find.text("Likely typo: use ':' for port instead of '.'"),
         findsNothing,
+      );
+    });
+
+    testWidgets('renders German localized fields and validates in German', (
+      tester,
+    ) async {
+      final formKey = GlobalKey<FormState>();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('de'),
+          home: Scaffold(
+            body: Form(
+              key: formKey,
+              child: ClusterBasicInfoForm(
+                nameController: nameController,
+                bootstrapServersController: bootstrapServersController,
+                schemaRegistryUrlController: schemaRegistryUrlController,
+                schemaRegistryUsernameController:
+                    schemaRegistryUsernameController,
+                schemaRegistryPasswordController:
+                    schemaRegistryPasswordController,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cluster-Name'), findsOneWidget);
+      expect(
+        find.text('Bootstrap-Server (z. B. localhost:9092)'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Schema Registry URL (optional)'),
+        findsOneWidget,
+      );
+
+      // Trigger empty validation on required fields
+      formKey.currentState!.validate();
+      await tester.pump();
+      expect(find.text('Erforderlich'), findsNWidgets(2));
+
+      // Enter invalid URL missing protocol
+      await tester.enterText(
+        find.ancestor(
+          of: find.text('Schema Registry URL (optional)'),
+          matching: find.byType(TextFormField),
+        ),
+        'localhost:8081',
+      );
+      formKey.currentState!.validate();
+      await tester.pump();
+      expect(
+        find.text('Fehlendes Protokoll (http:// oder https://)'),
+        findsOneWidget,
+      );
+
+      // Enter URL with port typo
+      await tester.enterText(
+        find.ancestor(
+          of: find.text('Schema Registry URL (optional)'),
+          matching: find.byType(TextFormField),
+        ),
+        'http://localhost.8081',
+      );
+      formKey.currentState!.validate();
+      await tester.pump();
+      expect(
+        find.text("Möglicher Tippfehler: Verwenden Sie ':' für den Port statt '.'"),
+        findsOneWidget,
       );
     });
   });

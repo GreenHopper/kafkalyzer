@@ -183,7 +183,8 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
   Widget build(BuildContext context) {
     final nodes = _flattenResult.nodes;
     if (nodes.isEmpty) {
-      return const Center(child: Text('Empty JSON'));
+      final l10n = AppLocalizations.of(context);
+      return Center(child: Text(l10n?.emptyJson ?? 'Empty JSON'));
     }
 
     return ScrollablePositionedList.builder(
@@ -293,22 +294,27 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
           // Quick copy action on row
           IconButton(
             icon: const Icon(Icons.copy, size: 13),
-            tooltip: 'Copy value',
+            tooltip: AppLocalizations.of(context)?.copyValueTooltip ??
+                'Copy value',
             visualDensity: VisualDensity.compact,
             onPressed: () {
               final valStr = node.value?.toString() ?? 'null';
               Clipboard.setData(ClipboardData(text: valStr));
+              final l10n = AppLocalizations.of(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Value copied to clipboard'),
-                  duration: Duration(seconds: 1),
+                SnackBar(
+                  content: Text(
+                    l10n?.valueCopiedToClipboard ??
+                        'Value copied to clipboard',
+                  ),
+                  duration: const Duration(seconds: 1),
                 ),
               );
             },
           ),
           if (widget.onPinToColumn != null && node.path.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.view_column_outlined, size: 14),
+              icon: const Icon(Icons.push_pin_outlined, size: 14),
               tooltip:
                   AppLocalizations.of(context)?.pinAsColumn ?? 'Pin as Column',
               visualDensity: VisualDensity.compact,
