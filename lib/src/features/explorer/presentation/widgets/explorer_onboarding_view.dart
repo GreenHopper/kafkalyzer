@@ -76,8 +76,11 @@ class ExplorerOnboardingView extends StatelessWidget {
               const SizedBox(height: 36),
 
               // Clusters Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 12,
+                runSpacing: 8,
                 children: [
                   Text(
                     l10n?.configuredClusters ?? 'Configured Clusters',
@@ -272,8 +275,11 @@ class ExplorerOnboardingView extends StatelessWidget {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 8,
                         children: [
                           Text(
                             l10n?.recentTopics ?? 'Recently Viewed Topics',

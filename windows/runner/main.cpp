@@ -35,7 +35,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
   logFile << "DEBUG: Attempting to create window" << std::endl;
-  if (!window.Create(L"kafkalyzer", origin, size)) {
+  if (!window.Create(L"Kafkalyzer", origin, size)) {
     logFile << "ERROR: Failed to create window" << std::endl;
     return EXIT_FAILURE;
   }

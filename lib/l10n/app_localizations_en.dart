@@ -1272,6 +1272,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String schemaTooltipSuffix(String schema) {
+    return ' • Schema: $schema';
+  }
+
+  @override
   String get viewModeTable => 'Table';
 
   @override

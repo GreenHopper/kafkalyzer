@@ -108,7 +108,49 @@ jobs:
             cp changelog.md build/linux/x64/release/bundle/
           fi
 
-          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/linux/x64/release/bundle -e kafkalyzer --icon assets/logo.png -o velopack_release
+          APPDIR="build/linux/x64/release/Kafkalyzer.AppDir"
+          rm -rf "$APPDIR"
+          mkdir -p "$APPDIR/usr/bin"
+          mkdir -p "$APPDIR/usr/share/icons/hicolor/scalable/apps"
+
+          cp -a build/linux/x64/release/bundle/. "$APPDIR/usr/bin/"
+          cp assets/logo.png "$APPDIR/Kafkalyzer.png"
+          cp assets/logo.png "$APPDIR/.DirIcon"
+          cp assets/logo.png "$APPDIR/usr/share/icons/hicolor/scalable/apps/Kafkalyzer.png"
+
+          cat > "$APPDIR/Kafkalyzer.desktop" << 'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Kafkalyzer
+          Comment=Kafkalyzer
+          Icon=Kafkalyzer
+          Exec=kafkalyzer
+          StartupWMClass=Kafkalyzer
+          Categories=Utility;
+          EOF
+
+          cat > "$APPDIR/AppRun" << 'EOF'
+          #!/bin/sh
+          if [ ! -z "$APPIMAGE" ] && [ ! -z "$APPDIR" ]; then
+              MD5=$(echo -n "file://$APPIMAGE" | md5sum | cut -d' ' -f1)
+              cp "$APPDIR/Kafkalyzer.png" "$HOME/.cache/thumbnails/normal/$MD5.png" >/dev/null 2>&1
+              cp "$APPDIR/Kafkalyzer.png" "$HOME/.cache/thumbnails/large/$MD5.png" >/dev/null 2>&1
+              xdg-icon-resource forceupdate >/dev/null 2>&1
+              if [ -d "$HOME/.local/share/applications" ]; then
+                  for f in "$HOME/.local/share/applications/"*Kafkalyzer*.desktop; do
+                      [ -f "$f" ] || continue
+                      sed -i -e 's/^Name=Kafkalyzer (.*/Name=Kafkalyzer/' -e 's/^Comment=Kafkalyzer .*/Comment=Kafkalyzer/' -e '/^X-AppImage-Version=/d' "$f" 2>/dev/null || true
+                  done
+              fi
+          fi
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          export PATH="${HERE}"/usr/bin/:"${PATH}"
+          EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2 | cut -d " " -f 1 | sed 's/\\s/ /g')
+          exec "${EXEC}" "$@"
+          EOF
+          chmod +x "$APPDIR/AppRun"
+
+          vpk pack -u Kafkalyzer --packTitle "Kafkalyzer" -v ${{ env.VERSION }} -p "$APPDIR" -e kafkalyzer --icon assets/logo.png -o velopack_release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -202,10 +244,10 @@ jobs:
           fi
 
           # Standard-Pack-Befehl OHNE Signierung
-          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/macos/Build/Products/Release/kafkalyzer.app -o velopack_release
+          vpk pack -u Kafkalyzer --packTitle "Kafkalyzer" -v ${{ env.VERSION }} -p build/macos/Build/Products/Release/kafkalyzer.app -o velopack_release
 
           # --- SIGNATUR UND NOTARISIERUNG MIT VELOPACK (Auskommentiert) ---
-          # vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p build/macos/Build/Products/Release/kafkalyzer.app -o velopack_release \
+          # vpk pack -u Kafkalyzer --packTitle "Kafkalyzer" -v ${{ env.VERSION }} -p build/macos/Build/Products/Release/kafkalyzer.app -o velopack_release \
           #   --signAppIdentity "Developer ID Application: YOUR NAME (TEAM_ID)" \
           #   --notaryEmail "${{ secrets.APPLE_ID }}" \
           #   --notaryPassword "${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}" \
@@ -326,7 +368,7 @@ jobs:
             Copy-Item "changelog.md" "$releaseDir/" -Force
           }
 
-          vpk pack -u Kafkalyzer -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe --icon windows/runner/resources/app_icon.ico -o velopack_release
+          vpk pack -u Kafkalyzer --packTitle "Kafkalyzer" -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe --icon windows/runner/resources/app_icon.ico -o velopack_release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

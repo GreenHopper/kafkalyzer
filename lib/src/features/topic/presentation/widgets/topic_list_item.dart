@@ -14,6 +14,7 @@ class TopicListItem extends StatelessWidget {
   final VoidCallback? onOpenInNewTab;
   final Widget? trailing;
   final ClusterProfile? clusterProfile;
+  final String? highlightQuery;
 
   const TopicListItem({
     super.key,
@@ -24,6 +25,7 @@ class TopicListItem extends StatelessWidget {
     this.onOpenInNewTab,
     this.trailing,
     this.clusterProfile,
+    this.highlightQuery,
   });
 
   @override
@@ -70,52 +72,68 @@ class TopicListItem extends StatelessWidget {
   Widget _buildTitle(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final (prefix, leaf) = parseTopicNameSegments(topic.name);
 
-    return Text.rich(
-      TextSpan(
-        children: [
-          if (prefix.isNotEmpty)
-            TextSpan(
-              text: prefix,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isSelected
-                    ? colorScheme.onSecondaryContainer.withValues(alpha: 0.7)
-                    : colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          TextSpan(
-            text: leaf,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: isSelected
-                  ? colorScheme.onSecondaryContainer
-                  : colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    final prefixStyle =
+        theme.textTheme.bodyMedium?.copyWith(
+          color: isSelected
+              ? colorScheme.onSecondaryContainer.withValues(alpha: 0.7)
+              : colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+          fontWeight: FontWeight.normal,
+        ) ??
+        const TextStyle();
+
+    final leafStyle =
+        theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: isSelected
+              ? colorScheme.onSecondaryContainer
+              : colorScheme.onSurface,
+        ) ??
+        const TextStyle(fontWeight: FontWeight.bold);
+
+    final highlightStyle = TextStyle(
+      backgroundColor: isSelected
+          ? colorScheme.primary.withValues(alpha: 0.28)
+          : colorScheme.tertiaryContainer,
+      color: isSelected
+          ? colorScheme.onSecondaryContainer
+          : colorScheme.onTertiaryContainer,
+      fontWeight: FontWeight.bold,
+    );
+
+    final ellipsisStyle =
+        theme.textTheme.bodyMedium?.copyWith(
+          color: isSelected
+              ? colorScheme.onSecondaryContainer.withValues(alpha: 0.5)
+              : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          fontWeight: FontWeight.bold,
+        ) ??
+        const TextStyle();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final spans = fitTopicNameToWidth(
+          topicName: topic.name,
+          maxWidth: constraints.maxWidth,
+          prefixStyle: prefixStyle,
+          leafStyle: leafStyle,
+          highlightStyle: highlightStyle,
+          ellipsisStyle: ellipsisStyle,
+          highlightQuery: highlightQuery,
+        );
+
+        return Text.rich(
+          TextSpan(children: spans),
+          maxLines: 1,
+          softWrap: false,
+        );
+      },
     );
   }
 
   Widget? _buildTrailing(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final List<Widget> children = [];
-
-    // Micro-badge: Partition count (<N>P)
-    final partitionText = l10n != null
-        ? l10n.partitionBadge(topic.partitionCount)
-        : "${topic.partitionCount}P";
-    children.add(_buildMicroBadge(context, text: partitionText));
-
-    // Micro-badge: Schema badge (Avro)
-    if (clusterProfile != null &&
-        hasSchema(getIt<SchemaController>(), clusterProfile!, topic.name)) {
-      children.add(_buildMicroBadge(context, text: "Avro", isSchema: true));
-    }
 
     if (isSelected) {
       children.add(const Icon(Icons.check, size: 16));
@@ -147,56 +165,18 @@ class TopicListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildMicroBadge(
-    BuildContext context, {
-    required String text,
-    bool isSchema = false,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    Color bgColor;
-    Color textColor;
-
-    if (isSchema) {
-      if (isDark) {
-        bgColor = colorScheme.primaryContainer;
-        textColor = colorScheme.onPrimaryContainer;
-      } else {
-        bgColor = colorScheme.secondaryContainer;
-        textColor = colorScheme.onSecondaryContainer;
-      }
-    } else {
-      bgColor = colorScheme.surfaceContainerHigh;
-      textColor = colorScheme.onSurfaceVariant;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
-
   String _buildTooltipMessage(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final hasExtendedConfig =
         topic.cleanupPolicy != null || topic.retentionMs != null;
+    final isAvro =
+        clusterProfile != null &&
+        hasSchema(getIt<SchemaController>(), clusterProfile!, topic.name);
 
+    String meta;
     if (l10n != null) {
       if (hasExtendedConfig) {
-        return l10n.topicTooltip(
+        meta = l10n.topicTooltip(
           topic.partitionCount,
           topic.replicationFactor,
           topic.retentionMs != null
@@ -207,22 +187,33 @@ class TopicListItem extends StatelessWidget {
               : "N/A",
         );
       } else {
-        return l10n.topicTooltipSimple(
+        meta = l10n.topicTooltipSimple(
           topic.partitionCount,
           topic.replicationFactor,
         );
       }
+      if (isAvro) {
+        meta += l10n.schemaTooltipSuffix("Avro");
+      }
+    } else {
+      if (hasExtendedConfig) {
+        final retention = topic.retentionMs != null
+            ? formatRetention(topic.retentionMs!)
+            : "N/A";
+        final cleanup = topic.cleanupPolicy != null
+            ? splitPolicy(topic.cleanupPolicy!)
+            : "N/A";
+        meta =
+            "Partitions: ${topic.partitionCount} • RF: ${topic.replicationFactor} • Retention: $retention • Cleanup: $cleanup";
+      } else {
+        meta =
+            "Partitions: ${topic.partitionCount} • RF: ${topic.replicationFactor}";
+      }
+      if (isAvro) {
+        meta += " • Schema: Avro";
+      }
     }
 
-    if (hasExtendedConfig) {
-      final retention = topic.retentionMs != null
-          ? formatRetention(topic.retentionMs!)
-          : "N/A";
-      final cleanup = topic.cleanupPolicy != null
-          ? splitPolicy(topic.cleanupPolicy!)
-          : "N/A";
-      return "Partitions: ${topic.partitionCount} • RF: ${topic.replicationFactor} • Retention: $retention • Cleanup: $cleanup";
-    }
-    return "Partitions: ${topic.partitionCount} • RF: ${topic.replicationFactor}";
+    return "${topic.name}\n$meta";
   }
 }

@@ -738,6 +738,87 @@ void main() {
       expect(find.text('CLUSTERS'), findsNothing);
       expect(find.byKey(const Key('explorer_expand_sidebar')), findsOneWidget);
     });
+
+    testWidgets('resizes topic sidebar by dragging handle and persists width', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      stubIdleSidebarState();
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await tester.pump();
+
+      final handleFinder = find.byKey(
+        const Key('explorer_sidebar_resize_handle'),
+      );
+      expect(handleFinder, findsOneWidget);
+
+      final sidebarFinder = find.byKey(const Key('explorer_sidebar_container'));
+      expect(sidebarFinder, findsOneWidget);
+
+      expect(
+        tester.getSize(sidebarFinder).width,
+        equals(ExplorerView.defaultSidebarWidth),
+      );
+
+      // Drag right by 80px -> 360 + 80 = 440
+      await tester.drag(handleFinder, const Offset(80, 0));
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(sidebarFinder).width, equals(440.0));
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getDouble(ExplorerView.sidebarWidthPrefKey), equals(440.0));
+
+      // Drag left by 500px -> should clamp to minSidebarWidth (260)
+      await tester.drag(handleFinder, const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSize(sidebarFinder).width,
+        equals(ExplorerView.minSidebarWidth),
+      );
+      expect(
+        prefs.getDouble(ExplorerView.sidebarWidthPrefKey),
+        equals(ExplorerView.minSidebarWidth),
+      );
+
+      // Drag right by 800px -> should clamp to maxSidebarWidth (700)
+      await tester.drag(handleFinder, const Offset(800, 0));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSize(sidebarFinder).width,
+        equals(ExplorerView.maxSidebarWidth),
+      );
+      expect(
+        prefs.getDouble(ExplorerView.sidebarWidthPrefKey),
+        equals(ExplorerView.maxSidebarWidth),
+      );
+    });
+
+    testWidgets('restores topic sidebar width from preferences', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      stubIdleSidebarState();
+
+      SharedPreferences.setMockInitialValues({
+        ExplorerView.sidebarWidthPrefKey: 480.0,
+      });
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await tester.pump();
+
+      final sidebarFinder = find.byKey(const Key('explorer_sidebar_container'));
+      expect(tester.getSize(sidebarFinder).width, equals(480.0));
+    });
   });
 }
 

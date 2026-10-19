@@ -444,6 +444,12 @@
       "rf": { "type": "int" }
     }
   },
+  "schemaTooltipSuffix": " • Schema: {schema}",
+  "@schemaTooltipSuffix": {
+    "placeholders": {
+      "schema": { "type": "String" }
+    }
+  },
   "viewModeTable": "Tabelle",
   "viewModeTableTooltip": "Tabellenansicht",
   "viewModeTimeline": "Zeitverlauf",

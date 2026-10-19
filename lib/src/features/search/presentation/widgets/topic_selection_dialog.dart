@@ -178,6 +178,7 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
             topic: topic,
             isSelected: isSelected,
             clusterProfile: widget.clusterProfile,
+            highlightQuery: _searchController.text,
             trailing: widget.multiSelect
                 ? Checkbox(
                     value: isSelected,

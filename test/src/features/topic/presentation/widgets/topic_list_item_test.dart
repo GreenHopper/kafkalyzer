@@ -56,6 +56,8 @@ void main() {
     VoidCallback? onDoubleTap,
     VoidCallback? onOpenInNewTab,
     ClusterProfile? clusterProfile,
+    String? highlightQuery,
+    double? width,
   }) {
     return MaterialApp(
       localizationsDelegates: const [
@@ -64,84 +66,99 @@ void main() {
       ],
       supportedLocales: const [Locale('en')],
       home: Scaffold(
-        body: TopicListItem(
-          topic: topic,
-          isSelected: isSelected,
-          onTap: onTap,
-          onDoubleTap: onDoubleTap,
-          onOpenInNewTab: onOpenInNewTab,
-          clusterProfile: clusterProfile,
-        ),
+        body: width != null
+            ? SizedBox(
+                width: width,
+                child: TopicListItem(
+                  topic: topic,
+                  isSelected: isSelected,
+                  onTap: onTap,
+                  onDoubleTap: onDoubleTap,
+                  onOpenInNewTab: onOpenInNewTab,
+                  clusterProfile: clusterProfile,
+                  highlightQuery: highlightQuery,
+                ),
+              )
+            : TopicListItem(
+                topic: topic,
+                isSelected: isSelected,
+                onTap: onTap,
+                onDoubleTap: onDoubleTap,
+                onOpenInNewTab: onOpenInNewTab,
+                clusterProfile: clusterProfile,
+                highlightQuery: highlightQuery,
+              ),
       ),
     );
   }
 
-  testWidgets('renders topic name, compact partition badge, and tooltip', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
-    );
+  testWidgets(
+    'renders topic name without inline badges and includes full topic in tooltip',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
+      );
 
-    // Topic name rendered
-    expect(find.text('test-topic'), findsOneWidget);
-    // Micro-badge for 3 partitions
-    expect(find.text('3P'), findsOneWidget);
-    // Old full tags should NOT be on the card face
-    expect(find.text('3 Partitions'), findsNothing);
-    expect(find.text('RF: 1'), findsNothing);
+      // Topic name rendered
+      expect(find.text('test-topic'), findsOneWidget);
+      // Micro-badge for partitions should NOT be on the card face
+      expect(find.text('3P'), findsNothing);
+      expect(find.text('3 Partitions'), findsNothing);
+      expect(find.text('RF: 1'), findsNothing);
 
-    // Check Tooltip presence and content
-    final tooltipFinder = find.byType(Tooltip);
-    expect(tooltipFinder, findsOneWidget);
-    final tooltip = tester.widget<Tooltip>(tooltipFinder);
-    expect(
-      tooltip.message,
-      'Partitions: 3 • RF: 1 • Retention: 1.0 days • Cleanup: delete',
-    );
-  });
+      // Check Tooltip presence and content (line 1: topic name, line 2: metadata)
+      final tooltipFinder = find.byType(Tooltip);
+      expect(tooltipFinder, findsOneWidget);
+      final tooltip = tester.widget<Tooltip>(tooltipFinder);
+      expect(
+        tooltip.message,
+        'test-topic\nPartitions: 3 • RF: 1 • Retention: 1.0 days • Cleanup: delete',
+      );
+    },
+  );
 
-  testWidgets('renders hierarchical segmented topic name', (
-    WidgetTester tester,
-  ) async {
-    const hierarchicalTopic = TopicMetadata(
-      name: 'com.company.orders.incoming',
-      partitionCount: 12,
-      replicationFactor: 3,
-    );
+  testWidgets(
+    'renders hierarchical segmented topic name without inline badges',
+    (WidgetTester tester) async {
+      const hierarchicalTopic = TopicMetadata(
+        name: 'com.company.orders.incoming',
+        partitionCount: 12,
+        replicationFactor: 3,
+      );
 
-    await tester.pumpWidget(
-      createWidgetUnderTest(
-        topic: hierarchicalTopic,
-        clusterProfile: testProfile,
-      ),
-    );
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          topic: hierarchicalTopic,
+          clusterProfile: testProfile,
+        ),
+      );
 
-    // Both prefix and leaf are in the Text.rich widget
-    final textFinder = find.byWidgetPredicate(
-      (widget) =>
-          widget is Text &&
-          widget.textSpan?.toPlainText() == 'com.company.orders.incoming',
-    );
-    expect(textFinder, findsOneWidget);
+      // Both prefix and leaf are in the Text.rich widget
+      final textFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.textSpan?.toPlainText() == 'com.company.orders.incoming',
+      );
+      expect(textFinder, findsOneWidget);
 
-    final textWidget = tester.widget<Text>(textFinder);
-    final rootSpan = textWidget.textSpan as TextSpan;
-    expect(rootSpan.children?.length, 2);
+      final textWidget = tester.widget<Text>(textFinder);
+      final rootSpan = textWidget.textSpan as TextSpan;
+      expect(rootSpan.children?.length, 2);
 
-    final prefixSpan = rootSpan.children![0] as TextSpan;
-    expect(prefixSpan.text, 'com.company.orders.');
-    expect(prefixSpan.style?.fontWeight, FontWeight.normal);
+      final prefixSpan = rootSpan.children![0] as TextSpan;
+      expect(prefixSpan.text, 'com.company.orders.');
+      expect(prefixSpan.style?.fontWeight, FontWeight.normal);
 
-    final leafSpan = rootSpan.children![1] as TextSpan;
-    expect(leafSpan.text, 'incoming');
-    expect(leafSpan.style?.fontWeight, FontWeight.bold);
+      final leafSpan = rootSpan.children![1] as TextSpan;
+      expect(leafSpan.text, 'incoming');
+      expect(leafSpan.style?.fontWeight, FontWeight.bold);
 
-    // Partition badge
-    expect(find.text('12P'), findsOneWidget);
-  });
+      // Partition badge should NOT be on card face
+      expect(find.text('12P'), findsNothing);
+    },
+  );
 
-  testWidgets('renders Avro micro-badge when schema is detected', (
+  testWidgets('displays Avro schema in tooltip when schema is detected', (
     WidgetTester tester,
   ) async {
     final schemaController = MockSchemaControllerWithSchema();
@@ -152,8 +169,14 @@ void main() {
       createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
     );
 
-    expect(find.text('Avro'), findsOneWidget);
-    expect(find.text('3P'), findsOneWidget);
+    // Badges NOT on card face
+    expect(find.text('Avro'), findsNothing);
+    expect(find.text('3P'), findsNothing);
+
+    // Tooltip includes Schema: Avro
+    final tooltipFinder = find.byType(Tooltip);
+    final tooltip = tester.widget<Tooltip>(tooltipFinder);
+    expect(tooltip.message?.contains('Schema: Avro'), isTrue);
   });
 
   testWidgets('triggers onTap callback on single tap', (
@@ -213,5 +236,75 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(openedInNewTab, isTrue);
+  });
+
+  testWidgets(
+    'applies middle ellipsis when topic name is constrained in narrow width',
+    (WidgetTester tester) async {
+      const longTopic = TopicMetadata(
+        name: 'dataops.cdc.db2.jdbc.LKW_TRANSPORT_ORDER_HEADER',
+        partitionCount: 12,
+        replicationFactor: 3,
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          topic: longTopic,
+          clusterProfile: testProfile,
+          width: 260,
+        ),
+      );
+
+      final textFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            (widget.textSpan?.toPlainText().contains('…') ?? false),
+      );
+      expect(textFinder, findsOneWidget);
+
+      final textWidget = tester.widget<Text>(textFinder);
+      final renderedString = textWidget.textSpan!.toPlainText();
+      expect(renderedString.contains('…'), isTrue);
+      expect(renderedString.startsWith('dat'), isTrue);
+      expect(renderedString.endsWith('HEADER'), isTrue);
+    },
+  );
+
+  testWidgets('highlights search filter matches within the topic name', (
+    WidgetTester tester,
+  ) async {
+    const topic = TopicMetadata(
+      name: 'kaenup.lopoco.temp.migrationPreSelection',
+      partitionCount: 1,
+      replicationFactor: 1,
+    );
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        topic: topic,
+        clusterProfile: testProfile,
+        highlightQuery: 'migration',
+      ),
+    );
+
+    final textFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is Text &&
+          (widget.textSpan?.toPlainText() ==
+              'kaenup.lopoco.temp.migrationPreSelection'),
+    );
+    expect(textFinder, findsOneWidget);
+
+    final textWidget = tester.widget<Text>(textFinder);
+    final rootSpan = textWidget.textSpan as TextSpan;
+
+    final matchSpan =
+        rootSpan.children?.firstWhere(
+              (span) => span is TextSpan && span.text == 'migration',
+            )
+            as TextSpan?;
+
+    expect(matchSpan, isNotNull);
+    expect(matchSpan!.style?.backgroundColor, isNotNull);
   });
 }

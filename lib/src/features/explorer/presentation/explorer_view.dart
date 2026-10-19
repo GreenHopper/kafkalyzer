@@ -26,6 +26,10 @@ class ExplorerView extends WatchingStatefulWidget {
   const ExplorerView({super.key});
 
   static const String sidebarCollapsedPrefKey = 'explorer_sidebar_collapsed';
+  static const String sidebarWidthPrefKey = 'explorer_sidebar_width';
+  static const double defaultSidebarWidth = 360.0;
+  static const double minSidebarWidth = 260.0;
+  static const double maxSidebarWidth = 700.0;
 
   @override
   State<ExplorerView> createState() => _ExplorerViewState();
@@ -35,6 +39,7 @@ class _ExplorerViewState extends State<ExplorerView> {
   late TextEditingController _filterController;
   final ScrollController _tabScrollController = ScrollController();
   bool _isSidebarCollapsed = false;
+  double _sidebarWidth = ExplorerView.defaultSidebarWidth;
 
   @override
   void initState() {
@@ -51,6 +56,13 @@ class _ExplorerViewState extends State<ExplorerView> {
     setState(() {
       _isSidebarCollapsed =
           prefs.getBool(ExplorerView.sidebarCollapsedPrefKey) ?? false;
+      _sidebarWidth =
+          (prefs.getDouble(ExplorerView.sidebarWidthPrefKey) ??
+                  ExplorerView.defaultSidebarWidth)
+              .clamp(
+                ExplorerView.minSidebarWidth,
+                ExplorerView.maxSidebarWidth,
+              );
     });
   }
 
@@ -98,12 +110,13 @@ class _ExplorerViewState extends State<ExplorerView> {
               topicController,
               schemaController,
             ),
-            VerticalDivider(
-              width: 1,
-              color: Theme.of(
-                context,
-              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
+            if (_isSidebarCollapsed)
+              VerticalDivider(
+                width: 1,
+                color: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
             Expanded(
               child: _buildContent(
                 context,
@@ -135,14 +148,58 @@ class _ExplorerViewState extends State<ExplorerView> {
         alignment: Alignment.centerLeft,
         child: _isSidebarCollapsed
             ? _buildCollapsedSidebarRail(context, l10n)
-            : _buildSidebar(
-                context,
-                l10n,
-                clusterController,
-                activeController,
-                topicController,
-                schemaController,
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildSidebar(
+                    context,
+                    l10n,
+                    clusterController,
+                    activeController,
+                    topicController,
+                    schemaController,
+                  ),
+                  _buildSidebarResizeHandle(context),
+                ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildSidebarResizeHandle(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeLeftRight,
+      child: GestureDetector(
+        key: const Key('explorer_sidebar_resize_handle'),
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragUpdate: (details) {
+          setState(() {
+            _sidebarWidth = (_sidebarWidth + details.delta.dx).clamp(
+              ExplorerView.minSidebarWidth,
+              ExplorerView.maxSidebarWidth,
+            );
+          });
+        },
+        onHorizontalDragEnd: (_) async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setDouble(
+            ExplorerView.sidebarWidthPrefKey,
+            _sidebarWidth,
+          );
+        },
+        child: Container(
+          width: 6,
+          color: Colors.transparent,
+          child: Center(
+            child: Container(
+              width: 1,
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -179,7 +236,8 @@ class _ExplorerViewState extends State<ExplorerView> {
     SchemaController schemaController,
   ) {
     return SizedBox(
-      width: 360,
+      key: const Key('explorer_sidebar_container'),
+      width: _sidebarWidth,
       child: Material(
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         child: Column(
@@ -477,6 +535,7 @@ class _ExplorerViewState extends State<ExplorerView> {
                 return TopicListItem(
                   topic: topic,
                   isSelected: isSelected,
+                  highlightQuery: activeController.topicFilter,
                   onTap: () => activeController.setActiveTopic(
                     topic,
                     activeController.activeProfile,

@@ -2306,6 +2306,12 @@ abstract class AppLocalizations {
   /// **'Partitions: {partitions} • RF: {rf}'**
   String topicTooltipSimple(int partitions, int rf);
 
+  /// No description provided for @schemaTooltipSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' • Schema: {schema}'**
+  String schemaTooltipSuffix(String schema);
+
   /// No description provided for @viewModeTable.
   ///
   /// In en, this message translates to:

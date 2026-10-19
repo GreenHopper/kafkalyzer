@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "at.greenhopper" "\0"
-            VALUE "FileDescription", "kafkalyzer" "\0"
+            VALUE "FileDescription", "Kafkalyzer" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "kafkalyzer" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 at.greenhopper. All rights reserved." "\0"
             VALUE "OriginalFilename", "kafkalyzer.exe" "\0"
-            VALUE "ProductName", "kafkalyzer" "\0"
+            VALUE "ProductName", "Kafkalyzer" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
