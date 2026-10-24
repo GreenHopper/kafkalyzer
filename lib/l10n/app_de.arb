@@ -344,6 +344,10 @@
   "scanModeTimeRange": "Zeitraum",
   "scanModeOffsetEarliest": "Offset / Früheste",
   "quickFilterPlaceholder": "Beim Abruf filtern (Key oder Wert)...",
+  "invalidFilterPattern": "Ungültiger regulärer Ausdruck: {term}",
+  "@invalidFilterPattern": {
+    "placeholders": { "term": {} }
+  },
   "limitLabel": "Limit",
   "limitAll": "Alle",
   "advancedFiltersToggle": "Erweitert",
@@ -520,7 +524,7 @@
   "extractionSource": "Quelle",
   "extractionTopic": "Topic",
   "extractionVariableName": "Variablenname",
-  "extractionJsonPath": "JSONPath (z.B. $.id)",
+  "extractionJsonPath": "Feldpfad (z. B. order.id, items[0].sku, /order/status)",
   "scriptProperties": "Skript-Eigenschaften",
   "concurrencyLimit": "Gleichzeitige Durchläufe",
   "advancedFiltersSection": "Erweiterte Filter",

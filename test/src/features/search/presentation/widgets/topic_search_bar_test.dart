@@ -5,8 +5,32 @@ import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search_bar.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
+import 'package:mockito/mockito.dart';
+
+import '../../../../rust/api/rust_mocks.mocks.dart';
 
 void main() {
+  // Stands in for the Rust regex engine used by the scan: a term with an
+  // unbalanced group is uncompilable there, so it must be refused here too.
+  final mockApi = MockKafkalyzerRustLibApi();
+
+  setUpAll(() => KafkalyzerRustLib.initMock(api: mockApi));
+  tearDownAll(() => KafkalyzerRustLib.dispose());
+
+  void stubPatternEngine() {
+    reset(mockApi);
+    when(
+      mockApi.crateApiJsonPathValidateFilterPatterns(terms: anyNamed('terms')),
+    ).thenAnswer((invocation) async {
+      final terms = invocation.namedArguments[#terms] as List<String>;
+      return [
+        for (final term in terms)
+          if (term.split('(').length != term.split(')').length) term,
+      ];
+    });
+  }
+
   late TextEditingController quickFilterController;
   late TextEditingController fieldController;
   late TextEditingController maxResultsController;
@@ -192,5 +216,66 @@ void main() {
     // Dirty state shows refresh icon and badge
     expect(find.byIcon(Icons.refresh), findsOneWidget);
     expect(find.byType(Badge), findsOneWidget);
+  });
+
+  testWidgets('uncompilable regex names the term and blocks the scan', (
+    tester,
+  ) async {
+    stubPatternEngine();
+    var started = false;
+
+    await tester.pumpWidget(
+      buildTestWidget(
+        filterType: FilterType.regex,
+        onStart: () => started = true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithIcon(TextField, Icons.search),
+      'amount(',
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Invalid regular expression: amount('), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('search_bar_start_button')));
+    await tester.pumpAndSettle();
+    expect(started, isFalse);
+
+    final chip = tester.widget<InputChip>(
+      find.byKey(const Key('filter_type_chip')),
+    );
+    expect((chip.avatar as Icon?)?.icon, Icons.error);
+  });
+
+  testWidgets('compilable regex starts the scan without an error', (
+    tester,
+  ) async {
+    stubPatternEngine();
+    var started = false;
+
+    await tester.pumpWidget(
+      buildTestWidget(
+        filterType: FilterType.regex,
+        onStart: () => started = true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithIcon(TextField, Icons.search),
+      'amount.*',
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('quick_filter_pattern_error')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('search_bar_start_button')));
+    await tester.pumpAndSettle();
+    expect(started, isTrue);
   });
 }

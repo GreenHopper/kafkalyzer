@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:group_button/group_button.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -5,6 +6,7 @@ import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/end_condition_configuration.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condition_configuration.dart';
+import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/ui/timestamp_picker_field.dart';
 
@@ -87,6 +89,59 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
   bool _isAdvancedExpanded = false;
 
   static const List<int> _presetLimits = [50, 200, 500, 1000];
+
+  // A regex term the scan engine cannot compile; validated by the same Rust
+  // engine that will run the scan, so a term cannot silently degrade matching.
+  String? _invalidPattern;
+  Timer? _validationDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _validatePatterns();
+  }
+
+  @override
+  void didUpdateWidget(covariant TopicSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.filterType != oldWidget.filterType) {
+      _validatePatterns();
+    }
+  }
+
+  @override
+  void dispose() {
+    _validationDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _schedulePatternValidation() {
+    _validationDebounce?.cancel();
+    _validationDebounce = Timer(
+      const Duration(milliseconds: 300),
+      _validatePatterns,
+    );
+  }
+
+  Future<void> _validatePatterns() async {
+    final term = widget.quickFilterController.text.trim();
+    if (widget.filterType != FilterType.regex || term.isEmpty) {
+      if (_invalidPattern != null && mounted) {
+        setState(() => _invalidPattern = null);
+      }
+      return;
+    }
+
+    final invalid = await validateFilterPatterns(terms: [term]);
+    if (!mounted) return;
+    setState(() => _invalidPattern = invalid.isEmpty ? null : invalid.first);
+  }
+
+  Future<void> _onStart() async {
+    await _validatePatterns();
+    if (!mounted || _invalidPattern != null) return;
+    widget.onStart();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -318,50 +373,83 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
-    return SizedBox(
-      height: 38,
-      child: TextField(
-        controller: widget.quickFilterController,
-        style: const TextStyle(fontSize: 13),
-        decoration: InputDecoration(
-          hintText: l10n.quickFilterPlaceholder,
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-          ),
-          prefixIcon: const Icon(Icons.search, size: 18),
-          suffixIcon: widget.quickFilterController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, size: 16),
-                  splashRadius: 16,
-                  onPressed: () {
-                    widget.quickFilterController.clear();
-                    setState(() {});
-                  },
-                )
-              : null,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 0,
-          ),
-          filled: true,
-          fillColor: colorScheme.surface,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.8),
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.8),
-            ),
+    final errorText = _invalidPattern == null
+        ? null
+        : l10n.invalidFilterPattern(_invalidPattern!);
+    final borderColor = errorText == null
+        ? colorScheme.outlineVariant.withValues(alpha: 0.8)
+        : colorScheme.error;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 38,
+          child: _buildQuickFilterInput(
+            l10n.quickFilterPlaceholder,
+            colorScheme,
+            borderColor,
           ),
         ),
-        onChanged: (_) => setState(() {}),
-        onSubmitted: (_) => widget.onStart(),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              errorText,
+              key: const Key('quick_filter_pattern_error'),
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.1,
+                color: colorScheme.error,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildQuickFilterInput(
+    String hintText,
+    ColorScheme colorScheme,
+    Color borderColor,
+  ) {
+    OutlineInputBorder outline(Color color) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide(color: color),
+    );
+
+    return TextField(
+      controller: widget.quickFilterController,
+      style: const TextStyle(fontSize: 13),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(
+          fontSize: 13,
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        ),
+        prefixIcon: const Icon(Icons.search, size: 18),
+        suffixIcon: widget.quickFilterController.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 16),
+                splashRadius: 16,
+                onPressed: () {
+                  widget.quickFilterController.clear();
+                  setState(() {});
+                },
+              )
+            : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        filled: true,
+        fillColor: colorScheme.surface,
+        border: outline(borderColor),
+        enabledBorder: outline(borderColor),
       ),
+      onChanged: (_) {
+        setState(() {});
+        _schedulePatternValidation();
+      },
+      onSubmitted: (_) => _onStart(),
     );
   }
 
@@ -467,7 +555,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: widget.isDirty ? 3 : 0,
       ),
-      onPressed: widget.onStart,
+      onPressed: _onStart,
       icon: Icon(widget.isDirty ? Icons.refresh : icon, size: 16),
       label: Text(
         label,
@@ -517,10 +605,17 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
     if (widget.filterType != FilterType.contains) {
       chips.add(
         InputChip(
+          key: const Key('filter_type_chip'),
           visualDensity: VisualDensity.compact,
+          avatar: _invalidPattern == null
+              ? null
+              : Icon(Icons.error, size: 14, color: colorScheme.error),
           label: Text(
             l10n.chipFilterType(widget.filterType.name),
-            style: const TextStyle(fontSize: 11),
+            style: TextStyle(
+              fontSize: 11,
+              color: _invalidPattern == null ? null : colorScheme.error,
+            ),
           ),
           deleteIcon: const Icon(Icons.clear, size: 14),
           onDeleted: () {

@@ -41,6 +41,44 @@ class _MessagesTimelineViewState extends State<MessagesTimelineView> {
   void initState() {
     super.initState();
     _scrollToSelectedMessage();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resolveExtractions());
+  }
+
+  // Extracted values are resolved through the shared Rust field-path resolver;
+  // one call per extraction, cached per message.
+  final Map<KafkaMessage, Map<String, String>> _extractedValues = {};
+
+  Future<void> _resolveExtractions() async {
+    final byMessage = <KafkaMessage, Map<String, String>>{};
+    final stepIds = widget.messages
+        .whereType<ScriptResultMessage>()
+        .map((message) => message.stepId)
+        .toSet();
+
+    for (final stepId in stepIds) {
+      final extractions =
+          widget.stepExtractions?[stepId] ?? const <ScriptExtraction>[];
+      for (final ext in extractions) {
+        final values = await ExtractionUtils.extractAll(ext, widget.messages);
+        if (!mounted) return;
+        for (var i = 0; i < widget.messages.length; i++) {
+          final value = values[i];
+          if (value != null) {
+            byMessage.putIfAbsent(
+              widget.messages[i],
+              () => {},
+            )[ext.variableName] = value;
+          }
+        }
+      }
+    }
+
+    if (!mounted) return;
+    setState(
+      () => _extractedValues
+        ..clear()
+        ..addAll(byMessage),
+    );
   }
 
   @override
@@ -54,6 +92,10 @@ class _MessagesTimelineViewState extends State<MessagesTimelineView> {
     super.didUpdateWidget(oldWidget);
     if (widget.selectedMessage != oldWidget.selectedMessage) {
       _scrollToSelectedMessage();
+    }
+    if (widget.messages != oldWidget.messages ||
+        widget.stepExtractions != oldWidget.stepExtractions) {
+      _resolveExtractions();
     }
   }
 
@@ -165,19 +207,15 @@ class _MessagesTimelineViewState extends State<MessagesTimelineView> {
   }
 
   List<MapEntry<String, String>> _getExtractedValues(KafkaMessage message) {
-    List<MapEntry<String, String>> extractedValues = [];
-    if (message is ScriptResultMessage &&
-        widget.stepExtractions != null &&
-        widget.stepExtractions!.containsKey(message.stepId)) {
-      final extractions = widget.stepExtractions![message.stepId]!;
-      for (final ext in extractions) {
-        final val = ExtractionUtils.extract(ext, message);
-        if (val != null) {
-          extractedValues.add(MapEntry(ext.variableName, val));
-        }
-      }
-    }
-    return extractedValues;
+    if (message is! ScriptResultMessage) return const [];
+    final extractions =
+        widget.stepExtractions?[message.stepId] ?? const <ScriptExtraction>[];
+    final values = _extractedValues[message] ?? const <String, String>{};
+    return [
+      for (final ext in extractions)
+        if (values.containsKey(ext.variableName))
+          MapEntry(ext.variableName, values[ext.variableName]!),
+    ];
   }
 
   bool _isMatch(KafkaMessage message, String stepName) {

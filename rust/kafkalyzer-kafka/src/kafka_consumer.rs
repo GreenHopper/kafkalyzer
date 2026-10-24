@@ -632,13 +632,11 @@ fn run_poll_loop<'a>(
         }
     }
 
-    // Precompile regexes once if filter_type is Regex
-    let compiled_regexes: Vec<Option<Regex>> = if filter_type == FilterType::Regex {
-        if let Some(ref terms) = filter_terms {
-            terms.iter().map(|t| Regex::new(t).ok()).collect()
-        } else {
-            Vec::new()
-        }
+    // Precompile regexes once if filter_type is Regex. A term that does not
+    // compile stops the scan here: it must never degrade to substring matching
+    // inside the message loop.
+    let compiled_regexes: Vec<Regex> = if filter_type == FilterType::Regex {
+        compile_filter_patterns(filter_terms.as_deref().unwrap_or_default())?
     } else {
         Vec::new()
     };
@@ -865,7 +863,7 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
     key_is_avro: bool,
     value_is_avro: bool,
     filter_terms: &Option<Vec<String>>,
-    compiled_regexes: &[Option<Regex>],
+    compiled_regexes: &[Regex],
     filter_field: &Option<String>,
     filter_type: &FilterType,
     search_scope: SearchScope,
@@ -888,7 +886,7 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
         "<Binary Key>",
     );
 
-    if !matches_filter(
+    match matches_filter(
         &key,
         &payload,
         filter_terms,
@@ -896,9 +894,13 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
         filter_type,
         search_scope,
         compiled_regexes,
-        &Some(sink.clone()),
     ) {
-        return ProcessMessageResult::NotMatched;
+        FilterOutcome::NotMatched => return ProcessMessageResult::NotMatched,
+        FilterOutcome::Matched(term) => log_to_dart(
+            sink,
+            match_diagnostic(msg.topic(), msg.partition(), msg.offset(), &term),
+        ),
+        FilterOutcome::Pass => {}
     }
 
     use rdkafka::message::Headers;
@@ -1398,6 +1400,60 @@ pub(crate) fn decode_message_component<'a>(
     }
 }
 
+/// Compile every regex filter term before a scan starts.
+///
+/// The error lists the terms the `regex` crate rejects, so the UI can point at
+/// them instead of running a scan with degraded matching.
+pub fn compile_filter_patterns(terms: &[String]) -> Result<Vec<Regex>> {
+    let invalid: Vec<&str> = terms
+        .iter()
+        .filter(|term| Regex::new(term).is_err())
+        .map(String::as_str)
+        .collect();
+    if !invalid.is_empty() {
+        anyhow::bail!(
+            "Invalid regular expression(s) in filter: {}",
+            invalid.join(", ")
+        );
+    }
+    terms
+        .iter()
+        .map(|term| Regex::new(term).map_err(anyhow::Error::from))
+        .collect()
+}
+
+/// Terms that the regex engine used by a scan cannot compile.
+pub fn invalid_filter_patterns(terms: &[String]) -> Vec<String> {
+    terms
+        .iter()
+        .filter(|term| Regex::new(term).is_err())
+        .cloned()
+        .collect()
+}
+
+enum FilterOutcome {
+    /// No filter terms configured, so every message passes.
+    Pass,
+    /// A term matched; the term text is kept for the match diagnostic.
+    Matched(String),
+    NotMatched,
+}
+
+impl FilterOutcome {
+    #[cfg(test)]
+    fn is_match(&self) -> bool {
+        !matches!(self, FilterOutcome::NotMatched)
+    }
+}
+
+/// One line per match, without message content.
+///
+/// The payload itself is streamed as the message record, so echoing it here
+/// only costs bandwidth on high-match scans.
+fn match_diagnostic(topic: &str, partition: i32, offset: i64, term: &str) -> String {
+    format!("Match: topic={topic} partition={partition} offset={offset} term='{term}'")
+}
+
 fn matches_filter(
     key_str: &Option<String>,
     payload_str: &Option<String>,
@@ -1405,48 +1461,27 @@ fn matches_filter(
     filter_field: &Option<String>,
     filter_type: &FilterType,
     search_scope: SearchScope,
-    compiled_regexes: &[Option<Regex>],
-    sink: &Option<StreamSink<KafkaMessage>>,
-) -> bool {
+    compiled_regexes: &[Regex],
+) -> FilterOutcome {
     let terms = match filter_terms {
         Some(t) if !t.is_empty() => t,
-        _ => return true,
+        _ => return FilterOutcome::Pass,
     };
 
-    let check_match = |content: &str| -> bool {
-        let target_val = if let Some(field) = filter_field {
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(content) {
-                let ptr = if field.starts_with('/') {
-                    field.clone()
-                } else {
-                    format!("/{}", field)
-                };
-                if let Some(val) = json.pointer(&ptr) {
-                    match val {
-                        serde_json::Value::String(s) => s.clone(),
-                        _ => val.to_string(),
-                    }
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else {
-            content.to_string()
+    let check_match = |content: &str| -> Option<usize> {
+        let target_val = match filter_field {
+            Some(field) => kafkalyzer_core::json_path::resolve(content, field)?,
+            None => content.to_string(),
         };
 
         for (idx, term) in terms.iter().enumerate() {
             let matched = match filter_type {
-                FilterType::Regex => {
-                    if let Some(Some(re)) = compiled_regexes.get(idx) {
-                        re.is_match(&target_val)
-                    } else if let Ok(re) = Regex::new(term) {
-                        re.is_match(&target_val)
-                    } else {
-                        target_val.contains(term)
-                    }
-                }
+                // Only the pre-compiled set is evaluated. A term without a
+                // compiled pattern never matches; there is no per-message
+                // compile and no substring fallback.
+                FilterType::Regex => compiled_regexes
+                    .get(idx)
+                    .is_some_and(|re| re.is_match(&target_val)),
                 FilterType::Contains => target_val.contains(term),
                 FilterType::Exact => {
                     let trimmed = target_val.trim();
@@ -1454,33 +1489,29 @@ fn matches_filter(
                 }
             };
             if matched {
-                if let Some(s) = sink {
-                    log_to_dart(s, format!("MATCH FOUND! Type: {:?}, Term: '{}', Term Bytes: {:?}, Target: '{}', Target Bytes: {:?}, Key: '{:?}', Key Bytes: {:?}", 
-                        filter_type, term, term.as_bytes(), target_val, target_val.as_bytes(), key_str, key_str.as_ref().map(|k| k.as_bytes())));
-                }
-                return true;
+                return Some(idx);
             }
         }
-        false
+        None
     };
 
     if search_scope == SearchScope::Key || search_scope == SearchScope::Both {
         if let Some(key) = key_str {
-            if check_match(key) {
-                return true;
+            if let Some(idx) = check_match(key) {
+                return FilterOutcome::Matched(terms[idx].clone());
             }
         }
     }
 
     if search_scope == SearchScope::Value || search_scope == SearchScope::Both {
         if let Some(payload) = payload_str {
-            if check_match(payload) {
-                return true;
+            if let Some(idx) = check_match(payload) {
+                return FilterOutcome::Matched(terms[idx].clone());
             }
         }
     }
 
-    false
+    FilterOutcome::NotMatched
 }
 
 #[cfg(test)]
@@ -1507,7 +1538,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex: Vec<Option<Regex>> = Vec::new();
+        let regex: Vec<Regex> = Vec::new();
 
         assert!(matches_filter(
             &key,
@@ -1516,9 +1547,9 @@ mod tests {
             &field,
             &FilterType::Exact,
             scope,
-            &regex,
-            &None
-        ));
+            &regex
+        )
+        .is_match());
     }
 
     #[test]
@@ -1528,7 +1559,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex: Vec<Option<Regex>> = Vec::new();
+        let regex: Vec<Regex> = Vec::new();
 
         assert!(matches_filter(
             &key,
@@ -1537,9 +1568,9 @@ mod tests {
             &field,
             &FilterType::Exact,
             scope,
-            &regex,
-            &None
-        ));
+            &regex
+        )
+        .is_match());
     }
 
     #[test]
@@ -1549,7 +1580,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]); // Raw search term foo
         let field = None;
         let scope = SearchScope::Key;
-        let regex: Vec<Option<Regex>> = Vec::new();
+        let regex: Vec<Regex> = Vec::new();
 
         // SHOULD FAIL: "foo" != foo
         assert!(!matches_filter(
@@ -1559,9 +1590,9 @@ mod tests {
             &field,
             &FilterType::Exact,
             scope,
-            &regex,
-            &None
-        ));
+            &regex
+        )
+        .is_match());
     }
 
     #[test]
@@ -1571,7 +1602,7 @@ mod tests {
         let terms = Some(vec!["\"foo\"".to_string()]); // Search term includes quotes
         let field = None;
         let scope = SearchScope::Key;
-        let regex: Vec<Option<Regex>> = Vec::new();
+        let regex: Vec<Regex> = Vec::new();
 
         // SHOULD PASS: "foo" == "foo"
         assert!(matches_filter(
@@ -1581,9 +1612,9 @@ mod tests {
             &field,
             &FilterType::Exact,
             scope,
-            &regex,
-            &None
-        ));
+            &regex
+        )
+        .is_match());
     }
 
     #[test]
@@ -1594,7 +1625,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex: Vec<Option<Regex>> = Vec::new();
+        let regex: Vec<Regex> = Vec::new();
 
         // SHOULD FAIL: "foo" != foo
         assert!(!matches_filter(
@@ -1604,9 +1635,9 @@ mod tests {
             &field,
             &FilterType::Exact,
             scope,
-            &regex,
-            &None
-        ));
+            &regex
+        )
+        .is_match());
     }
 
     #[test]
@@ -1618,7 +1649,7 @@ mod tests {
         let terms = Some(vec!["bad\\escape".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex: Vec<Option<Regex>> = Vec::new();
+        let regex: Vec<Regex> = Vec::new();
 
         // SHOULD FAIL: "bad\escape" != bad\escape
         assert!(!matches_filter(
@@ -1628,9 +1659,9 @@ mod tests {
             &field,
             &FilterType::Exact,
             scope,
-            &regex,
-            &None
-        ));
+            &regex
+        )
+        .is_match());
     }
 
     #[test]
@@ -1640,7 +1671,7 @@ mod tests {
         let terms = Some(vec!["foo".to_string()]);
         let field = None;
         let scope = SearchScope::Key;
-        let regex: Vec<Option<Regex>> = Vec::new();
+        let regex: Vec<Regex> = Vec::new();
 
         assert!(!matches_filter(
             &key,
@@ -1649,9 +1680,9 @@ mod tests {
             &field,
             &FilterType::Exact,
             scope,
-            &regex,
-            &None
-        ));
+            &regex
+        )
+        .is_match());
     }
 
     #[test]
@@ -2083,5 +2114,79 @@ fn convert_protofish_value(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod path_filter_tests {
+    use super::*;
+
+    #[test]
+    fn field_filter_accepts_every_path_notation() {
+        let payload = Some(r#"{"order":{"trackingId":"T-1"}}"#.to_string());
+        let terms = Some(vec!["T-1".to_string()]);
+        let regex: Vec<Regex> = Vec::new();
+
+        for field in [
+            "order.trackingId",
+            "$.order.trackingId",
+            "/order/trackingId",
+        ] {
+            assert!(
+                matches_filter(
+                    &None,
+                    &payload,
+                    &terms,
+                    &Some(field.to_string()),
+                    &FilterType::Exact,
+                    SearchScope::Value,
+                    &regex,
+                )
+                .is_match(),
+                "field: {field}"
+            );
+        }
+    }
+
+    #[test]
+    fn uncompilable_regex_does_not_fall_back_to_substring() {
+        let payload = Some(r#"{"note":"orders[ pending"}"#.to_string());
+        let terms = Some(vec!["orders[".to_string()]);
+        // The scan setup refuses this term, so nothing is compiled for it.
+        let regex: Vec<Regex> = Vec::new();
+
+        assert!(!matches_filter(
+            &None,
+            &payload,
+            &terms,
+            &None,
+            &FilterType::Regex,
+            SearchScope::Value,
+            &regex,
+        )
+        .is_match());
+    }
+
+    #[test]
+    fn scan_setup_reports_uncompilable_terms() {
+        let err = compile_filter_patterns(&["orders[".to_string(), "ok".to_string()])
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("orders["), "error: {err}");
+        assert!(compile_filter_patterns(&["^orders\\[".to_string()]).is_ok());
+    }
+
+    #[test]
+    fn match_diagnostic_carries_no_message_content() {
+        let marker = "MARKER-CONTENT";
+        let _payload = format!("{marker}{}", "x".repeat(200_000));
+
+        let line = match_diagnostic("orders", 3, 99, "orders\\[");
+
+        assert!(line.contains("topic=orders"));
+        assert!(line.contains("partition=3"));
+        assert!(line.contains("offset=99"));
+        assert!(!line.contains(marker));
+        assert!(line.len() < 200, "diagnostic line: {line}");
     }
 }

@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 839132467;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -615745435;
 
 // Section: executor
 
@@ -93,6 +93,39 @@ fn wire__crate__api__kafka_analyzer__analyze_topic_content_impl(
                     })()
                     .await,
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_types__cluster_profile_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "cluster_profile_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::kafka_types::ClusterProfile::default())?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -203,6 +236,42 @@ fn wire__crate__api__kafka_utils__create_config_impl(
                         Result::<_, ()>::Ok(crate::api::kafka_utils::create_config(&api_profile))?;
                     Ok(output_ok)
                 })())
+            }
+        },
+    )
+}
+fn wire__crate__api__json_path__deserialize_cluster_profile_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "deserialize_cluster_profile",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_json = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok =
+                            crate::api::json_path::deserialize_cluster_profile(api_json)?;
+                        Ok(output_ok)
+                    })(),
+                )
             }
         },
     )
@@ -499,6 +568,116 @@ fn wire__crate__api__kafka_utils__murmur2_impl(
         },
     )
 }
+fn wire__crate__api__json_path__resolve_json_path_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "resolve_json_path",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_payload = <String>::sse_decode(&mut deserializer);
+            let api_path = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(crate::api::json_path::resolve_json_path(
+                        api_payload,
+                        api_path,
+                    ))?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__json_path__resolve_json_path_batch_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "resolve_json_path_batch",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_payloads = <Vec<String>>::sse_decode(&mut deserializer);
+            let api_paths = <Vec<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::json_path::resolve_json_path_batch(api_payloads, api_paths),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__json_path__serialize_cluster_profile_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "serialize_cluster_profile",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok =
+                            crate::api::json_path::serialize_cluster_profile(api_profile)?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__kafka_utils__to_positive_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -566,6 +745,41 @@ fn wire__crate__api__kafka_metadata__validate_connection_impl(
                         Ok(output_ok)
                     })(),
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__json_path__validate_filter_patterns_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "validate_filter_patterns",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_terms = <Vec<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::json_path::validate_filter_patterns(api_terms),
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -943,6 +1157,18 @@ impl SseDecode for Vec<crate::api::kafka_types::KeyOccurrence> {
     }
 }
 
+impl SseDecode for Vec<Option<String>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<Option<String>>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_types::PartitionAnalysis> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1284,45 +1510,80 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        2 => wire__crate__api__kafka_consumer__consume_with_filter_impl(
+        2 => wire__crate__api__kafka_types__cluster_profile_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        3 => wire__crate__api__kafka_utils__create_config_impl(port, ptr, rust_vec_len, data_len),
-        4 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
+        3 => wire__crate__api__kafka_consumer__consume_with_filter_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        5 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+        4 => wire__crate__api__kafka_utils__create_config_impl(port, ptr, rust_vec_len, data_len),
+        5 => wire__crate__api__json_path__deserialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        6 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+        6 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        7 => {
+        7 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        8 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        9 => {
             wire__crate__api__schema_registry__fetch_schema_impl(port, ptr, rust_vec_len, data_len)
         }
-        8 => wire__crate__api__schema_registry__fetch_subjects_impl(
+        10 => wire__crate__api__schema_registry__fetch_subjects_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        9 => wire__crate__api__kafka_metadata__fetch_topics_impl(port, ptr, rust_vec_len, data_len),
-        10 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__kafka_metadata__validate_connection_impl(
+        11 => {
+            wire__crate__api__kafka_metadata__fetch_topics_impl(port, ptr, rust_vec_len, data_len)
+        }
+        12 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
+        14 => {
+            wire__crate__api__json_path__resolve_json_path_impl(port, ptr, rust_vec_len, data_len)
+        }
+        15 => wire__crate__api__json_path__resolve_json_path_batch_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        16 => wire__crate__api__json_path__serialize_cluster_profile_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        17 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__kafka_metadata__validate_connection_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        19 => wire__crate__api__json_path__validate_filter_patterns_impl(
             port,
             ptr,
             rust_vec_len,
@@ -2038,6 +2299,16 @@ impl SseEncode for Vec<crate::api::kafka_types::KeyOccurrence> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::kafka_types::KeyOccurrence>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<Option<String>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <Option<String>>::sse_encode(item, serializer);
         }
     }
 }

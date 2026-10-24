@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 
@@ -80,8 +81,11 @@ class ClusterListController extends ChangeNotifier {
 
       if (jsonString != null) {
         final List<dynamic> jsonList = jsonDecode(jsonString);
-        final List<ClusterProfile> importedClusters = jsonList.map((e) {
-          var profile = ClusterProfileExtension.fromJson(e);
+        final List<ClusterProfile> importedClusters = [];
+        for (final entry in jsonList) {
+          var profile = await deserializeClusterProfile(
+            json: jsonEncode(entry),
+          );
           // Update paths to point to the new location
           String? updatePath(String? path) {
             if (path == null || path.isEmpty) return null;
@@ -93,11 +97,13 @@ class ClusterListController extends ChangeNotifier {
             return '${sharedPrefsDir.path}/$filename';
           }
 
-          return profile.copyWith(
-            sslKeystoreLocation: updatePath(profile.sslKeystoreLocation),
-            sslTruststoreLocation: updatePath(profile.sslTruststoreLocation),
+          importedClusters.add(
+            profile.copyWith(
+              sslKeystoreLocation: updatePath(profile.sslKeystoreLocation),
+              sslTruststoreLocation: updatePath(profile.sslTruststoreLocation),
+            ),
           );
-        }).toList();
+        }
 
         final newClusters = List<ClusterProfile>.from(_clusters);
         for (var imported in importedClusters) {
@@ -127,9 +133,12 @@ class ClusterListController extends ChangeNotifier {
     // ... existing implementation ...
     try {
       final List<dynamic> jsonList = jsonDecode(jsonString);
-      final List<ClusterProfile> importedClusters = jsonList
-          .map((e) => ClusterProfileExtension.fromJson(e))
-          .toList();
+      final List<ClusterProfile> importedClusters = [];
+      for (final entry in jsonList) {
+        importedClusters.add(
+          await deserializeClusterProfile(json: jsonEncode(entry)),
+        );
+      }
 
       final newClusters = List<ClusterProfile>.from(_clusters);
       for (var imported in importedClusters) {
@@ -157,7 +166,7 @@ class ClusterListController extends ChangeNotifier {
     final archive = Archive();
 
     // Create a modified list of clusters for the JSON where paths are relative filenames
-    final List<Map<String, dynamic>> exportJsonList = [];
+    final List<String> exportJsonList = [];
 
     for (var cluster in clustersToExport) {
       var exportCluster = cluster;
@@ -179,17 +188,21 @@ class ClusterListController extends ChangeNotifier {
         sslTruststoreLocation: processFile(cluster.sslTruststoreLocation),
       );
 
-      exportJsonList.add(exportCluster.toJson());
+      exportJsonList.add(await serializeClusterProfile(profile: exportCluster));
     }
 
-    final jsonString = jsonEncode(exportJsonList);
+    final jsonString = '[${exportJsonList.join(',')}]';
     final jsonBytes = utf8.encode(jsonString);
     archive.addFile(ArchiveFile('clusters.json', jsonBytes.length, jsonBytes));
 
     return ZipEncoder().encode(archive);
   }
 
-  String exportClusters(List<ClusterProfile> clustersToExport) {
-    return jsonEncode(clustersToExport.map((e) => e.toJson()).toList());
+  Future<String> exportClusters(List<ClusterProfile> clustersToExport) async {
+    final encoded = <String>[];
+    for (final cluster in clustersToExport) {
+      encoded.add(await serializeClusterProfile(profile: cluster));
+    }
+    return '[${encoded.join(',')}]';
   }
 }

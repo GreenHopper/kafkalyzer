@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
-import 'package:kafkalyzer/src/utils/json_path_extractor.dart';
+import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
@@ -94,6 +94,16 @@ class _MessagesTableViewState extends State<MessagesTableView> {
   List<_TableRowData> _cachedData = [];
   bool _needsRebuildRows = true;
 
+  // Projected values come from one batched resolver call per message batch.
+  final Map<KafkaMessage, Map<String, String>> _projectedValues = {};
+  bool _projectionDirty = false;
+  bool _projectionInFlight = false;
+
+  List<ProjectedColumn> get _activeProjected =>
+      widget.projectedColumns.isNotEmpty
+      ? widget.projectedColumns
+      : widget.columnConfig.projectedColumns;
+
   // Local interactive column widths for smooth live-dragging
   final Map<String, double> _liveColumnWidths = {};
 
@@ -102,6 +112,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
   @override
   void initState() {
     super.initState();
+    _projectionDirty = _activeProjected.isNotEmpty;
     _syncLiveWidths();
     _scrollToSelectedMessage(animate: false);
   }
@@ -129,6 +140,12 @@ class _MessagesTableViewState extends State<MessagesTableView> {
         widget.showNonMatches != oldWidget.showNonMatches ||
         widget.projectedColumns != oldWidget.projectedColumns) {
       _needsRebuildRows = true;
+      _projectionDirty = _activeProjected.isNotEmpty;
+      // shortcut: the cache only matters while messages grow; clear it when the
+      // list shrinks instead of pruning per message.
+      if (widget.messages.length < _projectedValues.length) {
+        _projectedValues.clear();
+      }
     }
 
     if (widget.columnConfig.columnWidths !=
@@ -268,9 +285,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     }
 
     // 7. Projected columns
-    final activeProjected = widget.projectedColumns.isNotEmpty
-        ? widget.projectedColumns
-        : widget.columnConfig.projectedColumns;
+    final activeProjected = _activeProjected;
 
     for (int i = 0; i < activeProjected.length; i++) {
       final col = activeProjected[i];
@@ -324,10 +339,45 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     return widget.columnConfig.getWidth(columnId, fallback: fallback);
   }
 
+  /// Resolve every projected path for every message in a single bridge call.
+  Future<void> _resolveProjectedValues() async {
+    final columns = _activeProjected;
+    final messages = widget.messages;
+    if (columns.isEmpty) {
+      _projectionDirty = false;
+      return;
+    }
+
+    final paths = columns.map((column) => column.path).toList();
+    final payloads = messages.map((message) => message.payload ?? '').toList();
+    final values = await resolveJsonPathBatch(payloads: payloads, paths: paths);
+    if (!mounted) return;
+
+    for (var i = 0; i < messages.length; i++) {
+      final perMessage = <String, String>{};
+      for (var p = 0; p < paths.length; p++) {
+        perMessage[paths[p]] = values[i * paths.length + p] ?? '';
+      }
+      _projectedValues[messages[i]] = perMessage;
+    }
+
+    _projectionDirty = false;
+    setState(_rebuildRows);
+  }
+
+  void _rebuildRows() {
+    _cachedData = _filterAndSortMessages(widget.messages);
+    _needsRebuildRows = false;
+    final visualOrder = _cachedData.map((e) => e.message).toList();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onVisualOrderChanged?.call(visualOrder);
+      }
+    });
+  }
+
   List<_TableRowData> _filterAndSortMessages(List<KafkaMessage> messages) {
-    final activeProjected = widget.projectedColumns.isNotEmpty
-        ? widget.projectedColumns
-        : widget.columnConfig.projectedColumns;
+    final activeProjected = _activeProjected;
 
     // 1. Map to wrapper class to evaluate strings exactly once
     final mappedData = messages.map((msg) {
@@ -340,11 +390,11 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       final stepStr = msg is ScriptResultMessage ? msg.stepName : 'Global';
       final contentPreview = TextPreviewUtils.getPayloadPreview(msg.payload);
       final keyString = msg.key ?? "";
-      final projectedValues = <String, String>{};
-      for (final col in activeProjected) {
-        projectedValues[col.path] =
-            JsonPathExtractor.extractFromPayload(msg.payload, col.path) ?? '';
-      }
+      final cachedValues = _projectedValues[msg];
+      final projectedValues = <String, String>{
+        for (final col in activeProjected)
+          col.path: cachedValues?[col.path] ?? '',
+      };
 
       return _TableRowData(
         message: msg,
@@ -1004,14 +1054,17 @@ class _MessagesTableViewState extends State<MessagesTableView> {
   @override
   Widget build(BuildContext context) {
     if (_needsRebuildRows) {
-      _cachedData = _filterAndSortMessages(widget.messages);
-      _needsRebuildRows = false;
-      final visualOrder = _cachedData.map((e) => e.message).toList();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          widget.onVisualOrderChanged?.call(visualOrder);
-        }
-      });
+      if (_projectionDirty && !_projectionInFlight) {
+        // Rows for this frame keep the previous values; the batched resolver
+        // rebuilds them as soon as it returns.
+        _projectionInFlight = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          await _resolveProjectedValues();
+          _projectionInFlight = false;
+        });
+      } else {
+        _rebuildRows();
+      }
     }
 
     final activeColumns = _buildActiveColumns();

@@ -589,8 +589,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
               controller: controller,
               focusNode: focusNode,
               decoration: InputDecoration(
-                labelText: l10n?.extractionJsonPath ?? "JSON Path",
-                hintText: "e.g. data.id",
+                labelText: l10n?.extractionJsonPath ?? "Field path",
                 isDense: true,
                 border: const OutlineInputBorder(),
                 contentPadding: const EdgeInsets.all(12),

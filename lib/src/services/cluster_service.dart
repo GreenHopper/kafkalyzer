@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
 class ClusterService {
@@ -13,7 +14,11 @@ class ClusterService {
     }
     try {
       final List<dynamic> jsonList = jsonDecode(jsonString);
-      return jsonList.map((e) => ClusterProfileExtension.fromJson(e)).toList();
+      final clusters = <ClusterProfile>[];
+      for (final entry in jsonList) {
+        clusters.add(await deserializeClusterProfile(json: jsonEncode(entry)));
+      }
+      return clusters;
     } catch (e) {
       // Return empty or throw, for now empty
       return [];
@@ -22,46 +27,17 @@ class ClusterService {
 
   Future<void> saveClusters(List<ClusterProfile> clusters) async {
     final prefs = await SharedPreferences.getInstance();
-    final String jsonString = jsonEncode(
-      clusters.map((e) => e.toJson()).toList(),
-    );
-    await prefs.setString(_storageKey, jsonString);
+    // The Rust codec owns the field set, so a profile field added later is
+    // persisted without touching Dart.
+    final encoded = <String>[];
+    for (final cluster in clusters) {
+      encoded.add(await serializeClusterProfile(profile: cluster));
+    }
+    await prefs.setString(_storageKey, '[${encoded.join(',')}]');
   }
 }
 
 extension ClusterProfileExtension on ClusterProfile {
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'bootstrapServers': bootstrapServers,
-      'saslUsername': saslUsername,
-      'saslPassword': saslPassword,
-      'mechanism': mechanism,
-      'securityProtocol': securityProtocol,
-      'schemaRegistryUrl': schemaRegistryUrl,
-      'sslKeystoreLocation': sslKeystoreLocation,
-      'sslKeystorePassword': sslKeystorePassword,
-      'sslTruststoreLocation': sslTruststoreLocation,
-      'sslTruststorePassword': sslTruststorePassword,
-    };
-  }
-
-  static ClusterProfile fromJson(Map<String, dynamic> json) {
-    return ClusterProfile(
-      name: json['name'] as String,
-      bootstrapServers: json['bootstrapServers'] as String,
-      saslUsername: json['saslUsername'] as String?,
-      saslPassword: json['saslPassword'] as String?,
-      mechanism: json['mechanism'] as String?,
-      securityProtocol: json['securityProtocol'] as String?,
-      schemaRegistryUrl: json['schemaRegistryUrl'] as String?,
-      sslKeystoreLocation: json['sslKeystoreLocation'] as String?,
-      sslKeystorePassword: json['sslKeystorePassword'] as String?,
-      sslTruststoreLocation: json['sslTruststoreLocation'] as String?,
-      sslTruststorePassword: json['sslTruststorePassword'] as String?,
-    );
-  }
-
   ClusterProfile copyWith({
     String? name,
     String? bootstrapServers,
@@ -74,6 +50,16 @@ extension ClusterProfileExtension on ClusterProfile {
     String? sslKeystorePassword,
     String? sslTruststoreLocation,
     String? sslTruststorePassword,
+    String? schemaRegistryUsername,
+    String? schemaRegistryPassword,
+    String? saslKerberosServiceName,
+    String? saslKerberosKeytab,
+    String? saslKerberosPrincipal,
+    String? saslKerberosConf,
+    String? saslOauthbearerToken,
+    String? sslPemCertificateLocation,
+    String? sslPemKeyLocation,
+    String? sslPemKeyPassword,
   }) {
     return ClusterProfile(
       name: name ?? this.name,
@@ -89,6 +75,21 @@ extension ClusterProfileExtension on ClusterProfile {
           sslTruststoreLocation ?? this.sslTruststoreLocation,
       sslTruststorePassword:
           sslTruststorePassword ?? this.sslTruststorePassword,
+      schemaRegistryUsername:
+          schemaRegistryUsername ?? this.schemaRegistryUsername,
+      schemaRegistryPassword:
+          schemaRegistryPassword ?? this.schemaRegistryPassword,
+      saslKerberosServiceName:
+          saslKerberosServiceName ?? this.saslKerberosServiceName,
+      saslKerberosKeytab: saslKerberosKeytab ?? this.saslKerberosKeytab,
+      saslKerberosPrincipal:
+          saslKerberosPrincipal ?? this.saslKerberosPrincipal,
+      saslKerberosConf: saslKerberosConf ?? this.saslKerberosConf,
+      saslOauthbearerToken: saslOauthbearerToken ?? this.saslOauthbearerToken,
+      sslPemCertificateLocation:
+          sslPemCertificateLocation ?? this.sslPemCertificateLocation,
+      sslPemKeyLocation: sslPemKeyLocation ?? this.sslPemKeyLocation,
+      sslPemKeyPassword: sslPemKeyPassword ?? this.sslPemKeyPassword,
     );
   }
 }

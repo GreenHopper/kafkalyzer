@@ -2060,6 +2060,12 @@ abstract class AppLocalizations {
   /// **'Filter on fetch (key or value)...'**
   String get quickFilterPlaceholder;
 
+  /// No description provided for @invalidFilterPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid regular expression: {term}'**
+  String invalidFilterPattern(Object term);
+
   /// No description provided for @limitLabel.
   ///
   /// In en, this message translates to:
@@ -2549,7 +2555,7 @@ abstract class AppLocalizations {
   /// No description provided for @extractionJsonPath.
   ///
   /// In en, this message translates to:
-  /// **'JSONPath (e.g. \$.id)'**
+  /// **'Field path (e.g. order.id, items[0].sku, /order/status)'**
   String get extractionJsonPath;
 
   /// No description provided for @scriptProperties.

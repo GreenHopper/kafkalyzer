@@ -1,11 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
+import 'package:mockito/mockito.dart';
+
+import '../../../rust/api/rust_mocks.mocks.dart';
 
 void main() {
+  // Projected cells are filled by the Rust resolver; these layout tests only
+  // need the call to complete, so every projected value resolves to empty.
+  final mockApi = MockKafkalyzerRustLibApi();
+
+  setUpAll(() => KafkalyzerRustLib.initMock(api: mockApi));
+  tearDownAll(() => KafkalyzerRustLib.dispose());
+
+  setUp(() {
+    reset(mockApi);
+    when(
+      mockApi.crateApiJsonPathResolveJsonPathBatch(
+        payloads: anyNamed('payloads'),
+        paths: anyNamed('paths'),
+      ),
+    ).thenAnswer((invocation) async {
+      final payloads = invocation.namedArguments[#payloads] as List<String>;
+      final paths = invocation.namedArguments[#paths] as List<String>;
+      return List<String?>.filled(payloads.length * paths.length, null);
+    });
+  });
+
   KafkaMessage createMessage({
     required int offset,
     required String payload,

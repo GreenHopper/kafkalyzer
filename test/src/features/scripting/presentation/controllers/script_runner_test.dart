@@ -11,6 +11,9 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
+import '../../../../rust/api/json_path_test_stub.dart';
+import '../../../../rust/api/rust_mocks.mocks.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -145,6 +148,15 @@ class MockMultiSearchController extends MultiSearchController {
 }
 
 void main() {
+  // Extractions are resolved by the Rust field-path resolver; stub it so the
+  // runner sees real values instead of an uninitialized library.
+  final mockApi = MockKafkalyzerRustLibApi();
+
+  setUpAll(() {
+    KafkalyzerRustLib.initMock(api: mockApi);
+    stubJsonPathResolver(mockApi);
+  });
+  tearDownAll(() => KafkalyzerRustLib.dispose());
   late ScriptRunner scriptRunner;
   late MockMultiSearchController mockMultiSearchController;
 

@@ -1,4 +1,5 @@
 pub mod avro_utils;
+pub mod json_path;
 pub mod kafka_analyzer;
 pub mod kafka_consumer;
 pub mod kafka_metadata;

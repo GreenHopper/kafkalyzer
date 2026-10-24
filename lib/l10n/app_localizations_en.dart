@@ -1121,6 +1121,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickFilterPlaceholder => 'Filter on fetch (key or value)...';
 
   @override
+  String invalidFilterPattern(Object term) {
+    return 'Invalid regular expression: $term';
+  }
+
+  @override
   String get limitLabel => 'Limit';
 
   @override
@@ -1410,7 +1415,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get extractionVariableName => 'Variable Name';
 
   @override
-  String get extractionJsonPath => 'JSONPath (e.g. \$.id)';
+  String get extractionJsonPath =>
+      'Field path (e.g. order.id, items[0].sku, /order/status)';
 
   @override
   String get scriptProperties => 'Script Properties';

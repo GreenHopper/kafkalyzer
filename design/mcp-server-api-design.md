@@ -966,8 +966,8 @@ To prevent accidental data loss or unauthorized cluster changes:
 - **Strict Read-Only Enforcement:**
   - All Phase 1 MCP tools are strictly read-only (`validate_connection`, `fetch_topics`, `consume_with_filter`, `fetch_lags`, `fetch_schema`).
   - No destructive administrative tools (`delete_topic`, `alter_configs`, `reset_offsets`) are exposed without explicit operator confirmation flags and smart-mode approval barriers.
-- **Controlled Message Production (Future Phase):**
-  - If a produce tool (`kafka_produce_message`) is added for testing DLQ reprocessing, it must require explicit confirmation tokens and cluster-level write permissions.
+- **Message Production: ausgeschlossen.**
+  kafkalyzer ist per Design read-only (Analyzer) und darf nicht gegen Cluster schreiben. Es wird kein `kafka_produce_message`-Tool und kein Offset-Reset-Tool geben; DLQ-Reprocessing bleibt bei dedizierten Tools.
 - **Local Credential Storage:**
   - MCP requests reference clusters by `cluster_name`. Credentials are read from the local encrypted/protected storage and are never accepted over MCP tool inputs from the LLM.
 

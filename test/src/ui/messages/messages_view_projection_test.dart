@@ -3,9 +3,21 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
+import '../../rust/api/json_path_test_stub.dart';
+import '../../rust/api/rust_mocks.mocks.dart';
 
 void main() {
+  // Projected columns are resolved through the Rust field-path resolver.
+  final mockApi = MockKafkalyzerRustLibApi();
+
+  setUpAll(() {
+    KafkalyzerRustLib.initMock(api: mockApi);
+    stubJsonPathResolver(mockApi);
+  });
+  tearDownAll(() => KafkalyzerRustLib.dispose());
+
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });

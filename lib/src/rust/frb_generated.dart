@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api.dart';
+import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
 import 'api/kafka_metadata.dart';
@@ -76,7 +77,7 @@ class KafkalyzerRustLib
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 839132467;
+  int get rustContentHash => -615745435;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -93,6 +94,8 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
     PlatformInt64? maxMessages,
     required bool sampleFromLatest,
   });
+
+  Future<ClusterProfile> crateApiKafkaTypesClusterProfileDefault();
 
   Stream<KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
     required ClusterProfile profile,
@@ -114,6 +117,10 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
 
   Future<ClientConfig> crateApiKafkaUtilsCreateConfig({
     required ClusterProfile profile,
+  });
+
+  Future<ClusterProfile> crateApiJsonPathDeserializeClusterProfile({
+    required String json,
   });
 
   Future<ConsumerGroupLag> crateApiKafkaMetadataFetchConsumerGroupLag({
@@ -146,10 +153,28 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
 
   Future<int> crateApiKafkaUtilsMurmur2({required List<int> data});
 
+  Future<String?> crateApiJsonPathResolveJsonPath({
+    required String payload,
+    required String path,
+  });
+
+  Future<List<String?>> crateApiJsonPathResolveJsonPathBatch({
+    required List<String> payloads,
+    required List<String> paths,
+  });
+
+  Future<String> crateApiJsonPathSerializeClusterProfile({
+    required ClusterProfile profile,
+  });
+
   Future<int> crateApiKafkaUtilsToPositive({required int number});
 
   Future<bool> crateApiKafkaMetadataValidateConnection({
     required ClusterProfile profile,
+  });
+
+  Future<List<String>> crateApiJsonPathValidateFilterPatterns({
+    required List<String> terms,
   });
 
   RustArcIncrementStrongCountFnType
@@ -221,6 +246,33 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       );
 
   @override
+  Future<ClusterProfile> crateApiKafkaTypesClusterProfileDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_cluster_profile,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiKafkaTypesClusterProfileDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaTypesClusterProfileDefaultConstMeta =>
+      const TaskConstMeta(debugName: "cluster_profile_default", argNames: []);
+
+  @override
   Stream<KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
     required ClusterProfile profile,
     required String topic,
@@ -263,7 +315,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 2,
+              funcId: 3,
               port: port_,
             );
           },
@@ -332,7 +384,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 4,
             port: port_,
           );
         },
@@ -352,6 +404,39 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       const TaskConstMeta(debugName: "create_config", argNames: ["profile"]);
 
   @override
+  Future<ClusterProfile> crateApiJsonPathDeserializeClusterProfile({
+    required String json,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(json, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_cluster_profile,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiJsonPathDeserializeClusterProfileConstMeta,
+        argValues: [json],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiJsonPathDeserializeClusterProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "deserialize_cluster_profile",
+        argNames: ["json"],
+      );
+
+  @override
   Future<ConsumerGroupLag> crateApiKafkaMetadataFetchConsumerGroupLag({
     required ClusterProfile profile,
     required String groupId,
@@ -365,7 +450,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 6,
             port: port_,
           );
         },
@@ -398,7 +483,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 7,
             port: port_,
           );
         },
@@ -431,7 +516,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 8,
             port: port_,
           );
         },
@@ -466,7 +551,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 9,
             port: port_,
           );
         },
@@ -499,7 +584,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 10,
             port: port_,
           );
         },
@@ -529,7 +614,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 11,
             port: port_,
           );
         },
@@ -556,7 +641,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 12,
             port: port_,
           );
         },
@@ -584,7 +669,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 13,
             port: port_,
           );
         },
@@ -603,6 +688,109 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       const TaskConstMeta(debugName: "murmur2", argNames: ["data"]);
 
   @override
+  Future<String?> crateApiJsonPathResolveJsonPath({
+    required String payload,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(payload, serializer);
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 14,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiJsonPathResolveJsonPathConstMeta,
+        argValues: [payload, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiJsonPathResolveJsonPathConstMeta =>
+      const TaskConstMeta(
+        debugName: "resolve_json_path",
+        argNames: ["payload", "path"],
+      );
+
+  @override
+  Future<List<String?>> crateApiJsonPathResolveJsonPathBatch({
+    required List<String> payloads,
+    required List<String> paths,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_String(payloads, serializer);
+          sse_encode_list_String(paths, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_opt_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiJsonPathResolveJsonPathBatchConstMeta,
+        argValues: [payloads, paths],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiJsonPathResolveJsonPathBatchConstMeta =>
+      const TaskConstMeta(
+        debugName: "resolve_json_path_batch",
+        argNames: ["payloads", "paths"],
+      );
+
+  @override
+  Future<String> crateApiJsonPathSerializeClusterProfile({
+    required ClusterProfile profile,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cluster_profile(profile, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiJsonPathSerializeClusterProfileConstMeta,
+        argValues: [profile],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiJsonPathSerializeClusterProfileConstMeta =>
+      const TaskConstMeta(
+        debugName: "serialize_cluster_profile",
+        argNames: ["profile"],
+      );
+
+  @override
   Future<int> crateApiKafkaUtilsToPositive({required int number}) {
     return handler.executeNormal(
       NormalTask(
@@ -612,7 +800,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 17,
             port: port_,
           );
         },
@@ -642,7 +830,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 18,
             port: port_,
           );
         },
@@ -661,6 +849,39 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       const TaskConstMeta(
         debugName: "validate_connection",
         argNames: ["profile"],
+      );
+
+  @override
+  Future<List<String>> crateApiJsonPathValidateFilterPatterns({
+    required List<String> terms,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_String(terms, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 19,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiJsonPathValidateFilterPatternsConstMeta,
+        argValues: [terms],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiJsonPathValidateFilterPatternsConstMeta =>
+      const TaskConstMeta(
+        debugName: "validate_filter_patterns",
+        argNames: ["terms"],
       );
 
   RustArcIncrementStrongCountFnType
@@ -951,6 +1172,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   List<KeyOccurrence> dco_decode_list_key_occurrence(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_key_occurrence).toList();
+  }
+
+  @protected
+  List<String?> dco_decode_list_opt_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_opt_String).toList();
   }
 
   @protected
@@ -1528,6 +1755,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     var ans_ = <KeyOccurrence>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_key_occurrence(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<String?> sse_decode_list_opt_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <String?>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_opt_String(deserializer));
     }
     return ans_;
   }
@@ -2174,6 +2413,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_key_occurrence(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_opt_String(
+    List<String?> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_opt_String(item, serializer);
     }
   }
 

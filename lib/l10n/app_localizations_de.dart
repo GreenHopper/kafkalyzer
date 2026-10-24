@@ -1129,6 +1129,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get quickFilterPlaceholder => 'Beim Abruf filtern (Key oder Wert)...';
 
   @override
+  String invalidFilterPattern(Object term) {
+    return 'Ungültiger regulärer Ausdruck: $term';
+  }
+
+  @override
   String get limitLabel => 'Limit';
 
   @override
@@ -1419,7 +1424,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get extractionVariableName => 'Variablenname';
 
   @override
-  String get extractionJsonPath => 'JSONPath (z.B. \$.id)';
+  String get extractionJsonPath =>
+      'Feldpfad (z. B. order.id, items[0].sku, /order/status)';
 
   @override
   String get scriptProperties => 'Skript-Eigenschaften';

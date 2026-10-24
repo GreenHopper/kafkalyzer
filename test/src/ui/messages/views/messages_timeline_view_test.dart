@@ -4,10 +4,39 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_timeline_view.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/timeline_message_card.dart';
+import 'package:mockito/mockito.dart';
+
+import '../../../rust/api/rust_mocks.mocks.dart';
 
 void main() {
+  // The timeline asks the shared Rust resolver for extracted values; the card
+  // test only needs that call to answer. Stub keys are "payload|path".
+  const resolved = {'{"user_id": "usr_123"}|user_id': 'usr_123'};
+  final mockApi = MockKafkalyzerRustLibApi();
+
+  setUpAll(() => KafkalyzerRustLib.initMock(api: mockApi));
+  tearDownAll(() => KafkalyzerRustLib.dispose());
+
+  setUp(() {
+    reset(mockApi);
+    when(
+      mockApi.crateApiJsonPathResolveJsonPathBatch(
+        payloads: anyNamed('payloads'),
+        paths: anyNamed('paths'),
+      ),
+    ).thenAnswer((invocation) async {
+      final payloads = invocation.namedArguments[#payloads] as List<String>;
+      final paths = invocation.namedArguments[#paths] as List<String>;
+      return [
+        for (final payload in payloads)
+          for (final path in paths) resolved['$payload|$path'],
+      ];
+    });
+  });
+
   Widget createWidgetUnderTest({
     required List<KafkaMessage> messages,
     required Function(KafkaMessage) onMessageTap,

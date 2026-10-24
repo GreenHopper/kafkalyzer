@@ -146,15 +146,19 @@ class MockClusterListController extends _i1.Mock
           as _i6.Future<List<int>>);
 
   @override
-  String exportClusters(List<_i5.ClusterProfile>? clustersToExport) =>
+  _i6.Future<String> exportClusters(
+    List<_i5.ClusterProfile>? clustersToExport,
+  ) =>
       (super.noSuchMethod(
             Invocation.method(#exportClusters, [clustersToExport]),
-            returnValue: _i7.dummyValue<String>(
-              this,
-              Invocation.method(#exportClusters, [clustersToExport]),
+            returnValue: _i6.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(#exportClusters, [clustersToExport]),
+              ),
             ),
           )
-          as String);
+          as _i6.Future<String>);
 
   @override
   void addListener(_i8.VoidCallback? listener) => super.noSuchMethod(
@@ -279,6 +283,16 @@ class MockActiveConnectionController extends _i1.Mock
               #profile: profile,
               #forceNew: forceNew,
             }),
+          )
+          as _i9.OpenTopicRecord?);
+
+  @override
+  _i9.OpenTopicRecord? streamTopicWithDefaults(
+    _i10.TopicMetadata? topic, [
+    _i5.ClusterProfile? profile,
+  ]) =>
+      (super.noSuchMethod(
+            Invocation.method(#streamTopicWithDefaults, [topic, profile]),
           )
           as _i9.OpenTopicRecord?);
 

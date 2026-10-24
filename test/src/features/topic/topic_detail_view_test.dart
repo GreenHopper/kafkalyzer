@@ -221,8 +221,6 @@ void main() {
 
       // Test the view renders, since we don't mock getIt for stream_controller anymore we can't test clearMessages easily
 
-      debugDumpApp();
-
       final exception = tester.takeException();
       if (exception != null) {
         getIt<Logger>().e("Caught rendering exception: $exception");

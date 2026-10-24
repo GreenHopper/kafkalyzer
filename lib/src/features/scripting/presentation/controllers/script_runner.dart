@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/scripting/domain/extraction_utils.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
@@ -983,30 +984,11 @@ class ScriptRunner extends ChangeNotifier {
 
       final Set<String> foundValues = {};
 
-      for (final msg in messages) {
-        String? data;
-        if (extraction.source == ScriptExtractionSource.key) {
-          data = msg.key;
-        } else {
-          data = msg.payload;
-        }
-
-        if (data == null) continue;
-
-        if (extraction.jsonPath.isEmpty) {
-          // Extract partial or full value if path is empty
-          foundValues.add(data);
-        } else {
-          try {
-            final dynamic json = jsonDecode(data);
-            final value = _extractValue(json, extraction.jsonPath);
-            if (value != null) {
-              foundValues.add(value);
-            }
-          } catch (e) {
-            // Ignore parsing errors
-          }
-        }
+      for (final value in await ExtractionUtils.extractAll(
+        extraction,
+        messages,
+      )) {
+        if (value != null) foundValues.add(value);
       }
 
       if (foundValues.isNotEmpty) {
@@ -1055,22 +1037,6 @@ class ScriptRunner extends ChangeNotifier {
   Set<String> _extractTemplateVars(String template) {
     final regex = RegExp(r'\{\{([^}]+)\}\}');
     return regex.allMatches(template).map((m) => m.group(1)!.trim()).toSet();
-  }
-
-  String? _extractValue(dynamic data, String path) {
-    if (path.isEmpty) return null;
-    final parts = path.split('.');
-    dynamic current = data;
-
-    for (final part in parts) {
-      if (current is Map && current.containsKey(part)) {
-        current = current[part];
-      } else {
-        return null;
-      }
-    }
-
-    return current?.toString();
   }
 
   Future<void> cleanupHistory() async {

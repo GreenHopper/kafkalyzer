@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+// `default` keeps profiles stored before the advanced auth fields existed readable.
+#[serde(rename_all = "camelCase", default)]
 pub struct ClusterProfile {
     pub name: String,
     pub bootstrap_servers: String,

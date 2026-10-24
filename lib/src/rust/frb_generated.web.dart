@@ -7,6 +7,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api.dart';
+import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
 import 'api/kafka_metadata.dart';
@@ -134,6 +135,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   List<KeyOccurrence> dco_decode_list_key_occurrence(dynamic raw);
+
+  @protected
+  List<String?> dco_decode_list_opt_String(dynamic raw);
 
   @protected
   List<PartitionAnalysis> dco_decode_list_partition_analysis(dynamic raw);
@@ -326,6 +330,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<KeyOccurrence> sse_decode_list_key_occurrence(
     SseDeserializer deserializer,
   );
+
+  @protected
+  List<String?> sse_decode_list_opt_String(SseDeserializer deserializer);
 
   @protected
   List<PartitionAnalysis> sse_decode_list_partition_analysis(
@@ -565,6 +572,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
     List<KeyOccurrence> self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_list_opt_String(List<String?> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_partition_analysis(
