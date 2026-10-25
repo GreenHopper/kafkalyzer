@@ -255,71 +255,93 @@ class _TopicDetailViewState extends State<TopicDetailView>
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
 
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () {
-            final isRunning =
-                streamController.isStreaming || analysisController.isAnalyzing;
-            confirmCloseTab(
-              context,
-              isOperationRunning: isRunning,
-              onClose: () {
-                if (widget.tabId != null) {
-                  activeController.closeTopicTab(widget.tabId!);
-                } else {
-                  activeController.closeTopic(
-                    widget.topic,
-                    widget.profile.name,
-                  );
-                }
-              },
-            );
+    final closeButton = IconButton(
+      onPressed: () {
+        final isRunning =
+            streamController.isStreaming || analysisController.isAnalyzing;
+        confirmCloseTab(
+          context,
+          isOperationRunning: isRunning,
+          onClose: () {
+            if (widget.tabId != null) {
+              activeController.closeTopicTab(widget.tabId!);
+            } else {
+              activeController.closeTopic(widget.topic, widget.profile.name);
+            }
           },
-          icon: const Icon(Icons.close),
-          tooltip: l10n?.closeTab ?? "Close Tab",
-          style: IconButton.styleFrom(
-            backgroundColor: colorScheme.surfaceContainerHigh,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Row(
-            children: [
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildTopicTitleRow(context),
-                    const SizedBox(height: 8),
-                    _buildTopicTags(context),
+        );
+      },
+      icon: const Icon(Icons.close),
+      tooltip: l10n?.closeTab ?? "Close Tab",
+      style: IconButton.styleFrom(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // shortcut: fixed breakpoints, raise the second one if the pane gets wider sidebars
+        final compact = constraints.maxWidth < 1100;
+        final iconOnly = constraints.maxWidth < 620;
+
+        final identityRow = Row(
+          children: [
+            closeButton,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildTopicTitleRow(context),
+                        const SizedBox(height: 8),
+                        _buildTopicTags(context),
+                      ],
+                    ),
+                  ),
+                  if (hasSchema(
+                    schemaController,
+                    widget.profile,
+                    widget.topic.name,
+                  )) ...[
+                    const SizedBox(width: 12),
+                    _buildSchemaButton(context),
                   ],
-                ),
+                ],
               ),
-              if (hasSchema(
-                schemaController,
-                widget.profile,
-                widget.topic.name,
-              )) ...[
-                const SizedBox(width: 12),
-                _buildSchemaButton(context),
-              ],
+            ),
+            const SizedBox(width: 16),
+            _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
+          ],
+        );
+
+        if (_viewMode != TopicViewMode.messages) {
+          return identityRow;
+        }
+
+        final progressTile = Align(
+          alignment: Alignment.centerRight,
+          child: _buildProgressTile(context, colorScheme),
+        );
+
+        if (!compact) {
+          return Row(
+            children: [
+              ...identityRow.children,
+              const SizedBox(width: 16),
+              Expanded(child: progressTile),
             ],
-          ),
-        ),
-        const SizedBox(width: 16),
-        _buildTopicModeSwitcher(context, colorScheme, l10n),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: _viewMode == TopicViewMode.messages
-                ? _buildProgressTile(context, colorScheme)
-                : const SizedBox.shrink(),
-          ),
-        ),
-      ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [identityRow, const SizedBox(height: 8), progressTile],
+        );
+      },
     );
   }
 
@@ -327,6 +349,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
     BuildContext context,
     ColorScheme colorScheme,
     AppLocalizations? l10n,
+    bool iconOnly,
   ) {
     return Container(
       decoration: BoxDecoration(
@@ -341,6 +364,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
             icon: Icons.list_alt_rounded,
             label: l10n?.messagesView ?? 'Messages',
             isSelected: _viewMode == TopicViewMode.messages,
+            showLabel: !iconOnly,
             onTap: () => setState(() => _viewMode = TopicViewMode.messages),
           ),
           const SizedBox(width: 2),
@@ -348,6 +372,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
             icon: Icons.analytics_outlined,
             label: l10n?.topicAnalysis ?? 'Analysis',
             isSelected: _viewMode == TopicViewMode.analysis,
+            showLabel: !iconOnly,
             onTap: () => setState(() => _viewMode = TopicViewMode.analysis),
           ),
         ],
@@ -555,6 +580,7 @@ class _TopicModeButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
+  final bool showLabel;
   final VoidCallback onTap;
 
   const _TopicModeButton({
@@ -562,6 +588,7 @@ class _TopicModeButton extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.showLabel = true,
   });
 
   @override
@@ -592,16 +619,19 @@ class _TopicModeButton extends StatelessWidget {
                   ? colorScheme.primary
                   : colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected
-                    ? colorScheme.onSurface
-                    : colorScheme.onSurfaceVariant,
+            if (!showLabel) const SizedBox(width: 4),
+            if (showLabel) ...[
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

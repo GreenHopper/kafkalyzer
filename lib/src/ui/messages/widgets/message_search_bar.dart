@@ -92,67 +92,73 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
               ),
             ),
           ),
-        SizedBox(
-          key: const Key('message_search_bar_container'),
-          width: 300,
-          height: 36,
-          child: TextField(
-            key: const Key('message_search_bar_text_field'),
-            controller: _controller,
-            decoration: InputDecoration(
-              hintText: hintText,
-              prefixIcon: const Icon(Icons.search, size: 16),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 0,
-                horizontal: 8,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
-                borderSide: BorderSide.none,
-              ),
-              filled: true,
-              fillColor: Theme.of(
-                context,
-              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              suffixIcon: IntrinsicWidth(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_controller.text.isNotEmpty)
+        Flexible(
+          child: ConstrainedBox(
+            key: const Key('message_search_bar_container'),
+            // Max, not fixed: the header shrinks this field on narrow windows.
+            constraints: const BoxConstraints(
+              maxWidth: 300,
+              minHeight: 36,
+              maxHeight: 36,
+            ),
+            child: TextField(
+              key: const Key('message_search_bar_text_field'),
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: hintText,
+                prefixIcon: const Icon(Icons.search, size: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 8,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                suffixIcon: IntrinsicWidth(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_controller.text.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 14),
+                          onPressed: () {
+                            _controller.clear();
+                            _onTextChanged("");
+                          },
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
+                        ),
                       IconButton(
-                        icon: const Icon(Icons.clear, size: 14),
-                        onPressed: () {
-                          _controller.clear();
-                          _onTextChanged("");
-                        },
+                        tooltip: widget.showNonMatches
+                            ? "Hide non-matching messages"
+                            : "Show non-matches as dimmed",
+                        icon: Icon(
+                          widget.showNonMatches
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                          size: 16,
+                          color: widget.showNonMatches
+                              ? Theme.of(context).primaryColor
+                              : Colors.grey,
+                        ),
+                        onPressed: () => widget.onShowNonMatchesChanged(
+                          !widget.showNonMatches,
+                        ),
                         constraints: const BoxConstraints(),
                         padding: const EdgeInsets.all(8),
                       ),
-                    IconButton(
-                      tooltip: widget.showNonMatches
-                          ? "Hide non-matching messages"
-                          : "Show non-matches as dimmed",
-                      icon: Icon(
-                        widget.showNonMatches
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                        size: 16,
-                        color: widget.showNonMatches
-                            ? Theme.of(context).primaryColor
-                            : Colors.grey,
-                      ),
-                      onPressed: () => widget.onShowNonMatchesChanged(
-                        !widget.showNonMatches,
-                      ),
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.all(8),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
+              style: const TextStyle(fontSize: 13),
+              onChanged: _onTextChanged,
             ),
-            style: const TextStyle(fontSize: 13),
-            onChanged: _onTextChanged,
           ),
         ),
       ],

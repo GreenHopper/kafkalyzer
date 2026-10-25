@@ -119,6 +119,22 @@ void main() {
     expect(find.text('banana cake', findRichText: true), findsNothing);
   });
 
+  testWidgets('header row shrinks the search field on a narrow window', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('switches view modes and persists preference key', (
     WidgetTester tester,
   ) async {

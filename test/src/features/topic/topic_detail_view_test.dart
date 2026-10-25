@@ -262,6 +262,51 @@ void main() {
     },
   );
 
+  testWidgets('Topic detail header does not overflow in a narrow window', (
+    WidgetTester tester,
+  ) async {
+    const topic = TopicMetadata(
+      name: 'test-topic',
+      partitionCount: 3,
+      replicationFactor: 2,
+    );
+    const profile = ClusterProfile(
+      name: 'Test Cluster',
+      bootstrapServers: 'localhost:9092',
+      schemaRegistryUrl: 'http://localhost:8081',
+      securityProtocol: 'plaintext',
+      mechanism: 'plain',
+    );
+    fakeActiveController.topic = topic;
+    fakeActiveController.activeProfile = profile;
+    fakeSchemaController.schemas = ['test-topic-value'];
+    tester.view.physicalSize = const Size(580, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: const [Locale('en')],
+        home: Scaffold(
+          body: SizedBox(
+            width: 580,
+            height: 900,
+            child: TopicDetailView(topic: topic, profile: profile),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('test-topic'), findsOneWidget);
+  });
+
   testWidgets(
     'TopicSearchBar renders in TopicDetailView and toggles advanced filters',
     (WidgetTester tester) async {

@@ -732,23 +732,25 @@ class MessagesViewState extends State<MessagesView> {
                     showSchemaView: _showSchemaView,
                   ),
                   const SizedBox(width: 8),
-                  MessageSearchBar(
-                    searchPhrase: _searchPhrase,
-                    onSearchChanged: (val) {
-                      setState(() {
-                        _searchPhrase = val;
-                        _updateFilters();
-                      });
-                    },
-                    matchCount: _cachedMatchCount,
-                    totalCount: widget.messages.length,
-                    showNonMatches: _showNonMatches,
-                    onShowNonMatchesChanged: (val) {
-                      setState(() {
-                        _showNonMatches = val;
-                        _updateFilters();
-                      });
-                    },
+                  Flexible(
+                    child: MessageSearchBar(
+                      searchPhrase: _searchPhrase,
+                      onSearchChanged: (val) {
+                        setState(() {
+                          _searchPhrase = val;
+                          _updateFilters();
+                        });
+                      },
+                      matchCount: _cachedMatchCount,
+                      totalCount: widget.messages.length,
+                      showNonMatches: _showNonMatches,
+                      onShowNonMatchesChanged: (val) {
+                        setState(() {
+                          _showNonMatches = val;
+                          _updateFilters();
+                        });
+                      },
+                    ),
                   ),
                   if (_activeView == 'table') ...[
                     const SizedBox(width: 8),
