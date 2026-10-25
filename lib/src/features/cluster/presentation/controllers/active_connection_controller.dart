@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_s
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
+import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 
 class OpenTopicRecord {
@@ -138,6 +139,7 @@ class ActiveConnectionController extends ChangeNotifier {
       if (existing != null) {
         _activeTopic = existing;
         notifyListeners();
+        _saveSessionTabs();
         return existing;
       }
     }
@@ -146,6 +148,7 @@ class ActiveConnectionController extends ChangeNotifier {
     _openTopics.add(newRecord);
     _activeTopic = newRecord;
     notifyListeners();
+    _saveSessionTabs();
     return newRecord;
   }
 
@@ -186,6 +189,7 @@ class ActiveConnectionController extends ChangeNotifier {
     if (record != null) {
       _activeTopic = record;
       notifyListeners();
+      _saveSessionTabs();
     }
   }
 
@@ -205,6 +209,7 @@ class ActiveConnectionController extends ChangeNotifier {
       }
     }
     notifyListeners();
+    _saveSessionTabs();
   }
 
   String _getTopicKey(String topicName, String clusterName) {
@@ -250,6 +255,7 @@ class ActiveConnectionController extends ChangeNotifier {
       _activeTopic = _openTopics.isNotEmpty ? _openTopics.last : null;
     }
     notifyListeners();
+    _saveSessionTabs();
   }
 
   void closeTopic(TopicMetadata topic, String clusterName) {
@@ -282,6 +288,52 @@ class ActiveConnectionController extends ChangeNotifier {
     _analysisControllers.clear();
     _activeTopic = null;
     notifyListeners();
+    _saveSessionTabs();
+  }
+
+  void _saveSessionTabs() {
+    final p = _activeProfile;
+    if (p == null) return;
+    try {
+      final topicNames = _openTopics.map((t) => t.topic.name).toList();
+      final activeName = _activeTopic?.topic.name;
+      getIt<SessionRestoreService>().saveSession(
+        p.name,
+        openTopicNames: topicNames,
+        activeTopicName: activeName,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _restoreSessionTabs(ClusterProfile profile) async {
+    try {
+      final restoreService = getIt<SessionRestoreService>();
+      if (!await restoreService.isRestorationEnabled()) return;
+
+      final session = await restoreService.getSession(profile.name);
+      if (session == null || session.openTopicNames.isEmpty) return;
+
+      final topics = _topicController.getTopics(profile) ?? [];
+      final topicMap = {for (final t in topics) t.name: t};
+
+      for (final name in session.openTopicNames) {
+        final topic = topicMap[name];
+        if (topic != null) {
+          openTopic(topic: topic, profile: profile, forceNew: false);
+        }
+      }
+
+      if (session.activeTopicName != null) {
+        final activeRecord = _openTopics.cast<OpenTopicRecord?>().firstWhere(
+          (t) => t?.topic.name == session.activeTopicName,
+          orElse: () => null,
+        );
+        if (activeRecord != null) {
+          _activeTopic = activeRecord;
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> connect(ClusterProfile profile) async {
@@ -299,6 +351,7 @@ class ActiveConnectionController extends ChangeNotifier {
         _activeProfile = profile;
         // This will update listeners but won't fetch if not forced
         await _topicController.fetchTopics(profile);
+        await _restoreSessionTabs(profile);
         _isConnecting = false;
         notifyListeners();
         return;
@@ -315,6 +368,7 @@ class ActiveConnectionController extends ChangeNotifier {
         _activeProfile = profile;
         // Fetch topics via controller
         await _topicController.fetchTopics(profile);
+        await _restoreSessionTabs(profile);
       } else {
         _error = "Connection failed validation";
       }

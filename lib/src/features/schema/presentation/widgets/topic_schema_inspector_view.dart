@@ -4,6 +4,7 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_diff_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/utils/schema_simplifier.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
 
@@ -350,6 +351,23 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
     );
   }
 
+  void _openSchemaDiffDialog(BuildContext context) {
+    final subject = widget.initialSubject ??
+        (_valueSchema != null
+            ? "${widget.topicName}-value"
+            : "${widget.topicName}-key");
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => SchemaDiffDialog(
+        profile: widget.profile,
+        subject: subject,
+        initialBaseVersion: _selectedVersion,
+        initialCompareVersion: _selectedVersion,
+        controller: _controller,
+      ),
+    );
+  }
+
   Widget _buildToolbar(
     BuildContext context,
     ColorScheme colorScheme,
@@ -361,6 +379,15 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
       children: [
         if (_versions.isNotEmpty) ...[
           _buildVersionSelector(context, colorScheme, l10n),
+          const SizedBox(width: 8),
+        ],
+        if (_hasRegistryConfigured) ...[
+          IconButton(
+            key: const Key('schema_compare_button'),
+            tooltip: l10n?.compareSchemaVersions ?? "Compare Versions",
+            icon: const Icon(Icons.difference_outlined, size: 20),
+            onPressed: () => _openSchemaDiffDialog(context),
+          ),
           const SizedBox(width: 8),
         ],
         Expanded(

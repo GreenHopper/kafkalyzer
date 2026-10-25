@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'dart:convert';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
@@ -91,6 +92,30 @@ class SchemaController extends ChangeNotifier {
     return _registryService.fetchSchemaVersions(
       profile: cluster,
       subject: subject,
+    );
+  }
+
+  Future<api.SchemaCompatibilityResult> checkCompatibility(
+    ClusterProfile cluster,
+    String subject, {
+    int? version,
+    required String schema,
+  }) {
+    return _registryService.checkSchemaCompatibility(
+      profile: cluster,
+      subject: subject,
+      version: version,
+      schema: schema,
+    );
+  }
+
+  Future<List<String>> getAssociatedTopics(
+    String subject,
+    List<String> availableTopics,
+  ) {
+    return _registryService.resolveAssociatedTopics(
+      subject: subject,
+      availableTopics: availableTopics,
     );
   }
 

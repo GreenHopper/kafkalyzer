@@ -16,8 +16,21 @@ env:
   CMAKE_POLICY_VERSION_MINIMUM: "3.5"
 
 jobs:
+  read-only-gate:
+    name: Verify Read-Only Invariants
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run Read-Only Invariant Check
+        run: |
+          chmod +x scripts/check_read_only.sh
+          ./scripts/check_read_only.sh
+
   run-tests:
     name: Run tests (Linux)
+    needs: [read-only-gate]
     runs-on: ubuntu-latest # Keine if-Bedingung mehr: Tests sollen IMMER laufen (bei PRs, bei main-Pushes und vor Releases)
     steps:
       - name: Checkout repository

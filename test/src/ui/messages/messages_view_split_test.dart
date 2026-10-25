@@ -11,7 +11,12 @@ import 'package:kafkalyzer/src/services/message_export_service.dart';
 
 class FakeMessageExportService implements MessageExportService {
   @override
-  Future<void> exportMessages(List<KafkaMessage> messages) async {}
+  Future<void> exportMessages(
+    List<KafkaMessage> messages, {
+    ExportFormat format = ExportFormat.json,
+    dynamic columnConfig,
+    bool isScriptingView = false,
+  }) async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

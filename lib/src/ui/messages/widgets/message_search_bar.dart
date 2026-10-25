@@ -83,20 +83,26 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (countText != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: Text(
-              countText,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: Text(
+                countText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),
         Flexible(
           child: ConstrainedBox(
             key: const Key('message_search_bar_container'),
-            // Max, not fixed: the header shrinks this field on narrow windows.
+            // Floor: prefix + two suffix icons need ~110 px, so never squeeze
+            // the field below 140. Below that the count text gives way instead.
             constraints: const BoxConstraints(
+              minWidth: 140,
               maxWidth: 300,
               minHeight: 36,
               maxHeight: 36,

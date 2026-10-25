@@ -3,14 +3,15 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i4;
-import 'dart:ui' as _i6;
+import 'dart:async' as _i5;
+import 'dart:ui' as _i7;
 
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart'
-    as _i2;
-import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i3;
+    as _i3;
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i4;
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
+import 'package:mockito/src/dummies.dart' as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -28,10 +29,16 @@ import 'package:mockito/src/dummies.dart' as _i5;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
+class _FakeSchemaCompatibilityResult_0 extends _i1.SmartFake
+    implements _i2.SchemaCompatibilityResult {
+  _FakeSchemaCompatibilityResult_0(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [SchemaController].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSchemaController extends _i1.Mock implements _i2.SchemaController {
+class MockSchemaController extends _i1.Mock implements _i3.SchemaController {
   MockSchemaController() {
     _i1.throwOnMissingStub(this);
   }
@@ -42,12 +49,12 @@ class MockSchemaController extends _i1.Mock implements _i2.SchemaController {
           as bool);
 
   @override
-  List<String>? getSchemas(_i3.ClusterProfile? cluster) =>
+  List<String>? getSchemas(_i4.ClusterProfile? cluster) =>
       (super.noSuchMethod(Invocation.method(#getSchemas, [cluster]))
           as List<String>?);
 
   @override
-  bool isLoading(_i3.ClusterProfile? cluster) =>
+  bool isLoading(_i4.ClusterProfile? cluster) =>
       (super.noSuchMethod(
             Invocation.method(#isLoading, [cluster]),
             returnValue: false,
@@ -55,37 +62,37 @@ class MockSchemaController extends _i1.Mock implements _i2.SchemaController {
           as bool);
 
   @override
-  _i4.Future<void> fetchSchemas(
-    _i3.ClusterProfile? cluster, {
+  _i5.Future<void> fetchSchemas(
+    _i4.ClusterProfile? cluster, {
     bool? force = false,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#fetchSchemas, [cluster], {#force: force}),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  void clearCache(_i3.ClusterProfile? cluster) => super.noSuchMethod(
+  void clearCache(_i4.ClusterProfile? cluster) => super.noSuchMethod(
     Invocation.method(#clearCache, [cluster]),
     returnValueForMissingStub: null,
   );
 
   @override
-  _i4.Future<List<String>> fetchSchemaFields(
-    _i3.ClusterProfile? cluster,
+  _i5.Future<List<String>> fetchSchemaFields(
+    _i4.ClusterProfile? cluster,
     String? topic,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#fetchSchemaFields, [cluster, topic]),
-            returnValue: _i4.Future<List<String>>.value(<String>[]),
+            returnValue: _i5.Future<List<String>>.value(<String>[]),
           )
-          as _i4.Future<List<String>>);
+          as _i5.Future<List<String>>);
 
   @override
-  _i4.Future<String> fetchSchemaContent(
-    _i3.ClusterProfile? cluster,
+  _i5.Future<String> fetchSchemaContent(
+    _i4.ClusterProfile? cluster,
     String? subject, {
     int? version,
   }) =>
@@ -95,8 +102,8 @@ class MockSchemaController extends _i1.Mock implements _i2.SchemaController {
               [cluster, subject],
               {#version: version},
             ),
-            returnValue: _i4.Future<String>.value(
-              _i5.dummyValue<String>(
+            returnValue: _i5.Future<String>.value(
+              _i6.dummyValue<String>(
                 this,
                 Invocation.method(
                   #fetchSchemaContent,
@@ -106,18 +113,55 @@ class MockSchemaController extends _i1.Mock implements _i2.SchemaController {
               ),
             ),
           )
-          as _i4.Future<String>);
+          as _i5.Future<String>);
 
   @override
-  _i4.Future<List<int>> fetchSchemaVersions(
-    _i3.ClusterProfile? cluster,
+  _i5.Future<List<int>> fetchSchemaVersions(
+    _i4.ClusterProfile? cluster,
     String? subject,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#fetchSchemaVersions, [cluster, subject]),
-            returnValue: _i4.Future<List<int>>.value(<int>[]),
+            returnValue: _i5.Future<List<int>>.value(<int>[]),
           )
-          as _i4.Future<List<int>>);
+          as _i5.Future<List<int>>);
+
+  @override
+  _i5.Future<_i2.SchemaCompatibilityResult> checkCompatibility(
+    _i4.ClusterProfile? cluster,
+    String? subject, {
+    int? version,
+    required String? schema,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #checkCompatibility,
+              [cluster, subject],
+              {#version: version, #schema: schema},
+            ),
+            returnValue: _i5.Future<_i2.SchemaCompatibilityResult>.value(
+              _FakeSchemaCompatibilityResult_0(
+                this,
+                Invocation.method(
+                  #checkCompatibility,
+                  [cluster, subject],
+                  {#version: version, #schema: schema},
+                ),
+              ),
+            ),
+          )
+          as _i5.Future<_i2.SchemaCompatibilityResult>);
+
+  @override
+  _i5.Future<List<String>> getAssociatedTopics(
+    String? subject,
+    List<String>? availableTopics,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getAssociatedTopics, [subject, availableTopics]),
+            returnValue: _i5.Future<List<String>>.value(<String>[]),
+          )
+          as _i5.Future<List<String>>);
 
   @override
   List<String> parseSchemaFields(String? jsonString) =>
@@ -128,13 +172,13 @@ class MockSchemaController extends _i1.Mock implements _i2.SchemaController {
           as List<String>);
 
   @override
-  void addListener(_i6.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i7.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
   );
 
   @override
-  void removeListener(_i6.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i7.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#removeListener, [listener]),
     returnValueForMissingStub: null,
   );

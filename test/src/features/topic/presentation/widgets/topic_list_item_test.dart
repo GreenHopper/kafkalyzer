@@ -354,4 +354,70 @@ void main() {
     final tooltip = tester.widget<Tooltip>(find.byType(Tooltip).first);
     expect(tooltip.message, isNot(contains('under-replicated')));
   });
+
+  testWidgets('displays DLQ and Retry badges on matching topic names', (
+    WidgetTester tester,
+  ) async {
+    const dlqTopic = TopicMetadata(
+      name: 'orders-dlq',
+      partitionCount: 1,
+      replicationFactor: 1,
+    );
+    const retryTopic = TopicMetadata(
+      name: 'orders-retry-0',
+      partitionCount: 1,
+      replicationFactor: 1,
+    );
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(topic: dlqTopic, clusterProfile: testProfile),
+    );
+    expect(find.byKey(const Key('topic_dlq_badge')), findsOneWidget);
+    expect(find.text('DLQ'), findsOneWidget);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(topic: retryTopic, clusterProfile: testProfile),
+    );
+    expect(find.byKey(const Key('topic_retry_badge')), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets('displays associated failure topic count badge and expands sub-tree', (
+    WidgetTester tester,
+  ) async {
+    String? selectedChild;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: const [Locale('en')],
+        home: Scaffold(
+          body: TopicListItem(
+            topic: testTopic,
+            clusterProfile: testProfile,
+            associatedFailureTopics: const ['test-topic-retry-0', 'test-topic-dlq'],
+            onSelectFailureTopic: (child) => selectedChild = child,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('topic_associated_failure_badge')), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.byKey(const Key('topic_failure_expand_button')), findsOneWidget);
+    expect(find.text('test-topic-dlq'), findsNothing);
+
+    // Tap expand button
+    await tester.tap(find.byKey(const Key('topic_failure_expand_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('test-topic-dlq'), findsOneWidget);
+    expect(find.text('test-topic-retry-0'), findsOneWidget);
+
+    // Tap on child
+    await tester.tap(find.byKey(const Key('topic_child_failure_test-topic-dlq')));
+    expect(selectedChild, equals('test-topic-dlq'));
+  });
 }

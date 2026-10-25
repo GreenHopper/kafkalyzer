@@ -91,7 +91,7 @@ void main() {
       expect(find.text('My Step Name'), findsOneWidget);
     });
 
-    testWidgets('shows the schema of each message side with its own values', (
+    testWidgets('shows compact schema indicator when schemas are present', (
       tester,
     ) async {
       const schemaMessage = KafkaMessage(
@@ -109,9 +109,42 @@ void main() {
 
       await tester.pumpWidget(createWidgetUnderTest(schemaMessage));
 
-      expect(find.text('Key: test-key v1 (#7)'), findsOneWidget);
-      expect(find.text('Value: test-value v4 (#128)'), findsOneWidget);
+      expect(find.text('K: v1 (#7)'), findsOneWidget);
+      expect(find.text('V: v4 (#128)'), findsOneWidget);
+      expect(find.byKey(const Key('metadata_card_schema_key')), findsOneWidget);
+      expect(
+        find.byKey(const Key('metadata_card_schema_value')),
+        findsOneWidget,
+      );
     });
+
+    testWidgets(
+      'shows only value schema indicator and suppresses key placeholder when key has no schema',
+      (tester) async {
+        const valOnlyMessage = KafkaMessage(
+          topic: 'test-topic',
+          partition: 1,
+          offset: 100,
+          timestamp: 1000000,
+          valueSchema: MessageSchema(
+            schemaId: 9,
+            subject: 'test-value',
+            version: 1,
+          ),
+        );
+
+        await tester.pumpWidget(createWidgetUnderTest(valOnlyMessage));
+
+        expect(find.text('v1 (#9)'), findsOneWidget);
+        expect(
+          find.byKey(const Key('metadata_card_schema_value')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const Key('metadata_card_schema_key')), findsNothing);
+        expect(find.textContaining('no registry schema'), findsNothing);
+        expect(find.textContaining('kein Registry-Schema'), findsNothing);
+      },
+    );
 
     testWidgets('shows no schema lines for a message without registry schema', (
       tester,

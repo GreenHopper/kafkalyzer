@@ -9,6 +9,9 @@ import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
+import 'package:kafkalyzer/src/features/navigation/models/message_reference.dart';
+import 'package:kafkalyzer/src/features/topic/utils/dlq_topic_detector.dart';
+import 'package:kafkalyzer/src/ui/messages/widgets/dlq_failure_diagnostics_card.dart';
 import 'package:kafkalyzer/src/utils/app_fonts.dart';
 
 /// Available dock orientations for the embedded message inspector.
@@ -30,6 +33,8 @@ class MessageInspectorPanel extends StatefulWidget {
   final VoidCallback? onToggleMaximize;
   final ValueChanged<String>? onPinToColumn;
   final ClusterProfile? profile;
+  final void Function(String topic, int partition, int offset)?
+      onJumpToOriginalMessage;
 
   const MessageInspectorPanel({
     super.key,
@@ -46,6 +51,7 @@ class MessageInspectorPanel extends StatefulWidget {
     this.onToggleMaximize,
     this.onPinToColumn,
     this.profile,
+    this.onJumpToOriginalMessage,
   });
 
   @override
@@ -439,6 +445,37 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                         ),
                       ),
                       const SizedBox(width: 4),
+                      // Copy Shareable Link
+                      Tooltip(
+                        message: l10n.copyShareableLink,
+                        child: IconButton(
+                          key: const Key('copy_shareable_link_button'),
+                          icon: const Icon(Icons.link, size: 16),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
+                          ),
+                          onPressed: () {
+                            final ref = MessageReference(
+                              cluster: widget.profile?.name,
+                              topic: widget.message.topic,
+                              partition: widget.message.partition,
+                              offset: widget.message.offset,
+                              filter: widget.searchPhrase,
+                            );
+                            Clipboard.setData(ClipboardData(text: ref.toString()));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.shareableLinkCopied),
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       // Maximize / Focus Mode Toggle
                       if (widget.onToggleMaximize != null) ...[
                         Tooltip(
@@ -788,27 +825,62 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
     );
   }
 
+  void _defaultJumpToOriginalMessage(
+    String topicName,
+    int partition,
+    int offset,
+  ) {
+    if (getIt.isRegistered<ActiveConnectionController>()) {
+      final activeCtrl = getIt<ActiveConnectionController>();
+      final topicMeta =
+          activeCtrl.topics.where((t) => t.name == topicName).firstOrNull;
+      if (topicMeta != null) {
+        activeCtrl.setActiveTopic(topicMeta, widget.profile);
+      }
+    }
+  }
+
   Widget _buildPayloadTab(BuildContext context) {
+    final Map<String, String> headerMap = {
+      for (final h in widget.message.headers ?? <KafkaHeader>[]) h.key: h.value,
+    };
+    final failureMeta = DlqFailureMetadata.fromHeaders(headerMap);
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: JsonOrStringViewer(
-        key: _payloadViewerKey,
-        rawContent: widget.message.payload ?? '',
-        searchQuery: _effectiveSearchQuery,
-        focusedMatchIndex: _totalMatches > 0 ? _currentMatchIndex : null,
-        onMatchCountChanged: (count) {
-          if (_totalMatches != count && mounted) {
-            setState(() {
-              _totalMatches = count;
-              if (_currentMatchIndex >= count) {
-                _currentMatchIndex = 0;
-              }
-            });
-          }
-        },
-        expand: true,
-        persistenceKey: 'inspector_payload',
-        onPinToColumn: widget.onPinToColumn,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (failureMeta != null)
+            DlqFailureDiagnosticsCard(
+              metadata: failureMeta,
+              message: widget.message,
+              profile: widget.profile,
+              onJumpToOriginalMessage: widget.onJumpToOriginalMessage ??
+                  _defaultJumpToOriginalMessage,
+            ),
+          Expanded(
+            child: JsonOrStringViewer(
+              key: _payloadViewerKey,
+              rawContent: widget.message.payload ?? '',
+              searchQuery: _effectiveSearchQuery,
+              focusedMatchIndex: _totalMatches > 0 ? _currentMatchIndex : null,
+              onMatchCountChanged: (count) {
+                if (_totalMatches != count && mounted) {
+                  setState(() {
+                    _totalMatches = count;
+                    if (_currentMatchIndex >= count) {
+                      _currentMatchIndex = 0;
+                    }
+                  });
+                }
+              },
+              expand: true,
+              persistenceKey: 'inspector_payload',
+              onPinToColumn: widget.onPinToColumn,
+            ),
+          ),
+        ],
       ),
     );
   }

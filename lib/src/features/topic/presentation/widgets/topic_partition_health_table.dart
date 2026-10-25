@@ -10,11 +10,19 @@ import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 class TopicPartitionHealthTable extends StatefulWidget {
   final ClusterProfile profile;
   final String topicName;
+  final bool showHeader;
+  final double? maxHeight;
+  final EdgeInsetsGeometry? padding;
+  final BoxDecoration? decoration;
 
   const TopicPartitionHealthTable({
     super.key,
     required this.profile,
     required this.topicName,
+    this.showHeader = true,
+    this.maxHeight,
+    this.padding,
+    this.decoration,
   });
 
   @override
@@ -23,7 +31,10 @@ class TopicPartitionHealthTable extends StatefulWidget {
 }
 
 class TopicPartitionHealthTableState extends State<TopicPartitionHealthTable> {
-  final KafkaMetadataService _metadataService = getIt<KafkaMetadataService>();
+  KafkaMetadataService? get _metadataService =>
+      getIt.isRegistered<KafkaMetadataService>()
+      ? getIt<KafkaMetadataService>()
+      : null;
 
   TopicPartitionDetails? _details;
   bool _loading = false;
@@ -50,8 +61,19 @@ class TopicPartitionHealthTableState extends State<TopicPartitionHealthTable> {
   Future<void> _load() async {
     if (_loading) return;
     setState(() => _loading = true);
+    final service = _metadataService;
+    if (service == null) {
+      if (mounted) {
+        setState(() {
+          _details = null;
+          _unavailable = true;
+          _loading = false;
+        });
+      }
+      return;
+    }
     try {
-      final details = await _metadataService.fetchTopicPartitions(
+      final details = await service.fetchTopicPartitions(
         profile: widget.profile,
         topic: widget.topicName,
       );
@@ -112,50 +134,55 @@ class TopicPartitionHealthTableState extends State<TopicPartitionHealthTable> {
     final colorScheme = Theme.of(context).colorScheme;
     final partitions = _details?.partitions ?? const <PartitionRow>[];
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        border: Border(
-          bottom: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
+    final defaultDecoration = BoxDecoration(
+      color: colorScheme.surfaceContainerLow,
+      border: Border(
+        bottom: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
+    );
+
+    return Container(
+      width: double.infinity,
+      padding:
+          widget.padding ??
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: widget.decoration ?? defaultDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                l10n?.partitionHealthTitle ?? 'Partition health',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurfaceVariant,
+          if (widget.showHeader)
+            Row(
+              children: [
+                Text(
+                  l10n?.partitionHealthTitle ?? 'Partition health',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              if (_loading)
-                const SizedBox(
-                  width: 12,
-                  height: 12,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                const SizedBox(width: 8),
+                if (_loading)
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                const Spacer(),
+                IconButton(
+                  key: const Key('partition_health_refresh'),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  tooltip: l10n?.retry ?? 'Refresh',
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(28, 28),
+                    padding: EdgeInsets.zero,
+                  ),
+                  onPressed: _loading ? null : _load,
                 ),
-              const Spacer(),
-              IconButton(
-                key: const Key('partition_health_refresh'),
-                icon: const Icon(Icons.refresh, size: 16),
-                tooltip: l10n?.retry ?? 'Refresh',
-                style: IconButton.styleFrom(
-                  minimumSize: const Size(28, 28),
-                  padding: EdgeInsets.zero,
-                ),
-                onPressed: _loading ? null : _load,
-              ),
-            ],
-          ),
+              ],
+            ),
           if (_unavailable)
             Text(
               l10n?.partitionHealthUnavailable ??
@@ -164,9 +191,9 @@ class TopicPartitionHealthTableState extends State<TopicPartitionHealthTable> {
               style: TextStyle(fontSize: 11, color: colorScheme.error),
             )
           else if (partitions.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            if (widget.showHeader) const SizedBox(height: 4),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 140),
+              constraints: BoxConstraints(maxHeight: widget.maxHeight ?? 140),
               child: SingleChildScrollView(
                 child: Column(
                   children: [

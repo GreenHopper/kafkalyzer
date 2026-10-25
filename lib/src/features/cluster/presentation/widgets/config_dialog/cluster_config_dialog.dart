@@ -4,6 +4,7 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_basic_info_form.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_ssl_form.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 
@@ -239,10 +240,18 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
     final l10n = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: Text(
-        widget.cluster == null
-            ? (l10n?.addCluster ?? 'Add Cluster')
-            : (l10n?.editCluster ?? 'Edit Cluster'),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              widget.cluster == null
+                  ? (l10n?.addCluster ?? 'Add Cluster')
+                  : (l10n?.editCluster ?? 'Edit Cluster'),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const ReadOnlySecurityBadge(),
+        ],
       ),
       content: SingleChildScrollView(
         child: SizedBox(

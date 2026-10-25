@@ -10,15 +10,34 @@ import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_timeline_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_diff_view.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 
 class FakeMessageExportService implements MessageExportService {
   List<KafkaMessage> exported = [];
   bool called = false;
+  ExportFormat? lastFormat;
 
   @override
-  Future<void> exportMessages(List<KafkaMessage> messages) async {
+  Future<void> exportMessages(
+    List<KafkaMessage> messages, {
+    ExportFormat format = ExportFormat.json,
+    TableColumnConfig? columnConfig,
+    bool isScriptingView = false,
+  }) async {
     called = true;
     exported = messages;
+    lastFormat = format;
+  }
+
+  @override
+  Future<void> exportMessagesCsv(
+    List<KafkaMessage> messages, {
+    TableColumnConfig? columnConfig,
+    bool isScriptingView = false,
+  }) async {
+    called = true;
+    exported = messages;
+    lastFormat = ExportFormat.csv;
   }
 
   @override
@@ -119,10 +138,10 @@ void main() {
     expect(find.text('banana cake', findRichText: true), findsNothing);
   });
 
-  testWidgets('header row shrinks the search field on a narrow window', (
+  testWidgets('header wraps its controls on a narrow window', (
     WidgetTester tester,
   ) async {
-    tester.view.physicalSize = const Size(900, 700);
+    tester.view.physicalSize = const Size(520, 700);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -168,7 +187,7 @@ void main() {
     expect(prefs.getString('my_view_pref'), 'diff');
   });
 
-  testWidgets('exports/downloads active messages list', (
+  testWidgets('exports/downloads active messages list as JSON via menu', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(1920, 1080);
@@ -181,13 +200,47 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final downloadBtnFinder = find.widgetWithIcon(IconButton, Icons.download);
+    final downloadBtnFinder = find.byIcon(Icons.download);
     expect(downloadBtnFinder, findsOneWidget);
-    final iconButton = tester.widget<IconButton>(downloadBtnFinder);
-    iconButton.onPressed!();
+    await tester.tap(downloadBtnFinder);
+    await tester.pumpAndSettle();
+
+    // Verify popup menu items are shown
+    expect(find.text('JSON (Full Payload)'), findsOneWidget);
+    expect(find.text('CSV (Visible Columns)'), findsOneWidget);
+
+    await tester.tap(find.text('JSON (Full Payload)'));
     await tester.pumpAndSettle();
 
     expect(fakeExportService.called, isTrue);
+    expect(fakeExportService.lastFormat, ExportFormat.json);
+    expect(fakeExportService.exported.length, 2);
+    expect(find.text('Messages exported successfully'), findsOneWidget);
+  });
+
+  testWidgets('exports/downloads active messages list as CSV via menu', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    final downloadBtnFinder = find.byIcon(Icons.download);
+    expect(downloadBtnFinder, findsOneWidget);
+    await tester.tap(downloadBtnFinder);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('CSV (Visible Columns)'));
+    await tester.pumpAndSettle();
+
+    expect(fakeExportService.called, isTrue);
+    expect(fakeExportService.lastFormat, ExportFormat.csv);
     expect(fakeExportService.exported.length, 2);
     expect(find.text('Messages exported successfully'), findsOneWidget);
   });

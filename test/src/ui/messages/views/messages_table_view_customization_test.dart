@@ -1,5 +1,8 @@
+import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
@@ -176,6 +179,55 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(resizedColId, equals('customer.name'));
+    },
+  );
+
+  testWidgets(
+    'secondary tap on row shows context menu with Copy Shareable Link',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final List<MethodCall> calls = [];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        calls.add(call);
+        return null;
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: MessagesTableView(
+              messages: messages,
+              searchPhrase: 'test-query',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find cell InkWell for data row 0 column 0
+      final cellInkWell = find.byKey(const ValueKey('message_cell_0_0'));
+      expect(cellInkWell, findsOneWidget);
+      await tester.tap(cellInkWell, buttons: kSecondaryMouseButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('menu_copy_shareable_link')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('menu_copy_shareable_link')));
+      await tester.pumpAndSettle();
+
+      final setClipboardCall =
+          calls.firstWhere((c) => c.method == 'Clipboard.setData');
+      final text = setClipboardCall.arguments['text'] as String;
+      expect(text, contains('kafkalyzer://open'));
+      expect(text, contains('topic=test-topic'));
+      expect(text, contains('offset=1'));
+      expect(text, contains('filter=test-query'));
     },
   );
 }

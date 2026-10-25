@@ -1,5 +1,4 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
@@ -110,40 +109,57 @@ class MessageMetadataCard extends StatelessWidget {
               style: const TextStyle(fontSize: 10, color: Colors.grey),
               textAlign: TextAlign.right,
             ),
-            ..._schemaLines(context),
+            ?_buildCompactSchemaIndicator(context),
           ],
         ),
       ),
     );
   }
 
-  /// Schema provenance per message side. Only rendered once a side carries a
-  /// registry schema, so plain rows stay as compact as they were.
-  List<Widget> _schemaLines(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    if (l10n == null) return const [];
+  /// Compact schema provenance indicator. Only rendered when at least one side
+  /// carries a registry schema, without repeating redundant topic names or
+  /// rendering negative "no schema" placeholders.
+  Widget? _buildCompactSchemaIndicator(BuildContext context) {
     final keySchema = message.keySchema;
     final valueSchema = message.valueSchema;
-    if (keySchema == null && valueSchema == null) return const [];
+    if (keySchema == null && valueSchema == null) return null;
 
-    String describe(MessageSchema? schema) {
-      if (schema == null) return l10n.schemaNone;
-      if (schema.subject != null && schema.version != null) {
-        return '${schema.subject} v${schema.version} (#${schema.schemaId})';
+    final parts = <Widget>[];
+
+    String formatSchema(MessageSchema s) {
+      if (s.version != null) {
+        return 'v${s.version} (#${s.schemaId})';
       }
-      return '#${schema.schemaId}';
+      return '#${s.schemaId}';
     }
 
-    Widget line(String side, MessageSchema? schema, String key) => Text(
-      '$side: ${describe(schema)}',
-      key: Key(key),
-      style: const TextStyle(fontSize: 10, color: Colors.grey),
-      textAlign: TextAlign.right,
-    );
+    if (keySchema != null) {
+      parts.add(
+        Text(
+          'K: ${formatSchema(keySchema)}',
+          key: const Key('metadata_card_schema_key'),
+          style: const TextStyle(fontSize: 10, color: Colors.grey),
+          textAlign: TextAlign.right,
+        ),
+      );
+    }
 
-    return [
-      line(l10n.schemaSideKey, keySchema, 'metadata_card_schema_key'),
-      line(l10n.schemaSideValue, valueSchema, 'metadata_card_schema_value'),
-    ];
+    if (valueSchema != null) {
+      parts.add(
+        Text(
+          keySchema != null
+              ? 'V: ${formatSchema(valueSchema)}'
+              : formatSchema(valueSchema),
+          key: const Key('metadata_card_schema_value'),
+          style: const TextStyle(fontSize: 10, color: Colors.grey),
+          textAlign: TextAlign.right,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2.0),
+      child: Wrap(alignment: WrapAlignment.end, spacing: 6, children: parts),
+    );
   }
 }

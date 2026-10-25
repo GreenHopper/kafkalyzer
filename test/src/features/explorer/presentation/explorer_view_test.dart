@@ -36,12 +36,11 @@ class FakeMetadataService implements KafkaMetadataService {
   Future<TopicPartitionDetails> fetchTopicPartitions({
     required ClusterProfile profile,
     required String topic,
-  }) async =>
-      TopicPartitionDetails(
-        topic: topic,
-        partitions: const [],
-        brokers: const [],
-      );
+  }) async => TopicPartitionDetails(
+    topic: topic,
+    partitions: const [],
+    brokers: const [],
+  );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

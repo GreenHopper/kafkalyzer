@@ -17,12 +17,18 @@ import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:kafkalyzer/src/services/saved_searches_service.dart';
+import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
+import 'package:kafkalyzer/src/services/secure_storage_service.dart';
 
 final getIt = GetIt.instance;
 
 void setupDependencyInjection() {
   getIt.registerLazySingleton<Logger>(() => Logger());
+  getIt.registerLazySingleton<SecureStorageService>(
+    () => SecureStorageService(logger: getIt<Logger>()),
+  );
   getIt.registerLazySingleton<UpdateService>(
     () => UpdateService(logger: getIt<Logger>()),
   );
@@ -61,4 +67,10 @@ void setupDependencyInjection() {
     () => TopicAnalysisExportService(),
   );
   getIt.registerLazySingleton<RecentTopicsService>(() => RecentTopicsService());
+  getIt.registerLazySingleton<SavedSearchesService>(
+    () => SavedSearchesService(),
+  );
+  getIt.registerLazySingleton<SessionRestoreService>(
+    () => SessionRestoreService(),
+  );
 }

@@ -72,7 +72,7 @@ impl<T> StreamSink<T> {
     }
 
     pub fn add(&self, value: T) -> Result<(), String> {
-        self.tx.send(value).map_err(|e| e.to_string())
+        self.tx.send(value).map_err(|e| e.to_string()) // allow_read_only_exception: tokio mpsc channel
     }
 }
 

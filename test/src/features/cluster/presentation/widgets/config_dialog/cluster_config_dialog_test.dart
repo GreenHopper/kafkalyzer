@@ -1,4 +1,6 @@
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -212,6 +214,61 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets(
+      'displays Protected by OS Keyring lock indicator and tooltip on password fields',
+      (tester) async {
+        final cluster = ClusterProfile(
+          name: 'Secured Cluster',
+          bootstrapServers: 'localhost:9092',
+          securityProtocol: 'SASL_PLAINTEXT',
+          mechanism: 'PLAIN',
+          saslUsername: 'test-user',
+          saslPassword: 'secret-password',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              useMaterial3: true,
+              splashFactory: InkRipple.splashFactory,
+            ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: ClusterConfigDialog(cluster: cluster)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final lockIconFinder = find.byIcon(Icons.lock_outline);
+        expect(lockIconFinder, findsAtLeastNWidgets(1));
+
+        final tooltipFinder = find.byWidgetPredicate(
+          (w) => w is Tooltip && w.message == 'Protected by OS Keyring',
+        );
+        expect(tooltipFinder, findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets('renders ReadOnlySecurityBadge in dialog header', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: ClusterConfigDialog()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReadOnlySecurityBadge), findsOneWidget);
+      expect(find.text('Read-Only'), findsOneWidget);
     });
   });
 }

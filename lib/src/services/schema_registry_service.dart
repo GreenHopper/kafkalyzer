@@ -24,4 +24,28 @@ class SchemaRegistryService {
   }) {
     return api.fetchSchemaVersions(profile: profile, subject: subject);
   }
+
+  Future<api.SchemaCompatibilityResult> checkSchemaCompatibility({
+    required ClusterProfile profile,
+    required String subject,
+    int? version,
+    required String schema,
+  }) {
+    return api.checkSchemaCompatibility(
+      profile: profile,
+      subject: subject,
+      version: version,
+      schema: schema,
+    );
+  }
+
+  Future<List<String>> resolveAssociatedTopics({
+    required String subject,
+    required List<String> availableTopics,
+  }) {
+    return api.resolveAssociatedTopicsForSubject(
+      subject: subject,
+      availableTopics: availableTopics,
+    );
+  }
 }

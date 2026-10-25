@@ -9,6 +9,7 @@ import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/secure_storage_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/services.dart';
@@ -102,6 +103,7 @@ void main() {
     // Register dependencies needed by controllers first
     getIt.registerSingleton<ClusterService>(MockClusterService());
     getIt.registerSingleton<ScriptRepository>(MockScriptRepository());
+    getIt.registerSingleton<SecureStorageService>(SecureStorageService());
 
     getIt.registerSingleton<ClusterListController>(MockClusterListController());
     getIt.registerSingleton<ScriptController>(MockScriptController());
@@ -397,6 +399,84 @@ void main() {
         // Keys are invalid types, so they should be ignored / removed during import
         expect(prefs.containsKey('cluster_profiles'), isFalse);
         expect(prefs.containsKey('saved_scripts_v1'), isFalse);
+      },
+    );
+
+    test(
+      'exportConfiguration scrubs passwords by default and includes credentials when opt-in is true',
+      () async {
+        final secureStorage = getIt<SecureStorageService>();
+        await secureStorage.saveClusterSecrets('auth-cluster', {
+          'saslPassword': 'secret_password',
+          'schemaRegistryPassword': 'sr_secret_password',
+        });
+
+        final clusters = [
+          {
+            'name': 'auth-cluster',
+            'bootstrapServers': 'localhost:9092',
+            'saslUsername': 'user1',
+            'saslPassword': 'should_be_scrubbed',
+          },
+        ];
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cluster_profiles', jsonEncode(clusters));
+
+        // 1. Default export (includeSensitiveCredentials = false)
+        final defaultExportPath = p.join(tempDir, 'export_default.zip');
+        mockFilePicker.savePath = defaultExportPath;
+
+        await settingsService.exportConfiguration();
+
+        final defaultArchive = ZipDecoder().decodeBytes(
+          File(defaultExportPath).readAsBytesSync(),
+        );
+        final defaultPrefsFile = defaultArchive.firstWhere(
+          (f) => f.name == 'preferences.json',
+        );
+        final defaultPrefsJson = utf8.decode(
+          defaultPrefsFile.content as List<int>,
+        );
+        final decodedDefault =
+            jsonDecode(defaultPrefsJson) as Map<String, dynamic>;
+        final defaultClusters =
+            jsonDecode(decodedDefault['cluster_profiles'] as String)
+                as List<dynamic>;
+
+        expect(defaultClusters.first['saslUsername'], 'user1');
+        expect(defaultClusters.first.containsKey('saslPassword'), isFalse);
+        expect(
+          defaultClusters.first.containsKey('schemaRegistryPassword'),
+          isFalse,
+        );
+
+        // 2. Opt-in export (includeSensitiveCredentials = true)
+        final optInExportPath = p.join(tempDir, 'export_opt_in.zip');
+        mockFilePicker.savePath = optInExportPath;
+
+        await settingsService.exportConfiguration(
+          includeSensitiveCredentials: true,
+        );
+
+        final optInArchive = ZipDecoder().decodeBytes(
+          File(optInExportPath).readAsBytesSync(),
+        );
+        final optInPrefsFile = optInArchive.firstWhere(
+          (f) => f.name == 'preferences.json',
+        );
+        final optInPrefsJson = utf8.decode(optInPrefsFile.content as List<int>);
+        final decodedOptIn = jsonDecode(optInPrefsJson) as Map<String, dynamic>;
+        final optInClusters =
+            jsonDecode(decodedOptIn['cluster_profiles'] as String)
+                as List<dynamic>;
+
+        expect(optInClusters.first['saslUsername'], 'user1');
+        expect(optInClusters.first['saslPassword'], 'secret_password');
+        expect(
+          optInClusters.first['schemaRegistryPassword'],
+          'sr_secret_password',
+        );
       },
     );
   });

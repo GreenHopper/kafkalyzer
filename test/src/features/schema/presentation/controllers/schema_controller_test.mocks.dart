@@ -3,12 +3,13 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i3;
+import 'dart:async' as _i4;
 
-import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i4;
-import 'package:kafkalyzer/src/services/schema_registry_service.dart' as _i2;
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i5;
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as _i2;
+import 'package:kafkalyzer/src/services/schema_registry_service.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
+import 'package:mockito/src/dummies.dart' as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -26,28 +27,34 @@ import 'package:mockito/src/dummies.dart' as _i5;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
+class _FakeSchemaCompatibilityResult_0 extends _i1.SmartFake
+    implements _i2.SchemaCompatibilityResult {
+  _FakeSchemaCompatibilityResult_0(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [SchemaRegistryService].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSchemaRegistryService extends _i1.Mock
-    implements _i2.SchemaRegistryService {
+    implements _i3.SchemaRegistryService {
   MockSchemaRegistryService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<List<String>> fetchSubjects({
-    required _i4.ClusterProfile? profile,
+  _i4.Future<List<String>> fetchSubjects({
+    required _i5.ClusterProfile? profile,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#fetchSubjects, [], {#profile: profile}),
-            returnValue: _i3.Future<List<String>>.value(<String>[]),
+            returnValue: _i4.Future<List<String>>.value(<String>[]),
           )
-          as _i3.Future<List<String>>);
+          as _i4.Future<List<String>>);
 
   @override
-  _i3.Future<String> fetchSchema({
-    required _i4.ClusterProfile? profile,
+  _i4.Future<String> fetchSchema({
+    required _i5.ClusterProfile? profile,
     required String? subject,
     int? version,
   }) =>
@@ -57,8 +64,8 @@ class MockSchemaRegistryService extends _i1.Mock
               #subject: subject,
               #version: version,
             }),
-            returnValue: _i3.Future<String>.value(
-              _i5.dummyValue<String>(
+            returnValue: _i4.Future<String>.value(
+              _i6.dummyValue<String>(
                 this,
                 Invocation.method(#fetchSchema, [], {
                   #profile: profile,
@@ -68,11 +75,11 @@ class MockSchemaRegistryService extends _i1.Mock
               ),
             ),
           )
-          as _i3.Future<String>);
+          as _i4.Future<String>);
 
   @override
-  _i3.Future<List<int>> fetchSchemaVersions({
-    required _i4.ClusterProfile? profile,
+  _i4.Future<List<int>> fetchSchemaVersions({
+    required _i5.ClusterProfile? profile,
     required String? subject,
   }) =>
       (super.noSuchMethod(
@@ -80,7 +87,49 @@ class MockSchemaRegistryService extends _i1.Mock
               #profile: profile,
               #subject: subject,
             }),
-            returnValue: _i3.Future<List<int>>.value(<int>[]),
+            returnValue: _i4.Future<List<int>>.value(<int>[]),
           )
-          as _i3.Future<List<int>>);
+          as _i4.Future<List<int>>);
+
+  @override
+  _i4.Future<_i2.SchemaCompatibilityResult> checkSchemaCompatibility({
+    required _i5.ClusterProfile? profile,
+    required String? subject,
+    int? version,
+    required String? schema,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#checkSchemaCompatibility, [], {
+              #profile: profile,
+              #subject: subject,
+              #version: version,
+              #schema: schema,
+            }),
+            returnValue: _i4.Future<_i2.SchemaCompatibilityResult>.value(
+              _FakeSchemaCompatibilityResult_0(
+                this,
+                Invocation.method(#checkSchemaCompatibility, [], {
+                  #profile: profile,
+                  #subject: subject,
+                  #version: version,
+                  #schema: schema,
+                }),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.SchemaCompatibilityResult>);
+
+  @override
+  _i4.Future<List<String>> resolveAssociatedTopics({
+    required String? subject,
+    required List<String>? availableTopics,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#resolveAssociatedTopics, [], {
+              #subject: subject,
+              #availableTopics: availableTopics,
+            }),
+            returnValue: _i4.Future<List<String>>.value(<String>[]),
+          )
+          as _i4.Future<List<String>>);
 }

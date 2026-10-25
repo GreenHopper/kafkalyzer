@@ -245,6 +245,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ReportComparison dco_decode_report_comparison(dynamic raw);
 
   @protected
+  SchemaCompatibilityResult dco_decode_schema_compatibility_result(dynamic raw);
+
+  @protected
   SearchScope dco_decode_search_scope(dynamic raw);
 
   @protected
@@ -535,6 +538,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   ReportComparison sse_decode_report_comparison(SseDeserializer deserializer);
+
+  @protected
+  SchemaCompatibilityResult sse_decode_schema_compatibility_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   SearchScope sse_decode_search_scope(SseDeserializer deserializer);
@@ -903,6 +911,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_report_comparison(
     ReportComparison self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_schema_compatibility_result(
+    SchemaCompatibilityResult self,
     SseSerializer serializer,
   );
 

@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/key_
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/partition_balance_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_report_comparison_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_summary_cards.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_table.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:material_ui/material_ui.dart';
@@ -73,6 +74,8 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                         partitionStats: report.partitionStats,
                         totalMessages: report.totalMessages,
                       ),
+                      const SizedBox(height: 16),
+                      _buildPartitionHealthSection(context, colorScheme, l10n),
                       const SizedBox(height: 16),
                       KeyAndFieldDistributionView(
                         topKeys: report.topKeys,
@@ -553,6 +556,56 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
               onPressed: _startScan,
               icon: const Icon(Icons.play_arrow_rounded),
               label: Text(l10n?.startAnalysis ?? 'Start Analysis'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartitionHealthSection(
+    BuildContext context,
+    ColorScheme colorScheme,
+    AppLocalizations? l10n,
+  ) {
+    return Card(
+      key: const Key('analysis_partition_health_card'),
+      elevation: 0,
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.dns_outlined, size: 20, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  l10n?.partitionHealthDialogTitle ??
+                      'Partition Health & Replication',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TopicPartitionHealthTable(
+              key: Key(
+                'analysis_health_table_${widget.profile.name}_${widget.topic.name}',
+              ),
+              profile: widget.profile,
+              topicName: widget.topic.name,
+              maxHeight: 250,
+              decoration: const BoxDecoration(),
+              padding: EdgeInsets.zero,
             ),
           ],
         ),

@@ -189,5 +189,63 @@ void main() {
       final clusters = await service.loadClusters();
       expect(clusters, isEmpty);
     });
+
+    test(
+      'sanitizes sensitive credentials before writing to SharedPreferences and persists to SecureStorage',
+      () async {
+        final profile = fullProfile(name: 'secure-prod');
+        await service.saveClusters([profile]);
+
+        // Verify the profile serialized to disk (via codec stub) has null passwords
+        final serializedProfile = codec.byRef.values.last;
+        expect(serializedProfile.saslPassword, isNull);
+        expect(serializedProfile.schemaRegistryPassword, isNull);
+        expect(serializedProfile.sslKeystorePassword, isNull);
+        expect(serializedProfile.sslTruststorePassword, isNull);
+        expect(serializedProfile.sslPemKeyPassword, isNull);
+        expect(serializedProfile.saslOauthbearerToken, isNull);
+
+        // But loading it back restores all secrets
+        final reloaded = (await service.loadClusters()).firstWhere(
+          (c) => c.name == 'secure-prod',
+        );
+        expect(reloaded.saslPassword, 'pass');
+        expect(reloaded.schemaRegistryPassword, 'srpass');
+        expect(reloaded.sslKeystorePassword, 'ksp');
+        expect(reloaded.sslTruststorePassword, 'tsp');
+        expect(reloaded.sslPemKeyPassword, 'pempw');
+        expect(reloaded.saslOauthbearerToken, 'oauth-token');
+      },
+    );
+
+    test(
+      'migrates legacy plaintext cluster credentials to OS keyring on first load',
+      () async {
+        // Prepare legacy profile stored directly with plaintext passwords
+        final legacyProfile = fullProfile(name: 'legacy-prod');
+        final ref = 'legacy-ref-0';
+        codec.byRef[ref] = legacyProfile;
+
+        final legacyJson = jsonEncode([
+          {'ref': ref},
+        ]);
+        SharedPreferences.setMockInitialValues({
+          'cluster_profiles': legacyJson,
+          // 'credentials_migrated_to_keyring_v1' is not set
+        });
+
+        final loaded = await service.loadClusters();
+        expect(loaded.single.saslPassword, 'pass');
+        expect(loaded.single.schemaRegistryPassword, 'srpass');
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('credentials_migrated_to_keyring_v1'), isTrue);
+
+        // Verify that after migration, the serialized copy on disk has scrubbed passwords
+        final sanitizedStored = codec.byRef.values.last;
+        expect(sanitizedStored.saslPassword, isNull);
+        expect(sanitizedStored.schemaRegistryPassword, isNull);
+      },
+    );
   });
 }

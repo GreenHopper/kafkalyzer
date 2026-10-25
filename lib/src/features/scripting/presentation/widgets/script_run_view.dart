@@ -1,5 +1,7 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/scripting/application/headless_script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
@@ -120,6 +122,34 @@ class _ScriptRunViewState extends State<ScriptRunView> {
     }
   }
 
+  void _copyCliCommand() {
+    final values = <String, String>{};
+    for (var entry in _controllers.entries) {
+      if (entry.value.text.isNotEmpty) {
+        values[entry.key] = entry.value.text;
+      }
+    }
+
+    final clusterName = _selectedCluster?.name ?? "";
+    final cmd = HeadlessScriptRunner.formatCliCommand(
+      scriptIdOrName: widget.script.name,
+      clusterName: clusterName,
+      variables: values,
+    );
+
+    Clipboard.setData(ClipboardData(text: cmd));
+
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          l10n?.cliCommandCopied ?? "CLI command copied to clipboard",
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isMonitoring) {
@@ -187,13 +217,31 @@ class _ScriptRunViewState extends State<ScriptRunView> {
             const SizedBox(height: 16),
             _buildVariableInputs(),
             const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: _runScript,
-              icon: const Icon(Icons.play_arrow),
-              label: Text(runButtonText),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _runScript,
+                    icon: const Icon(Icons.play_arrow),
+                    label: Text(runButtonText),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _copyCliCommand,
+                  icon: const Icon(Icons.terminal, size: 18),
+                  label: Text(l10n?.copyCliCommand ?? "Copy CLI Command"),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 16,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use kafkalyzer_core::kafka_types::{ClusterProfile, MessageSchema};
+use kafkalyzer_core::kafka_types::{ClusterProfile, MessageSchema, SchemaCompatibilityResult};
 use std::collections::HashMap;
 use std::io::Read;
 use std::sync::{LazyLock, Mutex};
@@ -80,7 +80,7 @@ impl SchemaProvenance {
         if let (Some(username), Some(password)) = (&self.username, &self.password) {
             request = request.basic_auth(username, Some(password));
         }
-        let Ok(response) = request.send().await else {
+        let Ok(response) = request.send().await else { // allow_read_only_exception: reqwest HTTP
             return unresolved();
         };
         let entries = match response.json::<serde_json::Value>().await {
@@ -181,7 +181,7 @@ pub fn fetch_subjects(profile: ClusterProfile) -> Result<Vec<String>> {
         ) {
             req = req.basic_auth(username, Some(password));
         }
-        let resp = req.send().await?.json::<Vec<String>>().await?;
+        let resp = req.send().await?.json::<Vec<String>>().await?; // allow_read_only_exception: reqwest HTTP
         Ok::<Vec<String>, anyhow::Error>(resp)
     })?;
 
@@ -216,7 +216,7 @@ pub fn fetch_schema(
         ) {
             req = req.basic_auth(username, Some(password));
         }
-        let resp = req.send().await?.json::<serde_json::Value>().await?;
+        let resp = req.send().await?.json::<serde_json::Value>().await?; // allow_read_only_exception: reqwest HTTP
 
         // Extract "schema" field
         if let Some(schema) = resp.get("schema") {
@@ -249,11 +249,102 @@ pub fn fetch_schema_versions(profile: ClusterProfile, subject: String) -> Result
         ) {
             req = req.basic_auth(username, Some(password));
         }
-        let resp = req.send().await?.json::<Vec<i32>>().await?;
+        let resp = req.send().await?.json::<Vec<i32>>().await?; // allow_read_only_exception: reqwest HTTP
         Ok::<Vec<i32>, anyhow::Error>(resp)
     })?;
 
     Ok(versions)
+}
+
+/// Parses the JSON body returned by Confluent Schema Registry's `/compatibility` endpoint.
+pub fn parse_compatibility_response(val: serde_json::Value) -> SchemaCompatibilityResult {
+    let is_compatible = val
+        .get("is_compatible")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let mut messages = Vec::new();
+    if let Some(msgs) = val.get("messages").and_then(|v| v.as_array()) {
+        for m in msgs {
+            if let Some(s) = m.as_str() {
+                messages.push(s.to_string());
+            }
+        }
+    }
+    SchemaCompatibilityResult {
+        is_compatible,
+        messages,
+    }
+}
+
+/// Checks whether a draft schema is compatible with a subject version in the Schema Registry.
+/// This is a read-only query that does not register or mutate schemas.
+pub fn check_schema_compatibility(
+    profile: ClusterProfile,
+    subject: String,
+    version: Option<i32>,
+    schema: String,
+) -> Result<SchemaCompatibilityResult> {
+    let url = profile
+        .schema_registry_url
+        .clone()
+        .ok_or_else(|| anyhow::anyhow!("No Schema Registry URL provided"))?;
+
+    let rt = Runtime::new()?;
+
+    let result = rt.block_on(async {
+        let client = build_schema_registry_client(&profile)?;
+        let endpoint = match version {
+            Some(v) => format!("{}/compatibility/subjects/{}/versions/{}", url, subject, v),
+            None => format!("{}/compatibility/subjects/{}/versions/latest", url, subject),
+        };
+        let mut req = client
+            .post(endpoint)
+            .header("Content-Type", "application/vnd.schemaregistry.v1+json");
+        if let (Some(username), Some(password)) = (
+            &profile.schema_registry_username,
+            &profile.schema_registry_password,
+        ) {
+            req = req.basic_auth(username, Some(password));
+        }
+        let body = serde_json::json!({ "schema": schema });
+        let resp = req.json(&body).send().await?; // allow_read_only_exception: reqwest HTTP
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let err_text = resp.text().await.unwrap_or_default();
+            return Ok::<SchemaCompatibilityResult, anyhow::Error>(SchemaCompatibilityResult {
+                is_compatible: false,
+                messages: vec![format!("Registry returned status {}: {}", status, err_text)],
+            });
+        }
+        let val = resp.json::<serde_json::Value>().await?;
+        Ok::<SchemaCompatibilityResult, anyhow::Error>(parse_compatibility_response(val))
+    })?;
+
+    Ok(result)
+}
+
+/// Derives and matches associated Kafka topics for a Schema Registry subject.
+pub fn resolve_associated_topics_for_subject(
+    subject: &str,
+    available_topics: &[String],
+) -> Vec<String> {
+    let mut topics = Vec::new();
+    if let Some(prefix) = subject
+        .strip_suffix("-value")
+        .or_else(|| subject.strip_suffix("-key"))
+    {
+        if !prefix.is_empty() {
+            topics.push(prefix.to_string());
+        }
+    }
+    for t in available_topics {
+        if (t == subject || format!("{}-value", t) == subject || format!("{}-key", t) == subject)
+            && !topics.contains(t)
+        {
+            topics.push(t.clone());
+        }
+    }
+    topics
 }
 
 #[cfg(test)]
@@ -308,6 +399,42 @@ mod tests {
         assert_eq!(schema.schema_id, 4242);
         assert_eq!(schema.subject, None);
         assert_eq!(schema.version, None);
+    }
+
+    #[test]
+    fn parse_compatibility_response_handles_success_and_failures() {
+        let success_json = serde_json::json!({
+            "is_compatible": true
+        });
+        let res = parse_compatibility_response(success_json);
+        assert!(res.is_compatible);
+        assert!(res.messages.is_empty());
+
+        let failure_json = serde_json::json!({
+            "is_compatible": false,
+            "messages": ["Schema field 'id' removed in incompatible mode"]
+        });
+        let res2 = parse_compatibility_response(failure_json);
+        assert!(!res2.is_compatible);
+        assert_eq!(res2.messages, vec!["Schema field 'id' removed in incompatible mode"]);
+    }
+
+    #[test]
+    fn resolve_associated_topics_extracts_correct_topics() {
+        let available = vec![
+            "orders".to_string(),
+            "users".to_string(),
+            "notifications".to_string(),
+        ];
+
+        let res = resolve_associated_topics_for_subject("orders-value", &available);
+        assert_eq!(res, vec!["orders"]);
+
+        let res_key = resolve_associated_topics_for_subject("users-key", &available);
+        assert_eq!(res_key, vec!["users"]);
+
+        let res_direct = resolve_associated_topics_for_subject("notifications", &available);
+        assert_eq!(res_direct, vec!["notifications"]);
     }
 }
 

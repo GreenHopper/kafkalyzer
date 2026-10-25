@@ -4,12 +4,13 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/app.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/scripting/application/headless_script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
 
-Future<void> main() async {
+Future<void> main([List<String> args = const []]) async {
   debugPrint('DEBUG: main() started');
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('DEBUG: WidgetsFlutterBinding initialized');
@@ -17,6 +18,15 @@ Future<void> main() async {
   debugPrint('DEBUG: KafkalyzerRustLib initialized');
   setupDependencyInjection();
   debugPrint('DEBUG: DI setup complete');
+
+  if (args.isNotEmpty &&
+      (args.first == 'script' ||
+          args.contains('--script') ||
+          args.contains('--help') ||
+          args.contains('-h'))) {
+    await HeadlessScriptRunner.runCli(args);
+    return;
+  }
 
   // Initialize settings (like default output directory)
   await getIt<SettingsService>().initializeSettings();

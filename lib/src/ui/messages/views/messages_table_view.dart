@@ -1,4 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/navigation/models/message_reference.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
@@ -62,6 +66,7 @@ class MessagesTableView extends StatefulWidget {
   final void Function(String columnId, double width)? onColumnWidthChanged;
   final void Function(String columnId)? onToggleColumnVisibility;
   final ValueChanged<List<KafkaMessage>>? onVisualOrderChanged;
+  final ClusterProfile? clusterProfile;
 
   const MessagesTableView({
     super.key,
@@ -78,6 +83,7 @@ class MessagesTableView extends StatefulWidget {
     this.onColumnWidthChanged,
     this.onToggleColumnVisibility,
     this.onVisualOrderChanged,
+    this.clusterProfile,
   });
 
   @override
@@ -842,6 +848,66 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     return const TableSpan(extent: FixedTableSpanExtent(44)); // Row height
   }
 
+  void _showRowContextMenu(
+    BuildContext context,
+    Offset position,
+    KafkaMessage msg,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (overlay == null) return;
+
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        position & const Size(40, 40),
+        Offset.zero & overlay.size,
+      ),
+      items: [
+        PopupMenuItem<String>(
+          key: const Key('menu_copy_shareable_link'),
+          value: 'copy_link',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.link, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n?.copyShareableLink ?? 'Copy Shareable Link',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ).then((value) {
+      if (value == 'copy_link') {
+        final ref = MessageReference(
+          cluster: widget.clusterProfile?.name,
+          topic: msg.topic,
+          partition: msg.partition,
+          offset: msg.offset,
+          filter: widget.searchPhrase,
+        );
+        Clipboard.setData(ClipboardData(text: ref.toString()));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                l10n?.shareableLinkCopied ??
+                    'Shareable link copied to clipboard',
+              ),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+    });
+  }
+
   TableViewCell _buildCell(
     BuildContext context,
     TableVicinity vicinity,
@@ -1042,8 +1108,12 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: ValueKey('message_cell_${dataIndex}_$colIdx'),
           onTap: () {
             widget.onMessageTap?.call(msg);
+          },
+          onSecondaryTapDown: (details) {
+            _showRowContextMenu(context, details.globalPosition, msg);
           },
           child: decoratedCell,
         ),

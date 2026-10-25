@@ -10,6 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
+import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 
@@ -217,5 +219,142 @@ void main() {
         throwsA(isA<FileSystemException>()),
       );
     });
+
+    test('exportMessagesCsv single topic exports RFC 4180 CSV file', () async {
+      final messages = [
+        const KafkaMessage(
+          topic: 'orders',
+          partition: 0,
+          offset: 100,
+          key: 'key-1,with,comma',
+          payload:
+              '{"id": 1, "note": "hello\nworld", "quote": "He said \\"hi\\""}',
+          timestamp: 123456789,
+        ),
+        const KafkaMessage(
+          topic: 'orders',
+          partition: 1,
+          offset: 101,
+          key: null,
+          payload: '{"id": 2}',
+          timestamp: 123456790,
+        ),
+      ];
+
+      final targetPath = p.join(tempDir, 'orders.csv');
+      mockFilePicker.savePath = targetPath;
+
+      await service.exportMessages(messages, format: ExportFormat.csv);
+
+      expect(mockFilePicker.saveFileCalled, isTrue);
+      expect(mockFilePicker.lastFileName, startsWith('orders_'));
+      expect(mockFilePicker.lastFileName, endsWith('.csv'));
+
+      final exportedFile = File(targetPath);
+      expect(exportedFile.existsSync(), isTrue);
+
+      final content = exportedFile.readAsStringSync();
+      expect(content, contains('Timestamp,Partition,Offset,Key,Payload'));
+      // Check RFC 4180 quoting
+      expect(content, contains('"key-1,with,comma"'));
+    });
+
+    test(
+      'exportMessagesCsv includes dynamic projected columns and respects hidden columns',
+      () async {
+        final messages = [
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 100,
+            key: 'key-1',
+            payload: '{"customer": {"id": "CUST-99"}, "amount": 42.5}',
+            timestamp: 123456789,
+          ),
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 1,
+            offset: 101,
+            key: 'key-2',
+            payload: '{"other": "value"}', // missing customer.id
+            timestamp: 123456790,
+          ),
+        ];
+
+        final targetPath = p.join(tempDir, 'projected.csv');
+        mockFilePicker.savePath = targetPath;
+
+        final columnConfig = TableColumnConfig(
+          hiddenColumns: {
+            StandardTableColumns.timestamp,
+            StandardTableColumns.content,
+          },
+          projectedColumns: const [
+            ProjectedColumn(path: 'customer.id', label: 'CustomerID'),
+            ProjectedColumn(path: 'amount', label: 'OrderAmount'),
+          ],
+        );
+
+        await service.exportMessagesCsv(messages, columnConfig: columnConfig);
+
+        final exportedFile = File(targetPath);
+        expect(exportedFile.existsSync(), isTrue);
+
+        final content = exportedFile.readAsStringSync();
+        // Timestamp and Payload are hidden, so they must not be in the header
+        expect(content, isNot(contains('Timestamp')));
+        expect(content, isNot(contains('Payload')));
+        expect(
+          content,
+          contains('Partition,Offset,Key,CustomerID,OrderAmount'),
+        );
+
+        // Check row with customer.id
+        expect(content, contains('0,100,key-1,CUST-99,42.5'));
+        // Check row with missing customer.id and amount rendered as empty string
+        expect(content, contains('1,101,key-2,,'));
+      },
+    );
+
+    test(
+      'exportMessagesCsv multiple topics bundles into ZIP archive',
+      () async {
+        final messages = [
+          const KafkaMessage(
+            topic: 'topic-1',
+            partition: 0,
+            offset: 100,
+            key: 'k1',
+            payload: 'p1',
+            timestamp: 1000,
+          ),
+          const KafkaMessage(
+            topic: 'topic-2',
+            partition: 0,
+            offset: 200,
+            key: 'k2',
+            payload: 'p2',
+            timestamp: 2000,
+          ),
+        ];
+
+        final targetPath = p.join(tempDir, 'export_csv.zip');
+        mockFilePicker.savePath = targetPath;
+
+        await service.exportMessagesCsv(messages);
+
+        expect(mockFilePicker.saveFileCalled, isTrue);
+        expect(mockFilePicker.lastFileName, startsWith('messages_export_'));
+        expect(mockFilePicker.lastFileName, endsWith('.zip'));
+
+        final exportedFile = File(targetPath);
+        expect(exportedFile.existsSync(), isTrue);
+
+        final bytes = exportedFile.readAsBytesSync();
+        final archive = ZipDecoder().decodeBytes(bytes);
+        final fileNames = archive.map((f) => f.name).toList();
+        expect(fileNames, containsAll(['topic-1.csv', 'topic-2.csv']));
+      },
+    );
   });
 }

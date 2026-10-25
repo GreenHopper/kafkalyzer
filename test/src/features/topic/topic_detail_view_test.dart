@@ -481,6 +481,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+      // The partition health table is no longer rendered inline above messages.
+      expect(
+        find.byKey(const Key('topic_partition_health_dialog')),
+        findsNothing,
+      );
+
+      // Tapping the partitions tag opens the dialog.
+      await tester.tap(find.byKey(const Key('topic_partitions_tag')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('topic_partition_health_dialog')),
+        findsOneWidget,
+      );
       for (final partition in [0, 1, 2]) {
         expect(
           find.byKey(Key('partition_row_$partition')),
@@ -516,6 +530,9 @@ void main() {
       fakeMetadataService.unavailable = true;
 
       await tester.pumpWidget(detailView(threePartitionTopic));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('topic_partitions_tag')));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);

@@ -422,6 +422,23 @@ class MockSettingsService extends _i1.Mock implements _i11.SettingsService {
   }
 
   @override
+  _i6.Future<int> lagWarnThreshold() =>
+      (super.noSuchMethod(
+            Invocation.method(#lagWarnThreshold, []),
+            returnValue: _i6.Future<int>.value(0),
+          )
+          as _i6.Future<int>);
+
+  @override
+  _i6.Future<void> setLagWarnThreshold(int? messages) =>
+      (super.noSuchMethod(
+            Invocation.method(#setLagWarnThreshold, [messages]),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
   _i6.Future<void> initializeSettings() =>
       (super.noSuchMethod(
             Invocation.method(#initializeSettings, []),
@@ -431,9 +448,13 @@ class MockSettingsService extends _i1.Mock implements _i11.SettingsService {
           as _i6.Future<void>);
 
   @override
-  _i6.Future<void> exportConfiguration() =>
+  _i6.Future<void> exportConfiguration({
+    bool? includeSensitiveCredentials = false,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#exportConfiguration, []),
+            Invocation.method(#exportConfiguration, [], {
+              #includeSensitiveCredentials: includeSensitiveCredentials,
+            }),
             returnValue: _i6.Future<void>.value(),
             returnValueForMissingStub: _i6.Future<void>.value(),
           )

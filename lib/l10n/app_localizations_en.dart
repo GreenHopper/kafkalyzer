@@ -804,7 +804,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copiedToClipboard => 'Copied to clipboard';
 
   @override
-  String get noDifferencesFound => 'No differences found.';
+  String get noDifferencesFound =>
+      'No differences found between the selected versions.';
 
   @override
   String get unknownView => 'Unknown View';
@@ -1318,6 +1319,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get partitionHealthTitle => 'Partition health';
 
   @override
+  String get partitionHealthDialogTitle => 'Partition Health & Replication';
+
+  @override
+  String get partitionHealthTooltip =>
+      'View partition replication & health details';
+
+  @override
   String get partitionLeaderCol => 'Leader';
 
   @override
@@ -1794,4 +1802,204 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cappedIndicator => 'capped';
+
+  @override
+  String get exportAsJson => 'JSON (Full Payload)';
+
+  @override
+  String get exportAsCsv => 'CSV (Visible Columns)';
+
+  @override
+  String get exportFormat => 'Export Format';
+
+  @override
+  String get exportMessagesCsv => 'Export Messages as CSV';
+
+  @override
+  String get searchPresets => 'Search Presets';
+
+  @override
+  String get defaultPreset => 'Default';
+
+  @override
+  String get saveSearchPreset => 'Save Current Search...';
+
+  @override
+  String get savePresetDialogTitle => 'Save Search Preset';
+
+  @override
+  String get presetNameLabel => 'Preset Name';
+
+  @override
+  String get presetSaved => 'Preset saved';
+
+  @override
+  String get presetDeleted => 'Preset deleted';
+
+  @override
+  String get deletePreset => 'Delete preset';
+
+  @override
+  String get updateCurrentPreset => 'Update current preset';
+
+  @override
+  String get restoreOpenTabsOnStartup => 'Restore open tabs on startup';
+
+  @override
+  String get restoreOpenTabsOnStartupDescription =>
+      'Automatically reopen previously opened topic tabs when reconnecting to a cluster';
+
+  @override
+  String get copyCliCommand => 'Copy Headless CLI Command';
+
+  @override
+  String get cliCommandCopied => 'CLI command copied to clipboard';
+
+  @override
+  String get protectedByOsKeyring => 'Protected by OS Keyring';
+
+  @override
+  String get includeCredentialsInExport =>
+      'Include passwords and tokens in export';
+
+  @override
+  String get includeCredentialsWarning =>
+      'Warning: Exporting credentials will store unencrypted passwords in the exported archive file.';
+
+  @override
+  String get readOnlyBadgeLabel => 'Read-Only';
+
+  @override
+  String get readOnlyBadgeTooltip =>
+      'kafkalyzer is strictly read-only by design. No write, publish, or offset commit operations are performed.';
+
+  @override
+  String get readOnlySecurityTitle => 'Read-Only Architecture & Security';
+
+  @override
+  String get readOnlySecurityDescription =>
+      'kafkalyzer connects to Kafka exclusively as a consumer with manual partition assignment and auto-commits disabled. It contains no producer logic and cannot alter broker topics, configurations, or consumer group offsets.';
+
+  @override
+  String get readOnlyAclRecommendationTitle =>
+      'Recommended Least-Privilege ACLs';
+
+  @override
+  String get readOnlyAclRecommendationDescription =>
+      'For defense-in-depth, configure broker ACLs so the service account has only read permissions (Describe, Read, DescribeConfigs). Do not grant Write, AlterConfigs, or IdempotentWrite.';
+
+  @override
+  String get readOnlyAclCommandTopicLabel => 'Topic ACL command template:';
+
+  @override
+  String get readOnlyAclCommandGroupLabel =>
+      'Consumer Group ACL command template:';
+
+  @override
+  String get readOnlyCopyCommand => 'Copy ACL Commands';
+
+  @override
+  String get readOnlyAclCommandsCopied => 'ACL commands copied to clipboard';
+
+  @override
+  String get compareSchemaVersions => 'Compare Versions';
+
+  @override
+  String get schemaDiffTitle => 'Schema Version Diff';
+
+  @override
+  String get baseVersionLabel => 'Base Version';
+
+  @override
+  String get compareVersionLabel => 'Compare Version';
+
+  @override
+  String get checkCompatibility => 'Check Compatibility';
+
+  @override
+  String get compatibilityCheckTitle => 'Schema Compatibility Check';
+
+  @override
+  String get schemaCompatible => 'Compatible';
+
+  @override
+  String get schemaIncompatible => 'Incompatible';
+
+  @override
+  String get compatibilityCheckSuccess =>
+      'Schema is compatible with the selected subject version.';
+
+  @override
+  String get associatedTopicsTitle => 'Associated Topics';
+
+  @override
+  String get noAssociatedTopicsFound =>
+      'No associated topics found for this subject.';
+
+  @override
+  String get draftSchemaLabel => 'Draft Schema (JSON)';
+
+  @override
+  String get dlqBadgeLabel => 'DLQ';
+
+  @override
+  String get retryBadgeLabel => 'Retry';
+
+  @override
+  String get deadLetterQueue => 'Dead-Letter Queue';
+
+  @override
+  String associatedDlqCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count failure topics',
+      one: '1 failure topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get failureDiagnosticsTitle => 'Failure Diagnostics (DLQ)';
+
+  @override
+  String get exceptionMessageLabel => 'Exception';
+
+  @override
+  String originalCoordinates(String topic, int partition, int offset) {
+    return 'Origin: $topic [P: $partition, O: $offset]';
+  }
+
+  @override
+  String get jumpToOriginalMessage => 'Jump to Original Message';
+
+  @override
+  String get copyKcatReplayCommand => 'Copy kcat Replay Command';
+
+  @override
+  String get kcatCommandCopied => 'kcat replay command copied to clipboard';
+
+  @override
+  String get copyShareableLink => 'Copy Shareable Link';
+
+  @override
+  String get shareableLinkCopied => 'Shareable link copied to clipboard';
+
+  @override
+  String get quickJumpTitle => 'Quick Jump / Open Reference';
+
+  @override
+  String get quickJumpHint =>
+      'Paste a kafkalyzer:// link (e.g. kafkalyzer://open?topic=...&offset=...)';
+
+  @override
+  String get quickJumpInvalid => 'Invalid reference URI format';
+
+  @override
+  String quickJumpClusterNotFound(String cluster) {
+    return 'Cluster \'$cluster\' not found in configuration. Select a cluster:';
+  }
+
+  @override
+  String get jump => 'Jump';
 }

@@ -1,9 +1,13 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:group_button/group_button.dart';
+import 'package:uuid/uuid.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
+import 'package:kafkalyzer/src/features/search/models/topic_search_preset.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/saved_searches_service.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condition_configuration.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/end_condition_configuration.dart';
 
@@ -40,6 +44,10 @@ class SearchStreamConfiguration extends StatefulWidget {
   final TextEditingController endTimestampController;
 
   final Widget? Function(TextEditingController)? variableSuffixBuilder;
+  final String? clusterName;
+  final String? topicName;
+  final TextEditingController? filterTermController;
+  final ValueChanged<TopicSearchPreset>? onPresetApplied;
 
   const SearchStreamConfiguration({
     super.key,
@@ -66,6 +74,10 @@ class SearchStreamConfiguration extends StatefulWidget {
     required this.endOffsetController,
     required this.endTimestampController,
     this.variableSuffixBuilder,
+    this.clusterName,
+    this.topicName,
+    this.filterTermController,
+    this.onPresetApplied,
   });
 
   @override
@@ -75,6 +87,8 @@ class SearchStreamConfiguration extends StatefulWidget {
 
 class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
   late bool _isAdvancedExpanded;
+  List<TopicSearchPreset> _presets = [];
+  TopicSearchPreset? _selectedPreset;
 
   @override
   void initState() {
@@ -84,6 +98,239 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
         widget.filterType != FilterType.contains ||
         widget.searchScope != SearchScope.both ||
         widget.fastTraceEnabled;
+    _loadPresets();
+  }
+
+  @override
+  void didUpdateWidget(covariant SearchStreamConfiguration oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.clusterName != oldWidget.clusterName ||
+        widget.topicName != oldWidget.topicName) {
+      _loadPresets();
+    }
+  }
+
+  Future<void> _loadPresets() async {
+    if (widget.clusterName == null || widget.topicName == null) return;
+    try {
+      final presets = await getIt<SavedSearchesService>().getPresets(
+        clusterName: widget.clusterName!,
+        topicName: widget.topicName!,
+      );
+      if (mounted) {
+        setState(() {
+          _presets = presets;
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _applyPreset(TopicSearchPreset preset) {
+    setState(() => _selectedPreset = preset);
+    widget.onScanModeChanged(preset.scanMode);
+    widget.onFilterTypeChanged(preset.filterType);
+    widget.onSearchScopeChanged(preset.searchScope);
+    if (widget.filterTermController != null) {
+      widget.filterTermController!.text = preset.filterTerm;
+    }
+    widget.onFastTraceChanged(preset.fastTraceEnabled);
+    widget.onLimitResultsChanged(preset.limitResults);
+    widget.maxResultsController.text = preset.maxResults;
+    widget.partitionController.text = preset.partition;
+    widget.onStartStrategyChanged(preset.startStrategy);
+    widget.startOffsetController.text = preset.startOffset;
+    widget.startTimestampController.text = preset.startTimestamp;
+    widget.onEndStrategyChanged(preset.endStrategy);
+    widget.endOffsetController.text = preset.endOffset;
+    widget.endTimestampController.text = preset.endTimestamp;
+    widget.onPresetApplied?.call(preset);
+  }
+
+  Future<void> _showSavePresetDialog(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final nameController = TextEditingController(
+      text: _selectedPreset?.name ?? '',
+    );
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n?.savePresetDialogTitle ?? 'Save Search Preset'),
+        content: TextField(
+          controller: nameController,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: l10n?.presetNameLabel ?? 'Preset Name',
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                Navigator.of(dialogContext).pop(true);
+              }
+            },
+            child: Text(MaterialLocalizations.of(context).okButtonLabel),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && nameController.text.trim().isNotEmpty) {
+      final name = nameController.text.trim();
+      final preset = TopicSearchPreset(
+        id: _selectedPreset?.name == name
+            ? _selectedPreset!.id
+            : const Uuid().v4(),
+        name: name,
+        clusterName: widget.clusterName ?? '',
+        topicName: widget.topicName ?? '',
+        scanMode: widget.scanMode,
+        filterType: widget.filterType,
+        searchScope: widget.searchScope,
+        filterTerm: widget.filterTermController?.text ?? '',
+        fastTraceEnabled: widget.fastTraceEnabled,
+        limitResults: widget.limitResults,
+        maxResults: widget.maxResultsController.text,
+        partition: widget.partitionController.text,
+        startStrategy: widget.startStrategy,
+        startOffset: widget.startOffsetController.text,
+        startTimestamp: widget.startTimestampController.text,
+        endStrategy: widget.endStrategy,
+        endOffset: widget.endOffsetController.text,
+        endTimestamp: widget.endTimestampController.text,
+        createdAt: DateTime.now(),
+      );
+
+      await getIt<SavedSearchesService>().savePreset(preset);
+      await _loadPresets();
+      setState(() => _selectedPreset = preset);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n?.presetSaved ?? 'Preset saved')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deletePreset(TopicSearchPreset preset) async {
+    final l10n = AppLocalizations.of(context);
+    await getIt<SavedSearchesService>().deletePreset(
+      clusterName: preset.clusterName,
+      topicName: preset.topicName,
+      presetId: preset.id,
+    );
+    await _loadPresets();
+    if (_selectedPreset?.id == preset.id) {
+      setState(() => _selectedPreset = null);
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n?.presetDeleted ?? 'Preset deleted')),
+      );
+    }
+  }
+
+  Widget _buildPresetBar(BuildContext context, AppLocalizations? l10n) {
+    if (widget.clusterName == null || widget.topicName == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.bookmarks_outlined,
+              size: 16,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l10n?.searchPresets ?? 'Presets:',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButton<String?>(
+                value: _selectedPreset?.id,
+                isExpanded: true,
+                underline: const SizedBox(),
+                hint: Text(
+                  l10n?.defaultPreset ?? 'Default',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                items: [
+                  DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text(
+                      l10n?.defaultPreset ?? 'Default',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  ..._presets.map(
+                    (p) => DropdownMenuItem<String?>(
+                      value: p.id,
+                      child: Text(
+                        p.name,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+                onChanged: (id) {
+                  if (id == null) {
+                    setState(() => _selectedPreset = null);
+                  } else {
+                    final match = _presets.firstWhere((p) => p.id == id);
+                    _applyPreset(match);
+                  }
+                },
+              ),
+            ),
+            Tooltip(
+              message: l10n?.saveSearchPreset ?? 'Save Current Search...',
+              child: IconButton(
+                icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _showSavePresetDialog(context),
+              ),
+            ),
+            if (_selectedPreset != null)
+              Tooltip(
+                message: l10n?.deletePreset ?? 'Delete preset',
+                child: IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _deletePreset(_selectedPreset!),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -92,6 +339,7 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildPresetBar(context, l10n),
         if (widget.filterInput != null) ...[
           widget.filterInput!,
           const SizedBox(height: 12),

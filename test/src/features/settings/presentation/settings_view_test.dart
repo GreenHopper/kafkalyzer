@@ -1,7 +1,9 @@
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
+import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +51,7 @@ void main() {
       mockActiveConnectionController,
     );
     getIt.registerSingleton<SettingsService>(mockSettingsService);
+    getIt.registerSingleton<SessionRestoreService>(SessionRestoreService());
   });
 
   Widget createWidgetUnderTest() {
@@ -83,10 +86,35 @@ void main() {
       expect(find.text('General'), findsOneWidget);
       expect(find.text('Default Script Output Directory'), findsOneWidget);
       expect(find.text('/tmp'), findsOneWidget);
+      expect(find.text('Restore open tabs on startup'), findsOneWidget);
       expect(find.text('Max Script Runs to keep'), findsOneWidget);
       expect(find.text('50'), findsOneWidget);
       expect(find.text('Maximum Concurrent Lag Queries'), findsOneWidget);
       expect(find.text('10'), findsOneWidget);
+    });
+
+    testWidgets('toggles restore open tabs on startup setting', (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      when(mockClusterListController.isLoading).thenReturn(false);
+      when(mockClusterListController.clusters).thenReturn([]);
+      when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final switchFinder = find.byKey(const Key('restore_open_tabs_switch'));
+      expect(switchFinder, findsOneWidget);
+
+      final sessionService = GetIt.instance<SessionRestoreService>();
+      expect(await sessionService.isRestorationEnabled(), isTrue);
+
+      await tester.tap(switchFinder);
+      await tester.pumpAndSettle();
+
+      expect(await sessionService.isRestorationEnabled(), isFalse);
     });
 
     testWidgets('allows changing maximum concurrent queries setting', (
@@ -162,15 +190,27 @@ void main() {
       when(mockClusterListController.clusters).thenReturn([]);
       when(mockActiveConnectionController.activeProfile).thenReturn(null);
 
-      when(mockSettingsService.exportConfiguration()).thenAnswer((_) async {});
+      when(
+        mockSettingsService.exportConfiguration(
+          includeSensitiveCredentials: anyNamed('includeSensitiveCredentials'),
+        ),
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Export Configuration'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      verify(mockSettingsService.exportConfiguration()).called(1);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Export'));
+      await tester.pumpAndSettle();
+
+      verify(
+        mockSettingsService.exportConfiguration(
+          includeSensitiveCredentials: false,
+        ),
+      ).called(1);
     });
     testWidgets('shows add cluster dialog on tap', (tester) async {
       tester.view.physicalSize = const Size(1280, 1000);
@@ -215,6 +255,24 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockClusterListController.deleteCluster(0)).called(1);
+    });
+
+    testWidgets('renders ReadOnlySecurityBadge in about section', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      when(mockClusterListController.isLoading).thenReturn(false);
+      when(mockClusterListController.clusters).thenReturn([]);
+      when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ReadOnlySecurityBadge), findsOneWidget);
+      expect(find.text('Read-Only'), findsOneWidget);
     });
   });
 }

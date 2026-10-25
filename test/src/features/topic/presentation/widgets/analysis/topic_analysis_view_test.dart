@@ -356,5 +356,23 @@ void main() {
       expect(find.byKey(const Key('report_comparison_view')), findsNothing);
       expect(controller.comparison, isNull);
     });
+
+    testWidgets('renders partition health section when report is present', (
+      tester,
+    ) async {
+      useBigTestSurface(tester);
+      final fake = FakeExportService()..importResult = _sampleFile();
+      final controller = TopicAnalysisController(exportService: fake);
+      await tester.pumpWidget(buildView(controller));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Import Analysis Report'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('analysis_partition_health_card')),
+        findsOneWidget,
+      );
+      expect(find.text('Partition Health & Replication'), findsOneWidget);
+    });
   });
 }

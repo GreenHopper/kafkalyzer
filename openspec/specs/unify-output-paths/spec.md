@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Unify Output Paths Specification
+
+## Purpose
+
+Provides centralized, predictable application output directory configuration and automated script output file organization.
+
+## Requirements
 
 ### Requirement: Unified Output Directory Configuration
 The system SHALL only allow configuration of the output directory through the general application settings.

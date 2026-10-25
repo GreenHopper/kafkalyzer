@@ -28,6 +28,48 @@ The application leverages the power of two ecosystems:
 - **Backend (Rust)**: Handles Kafka connectivity via `rdkafka`, message consumption, protocol deserialization (Avro/Protobuf), and high-performance filtering.
 - **Bridge**: Communication between Dart and Rust is seamlessly handled by `flutter_rust_bridge` v2.
 
+## 🛡️ Read-Only by Design
+
+kafkalyzer is engineered specifically for observability, diagnostics, and stream analysis. **Write operations against connected Kafka clusters are excluded by architectural design.**
+
+### Technical Invariants
+
+1. **No Kafka Producers**: No producer clients (`Producer`, `ThreadedProducer`, `BaseProducer`, `FutureProducer`, `FutureRecord`) exist in the codebase.
+2. **Explicit Partition Assignment**: The consumer uses manual partition assignment (`assign()`). It never uses consumer group subscriptions (`subscribe()`), ensuring that running kafkalyzer never triggers partition rebalances or disrupts consumer group topologies.
+3. **No Offset Commits**: Consumer clients explicitly configure `enable.auto.commit=false`, and zero offset commit methods (`commit()`, `commit_message()`, `commit_consumer_state()`) are implemented. Consuming or seeking messages never moves consumer group progress on the broker.
+4. **Read-Only Metadata**: Broker interactions are strictly limited to `fetch_metadata`, `fetch_watermarks`, and `describe_configs`.
+
+### Verifiable CI Enforcement Gate
+
+To prevent accidental regressions, kafkalyzer includes an automated static analysis verification script that runs on every pull request and build before compilation:
+
+```bash
+# Verify read-only invariants locally
+./scripts/check_read_only.sh
+```
+
+### Recommended Least-Privilege Service Account (Defense-in-Depth)
+
+While kafkalyzer cannot write to Kafka, enterprise best practice recommends configuring broker-side ACLs so that the connecting service account has only read permissions:
+
+```bash
+# Allow read and metadata access on topics
+kafka-acls.sh --bootstrap-server <bootstrap:9092> \
+  --add --allow-principal User:kafkalyzer \
+  --operation Describe --operation Read --operation DescribeConfigs \
+  --topic "*"
+
+# Allow inspecting consumer groups and lag
+kafka-acls.sh --bootstrap-server <bootstrap:9092> \
+  --add --allow-principal User:kafkalyzer \
+  --operation Describe \
+  --group "*"
+```
+
+> [!TIP]
+> Do **NOT** grant `Write`, `AlterConfigs`, `Alter`, or `IdempotentWrite` permissions. They are never required by kafkalyzer.
+
+
 ## ✨ Key Features
 
 ### 🔌 Cluster Management & Enterprise Security

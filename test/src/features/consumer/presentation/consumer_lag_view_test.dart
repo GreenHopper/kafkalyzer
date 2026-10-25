@@ -121,10 +121,9 @@ ConsumerGroupLag _groupWithLag(int lag) => ConsumerGroupLag(
 );
 
 /// Readings the trend of `groupId` currently retains.
-List<int> _retainedReadings(WidgetTester tester, String groupId) =>
-    tester.widget<LagTrend>(
-      find.byKey(Key('group_lag_trend_$groupId')),
-    ).readings;
+List<int> _retainedReadings(WidgetTester tester, String groupId) => tester
+    .widget<LagTrend>(find.byKey(Key('group_lag_trend_$groupId')))
+    .readings;
 
 void main() {
   late FakeKafkaMetadataService fakeMetadataService;
@@ -1071,10 +1070,16 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
 
-    expect(_retainedReadings(tester, 'test-group').length, greaterThanOrEqualTo(2));
+    expect(
+      _retainedReadings(tester, 'test-group').length,
+      greaterThanOrEqualTo(2),
+    );
 
     await activeConnectionController.connect(
-      const ClusterProfile(name: 'other-cluster', bootstrapServers: 'other:9092'),
+      const ClusterProfile(
+        name: 'other-cluster',
+        bootstrapServers: 'other:9092',
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -1082,7 +1087,9 @@ void main() {
   });
 
   testWidgets('a group at 8000 is marked at threshold 5000', (tester) async {
-    SharedPreferences.setMockInitialValues({'consumer_lag_warn_threshold': 5000});
+    SharedPreferences.setMockInitialValues({
+      'consumer_lag_warn_threshold': 5000,
+    });
     fakeMetadataService.lags = [_groupWithLag(8000)];
 
     await tester.pumpWidget(createWidgetUnderTest());
@@ -1098,7 +1105,9 @@ void main() {
   testWidgets('a group at 1200 is not marked at threshold 5000', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({'consumer_lag_warn_threshold': 5000});
+    SharedPreferences.setMockInitialValues({
+      'consumer_lag_warn_threshold': 5000,
+    });
     fakeMetadataService.lags = [_groupWithLag(1200)];
 
     await tester.pumpWidget(createWidgetUnderTest());

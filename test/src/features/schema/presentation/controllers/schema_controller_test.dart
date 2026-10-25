@@ -1,5 +1,6 @@
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -80,6 +81,57 @@ void main() {
     test('parseSchemaFields returns empty list on invalid json', () {
       expect(controller.parseSchemaFields('invalid json'), isEmpty);
       expect(controller.parseSchemaFields('{}'), isEmpty); // No fields key
+    });
+
+    test('checkCompatibility delegates to service', () async {
+      const compat = api.SchemaCompatibilityResult(
+        isCompatible: true,
+        messages: [],
+      );
+      when(
+        mockService.checkSchemaCompatibility(
+          profile: testProfile,
+          subject: 'topic-value',
+          schema: '{}',
+        ),
+      ).thenAnswer((_) async => compat);
+
+      final result = await controller.checkCompatibility(
+        testProfile,
+        'topic-value',
+        schema: '{}',
+      );
+
+      expect(result.isCompatible, isTrue);
+      verify(
+        mockService.checkSchemaCompatibility(
+          profile: testProfile,
+          subject: 'topic-value',
+          schema: '{}',
+        ),
+      ).called(1);
+    });
+
+    test('getAssociatedTopics delegates to service', () async {
+      when(
+        mockService.resolveAssociatedTopics(
+          subject: 'topic-value',
+          availableTopics: ['topic'],
+        ),
+      ).thenAnswer((_) async => ['topic']);
+
+      final result = await controller.getAssociatedTopics(
+        'topic-value',
+        ['topic'],
+      );
+
+      expect(result, ['topic']);
+      verify(
+        mockService.resolveAssociatedTopics(
+          subject: 'topic-value',
+          availableTopics: ['topic'],
+        ),
+      ).called(1);
     });
   });
 }

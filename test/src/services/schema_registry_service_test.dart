@@ -1,4 +1,5 @@
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +66,47 @@ void main() {
           subject: 'subject1',
         ),
       ).called(1);
+    });
+
+    test('checkSchemaCompatibility delegates to API', () async {
+      const compat = api.SchemaCompatibilityResult(
+        isCompatible: true,
+        messages: [],
+      );
+      when(
+        mockApi.crateApiSchemaRegistryCheckSchemaCompatibility(
+          profile: profile,
+          subject: 'orders-value',
+          schema: '{}',
+        ),
+      ).thenAnswer((_) async => compat);
+
+      final service = SchemaRegistryService();
+      final result = await service.checkSchemaCompatibility(
+        profile: profile,
+        subject: 'orders-value',
+        schema: '{}',
+      );
+
+      expect(result.isCompatible, isTrue);
+      expect(result.messages, isEmpty);
+    });
+
+    test('resolveAssociatedTopics delegates to API', () async {
+      when(
+        mockApi.crateApiSchemaRegistryResolveAssociatedTopicsForSubject(
+          subject: 'orders-value',
+          availableTopics: ['orders'],
+        ),
+      ).thenAnswer((_) async => ['orders']);
+
+      final service = SchemaRegistryService();
+      final result = await service.resolveAssociatedTopics(
+        subject: 'orders-value',
+        availableTopics: ['orders'],
+      );
+
+      expect(result, ['orders']);
     });
   });
 }

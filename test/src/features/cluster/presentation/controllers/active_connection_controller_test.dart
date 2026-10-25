@@ -4,6 +4,8 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
+import 'package:kafkalyzer/src/services/session_restore_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 
@@ -48,13 +50,15 @@ class MockKafkaMetadataService extends KafkaMetadataService {
 }
 
 class MockTopicController extends TopicController {
+  List<TopicMetadata> topics = [];
+
   @override
   Future<void> fetchTopics(ClusterProfile cluster, {bool force = false}) async {
     // No-op
   }
 
   @override
-  List<TopicMetadata>? getTopics(ClusterProfile cluster) => [];
+  List<TopicMetadata>? getTopics(ClusterProfile cluster) => topics;
 
   @override
   bool isLoading(ClusterProfile cluster) => false;
@@ -65,10 +69,15 @@ void main() {
   late ActiveConnectionController controller;
   late MockKafkaMetadataService mockMetadataService;
   late MockTopicController mockTopicController;
+  late SessionRestoreService sessionRestoreService;
 
   setUp(() async {
     await getIt.reset();
+    SharedPreferences.setMockInitialValues({});
     getIt.registerLazySingleton<Logger>(() => MockLogger());
+
+    sessionRestoreService = SessionRestoreService();
+    getIt.registerSingleton<SessionRestoreService>(sessionRestoreService);
 
     mockMetadataService = MockKafkaMetadataService();
     getIt.registerSingleton<KafkaMetadataService>(mockMetadataService);
@@ -288,5 +297,74 @@ void main() {
         expect(streamController, isNotNull);
       },
     );
+
+    test(
+      'automatically saves open tabs and restores them on reconnection',
+      () async {
+        mockMetadataService.shouldValidate = true;
+        const topic1 = TopicMetadata(
+          name: 'orders',
+          partitionCount: 3,
+          replicationFactor: 1,
+        );
+        const topic2 = TopicMetadata(
+          name: 'payments',
+          partitionCount: 3,
+          replicationFactor: 1,
+        );
+
+        mockTopicController.topics = [topic1, topic2];
+
+        await controller.connect(validProfile);
+        controller.openTopic(topic: topic1);
+        controller.openTopic(topic: topic2);
+
+        // Verify session was saved
+        final session = await sessionRestoreService.getSession(
+          validProfile.name,
+        );
+        expect(session, isNotNull);
+        expect(session!.openTopicNames, containsAll(['orders', 'payments']));
+        expect(session.activeTopicName, 'payments');
+
+        // Now create a fresh controller and connect again (simulating app restart)
+        final newController = ActiveConnectionController();
+        expect(newController.openTopics, isEmpty);
+
+        await newController.connect(validProfile);
+
+        // Tabs should be restored
+        expect(newController.openTopics.length, 2);
+        expect(
+          newController.openTopics.map((t) => t.topic.name),
+          containsAll(['orders', 'payments']),
+        );
+        expect(newController.activeTopic?.topic.name, 'payments');
+      },
+    );
+
+    test('bypasses tab restoration when restore setting is disabled', () async {
+      mockMetadataService.shouldValidate = true;
+      const topic1 = TopicMetadata(
+        name: 'orders',
+        partitionCount: 3,
+        replicationFactor: 1,
+      );
+      mockTopicController.topics = [topic1];
+
+      await sessionRestoreService.saveSession(
+        validProfile.name,
+        openTopicNames: ['orders'],
+        activeTopicName: 'orders',
+      );
+      await sessionRestoreService.setRestorationEnabled(false);
+
+      final newController = ActiveConnectionController();
+      await newController.connect(validProfile);
+
+      // Restoration disabled, so openTopics should remain empty
+      expect(newController.openTopics, isEmpty);
+      expect(newController.activeTopic, isNull);
+    });
   });
 }

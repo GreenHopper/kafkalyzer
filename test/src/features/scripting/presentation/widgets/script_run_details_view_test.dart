@@ -8,6 +8,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.d
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history/script_run_details_view.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
 import 'package:logger/logger.dart';
@@ -16,7 +17,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeMessageExportService implements MessageExportService {
   @override
-  Future<void> exportMessages(List messages) async {}
+  Future<void> exportMessages(
+    List<KafkaMessage> messages, {
+    ExportFormat format = ExportFormat.json,
+    dynamic columnConfig,
+    bool isScriptingView = false,
+  }) async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

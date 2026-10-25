@@ -684,6 +684,8 @@
     }
   },
   "partitionHealthTitle": "Partition health",
+  "partitionHealthDialogTitle": "Partition Health & Replication",
+  "partitionHealthTooltip": "View partition replication & health details",
   "partitionLeaderCol": "Leader",
   "partitionReplicasCol": "Replicas",
   "partitionIsrCol": "ISR",
@@ -899,5 +901,82 @@
   "sizePercentiles": "p50/p95/p99",
   "estimatedIndicator": "estimated",
   "distinctKeys": "Distinct keys",
-  "cappedIndicator": "capped"
+  "cappedIndicator": "capped",
+  "exportAsJson": "JSON (Full Payload)",
+  "exportAsCsv": "CSV (Visible Columns)",
+  "exportFormat": "Export Format",
+  "exportMessagesCsv": "Export Messages as CSV",
+  "searchPresets": "Search Presets",
+  "defaultPreset": "Default",
+  "saveSearchPreset": "Save Current Search...",
+  "savePresetDialogTitle": "Save Search Preset",
+  "presetNameLabel": "Preset Name",
+  "presetSaved": "Preset saved",
+  "presetDeleted": "Preset deleted",
+  "deletePreset": "Delete preset",
+  "updateCurrentPreset": "Update current preset",
+  "restoreOpenTabsOnStartup": "Restore open tabs on startup",
+  "restoreOpenTabsOnStartupDescription": "Automatically reopen previously opened topic tabs when reconnecting to a cluster",
+  "copyCliCommand": "Copy Headless CLI Command",
+  "cliCommandCopied": "CLI command copied to clipboard",
+  "protectedByOsKeyring": "Protected by OS Keyring",
+  "includeCredentialsInExport": "Include passwords and tokens in export",
+  "includeCredentialsWarning": "Warning: Exporting credentials will store unencrypted passwords in the exported archive file.",
+  "readOnlyBadgeLabel": "Read-Only",
+  "readOnlyBadgeTooltip": "kafkalyzer is strictly read-only by design. No write, publish, or offset commit operations are performed.",
+  "readOnlySecurityTitle": "Read-Only Architecture & Security",
+  "readOnlySecurityDescription": "kafkalyzer connects to Kafka exclusively as a consumer with manual partition assignment and auto-commits disabled. It contains no producer logic and cannot alter broker topics, configurations, or consumer group offsets.",
+  "readOnlyAclRecommendationTitle": "Recommended Least-Privilege ACLs",
+  "readOnlyAclRecommendationDescription": "For defense-in-depth, configure broker ACLs so the service account has only read permissions (Describe, Read, DescribeConfigs). Do not grant Write, AlterConfigs, or IdempotentWrite.",
+  "readOnlyAclCommandTopicLabel": "Topic ACL command template:",
+  "readOnlyAclCommandGroupLabel": "Consumer Group ACL command template:",
+  "readOnlyCopyCommand": "Copy ACL Commands",
+  "readOnlyAclCommandsCopied": "ACL commands copied to clipboard",
+  "compareSchemaVersions": "Compare Versions",
+  "schemaDiffTitle": "Schema Version Diff",
+  "baseVersionLabel": "Base Version",
+  "compareVersionLabel": "Compare Version",
+  "checkCompatibility": "Check Compatibility",
+  "compatibilityCheckTitle": "Schema Compatibility Check",
+  "schemaCompatible": "Compatible",
+  "schemaIncompatible": "Incompatible",
+  "compatibilityCheckSuccess": "Schema is compatible with the selected subject version.",
+  "associatedTopicsTitle": "Associated Topics",
+  "noAssociatedTopicsFound": "No associated topics found for this subject.",
+  "noDifferencesFound": "No differences found between the selected versions.",
+  "draftSchemaLabel": "Draft Schema (JSON)",
+  "dlqBadgeLabel": "DLQ",
+  "retryBadgeLabel": "Retry",
+  "deadLetterQueue": "Dead-Letter Queue",
+  "associatedDlqCount": "{count, plural, =1{1 failure topic} other{{count} failure topics}}",
+  "@associatedDlqCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "failureDiagnosticsTitle": "Failure Diagnostics (DLQ)",
+  "exceptionMessageLabel": "Exception",
+  "originalCoordinates": "Origin: {topic} [P: {partition}, O: {offset}]",
+  "@originalCoordinates": {
+    "placeholders": {
+      "topic": { "type": "String" },
+      "partition": { "type": "int" },
+      "offset": { "type": "int" }
+    }
+  },
+  "jumpToOriginalMessage": "Jump to Original Message",
+  "copyKcatReplayCommand": "Copy kcat Replay Command",
+  "kcatCommandCopied": "kcat replay command copied to clipboard",
+  "copyShareableLink": "Copy Shareable Link",
+  "shareableLinkCopied": "Shareable link copied to clipboard",
+  "quickJumpTitle": "Quick Jump / Open Reference",
+  "quickJumpHint": "Paste a kafkalyzer:// link (e.g. kafkalyzer://open?topic=...&offset=...)",
+  "quickJumpInvalid": "Invalid reference URI format",
+  "quickJumpClusterNotFound": "Cluster '{cluster}' not found in configuration. Select a cluster:",
+  "@quickJumpClusterNotFound": {
+    "placeholders": {
+      "cluster": { "type": "String" }
+    }
+  },
+  "jump": "Jump"
 }

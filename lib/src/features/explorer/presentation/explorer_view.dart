@@ -7,6 +7,7 @@ import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/features/navigation/widgets/quick_jump_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 
@@ -17,6 +18,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_ana
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_item.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
+import 'package:kafkalyzer/src/features/topic/utils/dlq_topic_detector.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/cluster_overview_view.dart';
@@ -82,6 +84,18 @@ class _ExplorerViewState extends State<ExplorerView> {
     super.dispose();
   }
 
+  void _showQuickJumpDialog(BuildContext context) {
+    final clusterController = getIt<ClusterListController>();
+    final activeController = getIt<ActiveConnectionController>();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => QuickJumpDialog(
+        availableClusters: clusterController.clusters,
+        currentCluster: activeController.activeProfile,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -96,6 +110,10 @@ class _ExplorerViewState extends State<ExplorerView> {
             _toggleSidebar,
         const SingleActivator(LogicalKeyboardKey.keyB, meta: true):
             _toggleSidebar,
+        const SingleActivator(LogicalKeyboardKey.keyG, control: true): () =>
+            _showQuickJumpDialog(context),
+        const SingleActivator(LogicalKeyboardKey.keyG, meta: true): () =>
+            _showQuickJumpDialog(context),
       },
       child: Focus(
         autofocus: true,
@@ -220,6 +238,13 @@ class _ExplorerViewState extends State<ExplorerView> {
               icon: const Icon(Icons.view_sidebar_outlined),
               tooltip: l10n.expandSidebar,
               onPressed: _toggleSidebar,
+            ),
+            const SizedBox(height: 8),
+            IconButton(
+              key: const Key('explorer_collapsed_quick_jump_button'),
+              icon: const Icon(Icons.bolt, size: 20),
+              tooltip: l10n.quickJumpTitle,
+              onPressed: () => _showQuickJumpDialog(context),
             ),
           ],
         ),
@@ -418,6 +443,15 @@ class _ExplorerViewState extends State<ExplorerView> {
             ),
           ),
           IconButton(
+            key: const Key('explorer_quick_jump_button'),
+            icon: const Icon(Icons.bolt, size: 16),
+            tooltip: l10n.quickJumpTitle,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () => _showQuickJumpDialog(context),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
             icon: const Icon(Icons.refresh, size: 16),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -517,42 +551,61 @@ class _ExplorerViewState extends State<ExplorerView> {
     ActiveConnectionController activeController,
     TopicController topicController,
   ) {
+    if (activeController.isConnecting ||
+        topicController.isLoading(activeController.activeProfile!)) {
+      return const Expanded(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final allTopicNames = activeController.topics.map((t) => t.name).toList();
+    final failureGroups =
+        DlqTopicDetector.groupFailureTopicsByBase(allTopicNames);
+
     return Expanded(
-      child:
-          (activeController.isConnecting ||
-              topicController.isLoading(activeController.activeProfile!))
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              itemCount: activeController.topics.length,
-              itemBuilder: (context, index) {
-                final topic = activeController.topics[index];
-                final isSelected = activeController.openTopics.any(
-                  (t) =>
-                      t.topic.name == topic.name &&
-                      t.profile.name == activeController.activeProfile?.name,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        itemCount: activeController.topics.length,
+        itemBuilder: (context, index) {
+          final topic = activeController.topics[index];
+          final isSelected = activeController.openTopics.any(
+            (t) =>
+                t.topic.name == topic.name &&
+                t.profile.name == activeController.activeProfile?.name,
+          );
+          return TopicListItem(
+            topic: topic,
+            isSelected: isSelected,
+            highlightQuery: activeController.topicFilter,
+            associatedFailureTopics: failureGroups[topic.name],
+            onSelectFailureTopic: (childTopicName) {
+              final match = activeController.topics
+                  .where((t) => t.name == childTopicName)
+                  .firstOrNull;
+              if (match != null) {
+                activeController.setActiveTopic(
+                  match,
+                  activeController.activeProfile,
                 );
-                return TopicListItem(
-                  topic: topic,
-                  isSelected: isSelected,
-                  highlightQuery: activeController.topicFilter,
-                  onTap: () => activeController.setActiveTopic(
-                    topic,
-                    activeController.activeProfile,
-                  ),
-                  onDoubleTap: () => activeController.streamTopicWithDefaults(
-                    topic,
-                    activeController.activeProfile,
-                  ),
-                  onOpenInNewTab: () => activeController.openTopic(
-                    topic: topic,
-                    profile: activeController.activeProfile,
-                    forceNew: true,
-                  ),
-                  clusterProfile: activeController.activeProfile,
-                );
-              },
+              }
+            },
+            onTap: () => activeController.setActiveTopic(
+              topic,
+              activeController.activeProfile,
             ),
+            onDoubleTap: () => activeController.streamTopicWithDefaults(
+              topic,
+              activeController.activeProfile,
+            ),
+            onOpenInNewTab: () => activeController.openTopic(
+              topic: topic,
+              profile: activeController.activeProfile,
+              forceNew: true,
+            ),
+            clusterProfile: activeController.activeProfile,
+          );
+        },
+      ),
     );
   }
 
@@ -818,15 +871,40 @@ class _ExplorerViewState extends State<ExplorerView> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+                if (DlqTopicDetector.isDlqTopic(record.topic.name)) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    key: const Key('tab_dlq_badge'),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                    ),
+                    child: Text(
+                      l10n.dlqBadgeLabel,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade800,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
             Text(
               record.profile.name,

@@ -681,8 +681,11 @@ class MessagesViewState extends State<MessagesView> {
                 horizontal: 16.0,
                 vertical: 8.0,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              // Wrap, not Row: the header keeps every control reachable when the
+              // window is too narrow for one line.
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                runSpacing: 8,
                 children: [
                   if (_activeView != 'table') ...[
                     Tooltip(
@@ -732,25 +735,23 @@ class MessagesViewState extends State<MessagesView> {
                     showSchemaView: _showSchemaView,
                   ),
                   const SizedBox(width: 8),
-                  Flexible(
-                    child: MessageSearchBar(
-                      searchPhrase: _searchPhrase,
-                      onSearchChanged: (val) {
-                        setState(() {
-                          _searchPhrase = val;
-                          _updateFilters();
-                        });
-                      },
-                      matchCount: _cachedMatchCount,
-                      totalCount: widget.messages.length,
-                      showNonMatches: _showNonMatches,
-                      onShowNonMatchesChanged: (val) {
-                        setState(() {
-                          _showNonMatches = val;
-                          _updateFilters();
-                        });
-                      },
-                    ),
+                  MessageSearchBar(
+                    searchPhrase: _searchPhrase,
+                    onSearchChanged: (val) {
+                      setState(() {
+                        _searchPhrase = val;
+                        _updateFilters();
+                      });
+                    },
+                    matchCount: _cachedMatchCount,
+                    totalCount: widget.messages.length,
+                    showNonMatches: _showNonMatches,
+                    onShowNonMatchesChanged: (val) {
+                      setState(() {
+                        _showNonMatches = val;
+                        _updateFilters();
+                      });
+                    },
                   ),
                   if (_activeView == 'table') ...[
                     const SizedBox(width: 8),
@@ -852,40 +853,71 @@ class MessagesViewState extends State<MessagesView> {
                     ),
                   ],
                   const SizedBox(width: 8),
-                  Tooltip(
-                    message: l10n.exportMessages,
-                    child: IconButton(
-                      icon: const Icon(Icons.download),
-                      onPressed: () async {
-                        try {
-                          await getIt<MessageExportService>().exportMessages(
-                            _cachedFilteredMessages,
+                  PopupMenuButton<ExportFormat>(
+                    tooltip: l10n.exportMessages,
+                    icon: const Icon(Icons.download),
+                    onSelected: (ExportFormat format) async {
+                      try {
+                        await getIt<MessageExportService>().exportMessages(
+                          _cachedFilteredMessages,
+                          format: format,
+                          columnConfig: _tableColumnConfig,
+                          isScriptingView: widget.showTopic || widget.showStep,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(l10n.messagesExportedSuccessfully),
+                            ),
                           );
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.messagesExportedSuccessfully,
-                                ),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.messagesExportFailed(e.toString()),
-                                ),
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.error,
-                              ),
-                            );
-                          }
                         }
-                      },
-                    ),
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                l10n.messagesExportFailed(e.toString()),
+                              ),
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      PopupMenuItem<ExportFormat>(
+                        value: ExportFormat.json,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.data_object, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                l10n.exportAsJson,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<ExportFormat>(
+                        value: ExportFormat.csv,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.table_chart_outlined, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                l10n.exportAsCsv,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -982,6 +1014,7 @@ class MessagesViewState extends State<MessagesView> {
           onVisualOrderChanged: (order) {
             _tableVisualOrder = order;
           },
+          clusterProfile: widget.profile,
         );
       case 'diff':
         return Padding(

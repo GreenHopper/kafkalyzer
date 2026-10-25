@@ -7,6 +7,8 @@ import '../frb_generated.dart';
 import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`, `from`
+
 Future<List<String>> fetchSubjects({required ClusterProfile profile}) =>
     KafkalyzerRustLib.instance.api.crateApiSchemaRegistryFetchSubjects(
       profile: profile,
@@ -29,3 +31,46 @@ Future<Int32List> fetchSchemaVersions({
   profile: profile,
   subject: subject,
 );
+
+Future<SchemaCompatibilityResult> checkSchemaCompatibility({
+  required ClusterProfile profile,
+  required String subject,
+  int? version,
+  required String schema,
+}) => KafkalyzerRustLib.instance.api
+    .crateApiSchemaRegistryCheckSchemaCompatibility(
+      profile: profile,
+      subject: subject,
+      version: version,
+      schema: schema,
+    );
+
+Future<List<String>> resolveAssociatedTopicsForSubject({
+  required String subject,
+  required List<String> availableTopics,
+}) => KafkalyzerRustLib.instance.api
+    .crateApiSchemaRegistryResolveAssociatedTopicsForSubject(
+      subject: subject,
+      availableTopics: availableTopics,
+    );
+
+class SchemaCompatibilityResult {
+  final bool isCompatible;
+  final List<String> messages;
+
+  const SchemaCompatibilityResult({
+    required this.isCompatible,
+    required this.messages,
+  });
+
+  @override
+  int get hashCode => isCompatible.hashCode ^ messages.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SchemaCompatibilityResult &&
+          runtimeType == other.runtimeType &&
+          isCompatible == other.isCompatible &&
+          messages == other.messages;
+}

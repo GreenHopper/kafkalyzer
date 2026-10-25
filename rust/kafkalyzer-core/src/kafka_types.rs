@@ -59,6 +59,12 @@ pub struct MessageSchema {
     pub version: Option<i32>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SchemaCompatibilityResult {
+    pub is_compatible: bool,
+    pub messages: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KafkaMessage {
     pub topic: String,

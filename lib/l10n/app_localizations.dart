@@ -1517,7 +1517,7 @@ abstract class AppLocalizations {
   /// No description provided for @noDifferencesFound.
   ///
   /// In en, this message translates to:
-  /// **'No differences found.'**
+  /// **'No differences found between the selected versions.'**
   String get noDifferencesFound;
 
   /// No description provided for @unknownView.
@@ -2372,6 +2372,18 @@ abstract class AppLocalizations {
   /// **'Partition health'**
   String get partitionHealthTitle;
 
+  /// No description provided for @partitionHealthDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition Health & Replication'**
+  String get partitionHealthDialogTitle;
+
+  /// No description provided for @partitionHealthTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'View partition replication & health details'**
+  String get partitionHealthTooltip;
+
   /// No description provided for @partitionLeaderCol.
   ///
   /// In en, this message translates to:
@@ -3211,6 +3223,360 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'capped'**
   String get cappedIndicator;
+
+  /// No description provided for @exportAsJson.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON (Full Payload)'**
+  String get exportAsJson;
+
+  /// No description provided for @exportAsCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'CSV (Visible Columns)'**
+  String get exportAsCsv;
+
+  /// No description provided for @exportFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Format'**
+  String get exportFormat;
+
+  /// No description provided for @exportMessagesCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Messages as CSV'**
+  String get exportMessagesCsv;
+
+  /// No description provided for @searchPresets.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Presets'**
+  String get searchPresets;
+
+  /// No description provided for @defaultPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get defaultPreset;
+
+  /// No description provided for @saveSearchPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Current Search...'**
+  String get saveSearchPreset;
+
+  /// No description provided for @savePresetDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Search Preset'**
+  String get savePresetDialogTitle;
+
+  /// No description provided for @presetNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset Name'**
+  String get presetNameLabel;
+
+  /// No description provided for @presetSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset saved'**
+  String get presetSaved;
+
+  /// No description provided for @presetDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset deleted'**
+  String get presetDeleted;
+
+  /// No description provided for @deletePreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete preset'**
+  String get deletePreset;
+
+  /// No description provided for @updateCurrentPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Update current preset'**
+  String get updateCurrentPreset;
+
+  /// No description provided for @restoreOpenTabsOnStartup.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore open tabs on startup'**
+  String get restoreOpenTabsOnStartup;
+
+  /// No description provided for @restoreOpenTabsOnStartupDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically reopen previously opened topic tabs when reconnecting to a cluster'**
+  String get restoreOpenTabsOnStartupDescription;
+
+  /// No description provided for @copyCliCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Headless CLI Command'**
+  String get copyCliCommand;
+
+  /// No description provided for @cliCommandCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'CLI command copied to clipboard'**
+  String get cliCommandCopied;
+
+  /// No description provided for @protectedByOsKeyring.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected by OS Keyring'**
+  String get protectedByOsKeyring;
+
+  /// No description provided for @includeCredentialsInExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Include passwords and tokens in export'**
+  String get includeCredentialsInExport;
+
+  /// No description provided for @includeCredentialsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning: Exporting credentials will store unencrypted passwords in the exported archive file.'**
+  String get includeCredentialsWarning;
+
+  /// No description provided for @readOnlyBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-Only'**
+  String get readOnlyBadgeLabel;
+
+  /// No description provided for @readOnlyBadgeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'kafkalyzer is strictly read-only by design. No write, publish, or offset commit operations are performed.'**
+  String get readOnlyBadgeTooltip;
+
+  /// No description provided for @readOnlySecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-Only Architecture & Security'**
+  String get readOnlySecurityTitle;
+
+  /// No description provided for @readOnlySecurityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'kafkalyzer connects to Kafka exclusively as a consumer with manual partition assignment and auto-commits disabled. It contains no producer logic and cannot alter broker topics, configurations, or consumer group offsets.'**
+  String get readOnlySecurityDescription;
+
+  /// No description provided for @readOnlyAclRecommendationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Least-Privilege ACLs'**
+  String get readOnlyAclRecommendationTitle;
+
+  /// No description provided for @readOnlyAclRecommendationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'For defense-in-depth, configure broker ACLs so the service account has only read permissions (Describe, Read, DescribeConfigs). Do not grant Write, AlterConfigs, or IdempotentWrite.'**
+  String get readOnlyAclRecommendationDescription;
+
+  /// No description provided for @readOnlyAclCommandTopicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic ACL command template:'**
+  String get readOnlyAclCommandTopicLabel;
+
+  /// No description provided for @readOnlyAclCommandGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumer Group ACL command template:'**
+  String get readOnlyAclCommandGroupLabel;
+
+  /// No description provided for @readOnlyCopyCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy ACL Commands'**
+  String get readOnlyCopyCommand;
+
+  /// No description provided for @readOnlyAclCommandsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'ACL commands copied to clipboard'**
+  String get readOnlyAclCommandsCopied;
+
+  /// No description provided for @compareSchemaVersions.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare Versions'**
+  String get compareSchemaVersions;
+
+  /// No description provided for @schemaDiffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Version Diff'**
+  String get schemaDiffTitle;
+
+  /// No description provided for @baseVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base Version'**
+  String get baseVersionLabel;
+
+  /// No description provided for @compareVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare Version'**
+  String get compareVersionLabel;
+
+  /// No description provided for @checkCompatibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Check Compatibility'**
+  String get checkCompatibility;
+
+  /// No description provided for @compatibilityCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Compatibility Check'**
+  String get compatibilityCheckTitle;
+
+  /// No description provided for @schemaCompatible.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatible'**
+  String get schemaCompatible;
+
+  /// No description provided for @schemaIncompatible.
+  ///
+  /// In en, this message translates to:
+  /// **'Incompatible'**
+  String get schemaIncompatible;
+
+  /// No description provided for @compatibilityCheckSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema is compatible with the selected subject version.'**
+  String get compatibilityCheckSuccess;
+
+  /// No description provided for @associatedTopicsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Associated Topics'**
+  String get associatedTopicsTitle;
+
+  /// No description provided for @noAssociatedTopicsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No associated topics found for this subject.'**
+  String get noAssociatedTopicsFound;
+
+  /// No description provided for @draftSchemaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft Schema (JSON)'**
+  String get draftSchemaLabel;
+
+  /// No description provided for @dlqBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DLQ'**
+  String get dlqBadgeLabel;
+
+  /// No description provided for @retryBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryBadgeLabel;
+
+  /// No description provided for @deadLetterQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Dead-Letter Queue'**
+  String get deadLetterQueue;
+
+  /// No description provided for @associatedDlqCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 failure topic} other{{count} failure topics}}'**
+  String associatedDlqCount(int count);
+
+  /// No description provided for @failureDiagnosticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failure Diagnostics (DLQ)'**
+  String get failureDiagnosticsTitle;
+
+  /// No description provided for @exceptionMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Exception'**
+  String get exceptionMessageLabel;
+
+  /// No description provided for @originalCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin: {topic} [P: {partition}, O: {offset}]'**
+  String originalCoordinates(String topic, int partition, int offset);
+
+  /// No description provided for @jumpToOriginalMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to Original Message'**
+  String get jumpToOriginalMessage;
+
+  /// No description provided for @copyKcatReplayCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy kcat Replay Command'**
+  String get copyKcatReplayCommand;
+
+  /// No description provided for @kcatCommandCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'kcat replay command copied to clipboard'**
+  String get kcatCommandCopied;
+
+  /// No description provided for @copyShareableLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Shareable Link'**
+  String get copyShareableLink;
+
+  /// No description provided for @shareableLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Shareable link copied to clipboard'**
+  String get shareableLinkCopied;
+
+  /// No description provided for @quickJumpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Jump / Open Reference'**
+  String get quickJumpTitle;
+
+  /// No description provided for @quickJumpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a kafkalyzer:// link (e.g. kafkalyzer://open?topic=...&offset=...)'**
+  String get quickJumpHint;
+
+  /// No description provided for @quickJumpInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid reference URI format'**
+  String get quickJumpInvalid;
+
+  /// No description provided for @quickJumpClusterNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster \'{cluster}\' not found in configuration. Select a cluster:'**
+  String quickJumpClusterNotFound(String cluster);
+
+  /// No description provided for @jump.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump'**
+  String get jump;
 }
 
 class _AppLocalizationsDelegate

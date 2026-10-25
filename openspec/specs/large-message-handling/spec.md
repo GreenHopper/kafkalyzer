@@ -1,3 +1,9 @@
+# Large Message Handling Specification
+
+## Purpose
+
+Handles inspection, formatting, and rendering of large Kafka message payloads safely off the UI thread without application freezing or memory exhaustion.
+
 ## Requirements
 
 ### Requirement: Non-Blocking Payload Processing

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
@@ -366,4 +367,53 @@ void main() {
     );
     expect(find.text('Run Script (0 steps)'), findsOneWidget);
   });
+
+  testWidgets(
+    'clicking Copy CLI Command copies command to clipboard and shows snackbar',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const scriptWithVars = Script(
+        id: 'copy-cmd-script',
+        name: 'Audit Orders',
+        steps: [],
+        variables: [
+          ScriptVariable(name: 'orderId', type: ScriptVariableType.string),
+        ],
+      );
+
+      String? clipboardData;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            MethodCall methodCall,
+          ) async {
+            if (methodCall.method == 'Clipboard.setData') {
+              clipboardData = (methodCall.arguments as Map)['text'] as String?;
+              return null;
+            }
+            return null;
+          });
+
+      await tester.pumpWidget(buildTestWidget(scriptWithVars));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.terminal), findsOneWidget);
+
+      // Enter variable text
+      await tester.enterText(find.byType(TextField).first, 'ORD-999');
+      await tester.pumpAndSettle();
+
+      // Click Copy CLI Command
+      await tester.tap(find.byIcon(Icons.terminal));
+      await tester.pumpAndSettle();
+
+      expect(clipboardData, contains('kafkalyzer script run'));
+      expect(clipboardData, contains('--script "Audit Orders"'));
+      expect(clipboardData, contains('--var orderId="ORD-999"'));
+      expect(find.text('CLI command copied to clipboard'), findsOneWidget);
+    },
+  );
 }

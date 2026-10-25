@@ -112,4 +112,34 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(searchResult, "");
   });
+
+  testWidgets('search field keeps its minimum width in a narrow header', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 200,
+            child: MessageSearchBar(
+              searchPhrase: "",
+              onSearchChanged: (_) {},
+              matchCount: 0,
+              totalCount: 0,
+              showNonMatches: true,
+              onShowNonMatchesChanged: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.visibility), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key("message_search_bar_text_field"))),
+      const Size(200, 36),
+    );
+    expect(tester.takeException(), isNull);
+  });
 }

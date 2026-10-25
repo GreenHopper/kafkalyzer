@@ -78,7 +78,7 @@ class KafkalyzerRustLib
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 865173713;
+  int get rustContentHash => 1105382635;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -94,6 +94,14 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
     required String topic,
     PlatformInt64? maxMessages,
     required bool sampleFromLatest,
+  });
+
+  Future<SchemaCompatibilityResult>
+  crateApiSchemaRegistryCheckSchemaCompatibility({
+    required ClusterProfile profile,
+    required String subject,
+    int? version,
+    required String schema,
   });
 
   Future<ClusterProfile> crateApiKafkaTypesClusterProfileDefault();
@@ -169,6 +177,11 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
   Future<void> crateApiInitApp();
 
   Future<int> crateApiKafkaUtilsMurmur2({required List<int> data});
+
+  Future<List<String>> crateApiSchemaRegistryResolveAssociatedTopicsForSubject({
+    required String subject,
+    required List<String> availableTopics,
+  });
 
   Future<String?> crateApiJsonPathResolveJsonPath({
     required String payload,
@@ -263,6 +276,46 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       );
 
   @override
+  Future<SchemaCompatibilityResult>
+  crateApiSchemaRegistryCheckSchemaCompatibility({
+    required ClusterProfile profile,
+    required String subject,
+    int? version,
+    required String schema,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cluster_profile(profile, serializer);
+          sse_encode_String(subject, serializer);
+          sse_encode_opt_box_autoadd_i_32(version, serializer);
+          sse_encode_String(schema, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_schema_compatibility_result,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSchemaRegistryCheckSchemaCompatibilityConstMeta,
+        argValues: [profile, subject, version, schema],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSchemaRegistryCheckSchemaCompatibilityConstMeta =>
+      const TaskConstMeta(
+        debugName: "check_schema_compatibility",
+        argNames: ["profile", "subject", "version", "schema"],
+      );
+
+  @override
   Future<ClusterProfile> crateApiKafkaTypesClusterProfileDefault() {
     return handler.executeNormal(
       NormalTask(
@@ -271,7 +324,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 3,
             port: port_,
           );
         },
@@ -303,7 +356,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 4,
             port: port_,
           );
         },
@@ -367,7 +420,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 4,
+              funcId: 5,
               port: port_,
             );
           },
@@ -436,7 +489,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 6,
             port: port_,
           );
         },
@@ -467,7 +520,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 7,
             port: port_,
           );
         },
@@ -502,7 +555,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 8,
             port: port_,
           );
         },
@@ -535,7 +588,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 9,
             port: port_,
           );
         },
@@ -568,7 +621,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 10,
             port: port_,
           );
         },
@@ -605,7 +658,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 11,
             port: port_,
           );
         },
@@ -640,7 +693,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 12,
             port: port_,
           );
         },
@@ -673,7 +726,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 13,
             port: port_,
           );
         },
@@ -705,7 +758,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 14,
             port: port_,
           );
         },
@@ -738,7 +791,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 15,
             port: port_,
           );
         },
@@ -765,7 +818,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 16,
             port: port_,
           );
         },
@@ -793,7 +846,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 17,
             port: port_,
           );
         },
@@ -812,6 +865,43 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       const TaskConstMeta(debugName: "murmur2", argNames: ["data"]);
 
   @override
+  Future<List<String>> crateApiSchemaRegistryResolveAssociatedTopicsForSubject({
+    required String subject,
+    required List<String> availableTopics,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(subject, serializer);
+          sse_encode_list_String(availableTopics, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 18,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_String,
+          decodeErrorData: null,
+        ),
+        constMeta:
+            kCrateApiSchemaRegistryResolveAssociatedTopicsForSubjectConstMeta,
+        argValues: [subject, availableTopics],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiSchemaRegistryResolveAssociatedTopicsForSubjectConstMeta =>
+      const TaskConstMeta(
+        debugName: "resolve_associated_topics_for_subject",
+        argNames: ["subject", "availableTopics"],
+      );
+
+  @override
   Future<String?> crateApiJsonPathResolveJsonPath({
     required String payload,
     required String path,
@@ -825,7 +915,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 19,
             port: port_,
           );
         },
@@ -860,7 +950,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 20,
             port: port_,
           );
         },
@@ -893,7 +983,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 21,
             port: port_,
           );
         },
@@ -924,7 +1014,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 22,
             port: port_,
           );
         },
@@ -954,7 +1044,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 23,
             port: port_,
           );
         },
@@ -987,7 +1077,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 24,
             port: port_,
           );
         },
@@ -1586,6 +1676,20 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       topic: dco_decode_String(arr[0]),
       metrics: dco_decode_list_metric_delta(arr[1]),
       fields: dco_decode_list_field_delta(arr[2]),
+    );
+  }
+
+  @protected
+  SchemaCompatibilityResult dco_decode_schema_compatibility_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return SchemaCompatibilityResult(
+      isCompatible: dco_decode_bool(arr[0]),
+      messages: dco_decode_list_String(arr[1]),
     );
   }
 
@@ -2572,6 +2676,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  SchemaCompatibilityResult sse_decode_schema_compatibility_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_isCompatible = sse_decode_bool(deserializer);
+    var var_messages = sse_decode_list_String(deserializer);
+    return SchemaCompatibilityResult(
+      isCompatible: var_isCompatible,
+      messages: var_messages,
+    );
+  }
+
+  @protected
   SearchScope sse_decode_search_scope(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
@@ -3492,6 +3609,16 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_String(self.topic, serializer);
     sse_encode_list_metric_delta(self.metrics, serializer);
     sse_encode_list_field_delta(self.fields, serializer);
+  }
+
+  @protected
+  void sse_encode_schema_compatibility_result(
+    SchemaCompatibilityResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self.isCompatible, serializer);
+    sse_encode_list_String(self.messages, serializer);
   }
 
   @protected

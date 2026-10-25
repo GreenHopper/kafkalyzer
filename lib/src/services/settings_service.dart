@@ -5,6 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
+import 'package:kafkalyzer/src/services/secure_storage_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -55,8 +56,12 @@ class SettingsService {
     }
   }
 
-  Future<void> exportConfiguration() async {
-    debugPrint('DEBUG: Starting Configuration Export...');
+  Future<void> exportConfiguration({
+    bool includeSensitiveCredentials = false,
+  }) async {
+    debugPrint(
+      'DEBUG: Starting Configuration Export (includeSensitiveCredentials: $includeSensitiveCredentials)...',
+    );
     try {
       final prefs = await SharedPreferences.getInstance();
       debugPrint(
@@ -85,6 +90,24 @@ class SettingsService {
         for (final clusterJson in clustersList) {
           final Map<String, dynamic> exportedCluster = Map.from(clusterJson);
           debugPrint('DEBUG: Processing cluster: ${exportedCluster['name']}');
+
+          if (!includeSensitiveCredentials) {
+            for (final field in SecureStorageService.secretFields) {
+              exportedCluster.remove(field);
+            }
+          } else {
+            final clusterName = exportedCluster['name'] as String?;
+            if (clusterName != null &&
+                getIt.isRegistered<SecureStorageService>()) {
+              final secrets = await getIt<SecureStorageService>()
+                  .getClusterSecrets(clusterName);
+              for (final entry in secrets.entries) {
+                if (entry.value != null && entry.value!.isNotEmpty) {
+                  exportedCluster[entry.key] = entry.value;
+                }
+              }
+            }
+          }
 
           // Process Keystore
           if (exportedCluster['sslKeystoreLocation'] != null) {

@@ -810,7 +810,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get copiedToClipboard => 'In die Zwischenablage kopiert';
 
   @override
-  String get noDifferencesFound => 'Keine Unterschiede gefunden.';
+  String get noDifferencesFound =>
+      'Keine Unterschiede zwischen den ausgewählten Versionen gefunden.';
 
   @override
   String get unknownView => 'Unbekannte Ansicht';
@@ -1328,6 +1329,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get partitionHealthTitle => 'Replikationsstatus';
 
   @override
+  String get partitionHealthDialogTitle => 'Partitions- und Replikationsstatus';
+
+  @override
+  String get partitionHealthTooltip =>
+      'Partitions- und Replikationsstatus anzeigen';
+
+  @override
   String get partitionLeaderCol => 'Leader';
 
   @override
@@ -1807,4 +1815,207 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get cappedIndicator => 'begrenzt';
+
+  @override
+  String get exportAsJson => 'JSON (Vollständige Nachricht)';
+
+  @override
+  String get exportAsCsv => 'CSV (Sichtbare Spalten)';
+
+  @override
+  String get exportFormat => 'Export-Format';
+
+  @override
+  String get exportMessagesCsv => 'Nachrichten als CSV exportieren';
+
+  @override
+  String get searchPresets => 'Gespeicherte Suchen';
+
+  @override
+  String get defaultPreset => 'Standard';
+
+  @override
+  String get saveSearchPreset => 'Aktuelle Suche speichern...';
+
+  @override
+  String get savePresetDialogTitle => 'Suche-Preset speichern';
+
+  @override
+  String get presetNameLabel => 'Preset-Name';
+
+  @override
+  String get presetSaved => 'Preset gespeichert';
+
+  @override
+  String get presetDeleted => 'Preset gelöscht';
+
+  @override
+  String get deletePreset => 'Preset löschen';
+
+  @override
+  String get updateCurrentPreset => 'Aktuelles Preset aktualisieren';
+
+  @override
+  String get restoreOpenTabsOnStartup =>
+      'Offene Tabs beim Start wiederherstellen';
+
+  @override
+  String get restoreOpenTabsOnStartupDescription =>
+      'Zuvor geöffnete Topic-Tabs bei Verbindung mit einem Cluster automatisch wiederherstellen';
+
+  @override
+  String get copyCliCommand => 'Headless-CLI-Befehl kopieren';
+
+  @override
+  String get cliCommandCopied => 'CLI-Befehl in Zwischenablage kopiert';
+
+  @override
+  String get protectedByOsKeyring => 'Durch OS-Keyring geschützt';
+
+  @override
+  String get includeCredentialsInExport =>
+      'Passwörter und Token in den Export einschließen';
+
+  @override
+  String get includeCredentialsWarning =>
+      'Warnung: Das Einschließen von Anmeldedaten speichert unverschlüsselte Passwörter im exportierten Archiv.';
+
+  @override
+  String get readOnlyBadgeLabel => 'Schreibgeschützt';
+
+  @override
+  String get readOnlyBadgeTooltip =>
+      'kafkalyzer ist per Design rein lesend. Es werden keine Schreib-, Veröffentlichungs- oder Offset-Commit-Operationen ausgeführt.';
+
+  @override
+  String get readOnlySecurityTitle => 'Read-Only-Architektur & Sicherheit';
+
+  @override
+  String get readOnlySecurityDescription =>
+      'kafkalyzer verbindet sich ausschließlich als Consumer mit manueller Partitionszuweisung und deaktiviertem Auto-Commit. Die Anwendung enthält keine Producer-Logik und kann Topics, Konfigurationen oder Consumer-Group-Offsets auf dem Broker nicht verändern.';
+
+  @override
+  String get readOnlyAclRecommendationTitle =>
+      'Empfohlene Least-Privilege-ACLs';
+
+  @override
+  String get readOnlyAclRecommendationDescription =>
+      'Für Defense-in-Depth empfiehlt sich ein Service-Account mit reinen Leserechten (Describe, Read, DescribeConfigs). Erteilen Sie keine Write-, AlterConfigs- oder IdempotentWrite-Berechtigungen.';
+
+  @override
+  String get readOnlyAclCommandTopicLabel => 'Topic-ACL-Befehlsvorlage:';
+
+  @override
+  String get readOnlyAclCommandGroupLabel =>
+      'Consumer-Group-ACL-Befehlsvorlage:';
+
+  @override
+  String get readOnlyCopyCommand => 'ACL-Befehle kopieren';
+
+  @override
+  String get readOnlyAclCommandsCopied =>
+      'ACL-Befehle in die Zwischenablage kopiert';
+
+  @override
+  String get compareSchemaVersions => 'Versionen vergleichen';
+
+  @override
+  String get schemaDiffTitle => 'Schema-Versionsvergleich';
+
+  @override
+  String get baseVersionLabel => 'Basisversion';
+
+  @override
+  String get compareVersionLabel => 'Vergleichsversion';
+
+  @override
+  String get checkCompatibility => 'Kompatibilität prüfen';
+
+  @override
+  String get compatibilityCheckTitle => 'Schema-Kompatibilitätsprüfung';
+
+  @override
+  String get schemaCompatible => 'Kompatibel';
+
+  @override
+  String get schemaIncompatible => 'Inkompatibel';
+
+  @override
+  String get compatibilityCheckSuccess =>
+      'Das Schema ist mit der ausgewählten Version kompatibel.';
+
+  @override
+  String get associatedTopicsTitle => 'Zugehörige Topics';
+
+  @override
+  String get noAssociatedTopicsFound =>
+      'Keine zugehörigen Topics für dieses Subject gefunden.';
+
+  @override
+  String get draftSchemaLabel => 'Entwurf-Schema (JSON)';
+
+  @override
+  String get dlqBadgeLabel => 'DLQ';
+
+  @override
+  String get retryBadgeLabel => 'Retry';
+
+  @override
+  String get deadLetterQueue => 'Dead-Letter-Queue';
+
+  @override
+  String associatedDlqCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Fehler-Topics',
+      one: '1 Fehler-Topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get failureDiagnosticsTitle => 'Fehlerdiagnose (DLQ)';
+
+  @override
+  String get exceptionMessageLabel => 'Ausnahme';
+
+  @override
+  String originalCoordinates(String topic, int partition, int offset) {
+    return 'Ursprung: $topic [P: $partition, O: $offset]';
+  }
+
+  @override
+  String get jumpToOriginalMessage => 'Zu Originalnachricht springen';
+
+  @override
+  String get copyKcatReplayCommand => 'kcat-Replay-Befehl kopieren';
+
+  @override
+  String get kcatCommandCopied =>
+      'kcat-Replay-Befehl in Zwischenablage kopiert';
+
+  @override
+  String get copyShareableLink => 'Teilbaren Link kopieren';
+
+  @override
+  String get shareableLinkCopied => 'Teilbarer Link in Zwischenablage kopiert';
+
+  @override
+  String get quickJumpTitle => 'Direktsprung / Referenz öffnen';
+
+  @override
+  String get quickJumpHint =>
+      'kafkalyzer:// Link einfügen (z. B. kafkalyzer://open?topic=...&offset=...)';
+
+  @override
+  String get quickJumpInvalid => 'Ungültiges Referenz-URI-Format';
+
+  @override
+  String quickJumpClusterNotFound(String cluster) {
+    return 'Cluster \'$cluster\' nicht konfiguriert. Wählen Sie einen Cluster:';
+  }
+
+  @override
+  String get jump => 'Springen';
 }

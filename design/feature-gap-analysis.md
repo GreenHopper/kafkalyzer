@@ -99,9 +99,9 @@ Produzieren, Replay, Offset-Reset und Topic-Verwaltung sind bewusst keine Kandid
 
 | Maßnahme | Warum | Wo ansetzen | Aufwand |
 |---|---|---|---|
-| **C1. CI-Gate gegen Schreibpfade.** Skript, das `Producer`, `ThreadedProducer`, `FutureRecord`, `.send(` auf Kafka-Clients, `subscribe(` und `commit` in `rust/*/src` verbietet und den Build fehlschlagen lässt. | Ein einziger Import von `rdkafka::producer` macht die Produktivzusicherung unwirksam. Ohne Gate erkennt das kein Review. | `scripts/check_read_only.sh` + Job in `.github/workflows/build.yml` | 1–2 Stunden |
-| **C2. Read-only als dokumentierte Eigenschaft.** README-Abschnitt „Read-only by design“ mit der nachprüfbaren Liste (nur `BaseConsumer`, nur `describe_configs`, keine Commits), plus Hinweis in den Cluster-Einstellungen. | Das Alleinstellungsmerkmal gegenüber anderen Kafka-Clients ist derzeit nirgends nachlesbar — weder für Nutzer noch für Security-Reviews. | `README.md`, `cluster_config_dialog.dart` | 1–2 Stunden |
-| **C3. Read-only-Service-Account empfehlen.** Im Cluster-Dialog und in der Doku: SASL-User mit `Describe` + `Read` + `DescribeConfigs` ohne `Write`/`AlterConfigs`. | Der stärkste Hebel sitzt beim Cluster: selbst bei einem zukünftigen Bug kann der Broker das Schreiben nicht annehmen. | Settings-Text, `README.md` | 1 Stunde |
+| **C1. CI-Gate gegen Schreibpfade.** Skript, das `Producer`, `ThreadedProducer`, `FutureRecord`, `.send(` auf Kafka-Clients, `subscribe(` und `commit` in `rust/*/src` verbietet und den Build fehlschlagen lässt. | Ein einziger Import von `rdkafka::producer` macht die Produktivzusicherung unwirksam. Ohne Gate erkennt das kein Review. | `scripts/check_read_only.sh` + Job in `.github/workflows/build.yml` — ✅ umgesetzt (OpenSpec-Change `enforce-read-only-invariants`) | 1–2 Stunden |
+| **C2. Read-only als dokumentierte Eigenschaft.** README-Abschnitt „Read-only by design“ mit der nachprüfbaren Liste (nur `BaseConsumer`, nur `describe_configs`, keine Commits), plus Hinweis in den Cluster-Einstellungen. | Das Alleinstellungsmerkmal gegenüber anderen Kafka-Clients ist derzeit nirgends nachlesbar — weder für Nutzer noch für Security-Reviews. | `README.md`, `cluster_config_dialog.dart` — ✅ umgesetzt (OpenSpec-Change `enforce-read-only-invariants`) | 1–2 Stunden |
+| **C3. Read-only-Service-Account empfehlen.** Im Cluster-Dialog und in der Doku: SASL-User mit `Describe` + `Read` + `DescribeConfigs` ohne `Write`/`AlterConfigs`. | Der stärkste Hebel sitzt beim Cluster: selbst bei einem zukünftigen Bug kann der Broker das Schreiben nicht annehmen. | Settings-Text, `README.md` — ✅ umgesetzt (OpenSpec-Change `enforce-read-only-invariants`) | 1 Stunde |
 
 Folgemaßnahme für Nutzer, die Reprocessing brauchen: DLQ-Retest läuft extern (kcat, eigenes Tool). C6 (Retry-/DLQ-Erkennung, unten) macht die fehlerhafte Nachricht sichtbar und kopierbar, verschiebt sie aber nicht.
 
@@ -130,7 +130,7 @@ Folgemaßnahme für Nutzer, die Reprocessing brauchen: DLQ-Retest läuft extern 
 | **Block 1** (Defekte, keine neuen Konzepte) | A1 Profilfelder, A2 Regex-Validierung, A3 Match-Logging, A5 JSONPath vereinheitlichen — ✅ umgesetzt (OpenSpec-Change `fix-profile-search-and-jsonpath-defects`) | 1 Tag |
 | **Block 2** (Diagnosewert, kleiner Diff) | B1 Partitionsgesundheit, B2 Member-Sicht, B3 Schema-Herkunft | 1,5–2 Tage |
 | **Block 3** (Arbeitserleichterung) | B6 CSV, B7 gespeicherte Suchen, B8 Sitzung, C9 Update-Hinweis | 1,5 Tage |
-| **Block 4** (Zusicherung) | C1 CI-Gate, C2 README/Einstellungs-Hinweis, C3 Service-Account-Empfehlung | 0,5 Tag |
+| **Block 4** (Zusicherung) | C1 CI-Gate, C2 README/Einstellungs-Hinweis, C3 Service-Account-Empfehlung — ✅ umgesetzt (OpenSpec-Change `enforce-read-only-invariants`) | 0,5 Tag |
 | **Block 5** (Nach Bedarf) | A4 Runtime/Caching, B4/B5, C4 Offline-Decodierung, B10 Keyring, C8 CLI/MCP | je 0,5–3 Tage |
 
 ---

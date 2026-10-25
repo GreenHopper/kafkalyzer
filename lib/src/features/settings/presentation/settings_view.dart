@@ -4,10 +4,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
+import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
@@ -108,6 +110,8 @@ class _SettingsViewState extends State<SettingsView> {
               ),
             ),
             const SizedBox(height: 8),
+            const ReadOnlySecurityBadge(),
+            const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => UpdateDialog.show(context),
               icon: const Icon(Icons.system_update_alt, size: 18),
@@ -245,6 +249,22 @@ class _SettingsViewState extends State<SettingsView> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  key: const Key('restore_open_tabs_switch'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.restoreOpenTabsOnStartup),
+                  subtitle: Text(l10n.restoreOpenTabsOnStartupDescription),
+                  value:
+                      prefs.getBool(SessionRestoreService.prefRestoreEnabled) ??
+                      true,
+                  onChanged: (bool value) async {
+                    await getIt<SessionRestoreService>().setRestorationEnabled(
+                      value,
+                    );
+                    setState(() {});
+                  },
+                ),
               ],
             );
           },
@@ -270,27 +290,7 @@ class _SettingsViewState extends State<SettingsView> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () async {
-                  final settingsService = getIt<SettingsService>();
-                  try {
-                    await settingsService.exportConfiguration();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.configurationExportedSuccessfully),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.failedToExport(e.toString())),
-                        ),
-                      );
-                    }
-                  }
-                },
+                onPressed: () => _handleExportConfiguration(context, l10n),
                 icon: const Icon(Icons.download),
                 label: Text(l10n.exportConfiguration),
               ),
@@ -679,5 +679,113 @@ class _SettingsViewState extends State<SettingsView> {
         );
       },
     );
+  }
+
+  Future<void> _handleExportConfiguration(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) async {
+    bool includeCredentials = false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.exportConfiguration),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.includeCredentialsInExport),
+                      value: includeCredentials,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          includeCredentials = val ?? false;
+                        });
+                      },
+                    ),
+                    if (includeCredentials) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.errorContainer.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.error.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Theme.of(context).colorScheme.error,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                l10n.includeCredentialsWarning,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(l10n.cancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: Text(l10n.export),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    final settingsService = getIt<SettingsService>();
+    try {
+      await settingsService.exportConfiguration(
+        includeSensitiveCredentials: includeCredentials,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.configurationExportedSuccessfully)),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToExport(e.toString()))),
+        );
+      }
+    }
   }
 }
