@@ -645,6 +645,50 @@
       "rf": { "type": "int" }
     }
   },
+  "messageSchemaResolved": "Schema: {subject} v{version} (#{id})",
+  "@messageSchemaResolved": {
+    "placeholders": {
+      "subject": { "type": "String" },
+      "version": { "type": "int" },
+      "id": { "type": "int" }
+    }
+  },
+  "messageSchemaUnresolved": "Schema #{id} (unresolved)",
+  "@messageSchemaUnresolved": {
+    "placeholders": {
+      "id": { "type": "int" }
+    }
+  },
+  "messageSchemaUnresolvedTooltip":
+    "The Schema Registry could not be reached. The id comes from the message itself.",
+  "groupMembersTitle": "Members",
+  "groupMemberEmpty": "This group currently has no members.",
+  "groupMemberPartitions": "{count} partitions",
+  "@groupMemberPartitions": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "groupUnassignedPartitions": "{count} partitions have no owner",
+  "@groupUnassignedPartitions": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "groupAssignmentNotDecodable": "Assignment could not be decoded",
+  "topicHealthWarning": "{underReplicated} under-replicated, {leaderless} leaderless",
+  "@topicHealthWarning": {
+    "placeholders": {
+      "underReplicated": { "type": "int" },
+      "leaderless": { "type": "int" }
+    }
+  },
+  "partitionHealthTitle": "Partition health",
+  "partitionLeaderCol": "Leader",
+  "partitionReplicasCol": "Replicas",
+  "partitionIsrCol": "ISR",
+  "partitionHealthUnavailable": "Partition metadata unavailable",
+  "partitionNoLeader": "none",
   "schemaTooltipSuffix": " • Schema: {schema}",
   "@schemaTooltipSuffix": {
     "placeholders": {
@@ -822,5 +866,38 @@
   "schemaNoRegistryConfigured": "No Schema Registry configured for this cluster.",
   "schemaConfigureRegistryAction": "Configure Cluster",
   "schemaRetry": "Retry",
-  "schemaSearchHint": "Search schema fields and types..."
+  "schemaSearchHint": "Search schema fields and types...",
+  "schemaVersionLabel": "Version",
+  "schemaSideKey": "Key",
+  "schemaSideValue": "Value",
+  "schemaNone": "no registry schema",
+  "lagTrendTooltip": "Readings: {readings} - highest {high}, lowest {low}",
+  "@lagTrendTooltip": {
+    "placeholders": { "readings": {}, "high": {}, "low": {} }
+  },
+  "lagOverThreshold": "Above the warning threshold of {threshold} messages",
+  "@lagOverThreshold": {
+    "placeholders": { "threshold": {} }
+  },
+  "lagWarnThresholdLabel": "Consumer lag warning threshold (messages)",
+  "lagWarnThresholdHelp": "0 disables the warning in the lag view.",
+  "comparisonAction": "Compare",
+  "comparisonTitle": "Report comparison",
+  "comparisonSourceLive": "Live",
+  "comparisonSourceImported": "Imported",
+  "comparisonNotAvailable": "not available",
+  "comparisonFieldsAdded": "Fields added",
+  "comparisonFieldsRemoved": "Fields removed",
+  "comparisonBusiestPartition": "Busiest partition share",
+  "comparisonMinSize": "Min message size",
+  "comparisonMaxSize": "Max message size",
+  "comparisonAwaitingSecond": "Select the second report to compare.",
+  "comparisonTopicMismatch": "Cannot compare reports of different topics: {topicA} and {topicB}.",
+  "@comparisonTopicMismatch": {
+    "placeholders": { "topicA": {}, "topicB": {} }
+  },
+  "sizePercentiles": "p50/p95/p99",
+  "estimatedIndicator": "estimated",
+  "distinctKeys": "Distinct keys",
+  "cappedIndicator": "capped"
 }

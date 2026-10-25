@@ -134,6 +134,8 @@ class _SettingsViewState extends State<SettingsView> {
             final maxRuns = prefs.getInt('scripting_max_run_history') ?? 30;
             final maxLagQueries =
                 prefs.getInt('consumer_max_concurrent_queries') ?? 5;
+            final lagThreshold =
+                prefs.getInt(SettingsService.lagWarnThresholdKey) ?? 0;
 
             final controller = TextEditingController(text: defaultDir);
             final maxRunsController = TextEditingController(
@@ -141,6 +143,9 @@ class _SettingsViewState extends State<SettingsView> {
             );
             final maxLagQueriesController = TextEditingController(
               text: maxLagQueries.toString(),
+            );
+            final lagThresholdController = TextEditingController(
+              text: lagThreshold.toString(),
             );
 
             return Column(
@@ -211,6 +216,29 @@ class _SettingsViewState extends State<SettingsView> {
                               'consumer_max_concurrent_queries',
                               val,
                             );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('lag_warn_threshold_field'),
+                        controller: lagThresholdController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: l10n.lagWarnThresholdLabel,
+                          border: const OutlineInputBorder(),
+                          helperText: l10n.lagWarnThresholdHelp,
+                        ),
+                        onChanged: (value) {
+                          final val = int.tryParse(value);
+                          if (val != null) {
+                            getIt<SettingsService>().setLagWarnThreshold(val);
                           }
                         },
                       ),

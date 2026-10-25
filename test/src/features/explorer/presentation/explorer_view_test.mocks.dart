@@ -551,18 +551,38 @@ class MockSchemaController extends _i1.Mock implements _i12.SchemaController {
   @override
   _i6.Future<String> fetchSchemaContent(
     _i5.ClusterProfile? cluster,
-    String? subject,
-  ) =>
+    String? subject, {
+    int? version,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#fetchSchemaContent, [cluster, subject]),
+            Invocation.method(
+              #fetchSchemaContent,
+              [cluster, subject],
+              {#version: version},
+            ),
             returnValue: _i6.Future<String>.value(
               _i7.dummyValue<String>(
                 this,
-                Invocation.method(#fetchSchemaContent, [cluster, subject]),
+                Invocation.method(
+                  #fetchSchemaContent,
+                  [cluster, subject],
+                  {#version: version},
+                ),
               ),
             ),
           )
           as _i6.Future<String>);
+
+  @override
+  _i6.Future<List<int>> fetchSchemaVersions(
+    _i5.ClusterProfile? cluster,
+    String? subject,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#fetchSchemaVersions, [cluster, subject]),
+            returnValue: _i6.Future<List<int>>.value(<int>[]),
+          )
+          as _i6.Future<List<int>>);
 
   @override
   List<String> parseSchemaFields(String? jsonString) =>

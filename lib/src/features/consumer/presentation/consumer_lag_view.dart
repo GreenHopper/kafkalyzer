@@ -6,10 +6,12 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:watch_it/watch_it.dart';
 import 'group_details_view.dart';
 import 'widgets/group_lag_badge.dart';
+import 'widgets/lag_trend.dart';
 import 'widgets/group_delta_badge.dart';
 import 'widgets/consumer_group_controls.dart';
 import 'widgets/kpi_card.dart';
@@ -66,6 +68,42 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   // Track computed partition-level deltas: groupId -> (topic-partition -> delta)
   final Map<String, Map<String, int>> _partitionDeltas = {};
 
+  // Retained lag readings, oldest first. The trend line needs a short history,
+  // anything older is not shown anywhere.
+  static const int _lagHistoryLength = 20;
+  final Map<String, List<int>> _groupLagHistory = {};
+  final Map<String, Map<String, List<int>>> _partitionLagHistory = {};
+
+  // Lag in messages at which a group is marked; 0 disables the marking.
+  int _lagWarnThreshold = 0;
+
+  void _appendLagReading(String groupId, Map<String, int> readings, int total) {
+    final groupHistory = _groupLagHistory.putIfAbsent(groupId, () => []);
+    groupHistory.add(total);
+    if (groupHistory.length > _lagHistoryLength) groupHistory.removeAt(0);
+
+    final partitionHistory = _partitionLagHistory.putIfAbsent(
+      groupId,
+      () => {},
+    );
+    for (final entry in readings.entries) {
+      final series = partitionHistory.putIfAbsent(entry.key, () => []);
+      series.add(entry.value);
+      if (series.length > _lagHistoryLength) series.removeAt(0);
+    }
+  }
+
+  String _trendTooltip(AppLocalizations l10n, List<int> readings) {
+    if (readings.length < 2) return '';
+    final highest = readings.reduce((a, b) => a > b ? a : b);
+    final lowest = readings.reduce((a, b) => a < b ? a : b);
+    return l10n.lagTrendTooltip(
+      readings.map(_formatNum).join(', '),
+      _formatNum(highest),
+      _formatNum(lowest),
+    );
+  }
+
   String _formatNum(num value) {
     final locale = Localizations.localeOf(context).toString();
     return NumberFormat.decimalPattern(locale).format(value);
@@ -81,9 +119,11 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   Future<void> _loadConcurrencyLimit() async {
     final prefs = await SharedPreferences.getInstance();
     final limit = prefs.getInt('consumer_max_concurrent_queries') ?? 5;
+    final threshold = await getIt<SettingsService>().lagWarnThreshold();
     if (mounted) {
       setState(() {
         _maxConcurrentLagQueries = limit;
+        _lagWarnThreshold = threshold;
       });
     }
   }
@@ -209,6 +249,11 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           newLagsMap["${lag.topic}-${lag.partition}"] = lag.lag.toInt();
         }
         _previousLags[groupId] = newLagsMap;
+        _appendLagReading(
+          groupId,
+          newLagsMap,
+          newLagsMap.values.fold(0, (sum, value) => sum + value),
+        );
 
         if (idx != -1) {
           _lags[idx] = updatedGroup;
@@ -417,6 +462,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       _previousLags.clear();
       _groupDeltas.clear();
       _partitionDeltas.clear();
+      _groupLagHistory.clear();
+      _partitionLagHistory.clear();
       _activeLagQueries = 0;
       if (activeProfile != null) {
         if (_refreshIntervalSeconds > 0) {
@@ -837,6 +884,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                 partitionLags: partitionLags,
                 membersCount: rawGroup.membersCount,
                 topicsCount: rawGroup.topicsCount,
+                members: rawGroup.members,
+                unassignedPartitions: rawGroup.unassignedPartitions,
               );
 
               return Card(
@@ -908,17 +957,45 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                         flex: 2,
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: GroupLagBadge(
-                            totalLag: _calculateGroupLag(group),
-                            isLoading: _loadingGroupIds.contains(group.groupId),
-                            isLoaded: _loadedGroupIds.contains(group.groupId),
-                            isFailed: _failedGroupIds.contains(group.groupId),
-                            hasPreviousValue: group.partitionLags.isNotEmpty,
-                            labelText:
-                                _loadedGroupIds.contains(group.groupId) ||
-                                    group.partitionLags.isNotEmpty
-                                ? "${l10n.lagCol}: ${_formatNum(_calculateGroupLag(group))}"
-                                : "${l10n.lagCol}: -",
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: GroupLagBadge(
+                                  totalLag: _calculateGroupLag(group),
+                                  isLoading: _loadingGroupIds.contains(
+                                    group.groupId,
+                                  ),
+                                  isLoaded: _loadedGroupIds.contains(
+                                    group.groupId,
+                                  ),
+                                  isFailed: _failedGroupIds.contains(
+                                    group.groupId,
+                                  ),
+                                  hasPreviousValue:
+                                      group.partitionLags.isNotEmpty,
+                                  labelText:
+                                      _loadedGroupIds.contains(group.groupId) ||
+                                          group.partitionLags.isNotEmpty
+                                      ? "${l10n.lagCol}: ${_formatNum(_calculateGroupLag(group))}"
+                                      : "${l10n.lagCol}: -",
+                                  warnThreshold: _lagWarnThreshold,
+                                  warnTooltip: l10n.lagOverThreshold(
+                                    _formatNum(_lagWarnThreshold),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              LagTrend(
+                                key: Key('group_lag_trend_${group.groupId}'),
+                                readings:
+                                    _groupLagHistory[group.groupId] ?? const [],
+                                tooltip: _trendTooltip(
+                                  l10n,
+                                  _groupLagHistory[group.groupId] ?? const [],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -946,6 +1023,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                       profile: activeProfile!,
                       group: group,
                       partitionDeltas: _partitionDeltas[group.groupId],
+                      partitionTrends: _partitionLagHistory[group.groupId],
+                      lagWarnThreshold: _lagWarnThreshold,
                       l10n: l10n,
                     ),
                   ],

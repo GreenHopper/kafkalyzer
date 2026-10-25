@@ -1277,6 +1277,62 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String messageSchemaResolved(String subject, int version, int id) {
+    return 'Schema: $subject v$version (#$id)';
+  }
+
+  @override
+  String messageSchemaUnresolved(int id) {
+    return 'Schema #$id (unresolved)';
+  }
+
+  @override
+  String get messageSchemaUnresolvedTooltip =>
+      'The Schema Registry could not be reached. The id comes from the message itself.';
+
+  @override
+  String get groupMembersTitle => 'Members';
+
+  @override
+  String get groupMemberEmpty => 'This group currently has no members.';
+
+  @override
+  String groupMemberPartitions(int count) {
+    return '$count partitions';
+  }
+
+  @override
+  String groupUnassignedPartitions(int count) {
+    return '$count partitions have no owner';
+  }
+
+  @override
+  String get groupAssignmentNotDecodable => 'Assignment could not be decoded';
+
+  @override
+  String topicHealthWarning(int underReplicated, int leaderless) {
+    return '$underReplicated under-replicated, $leaderless leaderless';
+  }
+
+  @override
+  String get partitionHealthTitle => 'Partition health';
+
+  @override
+  String get partitionLeaderCol => 'Leader';
+
+  @override
+  String get partitionReplicasCol => 'Replicas';
+
+  @override
+  String get partitionIsrCol => 'ISR';
+
+  @override
+  String get partitionHealthUnavailable => 'Partition metadata unavailable';
+
+  @override
+  String get partitionNoLeader => 'none';
+
+  @override
   String schemaTooltipSuffix(String schema) {
     return ' • Schema: $schema';
   }
@@ -1659,4 +1715,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get schemaSearchHint => 'Search schema fields and types...';
+
+  @override
+  String get schemaVersionLabel => 'Version';
+
+  @override
+  String get schemaSideKey => 'Key';
+
+  @override
+  String get schemaSideValue => 'Value';
+
+  @override
+  String get schemaNone => 'no registry schema';
+
+  @override
+  String lagTrendTooltip(Object readings, Object high, Object low) {
+    return 'Readings: $readings - highest $high, lowest $low';
+  }
+
+  @override
+  String lagOverThreshold(Object threshold) {
+    return 'Above the warning threshold of $threshold messages';
+  }
+
+  @override
+  String get lagWarnThresholdLabel =>
+      'Consumer lag warning threshold (messages)';
+
+  @override
+  String get lagWarnThresholdHelp => '0 disables the warning in the lag view.';
+
+  @override
+  String get comparisonAction => 'Compare';
+
+  @override
+  String get comparisonTitle => 'Report comparison';
+
+  @override
+  String get comparisonSourceLive => 'Live';
+
+  @override
+  String get comparisonSourceImported => 'Imported';
+
+  @override
+  String get comparisonNotAvailable => 'not available';
+
+  @override
+  String get comparisonFieldsAdded => 'Fields added';
+
+  @override
+  String get comparisonFieldsRemoved => 'Fields removed';
+
+  @override
+  String get comparisonBusiestPartition => 'Busiest partition share';
+
+  @override
+  String get comparisonMinSize => 'Min message size';
+
+  @override
+  String get comparisonMaxSize => 'Max message size';
+
+  @override
+  String get comparisonAwaitingSecond => 'Select the second report to compare.';
+
+  @override
+  String comparisonTopicMismatch(Object topicA, Object topicB) {
+    return 'Cannot compare reports of different topics: $topicA and $topicB.';
+  }
+
+  @override
+  String get sizePercentiles => 'p50/p95/p99';
+
+  @override
+  String get estimatedIndicator => 'estimated';
+
+  @override
+  String get distinctKeys => 'Distinct keys';
+
+  @override
+  String get cappedIndicator => 'capped';
 }

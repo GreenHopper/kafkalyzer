@@ -70,8 +70,28 @@ class SchemaController extends ChangeNotifier {
     }
   }
 
-  Future<String> fetchSchemaContent(ClusterProfile cluster, String subject) {
-    return _registryService.fetchSchema(profile: cluster, subject: subject);
+  Future<String> fetchSchemaContent(
+    ClusterProfile cluster,
+    String subject, {
+    int? version,
+  }) {
+    return _registryService.fetchSchema(
+      profile: cluster,
+      subject: subject,
+      version: version,
+    );
+  }
+
+  /// Version numbers of a subject, so a schema recorded by a message can be shown
+  /// at exactly that version and switched from there.
+  Future<List<int>> fetchSchemaVersions(
+    ClusterProfile cluster,
+    String subject,
+  ) {
+    return _registryService.fetchSchemaVersions(
+      profile: cluster,
+      subject: subject,
+    );
   }
 
   List<String> parseSchemaFields(String jsonString) {

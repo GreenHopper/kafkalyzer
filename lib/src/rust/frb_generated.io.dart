@@ -10,6 +10,7 @@ import 'api/kafka_consumer.dart';
 import 'api/kafka_metadata.dart';
 import 'api/kafka_types.dart';
 import 'api/kafka_utils.dart';
+import 'api/report_compare.dart';
 import 'api/schema_registry.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -67,13 +68,25 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ClusterProfile dco_decode_box_autoadd_cluster_profile(dynamic raw);
 
   @protected
+  double dco_decode_box_autoadd_f_64(dynamic raw);
+
+  @protected
   int dco_decode_box_autoadd_i_32(dynamic raw);
 
   @protected
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
 
   @protected
+  MessageSchema dco_decode_box_autoadd_message_schema(dynamic raw);
+
+  @protected
+  SizePercentiles dco_decode_box_autoadd_size_percentiles(dynamic raw);
+
+  @protected
   TopicAnalysisReport dco_decode_box_autoadd_topic_analysis_report(dynamic raw);
+
+  @protected
+  BrokerEndpoint dco_decode_broker_endpoint(dynamic raw);
 
   @protected
   ClusterProfile dco_decode_cluster_profile(dynamic raw);
@@ -82,7 +95,13 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ConsumerGroupLag dco_decode_consumer_group_lag(dynamic raw);
 
   @protected
+  ConsumerGroupMember dco_decode_consumer_group_member(dynamic raw);
+
+  @protected
   double dco_decode_f_64(dynamic raw);
+
+  @protected
+  FieldDelta dco_decode_field_delta(dynamic raw);
 
   @protected
   FieldOccurrence dco_decode_field_occurrence(dynamic raw);
@@ -115,7 +134,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<BrokerEndpoint> dco_decode_list_broker_endpoint(dynamic raw);
+
+  @protected
   List<ConsumerGroupLag> dco_decode_list_consumer_group_lag(dynamic raw);
+
+  @protected
+  List<ConsumerGroupMember> dco_decode_list_consumer_group_member(dynamic raw);
+
+  @protected
+  List<FieldDelta> dco_decode_list_field_delta(dynamic raw);
 
   @protected
   List<FieldOccurrence> dco_decode_list_field_occurrence(dynamic raw);
@@ -135,10 +163,19 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<KeyOccurrence> dco_decode_list_key_occurrence(dynamic raw);
 
   @protected
+  List<MetricDelta> dco_decode_list_metric_delta(dynamic raw);
+
+  @protected
   List<String?> dco_decode_list_opt_String(dynamic raw);
 
   @protected
   List<PartitionAnalysis> dco_decode_list_partition_analysis(dynamic raw);
+
+  @protected
+  List<PartitionRow> dco_decode_list_partition_row(dynamic raw);
+
+  @protected
+  Int32List dco_decode_list_prim_i_32_strict(dynamic raw);
 
   @protected
   List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
@@ -150,10 +187,19 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<TopicMetadata> dco_decode_list_topic_metadata(dynamic raw);
 
   @protected
+  List<TopicPartition> dco_decode_list_topic_partition(dynamic raw);
+
+  @protected
   List<TopicPartitionLag> dco_decode_list_topic_partition_lag(dynamic raw);
 
   @protected
   List<TypeOccurrence> dco_decode_list_type_occurrence(dynamic raw);
+
+  @protected
+  MessageSchema dco_decode_message_schema(dynamic raw);
+
+  @protected
+  MetricDelta dco_decode_metric_delta(dynamic raw);
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
@@ -162,10 +208,19 @@ abstract class KafkalyzerRustLibApiImplPlatform
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
 
   @protected
+  double? dco_decode_opt_box_autoadd_f_64(dynamic raw);
+
+  @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
 
   @protected
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
+
+  @protected
+  MessageSchema? dco_decode_opt_box_autoadd_message_schema(dynamic raw);
+
+  @protected
+  SizePercentiles? dco_decode_opt_box_autoadd_size_percentiles(dynamic raw);
 
   @protected
   TopicAnalysisReport? dco_decode_opt_box_autoadd_topic_analysis_report(
@@ -182,7 +237,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   PartitionAnalysis dco_decode_partition_analysis(dynamic raw);
 
   @protected
+  PartitionRow dco_decode_partition_row(dynamic raw);
+
+  @protected
+  ReportComparison dco_decode_report_comparison(dynamic raw);
+
+  @protected
   SearchScope dco_decode_search_scope(dynamic raw);
+
+  @protected
+  SizePercentiles dco_decode_size_percentiles(dynamic raw);
 
   @protected
   TopicAnalysisProgress dco_decode_topic_analysis_progress(dynamic raw);
@@ -192,6 +256,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   TopicMetadata dco_decode_topic_metadata(dynamic raw);
+
+  @protected
+  TopicPartition dco_decode_topic_partition(dynamic raw);
+
+  @protected
+  TopicPartitionDetails dco_decode_topic_partition_details(dynamic raw);
 
   @protected
   TopicPartitionLag dco_decode_topic_partition_lag(dynamic raw);
@@ -252,15 +322,31 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_box_autoadd_i_32(SseDeserializer deserializer);
 
   @protected
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
+  MessageSchema sse_decode_box_autoadd_message_schema(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SizePercentiles sse_decode_box_autoadd_size_percentiles(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   TopicAnalysisReport sse_decode_box_autoadd_topic_analysis_report(
     SseDeserializer deserializer,
   );
+
+  @protected
+  BrokerEndpoint sse_decode_broker_endpoint(SseDeserializer deserializer);
 
   @protected
   ClusterProfile sse_decode_cluster_profile(SseDeserializer deserializer);
@@ -269,7 +355,15 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ConsumerGroupLag sse_decode_consumer_group_lag(SseDeserializer deserializer);
 
   @protected
+  ConsumerGroupMember sse_decode_consumer_group_member(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double sse_decode_f_64(SseDeserializer deserializer);
+
+  @protected
+  FieldDelta sse_decode_field_delta(SseDeserializer deserializer);
 
   @protected
   FieldOccurrence sse_decode_field_occurrence(SseDeserializer deserializer);
@@ -304,9 +398,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<BrokerEndpoint> sse_decode_list_broker_endpoint(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<ConsumerGroupLag> sse_decode_list_consumer_group_lag(
     SseDeserializer deserializer,
   );
+
+  @protected
+  List<ConsumerGroupMember> sse_decode_list_consumer_group_member(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FieldDelta> sse_decode_list_field_delta(SseDeserializer deserializer);
 
   @protected
   List<FieldOccurrence> sse_decode_list_field_occurrence(
@@ -330,12 +437,23 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  List<MetricDelta> sse_decode_list_metric_delta(SseDeserializer deserializer);
+
+  @protected
   List<String?> sse_decode_list_opt_String(SseDeserializer deserializer);
 
   @protected
   List<PartitionAnalysis> sse_decode_list_partition_analysis(
     SseDeserializer deserializer,
   );
+
+  @protected
+  List<PartitionRow> sse_decode_list_partition_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Int32List sse_decode_list_prim_i_32_strict(SseDeserializer deserializer);
 
   @protected
   List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
@@ -345,6 +463,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   List<TopicMetadata> sse_decode_list_topic_metadata(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TopicPartition> sse_decode_list_topic_partition(
     SseDeserializer deserializer,
   );
 
@@ -359,16 +482,35 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  MessageSchema sse_decode_message_schema(SseDeserializer deserializer);
+
+  @protected
+  MetricDelta sse_decode_metric_delta(SseDeserializer deserializer);
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
 
   @protected
+  double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer);
 
   @protected
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  MessageSchema? sse_decode_opt_box_autoadd_message_schema(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SizePercentiles? sse_decode_opt_box_autoadd_size_percentiles(
+    SseDeserializer deserializer,
+  );
 
   @protected
   TopicAnalysisReport? sse_decode_opt_box_autoadd_topic_analysis_report(
@@ -387,7 +529,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   PartitionAnalysis sse_decode_partition_analysis(SseDeserializer deserializer);
 
   @protected
+  PartitionRow sse_decode_partition_row(SseDeserializer deserializer);
+
+  @protected
+  ReportComparison sse_decode_report_comparison(SseDeserializer deserializer);
+
+  @protected
   SearchScope sse_decode_search_scope(SseDeserializer deserializer);
+
+  @protected
+  SizePercentiles sse_decode_size_percentiles(SseDeserializer deserializer);
 
   @protected
   TopicAnalysisProgress sse_decode_topic_analysis_progress(
@@ -401,6 +552,14 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   TopicMetadata sse_decode_topic_metadata(SseDeserializer deserializer);
+
+  @protected
+  TopicPartition sse_decode_topic_partition(SseDeserializer deserializer);
+
+  @protected
+  TopicPartitionDetails sse_decode_topic_partition_details(
+    SseDeserializer deserializer,
+  );
 
   @protected
   TopicPartitionLag sse_decode_topic_partition_lag(
@@ -470,6 +629,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
+
+  @protected
   void sse_encode_box_autoadd_i_32(int self, SseSerializer serializer);
 
   @protected
@@ -479,8 +641,26 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_message_schema(
+    MessageSchema self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_size_percentiles(
+    SizePercentiles self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_topic_analysis_report(
     TopicAnalysisReport self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_broker_endpoint(
+    BrokerEndpoint self,
     SseSerializer serializer,
   );
 
@@ -497,7 +677,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_consumer_group_member(
+    ConsumerGroupMember self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_field_delta(FieldDelta self, SseSerializer serializer);
 
   @protected
   void sse_encode_field_occurrence(
@@ -536,8 +725,26 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_broker_endpoint(
+    List<BrokerEndpoint> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_consumer_group_lag(
     List<ConsumerGroupLag> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_consumer_group_member(
+    List<ConsumerGroupMember> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_field_delta(
+    List<FieldDelta> self,
     SseSerializer serializer,
   );
 
@@ -572,11 +779,29 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_metric_delta(
+    List<MetricDelta> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_opt_String(List<String?> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_partition_analysis(
     List<PartitionAnalysis> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_partition_row(
+    List<PartitionRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_i_32_strict(
+    Int32List self,
     SseSerializer serializer,
   );
 
@@ -596,6 +821,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_topic_partition(
+    List<TopicPartition> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_topic_partition_lag(
     List<TopicPartitionLag> self,
     SseSerializer serializer,
@@ -608,10 +839,19 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_message_schema(MessageSchema self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_metric_delta(MetricDelta self, SseSerializer serializer);
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer);
@@ -619,6 +859,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_opt_box_autoadd_i_64(
     PlatformInt64? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_message_schema(
+    MessageSchema? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_size_percentiles(
+    SizePercentiles? self,
     SseSerializer serializer,
   );
 
@@ -644,7 +896,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_partition_row(PartitionRow self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_report_comparison(
+    ReportComparison self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_search_scope(SearchScope self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_size_percentiles(
+    SizePercentiles self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_topic_analysis_progress(
@@ -660,6 +927,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_topic_metadata(TopicMetadata self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_topic_partition(
+    TopicPartition self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_partition_details(
+    TopicPartitionDetails self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_topic_partition_lag(

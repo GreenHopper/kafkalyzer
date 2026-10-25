@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
@@ -9,6 +10,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
+import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:logger/logger.dart';
@@ -131,6 +133,28 @@ class FakeSchemaController extends ChangeNotifier implements SchemaController {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Serves partition metadata rows without touching the Rust bridge.
+class FakeKafkaMetadataService implements KafkaMetadataService {
+  List<PartitionRow> partitionRows = [];
+  bool unavailable = false;
+
+  @override
+  Future<TopicPartitionDetails> fetchTopicPartitions({
+    required ClusterProfile profile,
+    required String topic,
+  }) async {
+    if (unavailable) throw StateError('metadata unavailable');
+    return TopicPartitionDetails(
+      topic: topic,
+      partitions: partitionRows,
+      brokers: const [],
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
   List<Script> get scripts => [];
 
@@ -151,8 +175,11 @@ void main() {
   late FakeSchemaController fakeSchemaController;
   late FakeScriptRunner fakeScriptRunner;
   late FakeMultiSearchController fakeMultiSearchController;
+  late FakeKafkaMetadataService fakeMetadataService;
 
   setUp(() {
+    fakeMetadataService = FakeKafkaMetadataService();
+
     fakeActiveController = FakeActiveConnectionController();
     fakeSchemaController = FakeSchemaController();
     fakeScriptRunner = FakeScriptRunner();
@@ -162,6 +189,7 @@ void main() {
     getIt.registerSingleton<SchemaController>(fakeSchemaController);
     getIt.registerSingleton<ScriptRunner>(fakeScriptRunner);
     getIt.registerSingleton<MultiSearchController>(fakeMultiSearchController);
+    getIt.registerSingleton<KafkaMetadataService>(fakeMetadataService);
     getIt.registerSingleton<Logger>(Logger());
   });
 
@@ -340,6 +368,143 @@ void main() {
       expect(find.text('Stream'), findsOneWidget);
       expect(find.byTooltip('Nachrichten leeren'), findsOneWidget);
       expect(find.byTooltip('Topic-Name kopieren'), findsOneWidget);
+    },
+  );
+
+  Widget detailView(TopicMetadata topic) => MaterialApp(
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      ...GlobalMaterialLocalizations.delegates,
+    ],
+    supportedLocales: const [Locale('en')],
+    home: Scaffold(
+      body: SizedBox(
+        width: 1200,
+        height: 800,
+        child: TopicDetailView(
+          topic: topic,
+          profile: const ClusterProfile(
+            name: 'Test Cluster',
+            bootstrapServers: 'localhost:9092',
+          ),
+        ),
+      ),
+    ),
+  );
+
+  const threePartitionTopic = TopicMetadata(
+    name: 'orders',
+    partitionCount: 3,
+    replicationFactor: 3,
+  );
+
+  testWidgets(
+    'topic detail lists leader, replicas and ISR for every partition',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      fakeMetadataService.partitionRows = [
+        PartitionRow(
+          partition: 0,
+          leader: 1,
+          replicas: Int32List.fromList([1, 2, 3]),
+          inSyncReplicas: Int32List.fromList([1, 2, 3]),
+          underReplicated: false,
+          leaderless: false,
+        ),
+        PartitionRow(
+          partition: 1,
+          leader: 2,
+          replicas: Int32List.fromList([1, 2, 3]),
+          inSyncReplicas: Int32List.fromList([1, 2]),
+          underReplicated: true,
+          leaderless: false,
+        ),
+        PartitionRow(
+          partition: 2,
+          replicas: Int32List.fromList([1, 2, 3]),
+          inSyncReplicas: Int32List.fromList([1]),
+          underReplicated: true,
+          leaderless: true,
+        ),
+      ];
+
+      await tester.pumpWidget(detailView(threePartitionTopic));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      for (final partition in [0, 1, 2]) {
+        expect(
+          find.byKey(Key('partition_row_$partition')),
+          findsOneWidget,
+          reason: 'partition $partition should have a row',
+        );
+      }
+
+      Finder cells(int partition, String value) => find.descendant(
+        of: find.byKey(Key('partition_row_$partition')),
+        matching: find.text(value),
+      );
+
+      // partition | leader | replicas | ISR
+      expect(cells(0, '1'), findsOneWidget);
+      expect(cells(0, '1, 2, 3'), findsNWidgets(2));
+      expect(cells(1, '2'), findsOneWidget);
+      expect(cells(1, '1, 2'), findsOneWidget);
+      // A partition without a leader is named, not left blank.
+      expect(cells(2, 'none'), findsOneWidget);
+      expect(cells(2, '1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'unavailable partition metadata is marked unavailable, not healthy',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      fakeMetadataService.unavailable = true;
+
+      await tester.pumpWidget(detailView(threePartitionTopic));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.byKey(const Key('partition_health_unavailable')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('partition_row_0')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'health warning disappears once a refresh reports healthy partitions',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const unhealthyTopic = TopicMetadata(
+        name: 'orders',
+        partitionCount: 3,
+        replicationFactor: 3,
+        underReplicatedPartitions: 1,
+        leaderlessPartitions: 0,
+      );
+
+      await tester.pumpWidget(detailView(unhealthyTopic));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('topic_health_tag')), findsOneWidget);
+
+      await tester.pumpWidget(detailView(threePartitionTopic));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('topic_health_tag')), findsNothing);
     },
   );
 }

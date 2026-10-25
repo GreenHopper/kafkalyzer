@@ -15,7 +15,17 @@ Future<List<String>> fetchSubjects({required ClusterProfile profile}) =>
 Future<String> fetchSchema({
   required ClusterProfile profile,
   required String subject,
+  int? version,
 }) => KafkalyzerRustLib.instance.api.crateApiSchemaRegistryFetchSchema(
+  profile: profile,
+  subject: subject,
+  version: version,
+);
+
+Future<Int32List> fetchSchemaVersions({
+  required ClusterProfile profile,
+  required String subject,
+}) => KafkalyzerRustLib.instance.api.crateApiSchemaRegistryFetchSchemaVersions(
   profile: profile,
   subject: subject,
 );

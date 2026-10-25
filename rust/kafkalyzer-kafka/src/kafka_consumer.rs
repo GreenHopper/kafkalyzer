@@ -56,7 +56,10 @@ fn get_cached_schema(
 }
 
 use crate::kafka_utils::{create_config, murmur2, to_positive};
-use kafkalyzer_core::kafka_types::{ClusterProfile, FilterType, KafkaMessage, SearchScope};
+use crate::schema_registry::SchemaProvenance;
+use kafkalyzer_core::kafka_types::{
+    ClusterProfile, FilterType, KafkaMessage, MessageSchema, SearchScope,
+};
 
 #[derive(Clone)]
 pub struct StreamSink<T> {
@@ -78,6 +81,7 @@ pub struct SrDecoders<'a> {
     pub avro: AvroDecoder<'a>,
     pub json: JsonDecoder<'a>,
     pub proto: ProtoDecoder<'a>,
+    pub provenance: Option<SchemaProvenance>,
 }
 
 pub fn consume_with_filter(
@@ -104,7 +108,7 @@ pub fn consume_with_filter(
     // 2. Setup Schema Registry (Optional)
     let sr_settings = create_sr_settings(&profile);
     let (decoders, key_is_avro, value_is_avro) = if let Some(ref settings) = sr_settings {
-        setup_schema_registry(tokio_runtime, settings, &topic)?
+        setup_schema_registry(tokio_runtime, settings, &topic, &profile)?
     } else {
         (None, false, false)
     };
@@ -173,6 +177,8 @@ pub fn consume_with_filter(
         payload: Some(format!("__PROGRESS__:0:{}", total_to_scan)),
         timestamp: 0,
         headers: None,
+        key_schema: None,
+        value_schema: None,
     };
     sink.add(initial_msg).ok();
 
@@ -801,6 +807,8 @@ fn run_poll_loop<'a>(
                     payload: Some(format!("__HEARTBEAT__:{}:{}", scanned_count, total_to_scan)),
                     timestamp: 0,
                     headers: None,
+                    key_schema: None,
+                    value_schema: None,
                 };
                 if sink.add(heartbeat_msg).is_err() {
                     break;
@@ -845,6 +853,8 @@ fn send_progress(
         payload: Some(format!("__PROGRESS__:{}:{}", scanned, total)),
         timestamp: 0,
         headers: None,
+        key_schema: None,
+        value_schema: None,
     };
     sink.add(progress_msg)
         .map_err(|e| anyhow::anyhow!("Sink Error: {:?}", e))
@@ -929,6 +939,8 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
         key,
         payload,
         headers,
+        key_schema: message_schema(tokio_runtime, decoder, msg.key()),
+        value_schema: message_schema(tokio_runtime, decoder, msg.payload()),
     };
 
     if sink.add(kafka_msg).is_err() {
@@ -971,12 +983,14 @@ pub(crate) fn setup_schema_registry<'a>(
     tokio_runtime: &Runtime,
     sr_settings: &'a SrSettings,
     topic: &str,
+    profile: &ClusterProfile,
 ) -> Result<(Option<SrDecoders<'a>>, bool, bool)> {
     let decoders = Some(SrDecoders {
         settings: sr_settings.clone(),
         avro: AvroDecoder::new(sr_settings.clone()),
         json: JsonDecoder::new(sr_settings.clone()),
         proto: ProtoDecoder::new(sr_settings.clone()),
+        provenance: SchemaProvenance::from_profile(profile),
     });
 
     let (key_avro, value_avro) = match tokio_runtime.block_on(get_all_subjects(sr_settings)) {
@@ -1248,6 +1262,19 @@ fn calculate_end_offsets(
     }
     log_to_dart(sink, format!("End Offsets: {:?}", end_offsets));
     Ok(end_offsets)
+}
+
+/// Which schema a payload was written with: the id comes from the wire header,
+/// the subject and version from the registry. A registry that cannot be reached
+/// leaves subject and version unset instead of dropping the message.
+pub(crate) fn message_schema<'a>(
+    tokio_runtime: &Runtime,
+    decoder: &Option<SrDecoders<'a>>,
+    payload: Option<&[u8]>,
+) -> Option<MessageSchema> {
+    let provenance = decoder.as_ref()?.provenance.as_ref()?;
+    let schema_id = kafkalyzer_core::schema_wire::wire_schema_id(payload?)?;
+    Some(provenance.resolve(tokio_runtime, schema_id))
 }
 
 pub(crate) fn decode_message_to_value<'a>(
@@ -2013,6 +2040,8 @@ fn log_to_dart(sink: &StreamSink<KafkaMessage>, message: String) {
         payload: Some(format!("__LOG__:{}", message)),
         timestamp: 0,
         headers: None,
+        key_schema: None,
+        value_schema: None,
     };
     sink.add(msg).ok();
 }
@@ -2026,6 +2055,8 @@ fn send_eof(sink: &StreamSink<KafkaMessage>, topic: &str) {
         payload: Some("__EOF__".to_string()),
         timestamp: 0,
         headers: None,
+        key_schema: None,
+        value_schema: None,
     };
     let _ = sink.add(eof_msg);
 }
@@ -2188,5 +2219,96 @@ mod path_filter_tests {
         assert!(line.contains("offset=99"));
         assert!(!line.contains(marker));
         assert!(line.len() < 200, "diagnostic line: {line}");
+    }
+}
+
+#[cfg(test)]
+mod schema_provenance_tests {
+    use super::*;
+
+    /// Confluent wire format: magic byte, schema id 4242, then an Avro body.
+    const WIRE_PAYLOAD_ID_4242: &[u8] = &[0x00, 0x00, 0x00, 0x10, 0x92, 0x02];
+
+    fn profile_without_registry() -> ClusterProfile {
+        ClusterProfile {
+            name: "test".to_string(),
+            bootstrap_servers: "localhost:9092".to_string(),
+            schema_registry_url: Some("http://127.0.0.1:1".to_string()),
+            ..Default::default()
+        }
+    }
+
+    fn decoders() -> Option<SrDecoders<'static>> {
+        let settings = SrSettings::new("http://127.0.0.1:1".to_string());
+        Some(SrDecoders {
+            avro: AvroDecoder::new(settings.clone()),
+            json: JsonDecoder::new(settings.clone()),
+            proto: ProtoDecoder::new(settings.clone()),
+            provenance: SchemaProvenance::from_profile(&profile_without_registry()),
+            settings,
+        })
+    }
+
+    #[test]
+    fn a_wire_format_message_keeps_its_id_when_the_registry_is_down() {
+        let schema = message_schema(shared_runtime(), &decoders(), Some(WIRE_PAYLOAD_ID_4242));
+
+        let resolved = schema.expect("the schema id is in the payload itself");
+        assert_eq!(resolved.schema_id, 4242);
+        assert_eq!(resolved.subject, None);
+        assert_eq!(resolved.version, None);
+    }
+
+    #[test]
+    fn a_plain_json_message_has_no_schema() {
+        assert!(message_schema(shared_runtime(), &decoders(), Some(br#"{"id":7}"#)).is_none());
+    }
+
+    #[test]
+    fn messages_are_untouched_without_a_schema_registry() {
+        let payload = Some("plain text".as_bytes());
+        assert!(message_schema(shared_runtime(), &None, payload).is_none());
+    }
+}
+
+#[cfg(test)]
+mod schema_side_tests {
+    use super::*;
+
+    fn decoders() -> Option<SrDecoders<'static>> {
+        let settings = SrSettings::new("http://127.0.0.1:1".to_string());
+        Some(SrDecoders {
+            avro: AvroDecoder::new(settings.clone()),
+            json: JsonDecoder::new(settings.clone()),
+            proto: ProtoDecoder::new(settings.clone()),
+            provenance: SchemaProvenance::from_profile(&ClusterProfile {
+                name: "test".to_string(),
+                bootstrap_servers: "localhost:9092".to_string(),
+                schema_registry_url: Some("http://127.0.0.1:1".to_string()),
+                ..Default::default()
+            }),
+            settings,
+        })
+    }
+
+    #[test]
+    fn key_and_value_report_their_own_schema_id() {
+        let key_bytes = [0x00u8, 0x00, 0x00, 0x00, 0x07, 0x02];
+        let value_bytes = [0x00u8, 0x00, 0x00, 0x00, 0x09, 0x02];
+
+        let decoders = decoders();
+        let key = message_schema(shared_runtime(), &decoders, Some(&key_bytes))
+            .expect("the key carries an id");
+        let value = message_schema(shared_runtime(), &decoders, Some(&value_bytes))
+            .expect("the value carries an id");
+
+        assert_eq!(key.schema_id, 7);
+        assert_eq!(value.schema_id, 9);
+    }
+
+    #[test]
+    fn a_plain_key_next_to_an_encoded_value_stays_without_a_schema() {
+        let decoders = decoders();
+        assert!(message_schema(shared_runtime(), &decoders, Some(b"order-1")).is_none());
     }
 }

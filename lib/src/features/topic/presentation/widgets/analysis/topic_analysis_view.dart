@@ -5,6 +5,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_ana
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/hourly_production_chart.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/key_and_field_distribution_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/partition_balance_view.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_report_comparison_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_summary_cards.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -61,6 +62,8 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                   children: [
                     if (report != null) ...[
                       TopicAnalysisSummaryCards(report: report),
+                      const SizedBox(height: 16),
+                      _buildComparison(context, l10n),
                       const SizedBox(height: 16),
                       HourlyProductionChart(
                         hourlyDistribution: report.hourlyDistribution,
@@ -163,6 +166,7 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
             if (widget.controller.isImported) _buildImportedChip(context, l10n),
             _buildImportButton(context, l10n),
             _buildExportButton(context, l10n),
+            _buildCompareButton(context, l10n),
             if (isAnalyzing)
               FilledButton.tonalIcon(
                 onPressed: () => widget.controller.stopAnalysis(),
@@ -293,6 +297,73 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
       _showSnackBar(l10n?.exportFailed ?? 'Failed to export');
     } finally {
       if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Widget _buildCompareButton(BuildContext context, AppLocalizations? l10n) {
+    final canCompare = widget.controller.report != null && !_busy;
+    return OutlinedButton.icon(
+      key: const Key('analysis_compare_button'),
+      onPressed: canCompare ? _onCompare : null,
+      icon: const Icon(Icons.compare_arrows_outlined),
+      label: Text(l10n?.comparisonAction ?? 'Compare'),
+    );
+  }
+
+  Widget _buildComparison(BuildContext context, AppLocalizations? l10n) {
+    final controller = widget.controller;
+    if (controller.mismatchTopicA != null) {
+      return Text(
+        l10n?.comparisonTopicMismatch(
+              controller.mismatchTopicA!,
+              controller.mismatchTopicB ?? '',
+            ) ??
+            'Cannot compare reports of different topics',
+        key: const Key('comparison_topic_mismatch'),
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      );
+    }
+    final comparison = controller.comparison;
+    if (comparison == null) return const SizedBox.shrink();
+    final base = controller.baseReport!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TopicReportComparisonView(
+          comparison: comparison,
+          base: base,
+          current: controller.report!,
+          baseClusterName: controller.baseClusterName,
+          currentClusterName: widget.controller.isImported
+              ? controller.reportClusterName
+              : widget.profile.name,
+          baseMoment: controller.baseExportedAt,
+          currentMoment: controller.reportExportedAt ?? controller.startTime,
+          baseIsImported: true,
+          currentIsImported: controller.isImported,
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            key: const Key('comparison_clear_button'),
+            onPressed: controller.clearComparison,
+            child: Text(l10n?.clear ?? 'Clear'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _onCompare() async {
+    await widget.controller.pickComparisonBase();
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    if (widget.controller.baseImportErrorKind != null) {
+      _showSnackBar(_importErrorMessage(l10n));
+    } else if (widget.controller.awaitingSecondReport) {
+      _showSnackBar(
+        l10n?.comparisonAwaitingSecond ?? 'Select the second report to compare',
+      );
     }
   }
 

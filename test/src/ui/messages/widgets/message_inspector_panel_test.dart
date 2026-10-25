@@ -260,4 +260,249 @@ void main() {
     inspector.onPinToColumn!('orderId');
     expect(pinnedColumn, 'orderId');
   });
+
+  testWidgets('an Avro message shows its schema subject, version and id', (
+    tester,
+  ) async {
+    final avroMessage = KafkaMessage(
+      topic: 'test-orders',
+      partition: 0,
+      offset: 7,
+      timestamp: 1695888000000,
+      key: 'order-1',
+      payload: '{"orderId":"1"}',
+      valueSchema: const MessageSchema(
+        schemaId: 42,
+        subject: 'test-orders-value',
+        version: 3,
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest(message: avroMessage));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('provenance_value_entry')), findsOneWidget);
+    expect(
+      find.text('Value: Schema: test-orders-value v3 (#42)'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('key and value carry their own subject, version and id', (
+    tester,
+  ) async {
+    final twoSidedMessage = KafkaMessage(
+      topic: 'test-orders',
+      partition: 0,
+      offset: 9,
+      timestamp: 1695888000000,
+      key: 'order-3',
+      payload: '{"orderId":"3"}',
+      keySchema: const MessageSchema(
+        schemaId: 7,
+        subject: 'test-orders-key',
+        version: 1,
+      ),
+      valueSchema: const MessageSchema(
+        schemaId: 42,
+        subject: 'test-orders-value',
+        version: 3,
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest(message: twoSidedMessage));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Key: Schema: test-orders-key v1 (#7)'), findsOneWidget);
+    expect(
+      find.text('Value: Schema: test-orders-value v3 (#42)'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a plain JSON message says it has no registry schema', (
+    tester,
+  ) async {
+    await tester.pumpWidget(createWidgetUnderTest(message: testMessage));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Key: no registry schema'), findsOneWidget);
+    expect(find.text('Value: no registry schema'), findsOneWidget);
+  });
+
+  testWidgets('activating the schema row opens the inspector at that version', (
+    tester,
+  ) async {
+    when(
+      mockSchemaController.fetchSchemaVersions(any, any),
+    ).thenAnswer((_) async => [1, 2, 3]);
+    when(
+      mockSchemaController.fetchSchemaContent(
+        any,
+        any,
+        version: anyNamed('version'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          '{"type": "record", "name": "Order", "fields": [{"name": "orderId", "type": "string"}]}',
+    );
+
+    final avroMessage = KafkaMessage(
+      topic: 'test-orders',
+      partition: 0,
+      offset: 7,
+      timestamp: 1695888000000,
+      key: 'order-1',
+      payload: '{"orderId":"1"}',
+      valueSchema: const MessageSchema(
+        schemaId: 42,
+        subject: 'test-orders-value',
+        version: 3,
+      ),
+    );
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(message: avroMessage, profile: testProfile),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('provenance_value_entry')));
+    await tester.pumpAndSettle();
+
+    final TopicSchemaInspectorView inspector = tester.widget(
+      find.byType(TopicSchemaInspectorView),
+    );
+    expect(inspector.initialSubject, 'test-orders-value');
+    expect(inspector.initialVersion, 3);
+    expect(find.text('Version 3'), findsOneWidget);
+
+    // The message keeps its own schema provenance next to the opened schema.
+    expect(
+      find.text('Value: Schema: test-orders-value v3 (#42)'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'switching versions shows that version and back shows the original',
+    (tester) async {
+      when(
+        mockSchemaController.fetchSchemaVersions(any, any),
+      ).thenAnswer((_) async => [1, 2, 3]);
+      when(
+        mockSchemaController.fetchSchemaContent(
+          any,
+          any,
+          version: anyNamed('version'),
+        ),
+      ).thenAnswer((invocation) async {
+        final version = invocation.namedArguments[#version] as int;
+        final field = version == 3 ? 'total' : 'amount';
+        return '{"type": "record", "name": "Order", "fields": [{"name": "$field", "type": "string"}]}';
+      });
+
+      final avroMessage = KafkaMessage(
+        topic: 'test-orders',
+        partition: 0,
+        offset: 7,
+        timestamp: 1695888000000,
+        key: 'order-1',
+        payload: '{"orderId":"1"}',
+        valueSchema: const MessageSchema(
+          schemaId: 42,
+          subject: 'test-orders-value',
+          version: 3,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(message: avroMessage, profile: testProfile),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('provenance_value_entry')));
+      await tester.pumpAndSettle();
+      expect(find.text('Version 3'), findsOneWidget);
+      expect(find.textContaining('total'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('schema_version_selector')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Version 2').last);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('amount'), findsOneWidget);
+      expect(find.textContaining('"total"'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('schema_version_selector')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Version 3').last);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('total'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a vanished subject errors in the inspector, not in the message',
+    (tester) async {
+      when(
+        mockSchemaController.fetchSchemaVersions(any, any),
+      ).thenThrow(Exception('subject test-orders-value not found'));
+
+      final avroMessage = KafkaMessage(
+        topic: 'test-orders',
+        partition: 0,
+        offset: 7,
+        timestamp: 1695888000000,
+        key: 'order-1',
+        payload: '{"orderId":"1"}',
+        valueSchema: const MessageSchema(
+          schemaId: 42,
+          subject: 'test-orders-value',
+          version: 3,
+        ),
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(message: avroMessage, profile: testProfile),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('provenance_value_entry')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('test-orders-value not found'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Value: Schema: test-orders-value v3 (#42)'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('a message keeps its schema id when the registry was unreachable', (
+    tester,
+  ) async {
+    final unresolvedMessage = KafkaMessage(
+      topic: 'test-orders',
+      partition: 0,
+      offset: 8,
+      timestamp: 1695888000000,
+      key: 'order-2',
+      payload: '{"orderId":"2"}',
+      valueSchema: const MessageSchema(schemaId: 42),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest(message: unresolvedMessage));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('provenance_value_entry')), findsOneWidget);
+    expect(find.text('Value: Schema #42 (unresolved)'), findsOneWidget);
+    expect(
+      find.byTooltip(
+        'The Schema Registry could not be reached. The id comes from the message itself.',
+      ),
+      findsOneWidget,
+    );
+  });
 }

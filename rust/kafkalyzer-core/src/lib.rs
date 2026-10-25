@@ -1,3 +1,8 @@
 pub mod avro_utils;
+pub mod consumer_group_protocol;
 pub mod json_path;
 pub mod kafka_types;
+pub mod partition_health;
+pub mod report_compare;
+pub mod schema_wire;
+pub mod size_stats;

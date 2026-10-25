@@ -4,10 +4,17 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'topic_partition_table.dart';
 
+/// Group detail: the members with the partitions they own, then the per-topic lag.
 class GroupDetailsView extends StatefulWidget {
   final ClusterProfile profile;
   final ConsumerGroupLag group;
   final Map<String, int>? partitionDeltas;
+
+  /// Retained lag readings per topic-partition, oldest first.
+  final Map<String, List<int>>? partitionTrends;
+
+  /// Lag in messages at which a partition is marked; 0 disables the marking.
+  final int lagWarnThreshold;
   final AppLocalizations l10n;
 
   const GroupDetailsView({
@@ -15,6 +22,8 @@ class GroupDetailsView extends StatefulWidget {
     required this.profile,
     required this.group,
     this.partitionDeltas,
+    this.partitionTrends,
+    this.lagWarnThreshold = 0,
     required this.l10n,
   });
 
@@ -51,6 +60,147 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
       }
     }
     return hasDelta ? totalDelta : null;
+  }
+
+  /// Members of the group and the partitions each of them owns. Assignment
+  /// decoding happens in Rust; this only shows what came back.
+  Widget _buildMembersCard(BuildContext context) {
+    final l10n = widget.l10n;
+    final colorScheme = Theme.of(context).colorScheme;
+    final members = widget.group.members;
+    final unassigned = widget.group.unassignedPartitions;
+
+    return Card(
+      key: const Key('group_members_card'),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: ExpansionTile(
+        key: const Key('group_members_tile'),
+        initiallyExpanded: true,
+        tilePadding: const EdgeInsets.only(left: 24, right: 24),
+        title: Row(
+          children: [
+            Text(
+              '${l10n.groupMembersTitle} (${members.length})',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            if (unassigned.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Container(
+                key: const Key('group_unassigned_chip'),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  l10n.groupUnassignedPartitions(unassigned.length),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        children: [
+          if (members.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                l10n.groupMemberEmpty,
+                key: const Key('group_member_empty'),
+                style: TextStyle(
+                  color: colorScheme.outline,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            )
+          else
+            for (final member in members)
+              ExpansionTile(
+                key: Key('group_member_${member.memberId}'),
+                tilePadding: const EdgeInsets.only(left: 24, right: 24),
+                title: Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Text(
+                        member.clientId.isEmpty
+                            ? member.memberId
+                            : member.clientId,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        member.clientHost.isEmpty ? '-' : member.clientHost,
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      l10n.groupMemberPartitions(member.assignments.length),
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+                children: [
+                  if (!member.assignmentDecodable)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        l10n.groupAssignmentNotDecodable,
+                        style: TextStyle(
+                          color: colorScheme.error,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  for (final assignment in member.assignments)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 2,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${assignment.topic}-${assignment.partition}',
+                            key: Key(
+                              'group_assignment_${assignment.topic}-${assignment.partition}',
+                            ),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+          for (final partition in unassigned)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
+              child: Text(
+                '${partition.topic}-${partition.partition}',
+                key: Key(
+                  'group_unassigned_${partition.topic}-${partition.partition}',
+                ),
+                style: TextStyle(fontSize: 12, color: colorScheme.error),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTopicDeltaWidget(BuildContext context, int? delta) {
@@ -170,6 +320,8 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildMembersCard(context),
+          const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.only(
               left: 26,
@@ -324,6 +476,8 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                     profile: widget.profile,
                     partitionLags: parts,
                     partitionDeltas: widget.partitionDeltas,
+                    partitionTrends: widget.partitionTrends,
+                    lagWarnThreshold: widget.lagWarnThreshold,
                     l10n: widget.l10n,
                   ),
                 ],

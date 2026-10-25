@@ -163,6 +163,10 @@ Map<String, dynamic> _reportToMap(TopicAnalysisReport r) => <String, dynamic>{
       .toList(),
   'field_frequencies': r.fieldFrequencies.map(_fieldToMap).toList(),
   'scan_duration_ms': r.scanDurationMs.toInt(),
+  'message_size_percentiles': _percentilesToMap(r.messageSizePercentiles),
+  'size_percentiles_estimated': r.sizePercentilesEstimated,
+  'estimated_distinct_keys': r.estimatedDistinctKeys.toInt(),
+  'key_cardinality_capped': r.keyCardinalityCapped,
 };
 
 TopicAnalysisReport _reportFromMap(
@@ -187,7 +191,31 @@ TopicAnalysisReport _reportFromMap(
   ).map(_typeFromMap).toList(),
   fieldFrequencies: _list(m['field_frequencies']).map(_fieldFromMap).toList(),
   scanDurationMs: _toInt(m['scan_duration_ms']),
+  messageSizePercentiles: _percentilesFromMap(m['message_size_percentiles']),
+  sizePercentilesEstimated: _toBool(m['size_percentiles_estimated']),
+  estimatedDistinctKeys: _toInt(m['estimated_distinct_keys']),
+  keyCardinalityCapped: _toBool(m['key_cardinality_capped']),
 );
+
+/// Percentiles are optional in version 1 files: a missing block stays unavailable
+/// instead of turning into zeros.
+Map<String, dynamic>? _percentilesToMap(SizePercentiles? p) {
+  if (p == null) return null;
+  return <String, dynamic>{
+    'p50': p.p50.toInt(),
+    'p95': p.p95.toInt(),
+    'p99': p.p99.toInt(),
+  };
+}
+
+SizePercentiles? _percentilesFromMap(dynamic raw) {
+  if (raw is! Map) return null;
+  return SizePercentiles(
+    p50: _toInt(raw['p50']),
+    p95: _toInt(raw['p95']),
+    p99: _toInt(raw['p99']),
+  );
+}
 
 Map<String, dynamic> _partitionToMap(PartitionAnalysis p) => <String, dynamic>{
   'partition': p.partition,

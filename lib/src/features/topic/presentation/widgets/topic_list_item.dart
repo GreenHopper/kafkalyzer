@@ -135,6 +135,37 @@ class TopicListItem extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final List<Widget> children = [];
 
+    final underReplicated = topic.underReplicatedPartitions ?? 0;
+    final leaderless = topic.leaderlessPartitions ?? 0;
+    if (underReplicated + leaderless > 0) {
+      children.add(
+        Tooltip(
+          message:
+              l10n?.topicHealthWarning(underReplicated, leaderless) ??
+              "$underReplicated under-replicated, $leaderless leaderless",
+          child: Row(
+            key: const Key('topic_health_warning'),
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 16,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(width: 2),
+              Text(
+                '${underReplicated + leaderless}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (isSelected) {
       children.add(const Icon(Icons.check, size: 16));
     }
@@ -194,6 +225,12 @@ class TopicListItem extends StatelessWidget {
       }
       if (isAvro) {
         meta += l10n.schemaTooltipSuffix("Avro");
+      }
+      if ((topic.underReplicatedPartitions ?? 0) +
+              (topic.leaderlessPartitions ?? 0) >
+          0) {
+        meta +=
+            "\n${l10n.topicHealthWarning(topic.underReplicatedPartitions ?? 0, topic.leaderlessPartitions ?? 0)}";
       }
     } else {
       if (hasExtendedConfig) {

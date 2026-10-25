@@ -15,6 +15,20 @@ import 'package:path/path.dart' as p;
 class SettingsService {
   static const _gcsKeyFileName = 'wgs-kaenup-data-test-6d6c17c275e1.json';
 
+  /// Group lag above which the lag view warns. 0 disables the warning.
+  static const lagWarnThresholdKey = 'consumer_lag_warn_threshold';
+
+  Future<int> lagWarnThreshold() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = prefs.getInt(lagWarnThresholdKey);
+    return (value == null || value < 0) ? 0 : value;
+  }
+
+  Future<void> setLagWarnThreshold(int messages) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(lagWarnThresholdKey, messages < 0 ? 0 : messages);
+  }
+
   Future<void> initializeSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final defaultDir = prefs.getString('general_default_output_dir');

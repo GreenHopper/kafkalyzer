@@ -19,6 +19,23 @@ impl From<kafkalyzer_core::kafka_types::KafkaHeader> for KafkaHeader {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MessageSchema {
+    pub schema_id: u32,
+    pub subject: Option<String>,
+    pub version: Option<i32>,
+}
+
+impl From<kafkalyzer_core::kafka_types::MessageSchema> for MessageSchema {
+    fn from(schema: kafkalyzer_core::kafka_types::MessageSchema) -> Self {
+        Self {
+            schema_id: schema.schema_id,
+            subject: schema.subject,
+            version: schema.version,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KafkaMessage {
     pub topic: String,
     pub partition: i32,
@@ -27,6 +44,8 @@ pub struct KafkaMessage {
     pub payload: Option<String>,
     pub timestamp: i64,
     pub headers: Option<Vec<KafkaHeader>>,
+    pub key_schema: Option<MessageSchema>,
+    pub value_schema: Option<MessageSchema>,
 }
 
 impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
@@ -41,6 +60,8 @@ impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
             headers: msg
                 .headers
                 .map(|list| list.into_iter().map(KafkaHeader::from).collect()),
+            key_schema: msg.key_schema.map(MessageSchema::from),
+            value_schema: msg.value_schema.map(MessageSchema::from),
         }
     }
 }

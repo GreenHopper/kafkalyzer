@@ -59,6 +59,16 @@ L10N ist vollständig: `app_en.arb` und `app_de.arb` haben je 479 Keys, keine L�
 
 ### Gruppe 1: Metadaten & Diagnose (größter Erkenntnisgewinn pro Zeile Code)
 
+> **Umgesetzt (B1–B5)** — OpenSpec-Change `improve-metadata-diagnostics`. Stand:
+>
+> - **B1** Partition Health: `under_replicated_partitions` / `leaderless_partitions` pro Topic in der Liste, Leader/Replicas/ISR-Tabelle auf Abruf (`fetch_topic_partitions`), Warntag in Topic-Liste und Topic-Detail. Kern: `kafkalyzer-core/src/partition_health.rs`.
+> - **B2** Member-Sicht: Member-ID, Client-ID, Host und Partitionen je Member plus „Partition gehört niemandem" und „Zuordnung nicht lesbar" in einer Members-Karte (`group_details_view.dart`).
+> - **B3** Schema-Herkunft: Schema-ID aus dem Confluent-Wire-Header, Subject/Version aus dem Registry-Cache (1 Lookup pro Schema-ID, auch bei unerreichbarer Registry), getrennt für Schlüssel und Wert; Klick öffnet den Inspector mit Subject und Version (`schema_version_selector`).
+> - **B4** Report: p50/p95/p99 (begrenzte, deterministische Stichprobe, als „geschätzt" markiert),Distinct-Key-Anzahl mit „begrenzt"-Marker, Vergleich zweier Reports inkl. Felder hinzu/entfernt; fehlende Metriken gelten als „nicht verfügbar", nie als 0 (`report_compare.rs`).
+> - **B5** Lag-Trend: 20 Messwerte pro Gruppe/Partition als Sparkline mit Tooltip (höchster/niedrigster Wert), Warnschwelle als Setting `consumer_lag_warn_threshold` (0 = aus).
+>
+> Verifikation: 111 Rust-Tests, 98 Flutter-Suiten / 808 Tests grün; Read-only-Invarianten per Grep bestätigt (keine Producer-, Commit-, Subscribe- oder Write-Aufrufe).
+
 | Vorschlag | Warum | Wo ansetzen | Aufwand |
 |---|---|---|---|
 | **B1. Partitionsgesundheit anzeigen**: Leader, Replicas, ISR, under-replicated, offline Partitionen je Topic. `grep` nach `leader\|isr` im Kern: 0 Treffer. | Höchste Alarmstufe in Prod („warum fehlt ein Broker?") ist heute nicht beantwortbar. rdkafka liefert die Daten bereits im Metadata-Response. | `kafka_metadata.rs:10` + Explorer-Tab | 0,5 Tag |

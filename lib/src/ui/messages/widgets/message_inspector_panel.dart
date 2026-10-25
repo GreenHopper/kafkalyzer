@@ -52,18 +52,27 @@ class MessageInspectorPanel extends StatefulWidget {
   State<MessageInspectorPanel> createState() => _MessageInspectorPanelState();
 }
 
-class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
+class _MessageInspectorPanelState extends State<MessageInspectorPanel>
+    with SingleTickerProviderStateMixin {
   bool _isSearchOpen = false;
   late final TextEditingController _searchController;
   final FocusNode _searchFocusNode = FocusNode();
   int _totalMatches = 0;
   int _currentMatchIndex = 0;
   final GlobalKey<JsonOrStringViewerState> _payloadViewerKey = GlobalKey();
+  late final TabController _tabController;
+
+  // Schema of the selected message, set when the user jumps to it.
+  String? _schemaSubject;
+  int? _schemaVersion;
+
+  static const int _schemaTabIndex = 3;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -76,6 +85,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -167,6 +177,8 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
           children: [
             // Header Bar
             _buildHeader(context, colorScheme, l10n, dateStr),
+            // Schema provenance of the selected message, per message side.
+            _buildProvenanceRow(context, l10n),
             if (_isSearchOpen) ...[
               _buildSearchBar(context, colorScheme, l10n),
               const Divider(height: 1),
@@ -177,6 +189,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
             // Tab Content
             Expanded(
               child: TabBarView(
+                controller: _tabController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   // Tab 1: Payload Viewer
@@ -346,7 +359,8 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
                             final text =
                                 'Partition: ${widget.message.partition}\n'
                                 'Offset: ${widget.message.offset}\n'
-                                'Timestamp: $dateStr';
+                                'Timestamp: $dateStr'
+                                '${_schemaMetadataLine(l10n)}';
                             Clipboard.setData(ClipboardData(text: text));
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -613,6 +627,104 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
     );
   }
 
+  /// Subject, version and schema id of the selected message, labeled for the key
+  /// and the value side. Activating a resolved entry opens the schema inspector.
+  Widget _buildProvenanceRow(BuildContext context, AppLocalizations l10n) {
+    return Padding(
+      key: const Key('message_provenance_row'),
+      padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 4,
+        children: [
+          _buildProvenanceEntry(
+            context,
+            l10n,
+            l10n.schemaSideKey,
+            widget.message.keySchema,
+            'provenance_key_entry',
+          ),
+          _buildProvenanceEntry(
+            context,
+            l10n,
+            l10n.schemaSideValue,
+            widget.message.valueSchema,
+            'provenance_value_entry',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProvenanceEntry(
+    BuildContext context,
+    AppLocalizations l10n,
+    String side,
+    MessageSchema? schema,
+    String key,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final style = AppFonts.robotoMono(
+      fontSize: 11,
+      color: colorScheme.onSurfaceVariant,
+    );
+
+    if (schema == null) {
+      return Text(
+        '$side: ${l10n.schemaNone}',
+        key: Key(key),
+        style: style.copyWith(fontStyle: FontStyle.italic),
+      );
+    }
+
+    final resolved = schema.subject != null && schema.version != null;
+    final label = resolved
+        ? '$side: ${l10n.messageSchemaResolved(schema.subject!, schema.version!, schema.schemaId)}'
+        : '$side: ${l10n.messageSchemaUnresolved(schema.schemaId)}';
+
+    if (!resolved) {
+      return Tooltip(
+        key: Key(key),
+        message: l10n.messageSchemaUnresolvedTooltip,
+        child: Text(label, style: style),
+      );
+    }
+
+    return InkWell(
+      key: Key(key),
+      onTap: () => _openSchemaOfMessage(schema.subject!, schema.version!),
+      child: Text(
+        label,
+        style: style.copyWith(decoration: TextDecoration.underline),
+      ),
+    );
+  }
+
+  void _openSchemaOfMessage(String subject, int version) {
+    setState(() {
+      _schemaSubject = subject;
+      _schemaVersion = version;
+    });
+    _tabController.animateTo(_schemaTabIndex);
+  }
+
+  String _schemaMetadataLine(AppLocalizations l10n) {
+    final keySchema = widget.message.keySchema;
+    final valueSchema = widget.message.valueSchema;
+    if (keySchema == null && valueSchema == null) return '';
+
+    String describe(MessageSchema? schema) {
+      if (schema == null) return l10n.schemaNone;
+      if (schema.subject != null && schema.version != null) {
+        return '${schema.subject} v${schema.version} (#${schema.schemaId})';
+      }
+      return '#${schema.schemaId} (unresolved)';
+    }
+
+    return '\n${l10n.schemaSideKey}: ${describe(keySchema)}'
+        '\n${l10n.schemaSideValue}: ${describe(valueSchema)}';
+  }
+
   Widget _buildCompactChip(BuildContext context, String label, IconData icon) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
@@ -631,6 +743,8 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
           const SizedBox(width: 4),
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppFonts.robotoMono(
               fontSize: 11,
               fontWeight: FontWeight.w500,
@@ -648,6 +762,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
     int headerCount,
   ) {
     return TabBar(
+      controller: _tabController,
       isScrollable: true,
       tabAlignment: TabAlignment.start,
       labelPadding: const EdgeInsets.symmetric(horizontal: 14),
@@ -877,6 +992,8 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel> {
 
     return TopicSchemaInspectorView(
       profile: effectiveProfile,
+      initialSubject: _schemaSubject,
+      initialVersion: _schemaVersion,
       topicName: widget.message.topic,
       isEmbedded: true,
       onPinToColumn: widget.onPinToColumn,

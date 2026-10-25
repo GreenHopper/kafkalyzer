@@ -18,6 +18,7 @@ import 'package:mockito/mockito.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
+import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 
 @GenerateMocks([
@@ -27,6 +28,24 @@ import 'package:kafkalyzer/src/services/recent_topics_service.dart';
   SchemaController,
 ])
 import 'explorer_view_test.mocks.dart';
+
+/// The topic detail view loads partition health through this service; the
+/// explorer tests only need the call to resolve.
+class FakeMetadataService implements KafkaMetadataService {
+  @override
+  Future<TopicPartitionDetails> fetchTopicPartitions({
+    required ClusterProfile profile,
+    required String topic,
+  }) async =>
+      TopicPartitionDetails(
+        topic: topic,
+        partitions: const [],
+        brokers: const [],
+      );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 void main() {
   late MockClusterListController mockClusterListController;
@@ -62,6 +81,7 @@ void main() {
     getIt.registerSingleton<TopicController>(mockTopicController);
     getIt.registerSingleton<SchemaController>(mockSchemaController);
     getIt.registerSingleton<RecentTopicsService>(RecentTopicsService());
+    getIt.registerSingleton<KafkaMetadataService>(FakeMetadataService());
 
     // Stub ChangeNotifier methods to prevent watch_it hangs
     when(mockActiveConnectionController.addListener(any)).thenReturn(null);

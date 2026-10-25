@@ -75,7 +75,14 @@ class MockSchemaRegistryService extends SchemaRegistryService {
   Future<String> fetchSchema({
     required ClusterProfile profile,
     required String subject,
+    int? version,
   }) async => '{}';
+
+  @override
+  Future<List<int>> fetchSchemaVersions({
+    required ClusterProfile profile,
+    required String subject,
+  }) async => const [];
 }
 
 class MockSchemaController extends SchemaController {

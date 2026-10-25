@@ -4,6 +4,7 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_table.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
@@ -167,6 +168,11 @@ class _TopicDetailViewState extends State<TopicDetailView>
               ),
             ),
             if (_viewMode == TopicViewMode.messages) ...[
+              TopicPartitionHealthTable(
+                key: ValueKey('${widget.profile.name}:${widget.topic.name}'),
+                profile: widget.profile,
+                topicName: widget.topic.name,
+              ),
               TopicSearchBar(
                 scanMode: _scanMode,
                 onScanModeChanged: (mode) => setState(() => _scanMode = mode),
@@ -381,12 +387,24 @@ class _TopicDetailViewState extends State<TopicDetailView>
   }
 
   Widget _buildTopicTags(BuildContext context) {
+    final unhealthy =
+        (widget.topic.underReplicatedPartitions ?? 0) +
+        (widget.topic.leaderlessPartitions ?? 0);
     return Wrap(
       spacing: 8,
       runSpacing: 4,
       children: [
         TopicTag("${widget.topic.partitionCount} Partitions"),
         TopicTag("RF: ${widget.topic.replicationFactor}"),
+        if (unhealthy > 0)
+          TopicTag(
+            AppLocalizations.of(context)?.topicHealthWarning(
+                  widget.topic.underReplicatedPartitions ?? 0,
+                  widget.topic.leaderlessPartitions ?? 0,
+                ) ??
+                'Unhealthy partitions',
+            key: const Key('topic_health_tag'),
+          ),
         if (widget.topic.cleanupPolicy != null)
           TopicTag(splitPolicy(widget.topic.cleanupPolicy!), isConfig: true),
         if (widget.topic.retentionMs != null)

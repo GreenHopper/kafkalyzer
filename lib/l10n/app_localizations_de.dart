@@ -1286,6 +1286,64 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String messageSchemaResolved(String subject, int version, int id) {
+    return 'Schema: $subject v$version (#$id)';
+  }
+
+  @override
+  String messageSchemaUnresolved(int id) {
+    return 'Schema #$id (nicht aufgelöst)';
+  }
+
+  @override
+  String get messageSchemaUnresolvedTooltip =>
+      'Das Schema Registry war nicht erreichbar. Die Id stammt aus der Nachricht selbst.';
+
+  @override
+  String get groupMembersTitle => 'Mitglieder';
+
+  @override
+  String get groupMemberEmpty => 'Diese Gruppe hat aktuell keine Mitglieder.';
+
+  @override
+  String groupMemberPartitions(int count) {
+    return '$count Partitionen';
+  }
+
+  @override
+  String groupUnassignedPartitions(int count) {
+    return '$count Partitionen haben keinen Eigentümer';
+  }
+
+  @override
+  String get groupAssignmentNotDecodable =>
+      'Zuweisung konnte nicht gelesen werden';
+
+  @override
+  String topicHealthWarning(int underReplicated, int leaderless) {
+    return '$underReplicated unterrepliziert, $leaderless ohne Leader';
+  }
+
+  @override
+  String get partitionHealthTitle => 'Replikationsstatus';
+
+  @override
+  String get partitionLeaderCol => 'Leader';
+
+  @override
+  String get partitionReplicasCol => 'Repliken';
+
+  @override
+  String get partitionIsrCol => 'ISR';
+
+  @override
+  String get partitionHealthUnavailable =>
+      'Partition-Metadaten nicht verfügbar';
+
+  @override
+  String get partitionNoLeader => 'keiner';
+
+  @override
   String schemaTooltipSuffix(String schema) {
     return ' • Schema: $schema';
   }
@@ -1669,4 +1727,84 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get schemaSearchHint => 'Schema-Felder und Typen suchen...';
+
+  @override
+  String get schemaVersionLabel => 'Version';
+
+  @override
+  String get schemaSideKey => 'Schlüssel';
+
+  @override
+  String get schemaSideValue => 'Wert';
+
+  @override
+  String get schemaNone => 'kein Registry-Schema';
+
+  @override
+  String lagTrendTooltip(Object readings, Object high, Object low) {
+    return 'Messwerte: $readings - höchster $high, niedrigster $low';
+  }
+
+  @override
+  String lagOverThreshold(Object threshold) {
+    return 'Oberhalb der Warnschwelle von $threshold Nachrichten';
+  }
+
+  @override
+  String get lagWarnThresholdLabel => 'Consumer-Lag-Warnschwelle (Nachrichten)';
+
+  @override
+  String get lagWarnThresholdHelp =>
+      '0 deaktiviert die Warnung in der Lag-Ansicht.';
+
+  @override
+  String get comparisonAction => 'Vergleichen';
+
+  @override
+  String get comparisonTitle => 'Report-Vergleich';
+
+  @override
+  String get comparisonSourceLive => 'Live';
+
+  @override
+  String get comparisonSourceImported => 'Importiert';
+
+  @override
+  String get comparisonNotAvailable => 'nicht verfügbar';
+
+  @override
+  String get comparisonFieldsAdded => 'Felder hinzugekommen';
+
+  @override
+  String get comparisonFieldsRemoved => 'Felder entfernt';
+
+  @override
+  String get comparisonBusiestPartition => 'Anteil der stärksten Partition';
+
+  @override
+  String get comparisonMinSize => 'Min. Nachrichtengröße';
+
+  @override
+  String get comparisonMaxSize => 'Max. Nachrichtengröße';
+
+  @override
+  String get comparisonAwaitingSecond =>
+      'Wähle das zweite Report für den Vergleich.';
+
+  @override
+  String comparisonTopicMismatch(Object topicA, Object topicB) {
+    return 'Cannot compare reports of different topics: $topicA and $topicB.';
+  }
+
+  @override
+  String get sizePercentiles => 'p50/p95/p99';
+
+  @override
+  String get estimatedIndicator => 'geschätzt';
+
+  @override
+  String get distinctKeys => 'Unterschiedliche Keys';
+
+  @override
+  String get cappedIndicator => 'begrenzt';
 }

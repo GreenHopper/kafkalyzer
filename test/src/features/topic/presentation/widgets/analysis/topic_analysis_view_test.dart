@@ -3,7 +3,13 @@ import 'package:get_it/get_it.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:kafkalyzer/src/rust/api/report_compare.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
+
+import '../../../../../rust/api/rust_mocks.mocks.dart';
 
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
@@ -32,6 +38,33 @@ class FakeExportService extends TopicAnalysisExportService {
     return importResult;
   }
 }
+
+TopicAnalysisReportFile _file(String topic, int messages) =>
+    TopicAnalysisReportFile(
+      exportedAt: DateTime.utc(2026, 9, 1, 8),
+      clusterName: 'staging-eu-1',
+      report: TopicAnalysisReport(
+        topic: topic,
+        totalMessages: messages,
+        totalBytes: messages * 20,
+        minMessageSize: 1,
+        maxMessageSize: 50,
+        avgMessageSize: 20.0,
+        tombstonesCount: 0,
+        isCompacted: false,
+        nullKeysCount: 0,
+        partitionStats: const [],
+        hourlyDistribution: const [],
+        topKeys: const [],
+        contentTypeDistribution: const [],
+        fieldFrequencies: const [],
+        scanDurationMs: 1000,
+        messageSizePercentiles: null,
+        sizePercentilesEstimated: false,
+        estimatedDistinctKeys: 0,
+        keyCardinalityCapped: false,
+      ),
+    );
 
 TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
   exportedAt: DateTime.utc(2026, 8, 19, 12, 34, 56),
@@ -74,15 +107,24 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
       ),
     ],
     scanDurationMs: 12345,
+    messageSizePercentiles: null,
+    sizePercentilesEstimated: false,
+    estimatedDistinctKeys: 0,
+    keyCardinalityCapped: false,
   ),
 );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final mockApi = MockKafkalyzerRustLibApi();
+
   setUpAll(() {
     GoogleFonts.config.allowRuntimeFetching = false;
+    KafkalyzerRustLib.initMock(api: mockApi);
   });
+
+  tearDownAll(() => KafkalyzerRustLib.dispose());
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -118,6 +160,42 @@ void main() {
         ),
       ),
     );
+  }
+
+  setUp(() {
+    resetMockitoState();
+    when(
+      mockApi.crateApiReportCompareCompareReports(
+        before: anyNamed('before'),
+        after: anyNamed('after'),
+      ),
+    ).thenAnswer(
+      (_) async => const ReportComparison(
+        topic: 'orders',
+        metrics: [
+          MetricDelta(
+            metric: 'total_messages',
+            before: 1000,
+            after: 1200,
+            absolute: 200,
+            relativePercent: 20.0,
+            comparable: true,
+          ),
+        ],
+        fields: [],
+      ),
+    );
+  });
+
+  void useBigTestSurface(WidgetTester tester) {
+    final originalSize = tester.view.physicalSize;
+    final originalRatio = tester.view.devicePixelRatio;
+    tester.view.physicalSize = const Size(1600, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.physicalSize = originalSize;
+      tester.view.devicePixelRatio = originalRatio;
+    });
   }
 
   group('TopicAnalysisView', () {
@@ -205,6 +283,78 @@ void main() {
         isNotNull,
         reason: 'export must be enabled once a report is available',
       );
+    });
+
+    testWidgets('comparing against a second report renders the delta rows', (
+      tester,
+    ) async {
+      useBigTestSurface(tester);
+
+      final fake = FakeExportService()..importResult = _file('orders', 1000);
+      final controller = TopicAnalysisController(exportService: fake);
+      await tester.pumpWidget(buildView(controller));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Import Analysis Report'));
+      await tester.pumpAndSettle();
+
+      fake.importResult = _file('orders', 1200);
+      await tester.tap(find.byKey(const Key('analysis_compare_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('report_comparison_view')), findsOneWidget);
+      expect(
+        find.byKey(const Key('comparison_metric_total_messages')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('+200'), findsOneWidget);
+    });
+
+    testWidgets('a pair of different topics is rejected and both are named', (
+      tester,
+    ) async {
+      useBigTestSurface(tester);
+
+      final fake = FakeExportService()..importResult = _file('orders', 1000);
+      final controller = TopicAnalysisController(exportService: fake);
+      await tester.pumpWidget(buildView(controller));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Import Analysis Report'));
+      await tester.pumpAndSettle();
+
+      fake.importResult = _file('shipments', 1200);
+      await tester.tap(find.byKey(const Key('analysis_compare_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('report_comparison_view')), findsNothing);
+      expect(
+        find.byKey(const Key('comparison_topic_mismatch')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('shipments', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.textContaining('orders', findRichText: true), findsWidgets);
+    });
+
+    testWidgets('cancelling the second report leaves no partial comparison', (
+      tester,
+    ) async {
+      useBigTestSurface(tester);
+
+      final fake = FakeExportService()..importResult = _file('orders', 1000);
+      final controller = TopicAnalysisController(exportService: fake);
+      await tester.pumpWidget(buildView(controller));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Import Analysis Report'));
+      await tester.pumpAndSettle();
+
+      fake.importResult = null;
+      await tester.tap(find.byKey(const Key('analysis_compare_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('report_comparison_view')), findsNothing);
+      expect(controller.comparison, isNull);
     });
   });
 }

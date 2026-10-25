@@ -1,6 +1,8 @@
+use crate::consumer_group_protocol::TopicPartition;
+use crate::size_stats::SizePercentiles;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ClusterProfile {
     pub name: String,
     pub bootstrap_servers: String,
@@ -48,6 +50,15 @@ pub struct KafkaHeader {
     pub value: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MessageSchema {
+    pub schema_id: u32,
+    /// Subject as registered in the Schema Registry. `None` when the registry
+    /// could not be reached or the id is not registered under a subject.
+    pub subject: Option<String>,
+    pub version: Option<i32>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KafkaMessage {
     pub topic: String,
@@ -57,6 +68,10 @@ pub struct KafkaMessage {
     pub payload: Option<String>,
     pub timestamp: i64,
     pub headers: Option<Vec<KafkaHeader>>,
+    /// Schema the key was encoded with, `None` for a key without registry encoding.
+    pub key_schema: Option<MessageSchema>,
+    /// Schema the value was encoded with, `None` for a plain payload.
+    pub value_schema: Option<MessageSchema>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,6 +83,18 @@ pub struct TopicPartitionLag {
     pub lag: i64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ConsumerGroupMember {
+    pub member_id: String,
+    pub client_id: String,
+    pub client_host: String,
+    pub subscriptions: Vec<String>,
+    pub assignments: Vec<TopicPartition>,
+    /// False when the member's assignment bytes could not be decoded, which is
+    /// different from "this member owns no partitions".
+    pub assignment_decodable: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConsumerGroupLag {
     pub group_id: String,
@@ -76,6 +103,9 @@ pub struct ConsumerGroupLag {
     pub partition_lags: Vec<TopicPartitionLag>,
     pub members_count: i32,
     pub topics_count: i32,
+    pub members: Vec<ConsumerGroupMember>,
+    /// Partitions of the group's topics that no member owns.
+    pub unassigned_partitions: Vec<TopicPartition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -141,6 +171,19 @@ pub struct TopicAnalysisReport {
     pub content_type_distribution: Vec<TypeOccurrence>,
     pub field_frequencies: Vec<FieldOccurrence>,
     pub scan_duration_ms: i64,
+    /// p50 / p95 / p99 of message sizes, or None when nothing was scanned.
+    #[serde(default)]
+    pub message_size_percentiles: Option<SizePercentiles>,
+    /// True when more messages were scanned than the percentile sample can hold.
+    #[serde(default)]
+    pub size_percentiles_estimated: bool,
+    /// Distinct keys counted by the capped key map.
+    #[serde(default)]
+    pub estimated_distinct_keys: i64,
+    /// True when the key map hit its size cap, so the distinct-key count is a
+    /// lower bound rather than an exact number.
+    #[serde(default)]
+    pub key_cardinality_capped: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

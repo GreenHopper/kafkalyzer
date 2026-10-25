@@ -342,6 +342,8 @@ void main() {
         partitionLags: [partLag],
         membersCount: 2,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       );
 
       const groupLag2 = ConsumerGroupLag(
@@ -351,6 +353,8 @@ void main() {
         partitionLags: [partLag],
         membersCount: 2,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       );
 
       expect(groupLag1 == groupLag1, isTrue);
@@ -368,6 +372,8 @@ void main() {
               partitionLags: [partLag],
               membersCount: 2,
               topicsCount: 1,
+              members: [],
+              unassignedPartitions: [],
             ),
         isFalse,
       );
@@ -381,6 +387,8 @@ void main() {
               partitionLags: [partLag],
               membersCount: 2,
               topicsCount: 1,
+              members: [],
+              unassignedPartitions: [],
             ),
         isFalse,
       );
@@ -394,6 +402,8 @@ void main() {
               partitionLags: [partLag],
               membersCount: 2,
               topicsCount: 1,
+              members: [],
+              unassignedPartitions: [],
             ),
         isFalse,
       );
@@ -407,6 +417,8 @@ void main() {
               partitionLags: [],
               membersCount: 2,
               topicsCount: 1,
+              members: [],
+              unassignedPartitions: [],
             ),
         isFalse,
       );
@@ -420,6 +432,8 @@ void main() {
               partitionLags: [partLag],
               membersCount: 3,
               topicsCount: 1,
+              members: [],
+              unassignedPartitions: [],
             ),
         isFalse,
       );
@@ -433,6 +447,8 @@ void main() {
               partitionLags: [partLag],
               membersCount: 2,
               topicsCount: 2,
+              members: [],
+              unassignedPartitions: [],
             ),
         isFalse,
       );

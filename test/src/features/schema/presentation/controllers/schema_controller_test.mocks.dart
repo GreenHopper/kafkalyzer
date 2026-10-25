@@ -49,11 +49,13 @@ class MockSchemaRegistryService extends _i1.Mock
   _i3.Future<String> fetchSchema({
     required _i4.ClusterProfile? profile,
     required String? subject,
+    int? version,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#fetchSchema, [], {
               #profile: profile,
               #subject: subject,
+              #version: version,
             }),
             returnValue: _i3.Future<String>.value(
               _i5.dummyValue<String>(
@@ -61,9 +63,24 @@ class MockSchemaRegistryService extends _i1.Mock
                 Invocation.method(#fetchSchema, [], {
                   #profile: profile,
                   #subject: subject,
+                  #version: version,
                 }),
               ),
             ),
           )
           as _i3.Future<String>);
+
+  @override
+  _i3.Future<List<int>> fetchSchemaVersions({
+    required _i4.ClusterProfile? profile,
+    required String? subject,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#fetchSchemaVersions, [], {
+              #profile: profile,
+              #subject: subject,
+            }),
+            returnValue: _i3.Future<List<int>>.value(<int>[]),
+          )
+          as _i3.Future<List<int>>);
 }

@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 Future<bool> validateConnection({required ClusterProfile profile}) =>
     KafkalyzerRustLib.instance.api.crateApiKafkaMetadataValidateConnection(
@@ -18,6 +18,14 @@ Future<List<TopicMetadata>> fetchTopics({required ClusterProfile profile}) =>
     KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchTopics(
       profile: profile,
     );
+
+Future<TopicPartitionDetails> fetchTopicPartitions({
+  required ClusterProfile profile,
+  required String topic,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchTopicPartitions(
+  profile: profile,
+  topic: topic,
+);
 
 Future<List<ConsumerGroupLag>> fetchConsumerLags({
   required ClusterProfile profile,
@@ -39,6 +47,71 @@ Future<ConsumerGroupLag> fetchConsumerGroupLag({
   groupId: groupId,
 );
 
+class BrokerEndpoint {
+  final int id;
+  final String host;
+  final int port;
+
+  const BrokerEndpoint({
+    required this.id,
+    required this.host,
+    required this.port,
+  });
+
+  @override
+  int get hashCode => id.hashCode ^ host.hashCode ^ port.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BrokerEndpoint &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          host == other.host &&
+          port == other.port;
+}
+
+/// One partition of one topic, with the health flags already decided in Rust so
+/// the Dart side never has to re-implement the classification.
+class PartitionRow {
+  final int partition;
+  final int? leader;
+  final Int32List replicas;
+  final Int32List inSyncReplicas;
+  final bool underReplicated;
+  final bool leaderless;
+
+  const PartitionRow({
+    required this.partition,
+    this.leader,
+    required this.replicas,
+    required this.inSyncReplicas,
+    required this.underReplicated,
+    required this.leaderless,
+  });
+
+  @override
+  int get hashCode =>
+      partition.hashCode ^
+      leader.hashCode ^
+      replicas.hashCode ^
+      inSyncReplicas.hashCode ^
+      underReplicated.hashCode ^
+      leaderless.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PartitionRow &&
+          runtimeType == other.runtimeType &&
+          partition == other.partition &&
+          leader == other.leader &&
+          replicas == other.replicas &&
+          inSyncReplicas == other.inSyncReplicas &&
+          underReplicated == other.underReplicated &&
+          leaderless == other.leaderless;
+}
+
 class TopicMetadata {
   final String name;
   final int partitionCount;
@@ -46,12 +119,18 @@ class TopicMetadata {
   final String? cleanupPolicy;
   final String? retentionMs;
 
+  /// `None` when the broker gave no usable partition list for this topic.
+  final int? underReplicatedPartitions;
+  final int? leaderlessPartitions;
+
   const TopicMetadata({
     required this.name,
     required this.partitionCount,
     required this.replicationFactor,
     this.cleanupPolicy,
     this.retentionMs,
+    this.underReplicatedPartitions,
+    this.leaderlessPartitions,
   });
 
   @override
@@ -60,7 +139,9 @@ class TopicMetadata {
       partitionCount.hashCode ^
       replicationFactor.hashCode ^
       cleanupPolicy.hashCode ^
-      retentionMs.hashCode;
+      retentionMs.hashCode ^
+      underReplicatedPartitions.hashCode ^
+      leaderlessPartitions.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -71,5 +152,31 @@ class TopicMetadata {
           partitionCount == other.partitionCount &&
           replicationFactor == other.replicationFactor &&
           cleanupPolicy == other.cleanupPolicy &&
-          retentionMs == other.retentionMs;
+          retentionMs == other.retentionMs &&
+          underReplicatedPartitions == other.underReplicatedPartitions &&
+          leaderlessPartitions == other.leaderlessPartitions;
+}
+
+class TopicPartitionDetails {
+  final String topic;
+  final List<PartitionRow> partitions;
+  final List<BrokerEndpoint> brokers;
+
+  const TopicPartitionDetails({
+    required this.topic,
+    required this.partitions,
+    required this.brokers,
+  });
+
+  @override
+  int get hashCode => topic.hashCode ^ partitions.hashCode ^ brokers.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicPartitionDetails &&
+          runtimeType == other.runtimeType &&
+          topic == other.topic &&
+          partitions == other.partitions &&
+          brokers == other.brokers;
 }

@@ -4,6 +4,7 @@ use kafkalyzer_core::kafka_types::{
     ClusterProfile, FieldOccurrence, FieldValueOccurrence, HourlyCount, KeyOccurrence,
     PartitionAnalysis, TopicAnalysisProgress, TopicAnalysisReport, TypeOccurrence,
 };
+use kafkalyzer_core::size_stats::SizeSample;
 use rdkafka::admin::{AdminClient, AdminOptions, ResourceSpecifier};
 use rdkafka::client::DefaultClientContext;
 use rdkafka::consumer::{BaseConsumer, Consumer};
@@ -35,6 +36,10 @@ pub struct AnalyzerAccumulator {
     pub hourly_counts: [i64; 24],
     pub unknown_timestamp_count: i64,
     pub key_counts: HashMap<String, i64>,
+    /// Bounded sample of message sizes behind the reported percentiles.
+    pub size_sample: SizeSample,
+    /// Set once the capped key map had to drop a new key.
+    pub key_cardinality_capped: bool,
     pub content_type_counts: HashMap<String, i64>,
     pub field_counts: HashMap<String, i64>,
     pub field_value_counts: HashMap<String, HashMap<String, i64>>,
@@ -63,6 +68,8 @@ impl AnalyzerAccumulator {
             hourly_counts: [0; 24],
             unknown_timestamp_count: 0,
             key_counts: HashMap::new(),
+            size_sample: SizeSample::default(),
+            key_cardinality_capped: false,
             content_type_counts: HashMap::new(),
             field_counts: HashMap::new(),
             field_value_counts: HashMap::new(),
@@ -110,8 +117,12 @@ impl AnalyzerAccumulator {
         for (k, count) in &other.key_counts {
             if self.key_counts.len() < 10000 || self.key_counts.contains_key(k) {
                 *self.key_counts.entry(k.clone()).or_insert(0) += count;
+            } else {
+                self.key_cardinality_capped = true;
             }
         }
+        self.key_cardinality_capped |= other.key_cardinality_capped;
+        self.size_sample.merge(other.size_sample.clone());
 
         for (ct, count) in &other.content_type_counts {
             *self.content_type_counts.entry(ct.clone()).or_insert(0) += count;
@@ -151,6 +162,7 @@ impl AnalyzerAccumulator {
         let msg_size = key_len + payload_len;
 
         self.total_bytes += msg_size;
+        self.size_sample.record(partition, offset, msg_size);
         if msg_size < self.min_message_size {
             self.min_message_size = msg_size;
         }
@@ -224,6 +236,8 @@ impl AnalyzerAccumulator {
                 // Bounded tracking up to 10,000 unique keys
                 if self.key_counts.len() < 10000 || self.key_counts.contains_key(&k) {
                     *self.key_counts.entry(k).or_insert(0) += 1;
+                } else {
+                    self.key_cardinality_capped = true;
                 }
             }
         }
@@ -489,6 +503,10 @@ impl AnalyzerAccumulator {
             content_type_distribution,
             field_frequencies,
             scan_duration_ms,
+            message_size_percentiles: self.size_sample.percentiles(),
+            size_percentiles_estimated: self.size_sample.estimated(),
+            estimated_distinct_keys: self.key_counts.len() as i64,
+            key_cardinality_capped: self.key_cardinality_capped,
         }
     }
 }
@@ -539,7 +557,8 @@ pub fn analyze_topic_content(
     let tokio_runtime = crate::kafka_consumer::shared_runtime();
     let sr_settings = create_sr_settings(&profile);
     let (decoders, key_is_avro, value_is_avro) = if let Some(ref settings) = sr_settings {
-        setup_schema_registry(tokio_runtime, settings, &topic).unwrap_or((None, false, false))
+        setup_schema_registry(tokio_runtime, settings, &topic, &profile)
+            .unwrap_or((None, false, false))
     } else {
         (None, false, false)
     };
@@ -1084,6 +1103,49 @@ pub fn analyze_topic_content(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_scan_above_the_sample_limit_reports_estimated_percentiles() {
+        let mut acc = AnalyzerAccumulator::new("orders".to_string(), false);
+        for offset in 0..100_000i64 {
+            acc.record_message(0, offset, 0, None, Some(b"x"), None, None, false);
+        }
+        let report = acc.to_report(10);
+        assert!(report.size_percentiles_estimated);
+        assert_eq!(report.message_size_percentiles.unwrap().p50, 1);
+    }
+
+    #[test]
+    fn a_small_scan_reports_exact_percentiles() {
+        let mut acc = AnalyzerAccumulator::new("orders".to_string(), false);
+        for offset in 0..100i64 {
+            acc.record_message(0, offset, 0, None, Some(b"x"), None, None, false);
+        }
+        let report = acc.to_report(10);
+        assert!(!report.size_percentiles_estimated);
+        assert_eq!(report.message_size_percentiles.unwrap().p99, 1);
+    }
+
+    #[test]
+    fn a_capped_key_map_marks_distinct_keys_as_a_lower_bound() {
+        let mut acc = AnalyzerAccumulator::new("orders".to_string(), false);
+        for offset in 0..10_005i64 {
+            let key = format!("key-{offset}");
+            acc.record_message(
+                0,
+                offset,
+                0,
+                Some(key.as_bytes()),
+                Some(b"x"),
+                None,
+                None,
+                false,
+            );
+        }
+        let report = acc.to_report(10);
+        assert!(report.key_cardinality_capped);
+        assert_eq!(report.estimated_distinct_keys, 10_000);
+    }
 
     #[test]
     fn test_remaining_range_nonempty() {

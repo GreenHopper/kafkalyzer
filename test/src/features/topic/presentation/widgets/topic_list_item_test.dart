@@ -307,4 +307,51 @@ void main() {
     expect(matchSpan, isNotNull);
     expect(matchSpan!.style?.backgroundColor, isNotNull);
   });
+
+  testWidgets(
+    'under-replicated partitions show a warning indicator with the count',
+    (WidgetTester tester) async {
+      const unhealthyTopic = TopicMetadata(
+        name: 'test-topic',
+        partitionCount: 3,
+        replicationFactor: 3,
+        underReplicatedPartitions: 1,
+        leaderlessPartitions: 0,
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          topic: unhealthyTopic,
+          clusterProfile: testProfile,
+        ),
+      );
+
+      expect(find.byKey(const Key('topic_health_warning')), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+
+      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip).first);
+      expect(tooltip.message, contains('1 under-replicated, 0 leaderless'));
+    },
+  );
+
+  testWidgets('fully replicated topic shows no warning indicator', (
+    WidgetTester tester,
+  ) async {
+    const healthyTopic = TopicMetadata(
+      name: 'test-topic',
+      partitionCount: 3,
+      replicationFactor: 3,
+      underReplicatedPartitions: 0,
+      leaderlessPartitions: 0,
+    );
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(topic: healthyTopic, clusterProfile: testProfile),
+    );
+
+    expect(find.byKey(const Key('topic_health_warning')), findsNothing);
+
+    final tooltip = tester.widget<Tooltip>(find.byType(Tooltip).first);
+    expect(tooltip.message, isNot(contains('under-replicated')));
+  });
 }

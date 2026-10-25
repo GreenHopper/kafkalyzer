@@ -95,6 +95,10 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
       ),
     ],
     scanDurationMs: 12345,
+    messageSizePercentiles: null,
+    sizePercentilesEstimated: false,
+    estimatedDistinctKeys: 0,
+    keyCardinalityCapped: false,
   ),
 );
 

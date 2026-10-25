@@ -20,6 +20,11 @@ class TopicSchemaInspectorView extends StatefulWidget {
   final VoidCallback? onOpenClusterSettings;
   final SchemaController? controller;
 
+  /// Opens one exact subject instead of the topic's latest schemas — used when the
+  /// schema of a single message is requested.
+  final String? initialSubject;
+  final int? initialVersion;
+
   const TopicSchemaInspectorView({
     super.key,
     required this.profile,
@@ -30,6 +35,8 @@ class TopicSchemaInspectorView extends StatefulWidget {
     this.isEmbedded = false,
     this.onOpenClusterSettings,
     this.controller,
+    this.initialSubject,
+    this.initialVersion,
   });
 
   @override
@@ -58,6 +65,10 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
   bool _isLoading = true;
   String? _error;
 
+  // Version selection for a schema opened from a single message.
+  List<int> _versions = const [];
+  int? _selectedVersion;
+
   int get _totalMatches => _keyMatchCount + _valueMatchCount;
 
   bool get _hasRegistryConfigured =>
@@ -77,7 +88,9 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
   void didUpdateWidget(covariant TopicSchemaInspectorView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.topicName != oldWidget.topicName ||
-        widget.profile.name != oldWidget.profile.name) {
+        widget.profile.name != oldWidget.profile.name ||
+        widget.initialSubject != oldWidget.initialSubject ||
+        widget.initialVersion != oldWidget.initialVersion) {
       _loadSchemas();
     }
   }
@@ -86,6 +99,56 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Loads one exact subject/version, as recorded by a message. A subject or
+  /// version the registry no longer serves ends in the normal error state.
+  Future<void> _loadSubjectVersion(String subject, int? version) async {
+    try {
+      final versions = await _controller.fetchSchemaVersions(
+        widget.profile,
+        subject,
+      );
+      final selected = version != null && versions.contains(version)
+          ? version
+          : (versions.isNotEmpty ? versions.last : version);
+      final content = selected == null
+          ? null
+          : await _controller.fetchSchemaContent(
+              widget.profile,
+              subject,
+              version: selected,
+            );
+
+      dynamic parsed;
+      if (content != null) {
+        try {
+          parsed = simplifyAvroSchema(jsonDecode(content));
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        final isKeySide = subject.endsWith('-key');
+        setState(() {
+          _versions = versions;
+          _selectedVersion = selected;
+          _keySchema = isKeySide ? content : null;
+          _valueSchema = isKeySide ? null : content;
+          _simplifiedKeySchema = isKeySide ? parsed : null;
+          _simplifiedValueSchema = isKeySide ? null : parsed;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _versions = const [];
+          _selectedVersion = version;
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadSchemas() async {
@@ -105,6 +168,12 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
       _isLoading = true;
       _error = null;
     });
+
+    final messageSubject = widget.initialSubject;
+    if (messageSubject != null) {
+      await _loadSubjectVersion(messageSubject, widget.initialVersion);
+      return;
+    }
 
     try {
       await _controller.fetchSchemas(widget.profile);
@@ -157,6 +226,41 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
         });
       }
     }
+  }
+
+  /// Version chooser for a schema opened from a message: the version the message
+  /// was written with is the active one, and switching re-loads that version.
+  Widget _buildVersionSelector(
+    BuildContext context,
+    ColorScheme colorScheme,
+    AppLocalizations? l10n,
+  ) {
+    final versionLabel = l10n?.schemaVersionLabel ?? 'Version';
+    return DropdownButton<int>(
+      key: const Key('schema_version_selector'),
+      hint: Text(
+        versionLabel,
+        style: TextStyle(fontSize: widget.isEmbedded ? 12 : 13),
+      ),
+      value: _versions.contains(_selectedVersion) ? _selectedVersion : null,
+      items: [
+        for (final version in _versions)
+          DropdownMenuItem(
+            value: version,
+            child: Text(
+              '$versionLabel $version',
+              style: TextStyle(fontSize: widget.isEmbedded ? 12 : 13),
+            ),
+          ),
+      ],
+      onChanged: (version) {
+        final subject = widget.initialSubject;
+        if (version == null || subject == null || version == _selectedVersion) {
+          return;
+        }
+        _loadSubjectVersion(subject, version);
+      },
+    );
   }
 
   void _onSearchChanged(String value) {
@@ -255,6 +359,10 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
 
     return Row(
       children: [
+        if (_versions.isNotEmpty) ...[
+          _buildVersionSelector(context, colorScheme, l10n),
+          const SizedBox(width: 8),
+        ],
         Expanded(
           child: Container(
             height: widget.isEmbedded ? 34 : 38,

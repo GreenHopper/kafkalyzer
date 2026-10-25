@@ -50,12 +50,13 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
                 icon: Icons.storage_outlined,
                 iconColor: Colors.purple,
                 title: l10n?.totalPayloadSize ?? 'Total Payload Size',
-                mainValue: _formatBytes(report.totalBytes),
+                mainValue: formatBytes(report.totalBytes),
                 subtitle:
                     '${l10n?.avgMessageSize ?? 'Avg'}: '
-                    '${_formatBytes(report.avgMessageSize.round())} '
+                    '${formatBytes(report.avgMessageSize.round())} '
                     '(${report.minMessageSize} B - '
-                    '${_formatBytes(report.maxMessageSize)})',
+                    '${formatBytes(report.maxMessageSize)})'
+                    '${_percentileLine(l10n)}',
               ),
             ),
             SizedBox(
@@ -88,7 +89,8 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
                 subtitle:
                     '${l10n?.nullKeys ?? 'Null Keys'}: '
                     '${numberFormat.format(nullKeys)} '
-                    '(${nullKeysPct.toStringAsFixed(1)}%)',
+                    '(${nullKeysPct.toStringAsFixed(1)}%)'
+                    ' • ${_distinctKeysLine(l10n, numberFormat)}',
               ),
             ),
           ],
@@ -97,7 +99,30 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
     );
   }
 
-  static String _formatBytes(int bytes) {
+  /// p50 / p95 / p99 of message sizes. Only labeled as an estimate when the scan
+  /// held more messages than the percentile sample can carry.
+  String _percentileLine(AppLocalizations? l10n) {
+    final p = report.messageSizePercentiles;
+    if (p == null) return '';
+    final estimated = report.sizePercentilesEstimated
+        ? ' (${l10n?.estimatedIndicator ?? 'estimated'})'
+        : '';
+    return ' • ${l10n?.sizePercentiles ?? 'p50/p95/p99'}: '
+        '${formatBytes(p.p50)} / ${formatBytes(p.p95)} / ${formatBytes(p.p99)}$estimated';
+  }
+
+  /// Number of distinct keys, marked as capped when the analyzer had to stop
+  /// counting new keys.
+  String _distinctKeysLine(AppLocalizations? l10n, NumberFormat numberFormat) {
+    final capped = report.keyCardinalityCapped
+        ? ' (${l10n?.cappedIndicator ?? 'capped'})'
+        : '';
+    return '${l10n?.distinctKeys ?? 'Distinct keys'}: '
+        '${numberFormat.format(report.estimatedDistinctKeys)}$capped';
+  }
+
+  /// Human readable byte size, shared with the comparison view.
+  static String formatBytes(int bytes) {
     if (bytes <= 0) return '0 B';
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) {

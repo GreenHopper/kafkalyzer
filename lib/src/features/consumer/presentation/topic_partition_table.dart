@@ -4,11 +4,18 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
 import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
+import 'widgets/lag_trend.dart';
 
 class TopicPartitionTable extends StatefulWidget {
   final ClusterProfile profile;
   final List<TopicPartitionLag> partitionLags;
   final Map<String, int>? partitionDeltas;
+
+  /// Retained lag readings per topic-partition, oldest first.
+  final Map<String, List<int>>? partitionTrends;
+
+  /// Lag in messages at which a partition is marked; 0 disables the marking.
+  final int lagWarnThreshold;
   final AppLocalizations l10n;
 
   const TopicPartitionTable({
@@ -16,6 +23,8 @@ class TopicPartitionTable extends StatefulWidget {
     required this.profile,
     required this.partitionLags,
     this.partitionDeltas,
+    this.partitionTrends,
+    this.lagWarnThreshold = 0,
     required this.l10n,
   });
 
@@ -151,6 +160,59 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
         flex: flex,
       );
     }
+  }
+
+  Widget _buildLagCell(TopicPartitionLag part, int lagVal) {
+    final scheme = Theme.of(context).colorScheme;
+    final warned =
+        widget.lagWarnThreshold > 0 && lagVal >= widget.lagWarnThreshold;
+    final readings =
+        widget.partitionTrends?["${part.topic}-${part.partition}"] ??
+        const <int>[];
+
+    return Expanded(
+      flex: 2,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (warned)
+            Tooltip(
+              message: widget.l10n.lagOverThreshold(
+                _formatNum(widget.lagWarnThreshold),
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                size: 14,
+                color: scheme.tertiary,
+              ),
+            ),
+          Text(
+            _formatNum(lagVal),
+            key: Key('partition_lag_${part.topic}-${part.partition}'),
+            style: TextStyle(
+              color: warned
+                  ? scheme.tertiary
+                  : lagVal > 0
+                  ? scheme.error
+                  : null,
+              fontWeight: lagVal > 0 ? FontWeight.bold : null,
+            ),
+          ),
+          const SizedBox(width: 4),
+          LagTrend(
+            key: Key('partition_lag_trend_${part.topic}-${part.partition}'),
+            readings: readings,
+            tooltip: readings.length < 2
+                ? ''
+                : widget.l10n.lagTrendTooltip(
+                    readings.map(_formatNum).join(', '),
+                    _formatNum(readings.reduce((a, b) => a > b ? a : b)),
+                    _formatNum(readings.reduce((a, b) => a < b ? a : b)),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildHeaderCell(int index, String title, {required int flex}) {
@@ -289,7 +351,6 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
           ),
           ...sortedParts.map((part) {
             final lagVal = part.lag.toInt();
-            final isHighLag = lagVal > 0;
             final committedStr = part.currentOffset.toInt() == -1
                 ? "-"
                 : _formatNum(part.currentOffset.toInt());
@@ -314,14 +375,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                     flex: 4,
                   ),
                   _buildTableCell(committedStr, flex: 4),
-                  _buildTableCell(
-                    _formatNum(lagVal),
-                    flex: 2,
-                    textColor: isHighLag
-                        ? Theme.of(context).colorScheme.error
-                        : null,
-                    isBold: isHighLag,
-                  ),
+                  _buildLagCell(part, lagVal),
                   _buildDeltaCell(part, flex: 2),
                   SizedBox(
                     width: 48,

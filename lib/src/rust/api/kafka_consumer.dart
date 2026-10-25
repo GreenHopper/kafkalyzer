@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`
 
 Stream<KafkaMessage> consumeWithFilter({
   required ClusterProfile profile,
@@ -69,6 +69,8 @@ class KafkaMessage {
   final String? payload;
   final PlatformInt64 timestamp;
   final List<KafkaHeader>? headers;
+  final MessageSchema? keySchema;
+  final MessageSchema? valueSchema;
 
   const KafkaMessage({
     required this.topic,
@@ -78,6 +80,8 @@ class KafkaMessage {
     this.payload,
     required this.timestamp,
     this.headers,
+    this.keySchema,
+    this.valueSchema,
   });
 
   @override
@@ -88,7 +92,9 @@ class KafkaMessage {
       key.hashCode ^
       payload.hashCode ^
       timestamp.hashCode ^
-      headers.hashCode;
+      headers.hashCode ^
+      keySchema.hashCode ^
+      valueSchema.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -101,5 +107,27 @@ class KafkaMessage {
           key == other.key &&
           payload == other.payload &&
           timestamp == other.timestamp &&
-          headers == other.headers;
+          headers == other.headers &&
+          keySchema == other.keySchema &&
+          valueSchema == other.valueSchema;
+}
+
+class MessageSchema {
+  final int schemaId;
+  final String? subject;
+  final int? version;
+
+  const MessageSchema({required this.schemaId, this.subject, this.version});
+
+  @override
+  int get hashCode => schemaId.hashCode ^ subject.hashCode ^ version.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MessageSchema &&
+          runtimeType == other.runtimeType &&
+          schemaId == other.schemaId &&
+          subject == other.subject &&
+          version == other.version;
 }

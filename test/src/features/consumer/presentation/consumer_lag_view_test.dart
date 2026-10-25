@@ -8,15 +8,28 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/widgets/kpi_card.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/topic_partition_table.dart';
+import 'package:kafkalyzer/src/features/consumer/presentation/widgets/group_lag_badge.dart';
+import 'package:kafkalyzer/src/features/consumer/presentation/widgets/lag_trend.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as api;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeKafkaMetadataService implements KafkaMetadataService {
   List<ConsumerGroupLag> lags = [];
   bool shouldFail = false;
+
+  @override
+  Future<api.TopicPartitionDetails> fetchTopicPartitions({
+    required ClusterProfile profile,
+    required String topic,
+  }) async => api.TopicPartitionDetails(
+    topic: topic,
+    partitions: const [],
+    brokers: const [],
+  );
 
   @override
   Future<List<ConsumerGroupLag>> fetchConsumerLags({
@@ -44,6 +57,8 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
             partitionLags: const [],
             membersCount: l.membersCount,
             topicsCount: l.topicsCount,
+            members: l.members,
+            unassignedPartitions: l.unassignedPartitions,
           ),
         )
         .toList();
@@ -86,6 +101,31 @@ class FakeClusterListController extends ChangeNotifier
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+ConsumerGroupLag _groupWithLag(int lag) => ConsumerGroupLag(
+  groupId: 'test-group',
+  state: 'Stable',
+  protocolType: 'consumer',
+  partitionLags: [
+    TopicPartitionLag(
+      topic: 'test-topic',
+      partition: 0,
+      logEndOffset: 1000,
+      currentOffset: 1000 - lag,
+      lag: lag,
+    ),
+  ],
+  membersCount: 1,
+  topicsCount: 1,
+  members: const [],
+  unassignedPartitions: const [],
+);
+
+/// Readings the trend of `groupId` currently retains.
+List<int> _retainedReadings(WidgetTester tester, String groupId) =>
+    tester.widget<LagTrend>(
+      find.byKey(Key('group_lag_trend_$groupId')),
+    ).readings;
+
 void main() {
   late FakeKafkaMetadataService fakeMetadataService;
   late ActiveConnectionController activeConnectionController;
@@ -104,6 +144,7 @@ void main() {
     fakeMetadataService = FakeKafkaMetadataService();
     getIt.registerSingleton<Logger>(Logger());
     getIt.registerSingleton<KafkaMetadataService>(fakeMetadataService);
+    getIt.registerSingleton<SettingsService>(SettingsService());
 
     topicController = TopicController();
     getIt.registerSingleton<TopicController>(topicController);
@@ -154,6 +195,8 @@ void main() {
         ],
         membersCount: 1,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       ),
     ];
 
@@ -193,6 +236,8 @@ void main() {
         ],
         membersCount: 2,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       ),
       const ConsumerGroupLag(
         groupId: 'group-a',
@@ -209,6 +254,8 @@ void main() {
         ],
         membersCount: 3,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       ),
     ];
 
@@ -259,6 +306,8 @@ void main() {
         partitionLags: [],
         membersCount: 1,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       ),
       const ConsumerGroupLag(
         groupId: 'group-empty',
@@ -267,6 +316,8 @@ void main() {
         partitionLags: [],
         membersCount: 0,
         topicsCount: 0,
+        members: [],
+        unassignedPartitions: [],
       ),
     ];
 
@@ -315,6 +366,8 @@ void main() {
         partitionLags: [],
         membersCount: 10,
         topicsCount: 5,
+        members: [],
+        unassignedPartitions: [],
       ),
       const ConsumerGroupLag(
         groupId: 'group-a',
@@ -323,6 +376,8 @@ void main() {
         partitionLags: [],
         membersCount: 20,
         topicsCount: 2,
+        members: [],
+        unassignedPartitions: [],
       ),
     ];
 
@@ -430,6 +485,8 @@ void main() {
         ],
         membersCount: 1,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       ),
     ];
 
@@ -489,6 +546,8 @@ void main() {
         ],
         membersCount: 1,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       ),
     ];
 
@@ -563,6 +622,8 @@ void main() {
         ],
         membersCount: 1,
         topicsCount: 1,
+        members: const [],
+        unassignedPartitions: const [],
       ),
     );
 
@@ -630,6 +691,8 @@ void main() {
           ],
           membersCount: 1,
           topicsCount: 1,
+          members: [],
+          unassignedPartitions: [],
         ),
       ];
 
@@ -662,6 +725,8 @@ void main() {
           ],
           membersCount: 1,
           topicsCount: 1,
+          members: [],
+          unassignedPartitions: [],
         ),
       ];
 
@@ -695,6 +760,8 @@ void main() {
           ],
           membersCount: 1,
           topicsCount: 1,
+          members: [],
+          unassignedPartitions: [],
         ),
       ];
 
@@ -745,6 +812,8 @@ void main() {
           ],
           membersCount: 1,
           topicsCount: 1,
+          members: [],
+          unassignedPartitions: [],
         ),
       ];
 
@@ -791,6 +860,8 @@ void main() {
           ],
           membersCount: 1,
           topicsCount: 1,
+          members: [],
+          unassignedPartitions: [],
         ),
       ];
 
@@ -845,6 +916,8 @@ void main() {
         ],
         membersCount: 2000,
         topicsCount: 1500,
+        members: [],
+        unassignedPartitions: [],
       ),
     ];
 
@@ -895,6 +968,8 @@ void main() {
         ],
         membersCount: 1,
         topicsCount: 1,
+        members: const [],
+        unassignedPartitions: const [],
       ),
     );
 
@@ -924,5 +999,125 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('five refreshes retain five readings for the trend', (
+    tester,
+  ) async {
+    fakeMetadataService.lags = [_groupWithLag(10)];
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    // One reading after the first load: too few to draw a trend.
+    expect(_retainedReadings(tester, 'test-group'), [10]);
+    expect(find.byKey(const Key('lag_trend')), findsNothing);
+
+    final refreshDropdown = find.byType(DropdownButtonFormField<int>);
+    await tester.tap(refreshDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('5s').last);
+    await tester.pumpAndSettle();
+
+    for (var i = 1; i < 4; i++) {
+      fakeMetadataService.lags = [_groupWithLag(10 + i * 100)];
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    }
+
+    expect(_retainedReadings(tester, 'test-group').length, 5);
+  });
+
+  testWidgets('the retained trend history never exceeds 20 readings', (
+    tester,
+  ) async {
+    fakeMetadataService.lags = [_groupWithLag(10)];
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    final refreshDropdown = find.byType(DropdownButtonFormField<int>);
+    await tester.tap(refreshDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('5s').last);
+    await tester.pumpAndSettle();
+
+    for (var i = 1; i < 26; i++) {
+      fakeMetadataService.lags = [_groupWithLag(10 + i * 10)];
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+    }
+
+    expect(_retainedReadings(tester, 'test-group').length, 20);
+  });
+
+  testWidgets('switching to another cluster starts with an empty history', (
+    tester,
+  ) async {
+    fakeMetadataService.lags = [_groupWithLag(10)];
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    final refreshDropdown = find.byType(DropdownButtonFormField<int>);
+    await tester.tap(refreshDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('5s').last);
+    await tester.pumpAndSettle();
+    fakeMetadataService.lags = [_groupWithLag(210)];
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+
+    expect(_retainedReadings(tester, 'test-group').length, greaterThanOrEqualTo(2));
+
+    await activeConnectionController.connect(
+      const ClusterProfile(name: 'other-cluster', bootstrapServers: 'other:9092'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('lag_trend')), findsNothing);
+  });
+
+  testWidgets('a group at 8000 is marked at threshold 5000', (tester) async {
+    SharedPreferences.setMockInitialValues({'consumer_lag_warn_threshold': 5000});
+    fakeMetadataService.lags = [_groupWithLag(8000)];
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    final badge = tester.widget<GroupLagBadge>(find.byType(GroupLagBadge));
+    expect(badge.warnThreshold, 5000);
+    expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+  });
+
+  testWidgets('a group at 1200 is not marked at threshold 5000', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'consumer_lag_warn_threshold': 5000});
+    fakeMetadataService.lags = [_groupWithLag(1200)];
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+  });
+
+  testWidgets('a disabled threshold marks nothing', (tester) async {
+    SharedPreferences.setMockInitialValues({'consumer_lag_warn_threshold': 0});
+    fakeMetadataService.lags = [_groupWithLag(999999)];
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
   });
 }

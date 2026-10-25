@@ -8,6 +8,10 @@ class GroupLagBadge extends StatelessWidget {
   final bool hasPreviousValue;
   final String labelText;
 
+  /// Lag in messages at which the badge warns; 0 disables the warning.
+  final int warnThreshold;
+  final String? warnTooltip;
+
   const GroupLagBadge({
     super.key,
     required this.totalLag,
@@ -16,6 +20,8 @@ class GroupLagBadge extends StatelessWidget {
     required this.isFailed,
     required this.hasPreviousValue,
     required this.labelText,
+    this.warnThreshold = 0,
+    this.warnTooltip,
   });
 
   @override
@@ -75,10 +81,15 @@ class GroupLagBadge extends StatelessWidget {
       );
     }
 
-    final badgeColor = totalLag > 0
+    final warned = warnThreshold > 0 && totalLag >= warnThreshold;
+    final badgeColor = warned
+        ? Theme.of(context).colorScheme.tertiaryContainer
+        : totalLag > 0
         ? Theme.of(context).colorScheme.errorContainer
         : Theme.of(context).colorScheme.primaryContainer;
-    final textColor = totalLag > 0
+    final textColor = warned
+        ? Theme.of(context).colorScheme.onTertiaryContainer
+        : totalLag > 0
         ? Theme.of(context).colorScheme.onErrorContainer
         : Theme.of(context).colorScheme.onPrimaryContainer;
 
@@ -93,6 +104,13 @@ class GroupLagBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (warned) ...[
+              Tooltip(
+                message: warnTooltip ?? labelText,
+                child: const Icon(Icons.warning_amber_rounded, size: 14),
+              ),
+              const SizedBox(width: 4),
+            ],
             Text(
               labelText,
               style: TextStyle(

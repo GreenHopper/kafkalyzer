@@ -9,7 +9,19 @@ class SchemaRegistryService {
   Future<String> fetchSchema({
     required ClusterProfile profile,
     required String subject,
+    int? version,
   }) {
-    return api.fetchSchema(profile: profile, subject: subject);
+    return api.fetchSchema(
+      profile: profile,
+      subject: subject,
+      version: version,
+    );
+  }
+
+  Future<List<int>> fetchSchemaVersions({
+    required ClusterProfile profile,
+    required String subject,
+  }) {
+    return api.fetchSchemaVersions(profile: profile, subject: subject);
   }
 }

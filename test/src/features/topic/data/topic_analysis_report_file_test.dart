@@ -62,6 +62,10 @@ TopicAnalysisReport _populatedReport() => TopicAnalysisReport(
     ),
   ],
   scanDurationMs: 12345,
+  messageSizePercentiles: null,
+  sizePercentilesEstimated: false,
+  estimatedDistinctKeys: 0,
+  keyCardinalityCapped: false,
 );
 
 TopicAnalysisReport _emptyReport() => TopicAnalysisReport(
@@ -80,6 +84,10 @@ TopicAnalysisReport _emptyReport() => TopicAnalysisReport(
   contentTypeDistribution: const [],
   fieldFrequencies: const [],
   scanDurationMs: 0,
+  messageSizePercentiles: null,
+  sizePercentilesEstimated: false,
+  estimatedDistinctKeys: 0,
+  keyCardinalityCapped: false,
 );
 
 void main() {

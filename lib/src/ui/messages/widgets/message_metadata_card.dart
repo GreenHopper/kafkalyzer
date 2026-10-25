@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
@@ -109,9 +110,40 @@ class MessageMetadataCard extends StatelessWidget {
               style: const TextStyle(fontSize: 10, color: Colors.grey),
               textAlign: TextAlign.right,
             ),
+            ..._schemaLines(context),
           ],
         ),
       ),
     );
+  }
+
+  /// Schema provenance per message side. Only rendered once a side carries a
+  /// registry schema, so plain rows stay as compact as they were.
+  List<Widget> _schemaLines(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return const [];
+    final keySchema = message.keySchema;
+    final valueSchema = message.valueSchema;
+    if (keySchema == null && valueSchema == null) return const [];
+
+    String describe(MessageSchema? schema) {
+      if (schema == null) return l10n.schemaNone;
+      if (schema.subject != null && schema.version != null) {
+        return '${schema.subject} v${schema.version} (#${schema.schemaId})';
+      }
+      return '#${schema.schemaId}';
+    }
+
+    Widget line(String side, MessageSchema? schema, String key) => Text(
+      '$side: ${describe(schema)}',
+      key: Key(key),
+      style: const TextStyle(fontSize: 10, color: Colors.grey),
+      textAlign: TextAlign.right,
+    );
+
+    return [
+      line(l10n.schemaSideKey, keySchema, 'metadata_card_schema_key'),
+      line(l10n.schemaSideValue, valueSchema, 'metadata_card_schema_value'),
+    ];
   }
 }

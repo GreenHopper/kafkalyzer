@@ -448,6 +448,50 @@
       "rf": { "type": "int" }
     }
   },
+  "messageSchemaResolved": "Schema: {subject} v{version} (#{id})",
+  "@messageSchemaResolved": {
+    "placeholders": {
+      "subject": { "type": "String" },
+      "version": { "type": "int" },
+      "id": { "type": "int" }
+    }
+  },
+  "messageSchemaUnresolved": "Schema #{id} (nicht aufgelöst)",
+  "@messageSchemaUnresolved": {
+    "placeholders": {
+      "id": { "type": "int" }
+    }
+  },
+  "messageSchemaUnresolvedTooltip":
+    "Das Schema Registry war nicht erreichbar. Die Id stammt aus der Nachricht selbst.",
+  "groupMembersTitle": "Mitglieder",
+  "groupMemberEmpty": "Diese Gruppe hat aktuell keine Mitglieder.",
+  "groupMemberPartitions": "{count} Partitionen",
+  "@groupMemberPartitions": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "groupUnassignedPartitions": "{count} Partitionen haben keinen Eigentümer",
+  "@groupUnassignedPartitions": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "groupAssignmentNotDecodable": "Zuweisung konnte nicht gelesen werden",
+  "topicHealthWarning": "{underReplicated} unterrepliziert, {leaderless} ohne Leader",
+  "@topicHealthWarning": {
+    "placeholders": {
+      "underReplicated": { "type": "int" },
+      "leaderless": { "type": "int" }
+    }
+  },
+  "partitionHealthTitle": "Replikationsstatus",
+  "partitionLeaderCol": "Leader",
+  "partitionReplicasCol": "Repliken",
+  "partitionIsrCol": "ISR",
+  "partitionHealthUnavailable": "Partition-Metadaten nicht verfügbar",
+  "partitionNoLeader": "keiner",
   "schemaTooltipSuffix": " • Schema: {schema}",
   "@schemaTooltipSuffix": {
     "placeholders": {
@@ -625,5 +669,38 @@
   "schemaNoRegistryConfigured": "Keine Schema Registry für diesen Cluster konfiguriert.",
   "schemaConfigureRegistryAction": "Cluster konfigurieren",
   "schemaRetry": "Wiederholen",
-  "schemaSearchHint": "Schema-Felder und Typen suchen..."
+  "schemaSearchHint": "Schema-Felder und Typen suchen...",
+  "schemaVersionLabel": "Version",
+  "schemaSideKey": "Schlüssel",
+  "schemaSideValue": "Wert",
+  "schemaNone": "kein Registry-Schema",
+  "lagTrendTooltip": "Messwerte: {readings} - höchster {high}, niedrigster {low}",
+  "@lagTrendTooltip": {
+    "placeholders": { "readings": {}, "high": {}, "low": {} }
+  },
+  "lagOverThreshold": "Oberhalb der Warnschwelle von {threshold} Nachrichten",
+  "@lagOverThreshold": {
+    "placeholders": { "threshold": {} }
+  },
+  "lagWarnThresholdLabel": "Consumer-Lag-Warnschwelle (Nachrichten)",
+  "lagWarnThresholdHelp": "0 deaktiviert die Warnung in der Lag-Ansicht.",
+  "comparisonAction": "Vergleichen",
+  "comparisonTitle": "Report-Vergleich",
+  "comparisonSourceLive": "Live",
+  "comparisonSourceImported": "Importiert",
+  "comparisonNotAvailable": "nicht verfügbar",
+  "comparisonFieldsAdded": "Felder hinzugekommen",
+  "comparisonFieldsRemoved": "Felder entfernt",
+  "comparisonBusiestPartition": "Anteil der stärksten Partition",
+  "comparisonMinSize": "Min. Nachrichtengröße",
+  "comparisonMaxSize": "Max. Nachrichtengröße",
+  "comparisonAwaitingSecond": "Wähle das zweite Report für den Vergleich.",
+  "comparisonTopicMismatch": "Cannot compare reports of different topics: {topicA} and {topicB}.",
+  "@comparisonTopicMismatch": {
+    "placeholders": { "topicA": {}, "topicB": {} }
+  },
+  "sizePercentiles": "p50/p95/p99",
+  "estimatedIndicator": "geschätzt",
+  "distinctKeys": "Unterschiedliche Keys",
+  "cappedIndicator": "begrenzt"
 }

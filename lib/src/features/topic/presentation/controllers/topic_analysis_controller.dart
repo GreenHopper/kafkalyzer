@@ -5,6 +5,7 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_analyzer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/report_compare.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
 
 /// Whether the currently displayed report came from a live scan or was
@@ -43,6 +44,16 @@ class TopicAnalysisController extends ChangeNotifier {
   int? _maxMessages;
   bool _sampleFromLatest = true;
 
+  // Comparison of the displayed report against a second one.
+  TopicAnalysisReport? _baseReport;
+  String? _baseClusterName;
+  DateTime? _baseExportedAt;
+  ReportComparison? _comparison;
+  TopicAnalysisImportErrorKind? _baseImportErrorKind;
+  String? _mismatchTopicA;
+  String? _mismatchTopicB;
+  bool _awaitingSecondReport = false;
+
   bool get isAnalyzing => _isAnalyzing;
   TopicAnalysisProgress? get progress => _progress;
   TopicAnalysisReport? get report => _report;
@@ -55,6 +66,19 @@ class TopicAnalysisController extends ChangeNotifier {
   DateTime? get reportExportedAt => _reportExportedAt;
   TopicAnalysisImportErrorKind? get importErrorKind => _importErrorKind;
   int? get importErrorFoundVersion => _importErrorFoundVersion;
+
+  TopicAnalysisReport? get baseReport => _baseReport;
+  String? get baseClusterName => _baseClusterName;
+  DateTime? get baseExportedAt => _baseExportedAt;
+  ReportComparison? get comparison => _comparison;
+  TopicAnalysisImportErrorKind? get baseImportErrorKind => _baseImportErrorKind;
+
+  /// The two topic names of a rejected pair, shown in the localized message.
+  String? get mismatchTopicA => _mismatchTopicA;
+  String? get mismatchTopicB => _mismatchTopicB;
+
+  /// True when the comparison was asked for while only one report is loaded.
+  bool get awaitingSecondReport => _awaitingSecondReport;
 
   double get progressRatio => _progress?.progress ?? 0.0;
   int get scannedMessages => _progress?.scannedMessages ?? 0;
@@ -117,6 +141,76 @@ class TopicAnalysisController extends ChangeNotifier {
     }
   }
 
+  /// Ask for the second report of a comparison and compare it once it is picked.
+  /// A pair of different topics is rejected instead of compared.
+  Future<void> pickComparisonBase() async {
+    _mismatchTopicA = null;
+    _mismatchTopicB = null;
+    _baseImportErrorKind = null;
+    if (_report == null) {
+      _awaitingSecondReport = true;
+      notifyListeners();
+      return;
+    }
+    try {
+      final file = await _exportService.importFile();
+      if (file == null) {
+        notifyListeners();
+        return;
+      }
+      await setComparisonBase(
+        file.report,
+        clusterName: file.clusterName,
+        exportedAt: file.exportedAt,
+      );
+    } on TopicAnalysisImportError catch (e) {
+      _logger.e('Comparison import failed: $e');
+      _baseImportErrorKind = e.kind;
+      _comparison = null;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setComparisonBase(
+    TopicAnalysisReport base, {
+    String? clusterName,
+    DateTime? exportedAt,
+  }) async {
+    _baseReport = base;
+    _baseClusterName = clusterName;
+    _baseExportedAt = exportedAt;
+    _awaitingSecondReport = false;
+
+    final current = _report;
+    if (current == null) {
+      _awaitingSecondReport = true;
+      _comparison = null;
+      notifyListeners();
+      return;
+    }
+    if (current.topic != base.topic) {
+      _comparison = null;
+      _mismatchTopicA = base.topic;
+      _mismatchTopicB = current.topic;
+      notifyListeners();
+      return;
+    }
+    _comparison = await compareReports(before: base, after: current);
+    notifyListeners();
+  }
+
+  void clearComparison() {
+    _baseReport = null;
+    _baseClusterName = null;
+    _baseExportedAt = null;
+    _comparison = null;
+    _baseImportErrorKind = null;
+    _mismatchTopicA = null;
+    _mismatchTopicB = null;
+    _awaitingSecondReport = false;
+    notifyListeners();
+  }
+
   Future<void> startAnalysis(
     ClusterProfile profile,
     String topic, {
@@ -136,6 +230,7 @@ class TopicAnalysisController extends ChangeNotifier {
     _reportExportedAt = null;
     _importErrorKind = null;
     _importErrorFoundVersion = null;
+    clearComparison();
     notifyListeners();
 
     try {
@@ -200,6 +295,7 @@ class TopicAnalysisController extends ChangeNotifier {
     _reportExportedAt = null;
     _importErrorKind = null;
     _importErrorFoundVersion = null;
+    clearComparison();
     notifyListeners();
   }
 

@@ -90,5 +90,36 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(scriptMsg));
       expect(find.text('My Step Name'), findsOneWidget);
     });
+
+    testWidgets('shows the schema of each message side with its own values', (
+      tester,
+    ) async {
+      const schemaMessage = KafkaMessage(
+        topic: 'test-topic',
+        partition: 1,
+        offset: 100,
+        timestamp: 1000000,
+        keySchema: MessageSchema(schemaId: 7, subject: 'test-key', version: 1),
+        valueSchema: MessageSchema(
+          schemaId: 128,
+          subject: 'test-value',
+          version: 4,
+        ),
+      );
+
+      await tester.pumpWidget(createWidgetUnderTest(schemaMessage));
+
+      expect(find.text('Key: test-key v1 (#7)'), findsOneWidget);
+      expect(find.text('Value: test-value v4 (#128)'), findsOneWidget);
+    });
+
+    testWidgets('shows no schema lines for a message without registry schema', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createWidgetUnderTest(msgBase));
+
+      expect(find.byKey(const Key('metadata_card_schema_key')), findsNothing);
+      expect(find.byKey(const Key('metadata_card_schema_value')), findsNothing);
+    });
   });
 }

@@ -161,6 +161,8 @@ void main() {
           partitionLags: [],
           membersCount: 1,
           topicsCount: 1,
+          members: [],
+          unassignedPartitions: [],
         ),
       ];
       when(
@@ -184,6 +186,8 @@ void main() {
           partitionLags: [],
           membersCount: 1,
           topicsCount: 1,
+          members: [],
+          unassignedPartitions: [],
         ),
       ];
       when(
@@ -206,6 +210,8 @@ void main() {
         partitionLags: [],
         membersCount: 1,
         topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
       );
       when(
         mockApi.crateApiKafkaMetadataFetchConsumerGroupLag(

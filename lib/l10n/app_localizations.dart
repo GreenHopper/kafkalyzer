@@ -2312,6 +2312,96 @@ abstract class AppLocalizations {
   /// **'Partitions: {partitions} • RF: {rf}'**
   String topicTooltipSimple(int partitions, int rf);
 
+  /// No description provided for @messageSchemaResolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema: {subject} v{version} (#{id})'**
+  String messageSchemaResolved(String subject, int version, int id);
+
+  /// No description provided for @messageSchemaUnresolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema #{id} (unresolved)'**
+  String messageSchemaUnresolved(int id);
+
+  /// No description provided for @messageSchemaUnresolvedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'The Schema Registry could not be reached. The id comes from the message itself.'**
+  String get messageSchemaUnresolvedTooltip;
+
+  /// No description provided for @groupMembersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get groupMembersTitle;
+
+  /// No description provided for @groupMemberEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This group currently has no members.'**
+  String get groupMemberEmpty;
+
+  /// No description provided for @groupMemberPartitions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} partitions'**
+  String groupMemberPartitions(int count);
+
+  /// No description provided for @groupUnassignedPartitions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} partitions have no owner'**
+  String groupUnassignedPartitions(int count);
+
+  /// No description provided for @groupAssignmentNotDecodable.
+  ///
+  /// In en, this message translates to:
+  /// **'Assignment could not be decoded'**
+  String get groupAssignmentNotDecodable;
+
+  /// No description provided for @topicHealthWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{underReplicated} under-replicated, {leaderless} leaderless'**
+  String topicHealthWarning(int underReplicated, int leaderless);
+
+  /// No description provided for @partitionHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition health'**
+  String get partitionHealthTitle;
+
+  /// No description provided for @partitionLeaderCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Leader'**
+  String get partitionLeaderCol;
+
+  /// No description provided for @partitionReplicasCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Replicas'**
+  String get partitionReplicasCol;
+
+  /// No description provided for @partitionIsrCol.
+  ///
+  /// In en, this message translates to:
+  /// **'ISR'**
+  String get partitionIsrCol;
+
+  /// No description provided for @partitionHealthUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition metadata unavailable'**
+  String get partitionHealthUnavailable;
+
+  /// No description provided for @partitionNoLeader.
+  ///
+  /// In en, this message translates to:
+  /// **'none'**
+  String get partitionNoLeader;
+
   /// No description provided for @schemaTooltipSuffix.
   ///
   /// In en, this message translates to:
@@ -2977,6 +3067,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search schema fields and types...'**
   String get schemaSearchHint;
+
+  /// No description provided for @schemaVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get schemaVersionLabel;
+
+  /// No description provided for @schemaSideKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get schemaSideKey;
+
+  /// No description provided for @schemaSideValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get schemaSideValue;
+
+  /// No description provided for @schemaNone.
+  ///
+  /// In en, this message translates to:
+  /// **'no registry schema'**
+  String get schemaNone;
+
+  /// No description provided for @lagTrendTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Readings: {readings} - highest {high}, lowest {low}'**
+  String lagTrendTooltip(Object readings, Object high, Object low);
+
+  /// No description provided for @lagOverThreshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Above the warning threshold of {threshold} messages'**
+  String lagOverThreshold(Object threshold);
+
+  /// No description provided for @lagWarnThresholdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumer lag warning threshold (messages)'**
+  String get lagWarnThresholdLabel;
+
+  /// No description provided for @lagWarnThresholdHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'0 disables the warning in the lag view.'**
+  String get lagWarnThresholdHelp;
+
+  /// No description provided for @comparisonAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get comparisonAction;
+
+  /// No description provided for @comparisonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report comparison'**
+  String get comparisonTitle;
+
+  /// No description provided for @comparisonSourceLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get comparisonSourceLive;
+
+  /// No description provided for @comparisonSourceImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported'**
+  String get comparisonSourceImported;
+
+  /// No description provided for @comparisonNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'not available'**
+  String get comparisonNotAvailable;
+
+  /// No description provided for @comparisonFieldsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields added'**
+  String get comparisonFieldsAdded;
+
+  /// No description provided for @comparisonFieldsRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields removed'**
+  String get comparisonFieldsRemoved;
+
+  /// No description provided for @comparisonBusiestPartition.
+  ///
+  /// In en, this message translates to:
+  /// **'Busiest partition share'**
+  String get comparisonBusiestPartition;
+
+  /// No description provided for @comparisonMinSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Min message size'**
+  String get comparisonMinSize;
+
+  /// No description provided for @comparisonMaxSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Max message size'**
+  String get comparisonMaxSize;
+
+  /// No description provided for @comparisonAwaitingSecond.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the second report to compare.'**
+  String get comparisonAwaitingSecond;
+
+  /// No description provided for @comparisonTopicMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot compare reports of different topics: {topicA} and {topicB}.'**
+  String comparisonTopicMismatch(Object topicA, Object topicB);
+
+  /// No description provided for @sizePercentiles.
+  ///
+  /// In en, this message translates to:
+  /// **'p50/p95/p99'**
+  String get sizePercentiles;
+
+  /// No description provided for @estimatedIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'estimated'**
+  String get estimatedIndicator;
+
+  /// No description provided for @distinctKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Distinct keys'**
+  String get distinctKeys;
+
+  /// No description provided for @cappedIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'capped'**
+  String get cappedIndicator;
 }
 
 class _AppLocalizationsDelegate

@@ -6,8 +6,8 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 class ClusterProfile {
   final String name;
@@ -118,6 +118,8 @@ class ConsumerGroupLag {
   final List<TopicPartitionLag> partitionLags;
   final int membersCount;
   final int topicsCount;
+  final List<ConsumerGroupMember> members;
+  final List<TopicPartition> unassignedPartitions;
 
   const ConsumerGroupLag({
     required this.groupId,
@@ -126,6 +128,8 @@ class ConsumerGroupLag {
     required this.partitionLags,
     required this.membersCount,
     required this.topicsCount,
+    required this.members,
+    required this.unassignedPartitions,
   });
 
   @override
@@ -135,7 +139,9 @@ class ConsumerGroupLag {
       protocolType.hashCode ^
       partitionLags.hashCode ^
       membersCount.hashCode ^
-      topicsCount.hashCode;
+      topicsCount.hashCode ^
+      members.hashCode ^
+      unassignedPartitions.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -147,7 +153,48 @@ class ConsumerGroupLag {
           protocolType == other.protocolType &&
           partitionLags == other.partitionLags &&
           membersCount == other.membersCount &&
-          topicsCount == other.topicsCount;
+          topicsCount == other.topicsCount &&
+          members == other.members &&
+          unassignedPartitions == other.unassignedPartitions;
+}
+
+class ConsumerGroupMember {
+  final String memberId;
+  final String clientId;
+  final String clientHost;
+  final List<String> subscriptions;
+  final List<TopicPartition> assignments;
+  final bool assignmentDecodable;
+
+  const ConsumerGroupMember({
+    required this.memberId,
+    required this.clientId,
+    required this.clientHost,
+    required this.subscriptions,
+    required this.assignments,
+    required this.assignmentDecodable,
+  });
+
+  @override
+  int get hashCode =>
+      memberId.hashCode ^
+      clientId.hashCode ^
+      clientHost.hashCode ^
+      subscriptions.hashCode ^
+      assignments.hashCode ^
+      assignmentDecodable.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConsumerGroupMember &&
+          runtimeType == other.runtimeType &&
+          memberId == other.memberId &&
+          clientId == other.clientId &&
+          clientHost == other.clientHost &&
+          subscriptions == other.subscriptions &&
+          assignments == other.assignments &&
+          assignmentDecodable == other.assignmentDecodable;
 }
 
 class FieldOccurrence {
@@ -296,6 +343,31 @@ class PartitionAnalysis {
 
 enum SearchScope { key, value, both }
 
+/// Message-size percentiles at the bridge boundary.
+class SizePercentiles {
+  final PlatformInt64 p50;
+  final PlatformInt64 p95;
+  final PlatformInt64 p99;
+
+  const SizePercentiles({
+    required this.p50,
+    required this.p95,
+    required this.p99,
+  });
+
+  @override
+  int get hashCode => p50.hashCode ^ p95.hashCode ^ p99.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SizePercentiles &&
+          runtimeType == other.runtimeType &&
+          p50 == other.p50 &&
+          p95 == other.p95 &&
+          p99 == other.p99;
+}
+
 class TopicAnalysisProgress {
   final PlatformInt64 scannedMessages;
   final PlatformInt64 totalMessagesToScan;
@@ -360,6 +432,12 @@ class TopicAnalysisReport {
   final List<FieldOccurrence> fieldFrequencies;
   final PlatformInt64 scanDurationMs;
 
+  /// p50 / p95 / p99 of message sizes; None when nothing was scanned.
+  final SizePercentiles? messageSizePercentiles;
+  final bool sizePercentilesEstimated;
+  final PlatformInt64 estimatedDistinctKeys;
+  final bool keyCardinalityCapped;
+
   const TopicAnalysisReport({
     required this.topic,
     required this.totalMessages,
@@ -376,6 +454,10 @@ class TopicAnalysisReport {
     required this.contentTypeDistribution,
     required this.fieldFrequencies,
     required this.scanDurationMs,
+    this.messageSizePercentiles,
+    required this.sizePercentilesEstimated,
+    required this.estimatedDistinctKeys,
+    required this.keyCardinalityCapped,
   });
 
   @override
@@ -394,7 +476,11 @@ class TopicAnalysisReport {
       topKeys.hashCode ^
       contentTypeDistribution.hashCode ^
       fieldFrequencies.hashCode ^
-      scanDurationMs.hashCode;
+      scanDurationMs.hashCode ^
+      messageSizePercentiles.hashCode ^
+      sizePercentilesEstimated.hashCode ^
+      estimatedDistinctKeys.hashCode ^
+      keyCardinalityCapped.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -415,7 +501,29 @@ class TopicAnalysisReport {
           topKeys == other.topKeys &&
           contentTypeDistribution == other.contentTypeDistribution &&
           fieldFrequencies == other.fieldFrequencies &&
-          scanDurationMs == other.scanDurationMs;
+          scanDurationMs == other.scanDurationMs &&
+          messageSizePercentiles == other.messageSizePercentiles &&
+          sizePercentilesEstimated == other.sizePercentilesEstimated &&
+          estimatedDistinctKeys == other.estimatedDistinctKeys &&
+          keyCardinalityCapped == other.keyCardinalityCapped;
+}
+
+class TopicPartition {
+  final String topic;
+  final int partition;
+
+  const TopicPartition({required this.topic, required this.partition});
+
+  @override
+  int get hashCode => topic.hashCode ^ partition.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicPartition &&
+          runtimeType == other.runtimeType &&
+          topic == other.topic &&
+          partition == other.partition;
 }
 
 class TopicPartitionLag {

@@ -47,6 +47,10 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
     contentTypeDistribution: const [],
     fieldFrequencies: const [],
     scanDurationMs: 12345,
+    messageSizePercentiles: null,
+    sizePercentilesEstimated: false,
+    estimatedDistinctKeys: 0,
+    keyCardinalityCapped: false,
   ),
 );
 

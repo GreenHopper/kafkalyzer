@@ -3,18 +3,20 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i8;
-import 'dart:ffi' as _i6;
+import 'dart:async' as _i10;
+import 'dart:ffi' as _i8;
+import 'dart:typed_data' as _i12;
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
-    as _i5;
-import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as _i9;
-import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as _i10;
+    as _i7;
+import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as _i11;
+import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as _i5;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i2;
-import 'package:kafkalyzer/src/rust/api/kafka_utils.dart' as _i3;
-import 'package:kafkalyzer/src/rust/frb_generated.dart' as _i4;
+import 'package:kafkalyzer/src/rust/api/kafka_utils.dart' as _i4;
+import 'package:kafkalyzer/src/rust/api/report_compare.dart' as _i3;
+import 'package:kafkalyzer/src/rust/frb_generated.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:mockito/src/dummies.dart' as _i9;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -38,14 +40,26 @@ class _FakeClusterProfile_0 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-class _FakeClientConfig_1 extends _i1.SmartFake implements _i3.ClientConfig {
-  _FakeClientConfig_1(Object parent, Invocation parentInvocation)
+class _FakeReportComparison_1 extends _i1.SmartFake
+    implements _i3.ReportComparison {
+  _FakeReportComparison_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeConsumerGroupLag_2 extends _i1.SmartFake
+class _FakeClientConfig_2 extends _i1.SmartFake implements _i4.ClientConfig {
+  _FakeClientConfig_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeConsumerGroupLag_3 extends _i1.SmartFake
     implements _i2.ConsumerGroupLag {
-  _FakeConsumerGroupLag_2(Object parent, Invocation parentInvocation)
+  _FakeConsumerGroupLag_3(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeTopicPartitionDetails_4 extends _i1.SmartFake
+    implements _i5.TopicPartitionDetails {
+  _FakeTopicPartitionDetails_4(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -53,38 +67,38 @@ class _FakeConsumerGroupLag_2 extends _i1.SmartFake
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockKafkalyzerRustLibApi extends _i1.Mock
-    implements _i4.KafkalyzerRustLibApi {
+    implements _i6.KafkalyzerRustLibApi {
   MockKafkalyzerRustLibApi() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i5.RustArcIncrementStrongCountFnType
+  _i7.RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_ClientConfig =>
       (super.noSuchMethod(
             Invocation.getter(#rust_arc_increment_strong_count_ClientConfig),
-            returnValue: (_i6.Pointer<_i6.Void> __p0) {},
+            returnValue: (_i8.Pointer<_i8.Void> __p0) {},
           )
-          as _i5.RustArcIncrementStrongCountFnType);
+          as _i7.RustArcIncrementStrongCountFnType);
 
   @override
-  _i5.RustArcDecrementStrongCountFnType
+  _i7.RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_ClientConfig =>
       (super.noSuchMethod(
             Invocation.getter(#rust_arc_decrement_strong_count_ClientConfig),
-            returnValue: (_i6.Pointer<_i6.Void> __p0) {},
+            returnValue: (_i8.Pointer<_i8.Void> __p0) {},
           )
-          as _i5.RustArcDecrementStrongCountFnType);
+          as _i7.RustArcDecrementStrongCountFnType);
 
   @override
-  _i6.Pointer<_i6.NativeFunction<_i6.Void Function(_i6.Pointer<_i6.Void>)>>
+  _i8.Pointer<_i8.NativeFunction<_i8.Void Function(_i8.Pointer<_i8.Void>)>>
   get rust_arc_decrement_strong_count_ClientConfigPtr =>
       (super.noSuchMethod(
             Invocation.getter(#rust_arc_decrement_strong_count_ClientConfigPtr),
-            returnValue: _i7
+            returnValue: _i9
                 .dummyValue<
-                  _i6.Pointer<
-                    _i6.NativeFunction<_i6.Void Function(_i6.Pointer<_i6.Void>)>
+                  _i8.Pointer<
+                    _i8.NativeFunction<_i8.Void Function(_i8.Pointer<_i8.Void>)>
                   >
                 >(
                   this,
@@ -93,12 +107,12 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
                   ),
                 ),
           )
-          as _i6.Pointer<
-            _i6.NativeFunction<_i6.Void Function(_i6.Pointer<_i6.Void>)>
+          as _i8.Pointer<
+            _i8.NativeFunction<_i8.Void Function(_i8.Pointer<_i8.Void>)>
           >);
 
   @override
-  _i8.Stream<_i2.TopicAnalysisProgress>
+  _i10.Stream<_i2.TopicAnalysisProgress>
   crateApiKafkaAnalyzerAnalyzeTopicContent({
     required _i2.ClusterProfile? profile,
     required String? topic,
@@ -112,25 +126,47 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               #maxMessages: maxMessages,
               #sampleFromLatest: sampleFromLatest,
             }),
-            returnValue: _i8.Stream<_i2.TopicAnalysisProgress>.empty(),
+            returnValue: _i10.Stream<_i2.TopicAnalysisProgress>.empty(),
           )
-          as _i8.Stream<_i2.TopicAnalysisProgress>);
+          as _i10.Stream<_i2.TopicAnalysisProgress>);
 
   @override
-  _i8.Future<_i2.ClusterProfile> crateApiKafkaTypesClusterProfileDefault() =>
+  _i10.Future<_i2.ClusterProfile> crateApiKafkaTypesClusterProfileDefault() =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaTypesClusterProfileDefault, []),
-            returnValue: _i8.Future<_i2.ClusterProfile>.value(
+            returnValue: _i10.Future<_i2.ClusterProfile>.value(
               _FakeClusterProfile_0(
                 this,
                 Invocation.method(#crateApiKafkaTypesClusterProfileDefault, []),
               ),
             ),
           )
-          as _i8.Future<_i2.ClusterProfile>);
+          as _i10.Future<_i2.ClusterProfile>);
 
   @override
-  _i8.Stream<_i9.KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
+  _i10.Future<_i3.ReportComparison> crateApiReportCompareCompareReports({
+    required _i2.TopicAnalysisReport? before,
+    required _i2.TopicAnalysisReport? after,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#crateApiReportCompareCompareReports, [], {
+              #before: before,
+              #after: after,
+            }),
+            returnValue: _i10.Future<_i3.ReportComparison>.value(
+              _FakeReportComparison_1(
+                this,
+                Invocation.method(#crateApiReportCompareCompareReports, [], {
+                  #before: before,
+                  #after: after,
+                }),
+              ),
+            ),
+          )
+          as _i10.Future<_i3.ReportComparison>);
+
+  @override
+  _i10.Stream<_i11.KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
     required _i2.ClusterProfile? profile,
     required String? topic,
     List<String>? filterTerms,
@@ -165,20 +201,20 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               #runForever: runForever,
               #startFromTail: startFromTail,
             }),
-            returnValue: _i8.Stream<_i9.KafkaMessage>.empty(),
+            returnValue: _i10.Stream<_i11.KafkaMessage>.empty(),
           )
-          as _i8.Stream<_i9.KafkaMessage>);
+          as _i10.Stream<_i11.KafkaMessage>);
 
   @override
-  _i8.Future<_i3.ClientConfig> crateApiKafkaUtilsCreateConfig({
+  _i10.Future<_i4.ClientConfig> crateApiKafkaUtilsCreateConfig({
     required _i2.ClusterProfile? profile,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaUtilsCreateConfig, [], {
               #profile: profile,
             }),
-            returnValue: _i8.Future<_i3.ClientConfig>.value(
-              _FakeClientConfig_1(
+            returnValue: _i10.Future<_i4.ClientConfig>.value(
+              _FakeClientConfig_2(
                 this,
                 Invocation.method(#crateApiKafkaUtilsCreateConfig, [], {
                   #profile: profile,
@@ -186,17 +222,17 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               ),
             ),
           )
-          as _i8.Future<_i3.ClientConfig>);
+          as _i10.Future<_i4.ClientConfig>);
 
   @override
-  _i8.Future<_i2.ClusterProfile> crateApiJsonPathDeserializeClusterProfile({
+  _i10.Future<_i2.ClusterProfile> crateApiJsonPathDeserializeClusterProfile({
     required String? json,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiJsonPathDeserializeClusterProfile, [], {
               #json: json,
             }),
-            returnValue: _i8.Future<_i2.ClusterProfile>.value(
+            returnValue: _i10.Future<_i2.ClusterProfile>.value(
               _FakeClusterProfile_0(
                 this,
                 Invocation.method(
@@ -207,10 +243,10 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               ),
             ),
           )
-          as _i8.Future<_i2.ClusterProfile>);
+          as _i10.Future<_i2.ClusterProfile>);
 
   @override
-  _i8.Future<_i2.ConsumerGroupLag> crateApiKafkaMetadataFetchConsumerGroupLag({
+  _i10.Future<_i2.ConsumerGroupLag> crateApiKafkaMetadataFetchConsumerGroupLag({
     required _i2.ClusterProfile? profile,
     required String? groupId,
   }) =>
@@ -219,8 +255,8 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               #profile: profile,
               #groupId: groupId,
             }),
-            returnValue: _i8.Future<_i2.ConsumerGroupLag>.value(
-              _FakeConsumerGroupLag_2(
+            returnValue: _i10.Future<_i2.ConsumerGroupLag>.value(
+              _FakeConsumerGroupLag_3(
                 this,
                 Invocation.method(
                   #crateApiKafkaMetadataFetchConsumerGroupLag,
@@ -230,10 +266,10 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               ),
             ),
           )
-          as _i8.Future<_i2.ConsumerGroupLag>);
+          as _i10.Future<_i2.ConsumerGroupLag>);
 
   @override
-  _i8.Future<List<_i2.ConsumerGroupLag>>
+  _i10.Future<List<_i2.ConsumerGroupLag>>
   crateApiKafkaMetadataFetchConsumerGroups({
     required _i2.ClusterProfile? profile,
   }) =>
@@ -241,14 +277,14 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
             Invocation.method(#crateApiKafkaMetadataFetchConsumerGroups, [], {
               #profile: profile,
             }),
-            returnValue: _i8.Future<List<_i2.ConsumerGroupLag>>.value(
+            returnValue: _i10.Future<List<_i2.ConsumerGroupLag>>.value(
               <_i2.ConsumerGroupLag>[],
             ),
           )
-          as _i8.Future<List<_i2.ConsumerGroupLag>>);
+          as _i10.Future<List<_i2.ConsumerGroupLag>>);
 
   @override
-  _i8.Future<List<_i2.ConsumerGroupLag>>
+  _i10.Future<List<_i2.ConsumerGroupLag>>
   crateApiKafkaMetadataFetchConsumerLags({
     required _i2.ClusterProfile? profile,
   }) =>
@@ -256,79 +292,120 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
             Invocation.method(#crateApiKafkaMetadataFetchConsumerLags, [], {
               #profile: profile,
             }),
-            returnValue: _i8.Future<List<_i2.ConsumerGroupLag>>.value(
+            returnValue: _i10.Future<List<_i2.ConsumerGroupLag>>.value(
               <_i2.ConsumerGroupLag>[],
             ),
           )
-          as _i8.Future<List<_i2.ConsumerGroupLag>>);
+          as _i10.Future<List<_i2.ConsumerGroupLag>>);
 
   @override
-  _i8.Future<String> crateApiSchemaRegistryFetchSchema({
+  _i10.Future<String> crateApiSchemaRegistryFetchSchema({
     required _i2.ClusterProfile? profile,
     required String? subject,
+    int? version,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiSchemaRegistryFetchSchema, [], {
               #profile: profile,
               #subject: subject,
+              #version: version,
             }),
-            returnValue: _i8.Future<String>.value(
-              _i7.dummyValue<String>(
+            returnValue: _i10.Future<String>.value(
+              _i9.dummyValue<String>(
                 this,
                 Invocation.method(#crateApiSchemaRegistryFetchSchema, [], {
                   #profile: profile,
                   #subject: subject,
+                  #version: version,
                 }),
               ),
             ),
           )
-          as _i8.Future<String>);
+          as _i10.Future<String>);
 
   @override
-  _i8.Future<List<String>> crateApiSchemaRegistryFetchSubjects({
+  _i10.Future<_i12.Int32List> crateApiSchemaRegistryFetchSchemaVersions({
+    required _i2.ClusterProfile? profile,
+    required String? subject,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#crateApiSchemaRegistryFetchSchemaVersions, [], {
+              #profile: profile,
+              #subject: subject,
+            }),
+            returnValue: _i10.Future<_i12.Int32List>.value(_i12.Int32List(0)),
+          )
+          as _i10.Future<_i12.Int32List>);
+
+  @override
+  _i10.Future<List<String>> crateApiSchemaRegistryFetchSubjects({
     required _i2.ClusterProfile? profile,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiSchemaRegistryFetchSubjects, [], {
               #profile: profile,
             }),
-            returnValue: _i8.Future<List<String>>.value(<String>[]),
+            returnValue: _i10.Future<List<String>>.value(<String>[]),
           )
-          as _i8.Future<List<String>>);
+          as _i10.Future<List<String>>);
 
   @override
-  _i8.Future<List<_i10.TopicMetadata>> crateApiKafkaMetadataFetchTopics({
+  _i10.Future<_i5.TopicPartitionDetails>
+  crateApiKafkaMetadataFetchTopicPartitions({
+    required _i2.ClusterProfile? profile,
+    required String? topic,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#crateApiKafkaMetadataFetchTopicPartitions, [], {
+              #profile: profile,
+              #topic: topic,
+            }),
+            returnValue: _i10.Future<_i5.TopicPartitionDetails>.value(
+              _FakeTopicPartitionDetails_4(
+                this,
+                Invocation.method(
+                  #crateApiKafkaMetadataFetchTopicPartitions,
+                  [],
+                  {#profile: profile, #topic: topic},
+                ),
+              ),
+            ),
+          )
+          as _i10.Future<_i5.TopicPartitionDetails>);
+
+  @override
+  _i10.Future<List<_i5.TopicMetadata>> crateApiKafkaMetadataFetchTopics({
     required _i2.ClusterProfile? profile,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaMetadataFetchTopics, [], {
               #profile: profile,
             }),
-            returnValue: _i8.Future<List<_i10.TopicMetadata>>.value(
-              <_i10.TopicMetadata>[],
+            returnValue: _i10.Future<List<_i5.TopicMetadata>>.value(
+              <_i5.TopicMetadata>[],
             ),
           )
-          as _i8.Future<List<_i10.TopicMetadata>>);
+          as _i10.Future<List<_i5.TopicMetadata>>);
 
   @override
-  _i8.Future<void> crateApiInitApp() =>
+  _i10.Future<void> crateApiInitApp() =>
       (super.noSuchMethod(
             Invocation.method(#crateApiInitApp, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
+            returnValue: _i10.Future<void>.value(),
+            returnValueForMissingStub: _i10.Future<void>.value(),
           )
-          as _i8.Future<void>);
+          as _i10.Future<void>);
 
   @override
-  _i8.Future<int> crateApiKafkaUtilsMurmur2({required List<int>? data}) =>
+  _i10.Future<int> crateApiKafkaUtilsMurmur2({required List<int>? data}) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaUtilsMurmur2, [], {#data: data}),
-            returnValue: _i8.Future<int>.value(0),
+            returnValue: _i10.Future<int>.value(0),
           )
-          as _i8.Future<int>);
+          as _i10.Future<int>);
 
   @override
-  _i8.Future<String?> crateApiJsonPathResolveJsonPath({
+  _i10.Future<String?> crateApiJsonPathResolveJsonPath({
     required String? payload,
     required String? path,
   }) =>
@@ -337,12 +414,12 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               #payload: payload,
               #path: path,
             }),
-            returnValue: _i8.Future<String?>.value(),
+            returnValue: _i10.Future<String?>.value(),
           )
-          as _i8.Future<String?>);
+          as _i10.Future<String?>);
 
   @override
-  _i8.Future<List<String?>> crateApiJsonPathResolveJsonPathBatch({
+  _i10.Future<List<String?>> crateApiJsonPathResolveJsonPathBatch({
     required List<String>? payloads,
     required List<String>? paths,
   }) =>
@@ -351,20 +428,20 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               #payloads: payloads,
               #paths: paths,
             }),
-            returnValue: _i8.Future<List<String?>>.value(<String?>[]),
+            returnValue: _i10.Future<List<String?>>.value(<String?>[]),
           )
-          as _i8.Future<List<String?>>);
+          as _i10.Future<List<String?>>);
 
   @override
-  _i8.Future<String> crateApiJsonPathSerializeClusterProfile({
+  _i10.Future<String> crateApiJsonPathSerializeClusterProfile({
     required _i2.ClusterProfile? profile,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiJsonPathSerializeClusterProfile, [], {
               #profile: profile,
             }),
-            returnValue: _i8.Future<String>.value(
-              _i7.dummyValue<String>(
+            returnValue: _i10.Future<String>.value(
+              _i9.dummyValue<String>(
                 this,
                 Invocation.method(
                   #crateApiJsonPathSerializeClusterProfile,
@@ -374,39 +451,39 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               ),
             ),
           )
-          as _i8.Future<String>);
+          as _i10.Future<String>);
 
   @override
-  _i8.Future<int> crateApiKafkaUtilsToPositive({required int? number}) =>
+  _i10.Future<int> crateApiKafkaUtilsToPositive({required int? number}) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaUtilsToPositive, [], {
               #number: number,
             }),
-            returnValue: _i8.Future<int>.value(0),
+            returnValue: _i10.Future<int>.value(0),
           )
-          as _i8.Future<int>);
+          as _i10.Future<int>);
 
   @override
-  _i8.Future<bool> crateApiKafkaMetadataValidateConnection({
+  _i10.Future<bool> crateApiKafkaMetadataValidateConnection({
     required _i2.ClusterProfile? profile,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaMetadataValidateConnection, [], {
               #profile: profile,
             }),
-            returnValue: _i8.Future<bool>.value(false),
+            returnValue: _i10.Future<bool>.value(false),
           )
-          as _i8.Future<bool>);
+          as _i10.Future<bool>);
 
   @override
-  _i8.Future<List<String>> crateApiJsonPathValidateFilterPatterns({
+  _i10.Future<List<String>> crateApiJsonPathValidateFilterPatterns({
     required List<String>? terms,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiJsonPathValidateFilterPatterns, [], {
               #terms: terms,
             }),
-            returnValue: _i8.Future<List<String>>.value(<String>[]),
+            returnValue: _i10.Future<List<String>>.value(<String>[]),
           )
-          as _i8.Future<List<String>>);
+          as _i10.Future<List<String>>);
 }

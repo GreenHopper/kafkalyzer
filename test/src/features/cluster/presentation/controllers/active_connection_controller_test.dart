@@ -111,10 +111,20 @@ void main() {
       await controller.connect(validProfile);
       expect(controller.activeProfile, isNotNull);
 
+      controller.openTopic(
+        topic: const TopicMetadata(
+          name: 'orders',
+          partitionCount: 3,
+          replicationFactor: 1,
+        ),
+      );
+
       controller.disconnect();
 
       expect(controller.activeProfile, isNull);
       expect(controller.error, isNull);
+      // No topic view survives a disconnect, so no health state stays live.
+      expect(controller.openTopics, isEmpty);
     });
 
     test('openTopic opens initial tab and selects it', () async {
