@@ -2018,4 +2018,50 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get jump => 'Springen';
+
+  @override
+  String get openFile => 'Öffnen';
+
+  @override
+  String get showInFolder => 'Im Ordner anzeigen';
+
+  @override
+  String failedToOpenFile(String error) {
+    return 'Fehler beim Öffnen der Datei: $error';
+  }
+
+  @override
+  String failedToOpenFolder(String error) {
+    return 'Fehler beim Öffnen des Ordners: $error';
+  }
+
+  @override
+  String get lagEstimateCaughtUp => 'Aufgeholt';
+
+  @override
+  String get lagEstimateGrowing => 'Rückstau wächst';
+
+  @override
+  String get lagEstimateStalled => 'Stagnierend';
+
+  @override
+  String get lagEstimatePending => 'Berechnung...';
+
+  @override
+  String get lagEstimateRateUnit => 'Nachr./s';
+
+  @override
+  String lagEstimateEtaPrefix(String eta) {
+    return 'Dauer: $eta';
+  }
+
+  @override
+  String lagEstimateTooltip(
+    String rate,
+    String delta,
+    String interval,
+    String status,
+  ) {
+    return 'Rate: $rate | Delta: $delta über $interval | Status: $status';
+  }
 }

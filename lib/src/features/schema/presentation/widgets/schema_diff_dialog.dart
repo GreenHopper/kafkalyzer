@@ -37,8 +37,9 @@ List<DiffLine> computeLineDiff(String oldText, String newText) {
       if (oldLines[i] == newLines[j]) {
         dp[i + 1][j + 1] = dp[i][j] + 1;
       } else {
-        dp[i + 1][j + 1] =
-            dp[i + 1][j] > dp[i][j + 1] ? dp[i + 1][j] : dp[i][j + 1];
+        dp[i + 1][j + 1] = dp[i + 1][j] > dp[i][j + 1]
+            ? dp[i + 1][j]
+            : dp[i][j + 1];
       }
     }
   }
@@ -176,7 +177,9 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
           compare = versions.last;
         }
         if (base == null || !versions.contains(base)) {
-          base = versions.length > 1 ? versions[versions.length - 2] : versions.first;
+          base = versions.length > 1
+              ? versions[versions.length - 2]
+              : versions.first;
         }
       }
 
@@ -184,7 +187,8 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
         _versions = versions;
         _baseVersion = base;
         _compareVersion = compare;
-        _compatTargetVersion = compare ?? (versions.isNotEmpty ? versions.last : null);
+        _compatTargetVersion =
+            compare ?? (versions.isNotEmpty ? versions.last : null);
         _isLoadingVersions = false;
       });
 
@@ -412,10 +416,7 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
 
     if (_versionError != null) {
       return Center(
-        child: Text(
-          _versionError!,
-          style: TextStyle(color: colorScheme.error),
-        ),
+        child: Text(_versionError!, style: TextStyle(color: colorScheme.error)),
       );
     }
 
@@ -444,7 +445,10 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
             children: [
               Text(
                 '${l10n?.baseVersionLabel ?? "Base Version"}: ',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
               DropdownButton<int>(
                 key: const Key('diff_base_version_dropdown'),
@@ -468,7 +472,10 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
               const SizedBox(width: 24),
               Text(
                 '${l10n?.compareVersionLabel ?? "Compare Version"}: ',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
               DropdownButton<int>(
                 key: const Key('diff_compare_version_dropdown'),
@@ -513,8 +520,9 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
     }
 
     final diffLines = computeLineDiff(_baseContent!, _compareContent!);
-    final hasChanges =
-        diffLines.any((line) => line.type != DiffLineType.unchanged);
+    final hasChanges = diffLines.any(
+      (line) => line.type != DiffLineType.unchanged,
+    );
 
     if (!hasChanges) {
       return Center(
@@ -524,7 +532,8 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
             Icon(Icons.check_circle_outline, size: 40, color: Colors.green),
             const SizedBox(height: 12),
             Text(
-              l10n?.noDifferencesFound ?? 'No differences found between the selected versions.',
+              l10n?.noDifferencesFound ??
+                  'No differences found between the selected versions.',
               style: TextStyle(
                 color: colorScheme.outline,
                 fontWeight: FontWeight.w500,
@@ -664,7 +673,9 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
                     )
                   : const Icon(Icons.fact_check, size: 16),
               label: Text(l10n?.checkCompatibility ?? 'Check Compatibility'),
-              onPressed: _isCheckingCompatibility ? null : _runCompatibilityCheck,
+              onPressed: _isCheckingCompatibility
+                  ? null
+                  : _runCompatibilityCheck,
             ),
           ],
         ),
@@ -770,7 +781,9 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: isCompatible ? Colors.green.shade800 : Colors.red.shade800,
+                  color: isCompatible
+                      ? Colors.green.shade800
+                      : Colors.red.shade800,
                 ),
               ),
             ],
@@ -779,10 +792,11 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
           Text(
             isCompatible
                 ? (l10n?.compatibilityCheckSuccess ??
-                    'Schema is compatible with the selected subject version.')
+                      'Schema is compatible with the selected subject version.')
                 : (result.messages.isNotEmpty
-                    ? result.messages.join('\n')
-                    : (l10n?.schemaIncompatible ?? 'Incompatible with registry policy')),
+                      ? result.messages.join('\n')
+                      : (l10n?.schemaIncompatible ??
+                            'Incompatible with registry policy')),
             style: TextStyle(
               fontSize: 12,
               color: isCompatible ? Colors.green.shade900 : Colors.red.shade900,
@@ -810,7 +824,8 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
             Icon(Icons.link_off, size: 40, color: colorScheme.outline),
             const SizedBox(height: 12),
             Text(
-              l10n?.noAssociatedTopicsFound ?? 'No associated topics found for this subject.',
+              l10n?.noAssociatedTopicsFound ??
+                  'No associated topics found for this subject.',
               style: TextStyle(color: colorScheme.outline),
             ),
           ],
@@ -824,7 +839,10 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
         final topic = _associatedTopics[index];
         return ListTile(
           leading: const Icon(Icons.topic_outlined),
-          title: Text(topic, style: const TextStyle(fontWeight: FontWeight.w500)),
+          title: Text(
+            topic,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
           trailing: widget.onNavigateToTopic != null
               ? const Icon(Icons.chevron_right)
               : null,

@@ -56,7 +56,7 @@ class SettingsService {
     }
   }
 
-  Future<void> exportConfiguration({
+  Future<String?> exportConfiguration({
     bool includeSensitiveCredentials = false,
   }) async {
     debugPrint(
@@ -181,7 +181,9 @@ class SettingsService {
         final file = File(outputFile);
         await file.writeAsBytes(zipBytes);
         debugPrint('DEBUG: Export success to $outputFile');
+        return outputFile;
       }
+      return null;
     } catch (e) {
       debugPrint('DEBUG: ❌ Error exporting configuration: $e');
       rethrow;

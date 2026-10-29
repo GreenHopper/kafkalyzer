@@ -189,10 +189,51 @@ void main() {
 
       mockFilePicker.savePath = null;
 
-      await service.exportMessages(messages);
+      final result = await service.exportMessages(messages);
 
       expect(mockFilePicker.saveFileCalled, isTrue);
-      // No file should be created or written since output file was null
+      expect(result, isNull);
+    });
+
+    test('exportMessages returns saved file path on success', () async {
+      final messages = [
+        const KafkaMessage(
+          topic: 'topic-a',
+          partition: 0,
+          offset: 100,
+          key: 'key',
+          payload: 'payload',
+          timestamp: 12345,
+        ),
+      ];
+
+      final targetPath = p.join(tempDir, 'returned_path.json');
+      mockFilePicker.savePath = targetPath;
+
+      final result = await service.exportMessages(messages);
+
+      expect(result, equals(targetPath));
+      expect(File(targetPath).existsSync(), isTrue);
+    });
+
+    test('exportMessagesCsv returns null when cancelled', () async {
+      final messages = [
+        const KafkaMessage(
+          topic: 'topic-a',
+          partition: 0,
+          offset: 100,
+          key: 'key',
+          payload: 'payload',
+          timestamp: 12345,
+        ),
+      ];
+
+      mockFilePicker.savePath = null;
+
+      final result = await service.exportMessagesCsv(messages);
+
+      expect(mockFilePicker.saveFileCalled, isTrue);
+      expect(result, isNull);
     });
 
     test('exportMessages propagates exceptions', () async {

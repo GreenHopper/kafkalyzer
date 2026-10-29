@@ -6,6 +6,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:material_ui/material_ui.dart';
 
 class ScriptHistoryList extends StatelessWidget {
@@ -219,8 +220,10 @@ class ScriptHistoryList extends StatelessWidget {
                   if (outputFile != null) {
                     await File(path).copy(outputFile);
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Run archive exported')),
+                      showExportSuccessSnackBar(
+                        context,
+                        message: 'Run archive exported',
+                        filePath: outputFile,
                       );
                     }
                   }

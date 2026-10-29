@@ -226,10 +226,7 @@ class _TopicListItemState extends State<TopicListItem> {
               const SizedBox(width: 2),
               Text(
                 '${underReplicated + leaderless}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: theme.colorScheme.error,
-                ),
+                style: TextStyle(fontSize: 11, color: theme.colorScheme.error),
               ),
             ],
           ),

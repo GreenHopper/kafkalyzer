@@ -34,7 +34,7 @@ class MessageInspectorPanel extends StatefulWidget {
   final ValueChanged<String>? onPinToColumn;
   final ClusterProfile? profile;
   final void Function(String topic, int partition, int offset)?
-      onJumpToOriginalMessage;
+  onJumpToOriginalMessage;
 
   const MessageInspectorPanel({
     super.key,
@@ -385,9 +385,12 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
               Expanded(
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    reverse: true,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                       // Search in message toggle
                       Tooltip(
                         message: l10n.searchInMessage,
@@ -465,7 +468,9 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                               offset: widget.message.offset,
                               filter: widget.searchPhrase,
                             );
-                            Clipboard.setData(ClipboardData(text: ref.toString()));
+                            Clipboard.setData(
+                              ClipboardData(text: ref.toString()),
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(l10n.shareableLinkCopied),
@@ -540,8 +545,9 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                   ),
                 ),
               ),
-            ],
-          );
+            ),
+          ],
+        );
         },
       ),
     );
@@ -832,8 +838,9 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
   ) {
     if (getIt.isRegistered<ActiveConnectionController>()) {
       final activeCtrl = getIt<ActiveConnectionController>();
-      final topicMeta =
-          activeCtrl.topics.where((t) => t.name == topicName).firstOrNull;
+      final topicMeta = activeCtrl.topics
+          .where((t) => t.name == topicName)
+          .firstOrNull;
       if (topicMeta != null) {
         activeCtrl.setActiveTopic(topicMeta, widget.profile);
       }
@@ -856,7 +863,8 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
               metadata: failureMeta,
               message: widget.message,
               profile: widget.profile,
-              onJumpToOriginalMessage: widget.onJumpToOriginalMessage ??
+              onJumpToOriginalMessage:
+                  widget.onJumpToOriginalMessage ??
                   _defaultJumpToOriginalMessage,
             ),
           Expanded(

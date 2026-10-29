@@ -12,9 +12,10 @@ import 'package:watch_it/watch_it.dart';
 import 'group_details_view.dart';
 import 'widgets/group_lag_badge.dart';
 import 'widgets/lag_trend.dart';
-import 'widgets/group_delta_badge.dart';
+import 'widgets/group_estimate_badge.dart';
 import 'widgets/consumer_group_controls.dart';
 import 'widgets/kpi_card.dart';
+import '../domain/consumer_lag_estimate.dart';
 
 enum ConsumerGroupSortType {
   nameAsc,
@@ -73,14 +74,31 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   static const int _lagHistoryLength = 20;
   final Map<String, List<int>> _groupLagHistory = {};
   final Map<String, Map<String, List<int>>> _partitionLagHistory = {};
+  final Map<String, List<TimestampedLag>> _groupTimestampedLagHistory = {};
+  final Map<String, ConsumerLagEstimate> _groupEstimates = {};
 
   // Lag in messages at which a group is marked; 0 disables the marking.
   int _lagWarnThreshold = 0;
 
   void _appendLagReading(String groupId, Map<String, int> readings, int total) {
+    final now = DateTime.now();
     final groupHistory = _groupLagHistory.putIfAbsent(groupId, () => []);
     groupHistory.add(total);
     if (groupHistory.length > _lagHistoryLength) groupHistory.removeAt(0);
+
+    final timestampedHistory = _groupTimestampedLagHistory.putIfAbsent(
+      groupId,
+      () => [],
+    );
+    timestampedHistory.add(TimestampedLag(timestamp: now, lag: total));
+    if (timestampedHistory.length > _lagHistoryLength) {
+      timestampedHistory.removeAt(0);
+    }
+
+    _groupEstimates[groupId] = ConsumerLagEstimate.compute(
+      currentLag: total,
+      history: timestampedHistory,
+    );
 
     final partitionHistory = _partitionLagHistory.putIfAbsent(
       groupId,
@@ -464,6 +482,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       _partitionDeltas.clear();
       _groupLagHistory.clear();
       _partitionLagHistory.clear();
+      _groupTimestampedLagHistory.clear();
+      _groupEstimates.clear();
       _activeLagQueries = 0;
       if (activeProfile != null) {
         if (_refreshIntervalSeconds > 0) {
@@ -1003,7 +1023,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                         flex: 2,
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: GroupDeltaBadge(
+                          child: GroupEstimateBadge(
+                            key: Key('group_estimate_${group.groupId}'),
                             delta: _groupDeltas[group.groupId],
                             formattedDelta: _groupDeltas[group.groupId] != null
                                 ? (_groupDeltas[group.groupId]! > 0
@@ -1012,6 +1033,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                                           _groupDeltas[group.groupId]!,
                                         ))
                                 : "",
+                            estimate: _groupEstimates[group.groupId],
+                            l10n: l10n,
                           ),
                         ),
                       ),

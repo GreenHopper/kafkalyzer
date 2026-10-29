@@ -27,21 +27,20 @@ class MessageExportService {
   /// - Uses visible standard columns and active dynamic projected columns from [columnConfig].
   /// - If all messages belong to a single topic, exports a single RFC 4180 compliant .csv file.
   /// - If messages come from multiple topics, exports a .zip containing one CSV file per topic.
-  Future<void> exportMessages(
+  Future<String?> exportMessages(
     List<KafkaMessage> messages, {
     ExportFormat format = ExportFormat.json,
     TableColumnConfig? columnConfig,
     bool isScriptingView = false,
   }) async {
-    if (messages.isEmpty) return;
+    if (messages.isEmpty) return null;
 
     if (format == ExportFormat.csv) {
-      await exportMessagesCsv(
+      return await exportMessagesCsv(
         messages,
         columnConfig: columnConfig,
         isScriptingView: isScriptingView,
       );
-      return;
     }
 
     try {
@@ -70,7 +69,9 @@ class MessageExportService {
           final file = File(outputFile);
           await file.writeAsString(jsonContent);
           _logger.i('Successfully exported messages to $outputFile');
+          return outputFile;
         }
+        return null;
       } else {
         // Multi-topic export (ZIP)
         final archive = Archive();
@@ -101,7 +102,9 @@ class MessageExportService {
           final file = File(outputFile);
           await file.writeAsBytes(zipBytes);
           _logger.i('Successfully exported messages to $outputFile');
+          return outputFile;
         }
+        return null;
       }
     } catch (e, st) {
       _logger.e('Failed to export messages', error: e, stackTrace: st);
@@ -110,12 +113,12 @@ class MessageExportService {
   }
 
   /// Exports a list of [KafkaMessage]s as RFC 4180 CSV.
-  Future<void> exportMessagesCsv(
+  Future<String?> exportMessagesCsv(
     List<KafkaMessage> messages, {
     TableColumnConfig? columnConfig,
     bool isScriptingView = false,
   }) async {
-    if (messages.isEmpty) return;
+    if (messages.isEmpty) return null;
 
     try {
       final Map<String, List<KafkaMessage>> messagesByTopic = {};
@@ -145,7 +148,9 @@ class MessageExportService {
           final file = File(outputFile);
           await file.writeAsString(csvContent);
           _logger.i('Successfully exported CSV to $outputFile');
+          return outputFile;
         }
+        return null;
       } else {
         final archive = Archive();
 
@@ -179,7 +184,9 @@ class MessageExportService {
           final file = File(outputFile);
           await file.writeAsBytes(zipBytes);
           _logger.i('Successfully exported CSV archive to $outputFile');
+          return outputFile;
         }
+        return null;
       }
     } catch (e, st) {
       _logger.e('Failed to export CSV messages', error: e, stackTrace: st);

@@ -513,9 +513,9 @@ void main() {
     final List<MethodCall> calls = [];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      calls.add(call);
-      return null;
-    });
+          calls.add(call);
+          return null;
+        });
 
     await tester.pumpWidget(
       createWidgetUnderTest(
@@ -530,7 +530,9 @@ void main() {
     await tester.tap(find.byKey(const Key('copy_shareable_link_button')));
     await tester.pumpAndSettle();
 
-    final setClipboardCall = calls.firstWhere((c) => c.method == 'Clipboard.setData');
+    final setClipboardCall = calls.firstWhere(
+      (c) => c.method == 'Clipboard.setData',
+    );
     final text = setClipboardCall.arguments['text'] as String;
     expect(text, contains('kafkalyzer://open'));
     expect(text, contains('topic=test-orders'));
@@ -540,33 +542,40 @@ void main() {
     expect(text, contains('filter=my-filter'));
   });
 
-  testWidgets('renders DLQ failure diagnostics card when message has failure headers', (
-    tester,
-  ) async {
-    final dlqMessage = KafkaMessage(
-      topic: 'test-orders-dlq',
-      partition: 0,
-      offset: 5,
-      timestamp: 1695888000000,
-      payload: '{"bad": "data"}',
-      headers: [
-        KafkaHeader(key: 'x-original-topic', value: 'test-orders'),
-        KafkaHeader(key: 'x-original-partition', value: '1'),
-        KafkaHeader(key: 'x-original-offset', value: '99'),
-        KafkaHeader(key: 'x-exception-message', value: 'Failed to deserialize payload'),
-      ],
-    );
+  testWidgets(
+    'renders DLQ failure diagnostics card when message has failure headers',
+    (tester) async {
+      final dlqMessage = KafkaMessage(
+        topic: 'test-orders-dlq',
+        partition: 0,
+        offset: 5,
+        timestamp: 1695888000000,
+        payload: '{"bad": "data"}',
+        headers: [
+          KafkaHeader(key: 'x-original-topic', value: 'test-orders'),
+          KafkaHeader(key: 'x-original-partition', value: '1'),
+          KafkaHeader(key: 'x-original-offset', value: '99'),
+          KafkaHeader(
+            key: 'x-exception-message',
+            value: 'Failed to deserialize payload',
+          ),
+        ],
+      );
 
-    await tester.pumpWidget(
-      createWidgetUnderTest(
-        message: dlqMessage,
-        profile: testProfile,
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        createWidgetUnderTest(message: dlqMessage, profile: testProfile),
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Failure Diagnostics (DLQ)'), findsOneWidget);
-    expect(find.textContaining('Origin: test-orders [P: 1, O: 99]'), findsOneWidget);
-    expect(find.textContaining('Failed to deserialize payload'), findsOneWidget);
-  });
+      expect(find.text('Failure Diagnostics (DLQ)'), findsOneWidget);
+      expect(
+        find.textContaining('Origin: test-orders [P: 1, O: 99]'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Failed to deserialize payload'),
+        findsOneWidget,
+      );
+    },
+  );
 }

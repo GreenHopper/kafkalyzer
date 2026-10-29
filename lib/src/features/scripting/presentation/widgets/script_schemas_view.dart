@@ -8,6 +8,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_widget.dart';
+import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:json_diff/json_diff.dart';
 import 'package:logger/logger.dart';
@@ -371,8 +372,10 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
                   final file = File(outputFile);
                   await file.writeAsString(md);
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Saved to $outputFile')),
+                    showExportSuccessSnackBar(
+                      context,
+                      message: 'Saved schema to file',
+                      filePath: outputFile,
                     );
                   }
                 }

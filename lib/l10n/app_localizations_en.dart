@@ -2002,4 +2002,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get jump => 'Jump';
+
+  @override
+  String get openFile => 'Open';
+
+  @override
+  String get showInFolder => 'Show in Folder';
+
+  @override
+  String failedToOpenFile(String error) {
+    return 'Failed to open file: $error';
+  }
+
+  @override
+  String failedToOpenFolder(String error) {
+    return 'Failed to open folder: $error';
+  }
+
+  @override
+  String get lagEstimateCaughtUp => 'Caught up';
+
+  @override
+  String get lagEstimateGrowing => 'Backlog growing';
+
+  @override
+  String get lagEstimateStalled => 'Stalled';
+
+  @override
+  String get lagEstimatePending => 'Estimating...';
+
+  @override
+  String get lagEstimateRateUnit => 'msg/s';
+
+  @override
+  String lagEstimateEtaPrefix(String eta) {
+    return 'ETA: $eta';
+  }
+
+  @override
+  String lagEstimateTooltip(
+    String rate,
+    String delta,
+    String interval,
+    String status,
+  ) {
+    return 'Rate: $rate | Delta: $delta over $interval | Status: $status';
+  }
 }

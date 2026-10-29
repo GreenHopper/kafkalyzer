@@ -448,17 +448,17 @@ class MockSettingsService extends _i1.Mock implements _i11.SettingsService {
           as _i6.Future<void>);
 
   @override
-  _i6.Future<void> exportConfiguration({
+  _i6.Future<String?> exportConfiguration({
     bool? includeSensitiveCredentials = false,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#exportConfiguration, [], {
               #includeSensitiveCredentials: includeSensitiveCredentials,
             }),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i6.Future<String?>.value(),
+            returnValueForMissingStub: _i6.Future<String?>.value(),
           )
-          as _i6.Future<void>);
+          as _i6.Future<String?>);
 
   @override
   _i6.Future<void> importConfiguration() =>

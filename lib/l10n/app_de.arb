@@ -764,5 +764,16 @@
   "quickJumpHint": "kafkalyzer:// Link einfügen (z. B. kafkalyzer://open?topic=...&offset=...)",
   "quickJumpInvalid": "Ungültiges Referenz-URI-Format",
   "quickJumpClusterNotFound": "Cluster '{cluster}' nicht konfiguriert. Wählen Sie einen Cluster:",
-  "jump": "Springen"
+  "jump": "Springen",
+  "openFile": "Öffnen",
+  "showInFolder": "Im Ordner anzeigen",
+  "failedToOpenFile": "Fehler beim Öffnen der Datei: {error}",
+  "failedToOpenFolder": "Fehler beim Öffnen des Ordners: {error}",
+  "lagEstimateCaughtUp": "Aufgeholt",
+  "lagEstimateGrowing": "Rückstau wächst",
+  "lagEstimateStalled": "Stagnierend",
+  "lagEstimatePending": "Berechnung...",
+  "lagEstimateRateUnit": "Nachr./s",
+  "lagEstimateEtaPrefix": "Dauer: {eta}",
+  "lagEstimateTooltip": "Rate: {rate} | Delta: {delta} über {interval} | Status: {status}"
 }

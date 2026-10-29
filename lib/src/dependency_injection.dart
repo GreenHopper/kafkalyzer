@@ -16,6 +16,7 @@ import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/services/file_opener_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/services/saved_searches_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
@@ -66,6 +67,7 @@ void setupDependencyInjection() {
   getIt.registerLazySingleton<TopicAnalysisExportService>(
     () => TopicAnalysisExportService(),
   );
+  getIt.registerLazySingleton<FileOpenerService>(() => FileOpenerService());
   getIt.registerLazySingleton<RecentTopicsService>(() => RecentTopicsService());
   getIt.registerLazySingleton<SavedSearchesService>(
     () => SavedSearchesService(),

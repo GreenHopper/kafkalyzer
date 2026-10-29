@@ -553,14 +553,13 @@ class _ExplorerViewState extends State<ExplorerView> {
   ) {
     if (activeController.isConnecting ||
         topicController.isLoading(activeController.activeProfile!)) {
-      return const Expanded(
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const Expanded(child: Center(child: CircularProgressIndicator()));
     }
 
     final allTopicNames = activeController.topics.map((t) => t.name).toList();
-    final failureGroups =
-        DlqTopicDetector.groupFailureTopicsByBase(allTopicNames);
+    final failureGroups = DlqTopicDetector.groupFailureTopicsByBase(
+      allTopicNames,
+    );
 
     return Expanded(
       child: ListView.builder(
@@ -880,7 +879,9 @@ class _ExplorerViewState extends State<ExplorerView> {
                     color: isSelected
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 13,
                   ),
                 ),
@@ -888,11 +889,16 @@ class _ExplorerViewState extends State<ExplorerView> {
                   const SizedBox(width: 4),
                   Container(
                     key: const Key('tab_dlq_badge'),
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Text(
                       l10n.dlqBadgeLabel,

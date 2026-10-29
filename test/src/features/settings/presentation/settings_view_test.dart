@@ -194,7 +194,7 @@ void main() {
         mockSettingsService.exportConfiguration(
           includeSensitiveCredentials: anyNamed('includeSensitiveCredentials'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();

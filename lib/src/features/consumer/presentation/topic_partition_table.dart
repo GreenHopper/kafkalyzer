@@ -83,7 +83,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
             builder: (dialogContext) => Dialog(
               clipBehavior: Clip.antiAlias,
               child: SizedBox(
-                width: 720,
+                width: 820,
                 height: 640,
                 child: MessageInspectorPanel(
                   message: message!,

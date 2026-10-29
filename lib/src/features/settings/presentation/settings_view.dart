@@ -14,6 +14,7 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
+import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
 
@@ -451,12 +452,10 @@ class _SettingsViewState extends State<SettingsView> {
                           final file = File(outputFile);
                           await file.writeAsBytes(zipBytes);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.clustersExportedSuccessfully,
-                                ),
-                              ),
+                            showExportSuccessSnackBar(
+                              context,
+                              message: l10n.clustersExportedSuccessfully,
+                              filePath: outputFile,
                             );
                           }
                         }
@@ -772,12 +771,14 @@ class _SettingsViewState extends State<SettingsView> {
 
     final settingsService = getIt<SettingsService>();
     try {
-      await settingsService.exportConfiguration(
+      final outputFile = await settingsService.exportConfiguration(
         includeSensitiveCredentials: includeCredentials,
       );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.configurationExportedSuccessfully)),
+      if (outputFile != null && context.mounted) {
+        showExportSuccessSnackBar(
+          context,
+          message: l10n.configurationExportedSuccessfully,
+          filePath: outputFile,
         );
       }
     } catch (e) {

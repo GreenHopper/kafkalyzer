@@ -10,6 +10,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topi
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_table.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:material_ui/material_ui.dart';
 
 enum ScanScopeOption { full, sample10k, sample50k, sample100k }
@@ -289,8 +290,11 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
       if (path != null) {
-        _showSnackBar(
-          l10n?.analysisExportedSuccessfully ?? 'Analysis report exported',
+        showExportSuccessSnackBar(
+          context,
+          message:
+              l10n?.analysisExportedSuccessfully ?? 'Analysis report exported',
+          filePath: path,
         );
       }
       // null: user cancelled the save dialog.

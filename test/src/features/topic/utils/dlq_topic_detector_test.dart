@@ -15,22 +15,31 @@ void main() {
       expect(DlqTopicDetector.isDlqTopic('dlq-processor'), isFalse);
     });
 
-    test('identifies retry topics with standard suffixes and progression numbers', () {
-      expect(DlqTopicDetector.isRetryTopic('orders-retry'), isTrue);
-      expect(DlqTopicDetector.isRetryTopic('orders.retry'), isTrue);
-      expect(DlqTopicDetector.isRetryTopic('orders-retry-0'), isTrue);
-      expect(DlqTopicDetector.isRetryTopic('orders-retry-1'), isTrue);
-      expect(DlqTopicDetector.isRetryTopic('payments_retry_2'), isTrue);
+    test(
+      'identifies retry topics with standard suffixes and progression numbers',
+      () {
+        expect(DlqTopicDetector.isRetryTopic('orders-retry'), isTrue);
+        expect(DlqTopicDetector.isRetryTopic('orders.retry'), isTrue);
+        expect(DlqTopicDetector.isRetryTopic('orders-retry-0'), isTrue);
+        expect(DlqTopicDetector.isRetryTopic('orders-retry-1'), isTrue);
+        expect(DlqTopicDetector.isRetryTopic('payments_retry_2'), isTrue);
 
-      expect(DlqTopicDetector.isRetryTopic('orders'), isFalse);
-      expect(DlqTopicDetector.isRetryTopic('retry-handler'), isFalse);
-    });
+        expect(DlqTopicDetector.isRetryTopic('orders'), isFalse);
+        expect(DlqTopicDetector.isRetryTopic('retry-handler'), isFalse);
+      },
+    );
 
     test('resolves base topic correctly', () {
       expect(DlqTopicDetector.resolveBaseTopic('orders-dlq'), equals('orders'));
       expect(DlqTopicDetector.resolveBaseTopic('orders.DLQ'), equals('orders'));
-      expect(DlqTopicDetector.resolveBaseTopic('orders-retry-1'), equals('orders'));
-      expect(DlqTopicDetector.resolveBaseTopic('orders-retry'), equals('orders'));
+      expect(
+        DlqTopicDetector.resolveBaseTopic('orders-retry-1'),
+        equals('orders'),
+      );
+      expect(
+        DlqTopicDetector.resolveBaseTopic('orders-retry'),
+        equals('orders'),
+      );
       expect(DlqTopicDetector.resolveBaseTopic('orders'), equals('orders'));
     });
 
@@ -46,7 +55,10 @@ void main() {
       ];
 
       final grouped = DlqTopicDetector.groupFailureTopicsByBase(topics);
-      expect(grouped['orders'], containsAll(['orders-retry-0', 'orders-retry-1', 'orders-dlq']));
+      expect(
+        grouped['orders'],
+        containsAll(['orders-retry-0', 'orders-retry-1', 'orders-dlq']),
+      );
       expect(grouped['customers'], equals(['customers-dlq']));
       expect(grouped.containsKey('inventory'), isFalse);
     });
@@ -60,7 +72,8 @@ void main() {
         'x-original-offset': '1042',
         'x-exception-message': 'JsonParseException: Unexpected character',
         'x-exception-class': 'com.fasterxml.jackson.core.JsonParseException',
-        'x-exception-stacktrace': 'at com.example.Consumer.process(Consumer.java:42)',
+        'x-exception-stacktrace':
+            'at com.example.Consumer.process(Consumer.java:42)',
       };
 
       final meta = DlqFailureMetadata.fromHeaders(headers);
@@ -90,7 +103,10 @@ void main() {
       expect(meta.originalPartition, equals(0));
       expect(meta.originalOffset, equals(99));
       expect(meta.exceptionMessage, equals('TimeoutException'));
-      expect(meta.exceptionClass, equals('java.util.concurrent.TimeoutException'));
+      expect(
+        meta.exceptionClass,
+        equals('java.util.concurrent.TimeoutException'),
+      );
     });
 
     test('returns null when no failure headers are present', () {

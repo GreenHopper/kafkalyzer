@@ -20,9 +20,7 @@ class MessageReference {
 
   /// Serializes the reference into a standardized `kafkalyzer://open?...` URI.
   Uri toUri() {
-    final queryParams = <String, String>{
-      'topic': topic,
-    };
+    final queryParams = <String, String>{'topic': topic};
 
     if (cluster != null && cluster!.isNotEmpty) {
       queryParams['cluster'] = cluster!;
@@ -37,11 +35,7 @@ class MessageReference {
       queryParams['filter'] = filter!;
     }
 
-    return Uri(
-      scheme: scheme,
-      host: hostOpen,
-      queryParameters: queryParams,
-    );
+    return Uri(scheme: scheme, host: hostOpen, queryParameters: queryParams);
   }
 
   @override

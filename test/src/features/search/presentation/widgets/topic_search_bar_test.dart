@@ -75,10 +75,7 @@ void main() {
     ValueChanged<bool>? onFastTraceEnabledChanged,
     MultiSearchStartStrategy startStrategy = MultiSearchStartStrategy.latest,
     MultiSearchEndStrategy endStrategy = MultiSearchEndStrategy.latest,
-    bool isStreaming = false,
-    bool isDirty = false,
     VoidCallback? onStart,
-    VoidCallback? onStop,
   }) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -108,60 +105,27 @@ void main() {
           onEndStrategyChanged: (_) {},
           endOffsetController: endOffsetController,
           endTimestampController: endTimestampController,
-          isStreaming: isStreaming,
-          isDirty: isDirty,
           onStart: onStart ?? () {},
-          onStop: onStop ?? () {},
         ),
       ),
     );
   }
 
-  testWidgets('TopicSearchBar renders compact default row with action button', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildTestWidget());
-    await tester.pumpAndSettle();
-
-    // Verify scan mode label is shown
-    expect(find.text('Latest Messages'), findsOneWidget);
-
-    // Verify limit and filter placeholder
-    expect(find.text('Filter on fetch (key or value)...'), findsOneWidget);
-    expect(find.text('Advanced'), findsOneWidget);
-
-    // Verify action button shows bounded fetch with limit
-    expect(find.text('Fetch 200 Messages'), findsOneWidget);
-  });
-
   testWidgets(
-    'TopicSearchBar dynamic action button reflects Live Stream mode',
+    'TopicSearchBar renders compact default row with advanced toggle as trailing element',
     (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(scanMode: TopicScanMode.liveTail),
-      );
+      await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Start Live Stream'), findsOneWidget);
-    },
-  );
+      // Verify scan mode label is shown
+      expect(find.text('Latest Messages'), findsOneWidget);
 
-  testWidgets(
-    'TopicSearchBar dynamic action button shows Stop when streaming',
-    (tester) async {
-      bool stopClicked = false;
-      await tester.pumpWidget(
-        buildTestWidget(isStreaming: true, onStop: () => stopClicked = true),
-      );
-      await tester.pumpAndSettle();
+      // Verify limit and filter placeholder
+      expect(find.text('Filter on fetch (key or value)...'), findsOneWidget);
+      expect(find.text('Advanced'), findsOneWidget);
 
-      final stopBtn = find.byKey(const Key('search_bar_stop_button'));
-      expect(stopBtn, findsOneWidget);
-      expect(find.text('Stop'), findsOneWidget);
-
-      await tester.tap(stopBtn);
-      await tester.pump();
-      expect(stopClicked, isTrue);
+      // Verify lower right start action button is not rendered
+      expect(find.byKey(const Key('search_bar_start_button')), findsNothing);
     },
   );
 
@@ -207,75 +171,62 @@ void main() {
     },
   );
 
-  testWidgets('TopicSearchBar renders dirty state indicator when isDirty', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildTestWidget(isDirty: true));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'uncompilable regex names the term and blocks the scan on keyboard submit',
+    (tester) async {
+      stubPatternEngine();
+      var started = false;
 
-    // Dirty state shows refresh icon and badge
-    expect(find.byIcon(Icons.refresh), findsOneWidget);
-    expect(find.byType(Badge), findsOneWidget);
-  });
+      await tester.pumpWidget(
+        buildTestWidget(
+          filterType: FilterType.regex,
+          onStart: () => started = true,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-  testWidgets('uncompilable regex names the term and blocks the scan', (
-    tester,
-  ) async {
-    stubPatternEngine();
-    var started = false;
+      final searchField = find.widgetWithIcon(TextField, Icons.search);
+      await tester.enterText(searchField, 'amount(');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
 
-    await tester.pumpWidget(
-      buildTestWidget(
-        filterType: FilterType.regex,
-        onStart: () => started = true,
-      ),
-    );
-    await tester.pumpAndSettle();
+      expect(find.text('Invalid regular expression: amount('), findsOneWidget);
 
-    await tester.enterText(
-      find.widgetWithIcon(TextField, Icons.search),
-      'amount(',
-    );
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(started, isFalse);
 
-    expect(find.text('Invalid regular expression: amount('), findsOneWidget);
+      final chip = tester.widget<InputChip>(
+        find.byKey(const Key('filter_type_chip')),
+      );
+      expect((chip.avatar as Icon?)?.icon, Icons.error);
+    },
+  );
 
-    await tester.tap(find.byKey(const Key('search_bar_start_button')));
-    await tester.pumpAndSettle();
-    expect(started, isFalse);
+  testWidgets(
+    'compilable regex starts the scan without an error on keyboard submit',
+    (tester) async {
+      stubPatternEngine();
+      var started = false;
 
-    final chip = tester.widget<InputChip>(
-      find.byKey(const Key('filter_type_chip')),
-    );
-    expect((chip.avatar as Icon?)?.icon, Icons.error);
-  });
+      await tester.pumpWidget(
+        buildTestWidget(
+          filterType: FilterType.regex,
+          onStart: () => started = true,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-  testWidgets('compilable regex starts the scan without an error', (
-    tester,
-  ) async {
-    stubPatternEngine();
-    var started = false;
+      final searchField = find.widgetWithIcon(TextField, Icons.search);
+      await tester.enterText(searchField, 'amount.*');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
 
-    await tester.pumpWidget(
-      buildTestWidget(
-        filterType: FilterType.regex,
-        onStart: () => started = true,
-      ),
-    );
-    await tester.pumpAndSettle();
+      expect(find.byKey(const Key('quick_filter_pattern_error')), findsNothing);
 
-    await tester.enterText(
-      find.widgetWithIcon(TextField, Icons.search),
-      'amount.*',
-    );
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('quick_filter_pattern_error')), findsNothing);
-
-    await tester.tap(find.byKey(const Key('search_bar_start_button')));
-    await tester.pumpAndSettle();
-    expect(started, isTrue);
-  });
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(started, isTrue);
+    },
+  );
 }

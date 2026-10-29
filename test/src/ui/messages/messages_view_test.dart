@@ -10,6 +10,8 @@ import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_timeline_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_diff_view.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/services/file_opener_service.dart';
+import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 
 class FakeMessageExportService implements MessageExportService {
@@ -18,7 +20,7 @@ class FakeMessageExportService implements MessageExportService {
   ExportFormat? lastFormat;
 
   @override
-  Future<void> exportMessages(
+  Future<String?> exportMessages(
     List<KafkaMessage> messages, {
     ExportFormat format = ExportFormat.json,
     TableColumnConfig? columnConfig,
@@ -27,10 +29,11 @@ class FakeMessageExportService implements MessageExportService {
     called = true;
     exported = messages;
     lastFormat = format;
+    return null;
   }
 
   @override
-  Future<void> exportMessagesCsv(
+  Future<String?> exportMessagesCsv(
     List<KafkaMessage> messages, {
     TableColumnConfig? columnConfig,
     bool isScriptingView = false,
@@ -38,6 +41,7 @@ class FakeMessageExportService implements MessageExportService {
     called = true;
     exported = messages;
     lastFormat = ExportFormat.csv;
+    return null;
   }
 
   @override
@@ -50,6 +54,10 @@ void main() {
 
   setUp(() async {
     await getIt.reset();
+    getIt.registerSingleton<Logger>(Logger(level: Level.off));
+    getIt.registerSingleton<FileOpenerService>(
+      FileOpenerService(logger: getIt<Logger>()),
+    );
     fakeExportService = FakeMessageExportService();
     getIt.registerSingleton<MessageExportService>(fakeExportService);
     SharedPreferences.setMockInitialValues({});
@@ -210,6 +218,8 @@ void main() {
     expect(find.text('CSV (Visible Columns)'), findsOneWidget);
 
     await tester.tap(find.text('JSON (Full Payload)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
     expect(fakeExportService.called, isTrue);
@@ -237,6 +247,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('CSV (Visible Columns)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
     expect(fakeExportService.called, isTrue);

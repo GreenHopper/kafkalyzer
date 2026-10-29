@@ -16,6 +16,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.d
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/actionable_topic_empty_state.dart';
+import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -858,18 +859,30 @@ class MessagesViewState extends State<MessagesView> {
                     icon: const Icon(Icons.download),
                     onSelected: (ExportFormat format) async {
                       try {
-                        await getIt<MessageExportService>().exportMessages(
-                          _cachedFilteredMessages,
-                          format: format,
-                          columnConfig: _tableColumnConfig,
-                          isScriptingView: widget.showTopic || widget.showStep,
-                        );
+                        final outputFile = await getIt<MessageExportService>()
+                            .exportMessages(
+                              _cachedFilteredMessages,
+                              format: format,
+                              columnConfig: _tableColumnConfig,
+                              isScriptingView:
+                                  widget.showTopic || widget.showStep,
+                            );
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.messagesExportedSuccessfully),
-                            ),
-                          );
+                          if (outputFile != null) {
+                            showExportSuccessSnackBar(
+                              context,
+                              message: l10n.messagesExportedSuccessfully,
+                              filePath: outputFile,
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  l10n.messagesExportedSuccessfully,
+                                ),
+                              ),
+                            );
+                          }
                         }
                       } catch (e) {
                         if (context.mounted) {

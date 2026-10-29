@@ -978,5 +978,39 @@
       "cluster": { "type": "String" }
     }
   },
-  "jump": "Jump"
+  "jump": "Jump",
+  "openFile": "Open",
+  "showInFolder": "Show in Folder",
+  "failedToOpenFile": "Failed to open file: {error}",
+  "@failedToOpenFile": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "failedToOpenFolder": "Failed to open folder: {error}",
+  "@failedToOpenFolder": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "lagEstimateCaughtUp": "Caught up",
+  "lagEstimateGrowing": "Backlog growing",
+  "lagEstimateStalled": "Stalled",
+  "lagEstimatePending": "Estimating...",
+  "lagEstimateRateUnit": "msg/s",
+  "lagEstimateEtaPrefix": "ETA: {eta}",
+  "@lagEstimateEtaPrefix": {
+    "placeholders": {
+      "eta": { "type": "String" }
+    }
+  },
+  "lagEstimateTooltip": "Rate: {rate} | Delta: {delta} over {interval} | Status: {status}",
+  "@lagEstimateTooltip": {
+    "placeholders": {
+      "rate": { "type": "String" },
+      "delta": { "type": "String" },
+      "interval": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  }
 }

@@ -55,20 +55,25 @@ void main() {
       );
     }
 
-    testWidgets('renders diff tab and displays diff content between versions',
-        (tester) async {
+    testWidgets('renders diff tab and displays diff content between versions', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      when(mockController.fetchSchemaVersions(any, any))
-          .thenAnswer((_) async => [1, 2]);
-      when(mockController.fetchSchemaContent(any, any, version: 1))
-          .thenAnswer((_) async => '{"type": "string"}');
-      when(mockController.fetchSchemaContent(any, any, version: 2))
-          .thenAnswer((_) async => '{"type": "int"}');
-      when(mockController.getAssociatedTopics(any, any))
-          .thenAnswer((_) async => ['test-topic']);
+      when(
+        mockController.fetchSchemaVersions(any, any),
+      ).thenAnswer((_) async => [1, 2]);
+      when(
+        mockController.fetchSchemaContent(any, any, version: 1),
+      ).thenAnswer((_) async => '{"type": "string"}');
+      when(
+        mockController.fetchSchemaContent(any, any, version: 2),
+      ).thenAnswer((_) async => '{"type": "int"}');
+      when(
+        mockController.getAssociatedTopics(any, any),
+      ).thenAnswer((_) async => ['test-topic']);
 
       await tester.pumpWidget(
         createTestApp(
@@ -84,31 +89,45 @@ void main() {
 
       expect(find.text('Schema Version Diff'), findsOneWidget);
       expect(find.text('test-topic-value'), findsOneWidget);
-      expect(find.byKey(const Key('diff_base_version_dropdown')), findsOneWidget);
-      expect(find.byKey(const Key('diff_compare_version_dropdown')), findsOneWidget);
+      expect(
+        find.byKey(const Key('diff_base_version_dropdown')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('diff_compare_version_dropdown')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('checks compatibility and displays compatible result',
-        (tester) async {
+    testWidgets('checks compatibility and displays compatible result', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      when(mockController.fetchSchemaVersions(any, any))
-          .thenAnswer((_) async => [1]);
-      when(mockController.fetchSchemaContent(any, any, version: 1))
-          .thenAnswer((_) async => '{"type": "string"}');
-      when(mockController.getAssociatedTopics(any, any))
-          .thenAnswer((_) async => []);
-      when(mockController.checkCompatibility(
-        any,
-        any,
-        version: anyNamed('version'),
-        schema: anyNamed('schema'),
-      )).thenAnswer((_) async => const api.SchemaCompatibilityResult(
-            isCompatible: true,
-            messages: [],
-          ));
+      when(
+        mockController.fetchSchemaVersions(any, any),
+      ).thenAnswer((_) async => [1]);
+      when(
+        mockController.fetchSchemaContent(any, any, version: 1),
+      ).thenAnswer((_) async => '{"type": "string"}');
+      when(
+        mockController.getAssociatedTopics(any, any),
+      ).thenAnswer((_) async => []);
+      when(
+        mockController.checkCompatibility(
+          any,
+          any,
+          version: anyNamed('version'),
+          schema: anyNamed('schema'),
+        ),
+      ).thenAnswer(
+        (_) async => const api.SchemaCompatibilityResult(
+          isCompatible: true,
+          messages: [],
+        ),
+      );
 
       await tester.pumpWidget(
         createTestApp(
@@ -126,7 +145,10 @@ void main() {
       await tester.tap(find.text('Check Compatibility'));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('run_compatibility_check_button')), findsOneWidget);
+      expect(
+        find.byKey(const Key('run_compatibility_check_button')),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(const Key('run_compatibility_check_button')));
       await tester.pumpAndSettle();
@@ -139,12 +161,15 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      when(mockController.fetchSchemaVersions(any, any))
-          .thenAnswer((_) async => [1]);
-      when(mockController.fetchSchemaContent(any, any, version: 1))
-          .thenAnswer((_) async => '{}');
-      when(mockController.getAssociatedTopics(any, any))
-          .thenAnswer((_) async => ['orders-topic', 'orders-dlq']);
+      when(
+        mockController.fetchSchemaVersions(any, any),
+      ).thenAnswer((_) async => [1]);
+      when(
+        mockController.fetchSchemaContent(any, any, version: 1),
+      ).thenAnswer((_) async => '{}');
+      when(
+        mockController.getAssociatedTopics(any, any),
+      ).thenAnswer((_) async => ['orders-topic', 'orders-dlq']);
 
       await tester.pumpWidget(
         createTestApp(
@@ -188,8 +213,9 @@ void main() {
 
       when(mockController.fetchSchemas(any)).thenAnswer((_) async {});
       when(mockController.getSchemas(any)).thenReturn(['my-topic-value']);
-      when(mockController.fetchSchemaContent(any, 'my-topic-value'))
-          .thenAnswer((_) async => '{"type": "string"}');
+      when(
+        mockController.fetchSchemaContent(any, 'my-topic-value'),
+      ).thenAnswer((_) async => '{"type": "string"}');
 
       await tester.pumpWidget(
         MaterialApp(

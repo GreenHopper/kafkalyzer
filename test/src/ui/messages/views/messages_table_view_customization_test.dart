@@ -193,9 +193,9 @@ void main() {
       final List<MethodCall> calls = [];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        calls.add(call);
-        return null;
-      });
+            calls.add(call);
+            return null;
+          });
 
       await tester.pumpWidget(
         MaterialApp(
@@ -221,8 +221,9 @@ void main() {
       await tester.tap(find.byKey(const Key('menu_copy_shareable_link')));
       await tester.pumpAndSettle();
 
-      final setClipboardCall =
-          calls.firstWhere((c) => c.method == 'Clipboard.setData');
+      final setClipboardCall = calls.firstWhere(
+        (c) => c.method == 'Clipboard.setData',
+      );
       final text = setClipboardCall.arguments['text'] as String;
       expect(text, contains('kafkalyzer://open'));
       expect(text, contains('topic=test-topic'));

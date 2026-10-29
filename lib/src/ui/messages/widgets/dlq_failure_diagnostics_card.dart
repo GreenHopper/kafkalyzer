@@ -10,7 +10,7 @@ class DlqFailureDiagnosticsCard extends StatefulWidget {
   final KafkaMessage message;
   final ClusterProfile? profile;
   final void Function(String topic, int partition, int offset)?
-      onJumpToOriginalMessage;
+  onJumpToOriginalMessage;
 
   const DlqFailureDiagnosticsCard({
     super.key,
@@ -61,9 +61,7 @@ class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
       color: colorScheme.errorContainer.withValues(alpha: 0.25),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: colorScheme.error.withValues(alpha: 0.4),
-        ),
+        side: BorderSide(color: colorScheme.error.withValues(alpha: 0.4)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -81,7 +79,8 @@ class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    l10n?.failureDiagnosticsTitle ?? 'Failure Diagnostics (DLQ)',
+                    l10n?.failureDiagnosticsTitle ??
+                        'Failure Diagnostics (DLQ)',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.error,
@@ -97,8 +96,10 @@ class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
                   ),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                   ),
                   onPressed: () => _copyKcatCommand(context, l10n),
                 ),
@@ -109,9 +110,14 @@ class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
             // Coordinates & Jump Action
             if (meta.hasCoordinates) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -138,7 +144,8 @@ class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
                         key: const Key('dlq_jump_original_button'),
                         icon: const Icon(Icons.arrow_forward, size: 14),
                         label: Text(
-                          l10n?.jumpToOriginalMessage ?? 'Jump to Original Message',
+                          l10n?.jumpToOriginalMessage ??
+                              'Jump to Original Message',
                           style: const TextStyle(fontSize: 11),
                         ),
                         style: FilledButton.styleFrom(

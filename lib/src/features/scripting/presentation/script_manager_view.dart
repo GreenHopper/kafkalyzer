@@ -11,6 +11,7 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_run_view.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history_view.dart';
+import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ScriptManagerView extends StatefulWidget {
@@ -428,8 +429,10 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
         final file = File(outputFile);
         await file.writeAsString(jsonString);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.scriptExportedSuccessfully)),
+          showExportSuccessSnackBar(
+            context,
+            message: l10n.scriptExportedSuccessfully,
+            filePath: outputFile,
           );
         }
       }

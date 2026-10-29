@@ -352,7 +352,8 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
   }
 
   void _openSchemaDiffDialog(BuildContext context) {
-    final subject = widget.initialSubject ??
+    final subject =
+        widget.initialSubject ??
         (_valueSchema != null
             ? "${widget.topicName}-value"
             : "${widget.topicName}-key");

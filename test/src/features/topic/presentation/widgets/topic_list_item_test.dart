@@ -382,42 +382,54 @@ void main() {
     expect(find.text('Retry'), findsOneWidget);
   });
 
-  testWidgets('displays associated failure topic count badge and expands sub-tree', (
-    WidgetTester tester,
-  ) async {
-    String? selectedChild;
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          ...GlobalMaterialLocalizations.delegates,
-        ],
-        supportedLocales: const [Locale('en')],
-        home: Scaffold(
-          body: TopicListItem(
-            topic: testTopic,
-            clusterProfile: testProfile,
-            associatedFailureTopics: const ['test-topic-retry-0', 'test-topic-dlq'],
-            onSelectFailureTopic: (child) => selectedChild = child,
+  testWidgets(
+    'displays associated failure topic count badge and expands sub-tree',
+    (WidgetTester tester) async {
+      String? selectedChild;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: const [Locale('en')],
+          home: Scaffold(
+            body: TopicListItem(
+              topic: testTopic,
+              clusterProfile: testProfile,
+              associatedFailureTopics: const [
+                'test-topic-retry-0',
+                'test-topic-dlq',
+              ],
+              onSelectFailureTopic: (child) => selectedChild = child,
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    expect(find.byKey(const Key('topic_associated_failure_badge')), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
-    expect(find.byKey(const Key('topic_failure_expand_button')), findsOneWidget);
-    expect(find.text('test-topic-dlq'), findsNothing);
+      expect(
+        find.byKey(const Key('topic_associated_failure_badge')),
+        findsOneWidget,
+      );
+      expect(find.text('2'), findsOneWidget);
+      expect(
+        find.byKey(const Key('topic_failure_expand_button')),
+        findsOneWidget,
+      );
+      expect(find.text('test-topic-dlq'), findsNothing);
 
-    // Tap expand button
-    await tester.tap(find.byKey(const Key('topic_failure_expand_button')));
-    await tester.pumpAndSettle();
+      // Tap expand button
+      await tester.tap(find.byKey(const Key('topic_failure_expand_button')));
+      await tester.pumpAndSettle();
 
-    expect(find.text('test-topic-dlq'), findsOneWidget);
-    expect(find.text('test-topic-retry-0'), findsOneWidget);
+      expect(find.text('test-topic-dlq'), findsOneWidget);
+      expect(find.text('test-topic-retry-0'), findsOneWidget);
 
-    // Tap on child
-    await tester.tap(find.byKey(const Key('topic_child_failure_test-topic-dlq')));
-    expect(selectedChild, equals('test-topic-dlq'));
-  });
+      // Tap on child
+      await tester.tap(
+        find.byKey(const Key('topic_child_failure_test-topic-dlq')),
+      );
+      expect(selectedChild, equals('test-topic-dlq'));
+    },
+  );
 }

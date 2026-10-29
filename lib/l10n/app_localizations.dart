@@ -3577,6 +3577,77 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Jump'**
   String get jump;
+
+  /// No description provided for @openFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get openFile;
+
+  /// No description provided for @showInFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in Folder'**
+  String get showInFolder;
+
+  /// No description provided for @failedToOpenFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open file: {error}'**
+  String failedToOpenFile(String error);
+
+  /// No description provided for @failedToOpenFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open folder: {error}'**
+  String failedToOpenFolder(String error);
+
+  /// No description provided for @lagEstimateCaughtUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Caught up'**
+  String get lagEstimateCaughtUp;
+
+  /// No description provided for @lagEstimateGrowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Backlog growing'**
+  String get lagEstimateGrowing;
+
+  /// No description provided for @lagEstimateStalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Stalled'**
+  String get lagEstimateStalled;
+
+  /// No description provided for @lagEstimatePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimating...'**
+  String get lagEstimatePending;
+
+  /// No description provided for @lagEstimateRateUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'msg/s'**
+  String get lagEstimateRateUnit;
+
+  /// No description provided for @lagEstimateEtaPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'ETA: {eta}'**
+  String lagEstimateEtaPrefix(String eta);
+
+  /// No description provided for @lagEstimateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate: {rate} | Delta: {delta} over {interval} | Status: {status}'**
+  String lagEstimateTooltip(
+    String rate,
+    String delta,
+    String interval,
+    String status,
+  );
 }
 
 class _AppLocalizationsDelegate

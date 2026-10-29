@@ -17,12 +17,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeMessageExportService implements MessageExportService {
   @override
-  Future<void> exportMessages(
+  Future<String?> exportMessages(
     List<KafkaMessage> messages, {
     ExportFormat format = ExportFormat.json,
     dynamic columnConfig,
     bool isScriptingView = false,
-  }) async {}
+  }) async => null;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

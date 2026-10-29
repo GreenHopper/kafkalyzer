@@ -28,12 +28,11 @@ void main() {
     originalOffset: 42,
     exceptionMessage: 'NullPointerException at service',
     exceptionClass: 'java.lang.NullPointerException',
-    exceptionStacktrace: 'at com.example.OrderService.process(OrderService.java:10)',
+    exceptionStacktrace:
+        'at com.example.OrderService.process(OrderService.java:10)',
   );
 
-  Widget createWidget({
-    void Function(String, int, int)? onJump,
-  }) {
+  Widget createWidget({void Function(String, int, int)? onJump}) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -49,21 +48,29 @@ void main() {
   }
 
   group('DlqFailureDiagnosticsCard', () {
-    testWidgets('renders diagnostics title, coordinates, and exception details',
-        (tester) async {
-      await tester.pumpWidget(createWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders diagnostics title, coordinates, and exception details',
+      (tester) async {
+        await tester.pumpWidget(createWidget());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Failure Diagnostics (DLQ)'), findsOneWidget);
-      expect(find.textContaining('Origin: orders [P: 0, O: 42]'), findsOneWidget);
-      expect(
-        find.textContaining('java.lang.NullPointerException: NullPointerException at service'),
-        findsOneWidget,
-      );
-    });
+        expect(find.text('Failure Diagnostics (DLQ)'), findsOneWidget);
+        expect(
+          find.textContaining('Origin: orders [P: 0, O: 42]'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(
+            'java.lang.NullPointerException: NullPointerException at service',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('triggers onJumpToOriginalMessage when jump button tapped',
-        (tester) async {
+    testWidgets('triggers onJumpToOriginalMessage when jump button tapped', (
+      tester,
+    ) async {
       String? jumpedTopic;
       int? jumpedPartition;
       int? jumpedOffset;
@@ -90,10 +97,12 @@ void main() {
     testWidgets('copies kcat replay command to clipboard', (tester) async {
       final List<MethodCall> log = [];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, (methodCall) async {
-        log.add(methodCall);
-        return null;
-      });
+          .setMockMethodCallHandler(SystemChannels.platform, (
+            methodCall,
+          ) async {
+            log.add(methodCall);
+            return null;
+          });
 
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();

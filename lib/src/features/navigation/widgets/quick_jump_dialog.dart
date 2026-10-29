@@ -15,7 +15,8 @@ class QuickJumpDialog extends StatefulWidget {
     int? partition,
     int? offset,
     String? filter,
-  )? onJump;
+  )?
+  onJump;
 
   const QuickJumpDialog({
     super.key,
@@ -49,7 +50,8 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
       _clusters = const [];
     }
 
-    _selectedCluster = widget.currentCluster ??
+    _selectedCluster =
+        widget.currentCluster ??
         (_clusters.isNotEmpty ? _clusters.first : null);
   }
 
@@ -74,7 +76,8 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
     if (ref == null) {
       setState(() {
         _parsedRef = null;
-        _errorMessage = l10n?.quickJumpInvalid ?? 'Invalid reference URI format';
+        _errorMessage =
+            l10n?.quickJumpInvalid ?? 'Invalid reference URI format';
         _requiresClusterSelection = false;
       });
       return;
@@ -89,12 +92,14 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
           .firstOrNull;
       if (matchedCluster == null) {
         needsPrompt = true;
-        matchedCluster = _selectedCluster ??
+        matchedCluster =
+            _selectedCluster ??
             widget.currentCluster ??
             (_clusters.isNotEmpty ? _clusters.first : null);
       }
     } else {
-      matchedCluster = _selectedCluster ??
+      matchedCluster =
+          _selectedCluster ??
           widget.currentCluster ??
           (_clusters.isNotEmpty ? _clusters.first : null);
       if (matchedCluster == null && _clusters.isNotEmpty) {
@@ -118,7 +123,8 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
 
     if (ref == null) {
       setState(() {
-        _errorMessage = l10n?.quickJumpInvalid ?? 'Invalid reference URI format';
+        _errorMessage =
+            l10n?.quickJumpInvalid ?? 'Invalid reference URI format';
       });
       return;
     }
@@ -150,8 +156,9 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
         await activeCtrl.connect(cluster);
       }
 
-      final topicMeta =
-          activeCtrl.topics.where((t) => t.name == topic).firstOrNull;
+      final topicMeta = activeCtrl.topics
+          .where((t) => t.name == topic)
+          .firstOrNull;
       if (topicMeta != null) {
         activeCtrl.openTopic(
           topic: topicMeta,
@@ -171,10 +178,7 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: 580,
-          minWidth: 400,
-        ),
+        constraints: const BoxConstraints(maxWidth: 580, minWidth: 400),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -184,11 +188,7 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
               // Header
               Row(
                 children: [
-                  Icon(
-                    Icons.bolt,
-                    color: colorScheme.primary,
-                    size: 24,
-                  ),
+                  Icon(Icons.bolt, color: colorScheme.primary, size: 24),
                   const SizedBox(width: 8),
                   Text(
                     l10n?.quickJumpTitle ?? 'Quick Jump / Open Reference',
@@ -212,7 +212,8 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
                 autofocus: true,
                 style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
                 decoration: InputDecoration(
-                  hintText: l10n?.quickJumpHint ??
+                  hintText:
+                      l10n?.quickJumpHint ??
                       'Paste a kafkalyzer:// link (e.g. kafkalyzer://open?topic=...&offset=...)',
                   hintStyle: TextStyle(
                     fontSize: 12,
@@ -239,7 +240,9 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.4,
+                    ),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -249,7 +252,9 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        l10n?.quickJumpClusterNotFound(_parsedRef?.cluster ?? '') ??
+                        l10n?.quickJumpClusterNotFound(
+                              _parsedRef?.cluster ?? '',
+                            ) ??
                             "Cluster '${_parsedRef?.cluster}' not found in configuration. Select a cluster:",
                         style: TextStyle(
                           fontSize: 12,
@@ -322,7 +327,9 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+                    child: Text(
+                      MaterialLocalizations.of(context).cancelButtonLabel,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(

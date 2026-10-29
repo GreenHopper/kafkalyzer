@@ -40,7 +40,9 @@ class DlqFailureMetadata {
 
     // Escape single quotes for bash
     final escapedPayload = (payload ?? '').replaceAll("'", "'\\''");
-    buffer.write("printf '%s' '$escapedPayload' | kcat -b $bootstrapServers -t $targetTopic -P");
+    buffer.write(
+      "printf '%s' '$escapedPayload' | kcat -b $bootstrapServers -t $targetTopic -P",
+    );
 
     if (key != null && key.isNotEmpty) {
       final escapedKey = key.replaceAll("'", "'\\''");

@@ -61,7 +61,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
 
   MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.latest;
   TopicScanMode _scanMode = TopicScanMode.latestN;
-  TopicSearchParams? _lastAppliedParams;
 
   void _openSchemaView() {
     if (_viewMode != TopicViewMode.messages) {
@@ -107,30 +106,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
   final TextEditingController _maxResultsController = TextEditingController(
     text: "200",
   );
-
-  TopicSearchParams get _currentSearchParams => TopicSearchParams(
-    scanMode: _scanMode,
-    quickFilter: _filterController.text,
-    field: _filterFieldController.text,
-    filterType: _filterType,
-    searchScope: _searchScope,
-    limitResults: _limitResults,
-    maxResults: _limitResults ? int.tryParse(_maxResultsController.text) : null,
-    partition: _partitionController.text,
-    fastTraceEnabled: _fastTraceEnabled,
-    startStrategy: _startStrategy,
-    endStrategy: _endStrategy,
-    startOffset: _offsetController.text,
-    endOffset: _endOffsetController.text,
-    startTimestamp: _timestampController.text,
-    endTimestamp: _endTimestampController.text,
-  );
-
-  bool get _isDirty {
-    if (_lastAppliedParams == null) return false;
-    if (streamController.messages.isEmpty) return false;
-    return _currentSearchParams != _lastAppliedParams;
-  }
 
   int? _convertToTimestamp(String text) {
     if (text.isEmpty) return null;
@@ -197,10 +172,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
                     setState(() => _endStrategy = strategy),
                 endOffsetController: _endOffsetController,
                 endTimestampController: _endTimestampController,
-                isStreaming: streamController.isStreaming,
-                isDirty: _isDirty,
                 onStart: startStreaming,
-                onStop: streamController.stopStreaming,
                 schemaFieldsFetcher: () => schemaController.fetchSchemaFields(
                   widget.profile,
                   widget.topic.name,
@@ -543,7 +515,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
   }
 
   void startStreaming() {
-    _lastAppliedParams = _currentSearchParams;
     int? startOffset;
     int? startTimestamp;
 

@@ -44,7 +44,10 @@ void main() {
     test('returns null for invalid scheme or missing topic', () {
       expect(MessageReference.tryParse('https://example.com'), isNull);
       expect(MessageReference.tryParse('kafkalyzer://open'), isNull);
-      expect(MessageReference.tryParse('kafkalyzer://open?cluster=prod'), isNull);
+      expect(
+        MessageReference.tryParse('kafkalyzer://open?cluster=prod'),
+        isNull,
+      );
       expect(MessageReference.tryParse('not a uri'), isNull);
       expect(MessageReference.tryParse(''), isNull);
     });

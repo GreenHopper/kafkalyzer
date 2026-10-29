@@ -120,10 +120,9 @@ void main() {
         ),
       ).thenAnswer((_) async => ['topic']);
 
-      final result = await controller.getAssociatedTopics(
-        'topic-value',
-        ['topic'],
-      );
+      final result = await controller.getAssociatedTopics('topic-value', [
+        'topic',
+      ]);
 
       expect(result, ['topic']);
       verify(

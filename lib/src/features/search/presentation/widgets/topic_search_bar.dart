@@ -43,10 +43,7 @@ class TopicSearchBar extends StatefulWidget {
   final TextEditingController endOffsetController;
   final TextEditingController endTimestampController;
 
-  final bool isStreaming;
-  final bool isDirty;
   final VoidCallback onStart;
-  final VoidCallback onStop;
 
   final Future<List<String>> Function()? schemaFieldsFetcher;
 
@@ -74,10 +71,7 @@ class TopicSearchBar extends StatefulWidget {
     required this.onEndStrategyChanged,
     required this.endOffsetController,
     required this.endTimestampController,
-    required this.isStreaming,
-    required this.isDirty,
     required this.onStart,
-    required this.onStop,
     this.schemaFieldsFetcher,
   });
 
@@ -179,8 +173,6 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
                       ),
                       const SizedBox(width: 8),
                       _buildAdvancedToggleButton(l10n, colorScheme),
-                      const SizedBox(width: 8),
-                      _buildActionButton(context, l10n, colorScheme),
                     ],
                   );
                 } else {
@@ -208,8 +200,6 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
                           ),
                           const SizedBox(width: 8),
                           _buildAdvancedToggleButton(l10n, colorScheme),
-                          const SizedBox(width: 8),
-                          _buildActionButton(context, l10n, colorScheme),
                         ],
                       ),
                     ],
@@ -507,75 +497,6 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
         ),
       ),
     );
-  }
-
-  Widget _buildActionButton(
-    BuildContext context,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
-    if (widget.isStreaming) {
-      return FilledButton.icon(
-        key: const Key('search_bar_stop_button'),
-        style: FilledButton.styleFrom(
-          backgroundColor: colorScheme.error,
-          visualDensity: VisualDensity.compact,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onPressed: widget.onStop,
-        icon: const Icon(Icons.stop, size: 16),
-        label: Text(
-          l10n.stop,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-        ),
-      );
-    }
-
-    final isLive = widget.scanMode.isLiveStream;
-    final int? limit = widget.limitResults
-        ? int.tryParse(widget.maxResultsController.text)
-        : null;
-
-    final String label = isLive
-        ? l10n.startLiveStream
-        : (limit != null ? l10n.fetchMessagesCount(limit) : l10n.fetchMessages);
-
-    final IconData icon = isLive ? Icons.sensors : Icons.play_arrow;
-
-    Widget button = FilledButton.icon(
-      key: const Key('search_bar_start_button'),
-      style: FilledButton.styleFrom(
-        backgroundColor: widget.isDirty
-            ? colorScheme.tertiary
-            : Colors.green.shade700,
-        foregroundColor: Colors.white,
-        visualDensity: VisualDensity.compact,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        elevation: widget.isDirty ? 3 : 0,
-      ),
-      onPressed: _onStart,
-      icon: Icon(widget.isDirty ? Icons.refresh : icon, size: 16),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-      ),
-    );
-
-    if (widget.isDirty) {
-      return Tooltip(
-        message: l10n.filterChangedTooltip,
-        child: Badge(
-          smallSize: 8,
-          backgroundColor: colorScheme.error,
-          alignment: Alignment.topRight,
-          child: button,
-        ),
-      );
-    }
-
-    return button;
   }
 
   Widget _buildActiveFilterChips(
