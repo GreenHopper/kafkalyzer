@@ -52,6 +52,9 @@ class FakeActiveConnectionController extends ChangeNotifier
   ClusterProfile? activeProfile;
 
   @override
+  ClusterProfile? get connectingProfile => null;
+
+  @override
   bool get showInternalTopics => false;
 
   @override

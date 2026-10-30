@@ -51,6 +51,12 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
     sizePercentilesEstimated: false,
     estimatedDistinctKeys: 0,
     keyCardinalityCapped: false,
+    hourlyTimeline: const [],
+    scanReferenceTimeMs: null,
+    completeFromMs: null,
+    timelineOutsideCount: 0,
+    valueFilterResult: null,
+    duplicateAnalysisResult: null,
   ),
 );
 
@@ -170,6 +176,97 @@ void main() {
       expect(controller.isImported, isFalse);
       expect(controller.reportClusterName, isNull);
       await controller.stopAnalysis();
+    });
+
+    test('value filter setters and clearing', () {
+      expect(controller.valueFilter, isNull);
+
+      const filter = FieldValueFilter(
+        fieldPath: 'attributes.region',
+        value: 'EU',
+      );
+      controller.setValueFilter(filter);
+      expect(controller.valueFilter, equals(filter));
+
+      controller.clearValueFilter();
+      expect(controller.valueFilter, isNull);
+    });
+
+    test(
+      'startAnalysis rejects an empty field path and does not start',
+      () async {
+        const invalidFilter = FieldValueFilter(fieldPath: '   ', value: 'EU');
+
+        await controller.startAnalysis(
+          const ClusterProfile(
+            name: 'test',
+            bootstrapServers: 'localhost:9092',
+          ),
+          'orders',
+          valueFilter: invalidFilter,
+        );
+
+        expect(controller.isAnalyzing, isFalse);
+        expect(controller.error, contains('empty'));
+      },
+    );
+
+    test('rescanWithFilter rejects an empty field path', () async {
+      const invalidFilter = FieldValueFilter(fieldPath: '', value: 'EU');
+
+      await controller.rescanWithFilter(invalidFilter);
+
+      expect(controller.isAnalyzing, isFalse);
+      expect(controller.error, contains('empty'));
+    });
+
+    test('rescanWithFilter rejects if no previous scope exists', () async {
+      const filter = FieldValueFilter(fieldPath: 'status', value: 'FAILED');
+
+      await controller.rescanWithFilter(filter);
+
+      expect(controller.isAnalyzing, isFalse);
+      expect(controller.error, contains('No previous'));
+    });
+
+    test('rescanWithFilter uses the last analysis scope', () async {
+      const profile = ClusterProfile(
+        name: 'staging',
+        bootstrapServers: 'kafka:9092',
+      );
+      const topic = 'payments';
+
+      // Start initial scan
+      await controller.startAnalysis(profile, topic, maxMessages: 5000);
+      expect(controller.lastProfile, equals(profile));
+      expect(controller.lastTopic, equals(topic));
+      expect(controller.maxMessages, 5000);
+
+      // Now rescan with a filter
+      const filter = FieldValueFilter(fieldPath: 'currency', value: 'EUR');
+      await controller.rescanWithFilter(filter);
+
+      expect(controller.valueFilter, equals(filter));
+      expect(controller.lastProfile, equals(profile));
+      expect(controller.lastTopic, equals(topic));
+      expect(controller.maxMessages, 5000);
+      await controller.stopAnalysis();
+    });
+
+    test('defaults to payloadOnly duplicate scope and allows toggling', () {
+      expect(
+        controller.duplicateScope,
+        equals(DuplicateDetectionScope.payloadOnly),
+      );
+      var notifyCount = 0;
+      controller.addListener(() => notifyCount++);
+
+      controller.setDuplicateScope(DuplicateDetectionScope.keyAndPayload);
+      expect(
+        controller.duplicateScope,
+        equals(DuplicateDetectionScope.keyAndPayload),
+      );
+      expect(notifyCount, 1);
     });
   });
 }

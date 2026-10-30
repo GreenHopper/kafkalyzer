@@ -32,6 +32,8 @@ class FakeActiveConnectionController extends ChangeNotifier
   @override
   ClusterProfile? get activeProfile => null;
   @override
+  ClusterProfile? get connectingProfile => null;
+  @override
   bool get isConnecting => false;
   @override
   List<TopicMetadata> get topics => [];

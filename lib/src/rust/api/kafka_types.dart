@@ -6,8 +6,8 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 class ClusterProfile {
   final String name;
@@ -197,17 +197,60 @@ class ConsumerGroupMember {
           assignmentDecodable == other.assignmentDecodable;
 }
 
+class DuplicateAnalysisResult {
+  final DuplicateDetectionScope scope;
+  final PlatformInt64 totalMessages;
+  final PlatformInt64 uniqueMessages;
+  final PlatformInt64 duplicateMessages;
+  final double duplicateRate;
+  final List<TopDuplicateOccurrence> topDuplicates;
+
+  const DuplicateAnalysisResult({
+    required this.scope,
+    required this.totalMessages,
+    required this.uniqueMessages,
+    required this.duplicateMessages,
+    required this.duplicateRate,
+    required this.topDuplicates,
+  });
+
+  @override
+  int get hashCode =>
+      scope.hashCode ^
+      totalMessages.hashCode ^
+      uniqueMessages.hashCode ^
+      duplicateMessages.hashCode ^
+      duplicateRate.hashCode ^
+      topDuplicates.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is DuplicateAnalysisResult &&
+          runtimeType == other.runtimeType &&
+          scope == other.scope &&
+          totalMessages == other.totalMessages &&
+          uniqueMessages == other.uniqueMessages &&
+          duplicateMessages == other.duplicateMessages &&
+          duplicateRate == other.duplicateRate &&
+          topDuplicates == other.topDuplicates;
+}
+
+enum DuplicateDetectionScope { payloadOnly, keyAndPayload }
+
 class FieldOccurrence {
   final String fieldName;
   final PlatformInt64 count;
   final double percentage;
   final List<FieldValueOccurrence> topValues;
+  final bool valuesCapped;
 
   const FieldOccurrence({
     required this.fieldName,
     required this.count,
     required this.percentage,
     required this.topValues,
+    required this.valuesCapped,
   });
 
   @override
@@ -215,7 +258,8 @@ class FieldOccurrence {
       fieldName.hashCode ^
       count.hashCode ^
       percentage.hashCode ^
-      topValues.hashCode;
+      topValues.hashCode ^
+      valuesCapped.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -225,22 +269,47 @@ class FieldOccurrence {
           fieldName == other.fieldName &&
           count == other.count &&
           percentage == other.percentage &&
-          topValues == other.topValues;
+          topValues == other.topValues &&
+          valuesCapped == other.valuesCapped;
+}
+
+class FieldValueFilter {
+  final String fieldPath;
+  final String value;
+
+  const FieldValueFilter({required this.fieldPath, required this.value});
+
+  @override
+  int get hashCode => fieldPath.hashCode ^ value.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FieldValueFilter &&
+          runtimeType == other.runtimeType &&
+          fieldPath == other.fieldPath &&
+          value == other.value;
 }
 
 class FieldValueOccurrence {
   final String value;
   final PlatformInt64 count;
   final double percentage;
+  final bool truncated;
 
   const FieldValueOccurrence({
     required this.value,
     required this.count,
     required this.percentage,
+    required this.truncated,
   });
 
   @override
-  int get hashCode => value.hashCode ^ count.hashCode ^ percentage.hashCode;
+  int get hashCode =>
+      value.hashCode ^
+      count.hashCode ^
+      percentage.hashCode ^
+      truncated.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -249,10 +318,29 @@ class FieldValueOccurrence {
           runtimeType == other.runtimeType &&
           value == other.value &&
           count == other.count &&
-          percentage == other.percentage;
+          percentage == other.percentage &&
+          truncated == other.truncated;
 }
 
 enum FilterType { contains, regex, exact }
+
+class HourBucket {
+  final PlatformInt64 epochHour;
+  final PlatformInt64 count;
+
+  const HourBucket({required this.epochHour, required this.count});
+
+  @override
+  int get hashCode => epochHour.hashCode ^ count.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HourBucket &&
+          runtimeType == other.runtimeType &&
+          epochHour == other.epochHour &&
+          count == other.count;
+}
 
 class HourlyCount {
   final int hour;
@@ -368,6 +456,85 @@ class SizePercentiles {
           p99 == other.p99;
 }
 
+class TopDuplicateOccurrence {
+  final String? key;
+  final String payloadPreview;
+  final PlatformInt64 count;
+  final double percentage;
+  final int samplePartition;
+  final PlatformInt64 sampleOffset;
+  final PlatformInt64 sampleTimestampMs;
+
+  const TopDuplicateOccurrence({
+    this.key,
+    required this.payloadPreview,
+    required this.count,
+    required this.percentage,
+    required this.samplePartition,
+    required this.sampleOffset,
+    required this.sampleTimestampMs,
+  });
+
+  @override
+  int get hashCode =>
+      key.hashCode ^
+      payloadPreview.hashCode ^
+      count.hashCode ^
+      percentage.hashCode ^
+      samplePartition.hashCode ^
+      sampleOffset.hashCode ^
+      sampleTimestampMs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopDuplicateOccurrence &&
+          runtimeType == other.runtimeType &&
+          key == other.key &&
+          payloadPreview == other.payloadPreview &&
+          count == other.count &&
+          percentage == other.percentage &&
+          samplePartition == other.samplePartition &&
+          sampleOffset == other.sampleOffset &&
+          sampleTimestampMs == other.sampleTimestampMs;
+}
+
+class TopicAnalysisOptions {
+  final PlatformInt64? maxMessages;
+  final bool sampleFromLatest;
+  final FieldValueFilter? valueFilter;
+  final DuplicateDetectionScope? duplicateScope;
+
+  const TopicAnalysisOptions({
+    this.maxMessages,
+    required this.sampleFromLatest,
+    this.valueFilter,
+    this.duplicateScope,
+  });
+
+  static Future<TopicAnalysisOptions> default_() => KafkalyzerRustLib
+      .instance
+      .api
+      .crateApiKafkaTypesTopicAnalysisOptionsDefault();
+
+  @override
+  int get hashCode =>
+      maxMessages.hashCode ^
+      sampleFromLatest.hashCode ^
+      valueFilter.hashCode ^
+      duplicateScope.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicAnalysisOptions &&
+          runtimeType == other.runtimeType &&
+          maxMessages == other.maxMessages &&
+          sampleFromLatest == other.sampleFromLatest &&
+          valueFilter == other.valueFilter &&
+          duplicateScope == other.duplicateScope;
+}
+
 class TopicAnalysisProgress {
   final PlatformInt64 scannedMessages;
   final PlatformInt64 totalMessagesToScan;
@@ -437,6 +604,12 @@ class TopicAnalysisReport {
   final bool sizePercentilesEstimated;
   final PlatformInt64 estimatedDistinctKeys;
   final bool keyCardinalityCapped;
+  final List<HourBucket> hourlyTimeline;
+  final PlatformInt64? scanReferenceTimeMs;
+  final PlatformInt64? completeFromMs;
+  final PlatformInt64 timelineOutsideCount;
+  final ValueFilterResult? valueFilterResult;
+  final DuplicateAnalysisResult? duplicateAnalysisResult;
 
   const TopicAnalysisReport({
     required this.topic,
@@ -458,6 +631,12 @@ class TopicAnalysisReport {
     required this.sizePercentilesEstimated,
     required this.estimatedDistinctKeys,
     required this.keyCardinalityCapped,
+    required this.hourlyTimeline,
+    this.scanReferenceTimeMs,
+    this.completeFromMs,
+    required this.timelineOutsideCount,
+    this.valueFilterResult,
+    this.duplicateAnalysisResult,
   });
 
   @override
@@ -480,7 +659,13 @@ class TopicAnalysisReport {
       messageSizePercentiles.hashCode ^
       sizePercentilesEstimated.hashCode ^
       estimatedDistinctKeys.hashCode ^
-      keyCardinalityCapped.hashCode;
+      keyCardinalityCapped.hashCode ^
+      hourlyTimeline.hashCode ^
+      scanReferenceTimeMs.hashCode ^
+      completeFromMs.hashCode ^
+      timelineOutsideCount.hashCode ^
+      valueFilterResult.hashCode ^
+      duplicateAnalysisResult.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -505,7 +690,13 @@ class TopicAnalysisReport {
           messageSizePercentiles == other.messageSizePercentiles &&
           sizePercentilesEstimated == other.sizePercentilesEstimated &&
           estimatedDistinctKeys == other.estimatedDistinctKeys &&
-          keyCardinalityCapped == other.keyCardinalityCapped;
+          keyCardinalityCapped == other.keyCardinalityCapped &&
+          hourlyTimeline == other.hourlyTimeline &&
+          scanReferenceTimeMs == other.scanReferenceTimeMs &&
+          completeFromMs == other.completeFromMs &&
+          timelineOutsideCount == other.timelineOutsideCount &&
+          valueFilterResult == other.valueFilterResult &&
+          duplicateAnalysisResult == other.duplicateAnalysisResult;
 }
 
 class TopicPartition {
@@ -583,4 +774,39 @@ class TypeOccurrence {
           typeName == other.typeName &&
           count == other.count &&
           percentage == other.percentage;
+}
+
+class ValueFilterResult {
+  final String fieldPath;
+  final String value;
+  final PlatformInt64 messagesWithField;
+  final PlatformInt64 matchedMessages;
+  final List<HourBucket> matchedTimeline;
+
+  const ValueFilterResult({
+    required this.fieldPath,
+    required this.value,
+    required this.messagesWithField,
+    required this.matchedMessages,
+    required this.matchedTimeline,
+  });
+
+  @override
+  int get hashCode =>
+      fieldPath.hashCode ^
+      value.hashCode ^
+      messagesWithField.hashCode ^
+      matchedMessages.hashCode ^
+      matchedTimeline.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ValueFilterResult &&
+          runtimeType == other.runtimeType &&
+          fieldPath == other.fieldPath &&
+          value == other.value &&
+          messagesWithField == other.messagesWithField &&
+          matchedMessages == other.matchedMessages &&
+          matchedTimeline == other.matchedTimeline;
 }

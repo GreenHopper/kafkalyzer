@@ -1,5 +1,6 @@
 pub mod avro_utils;
 pub mod consumer_group_protocol;
+pub mod duplicate_fingerprint;
 pub mod json_path;
 pub mod kafka_types;
 pub mod partition_health;

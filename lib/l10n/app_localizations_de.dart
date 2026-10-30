@@ -2064,4 +2064,277 @@ class AppLocalizationsDe extends AppLocalizations {
   ) {
     return 'Rate: $rate | Delta: $delta über $interval | Status: $status';
   }
+
+  @override
+  String get recentProductionTitle => 'Kürzliche Produktion';
+
+  @override
+  String get recentProductionSubtitle =>
+      'Nachrichtenvolumen der letzten Stunden';
+
+  @override
+  String get window6h => '6 Std.';
+
+  @override
+  String get window12h => '12 Std.';
+
+  @override
+  String get window24h => '24 Std.';
+
+  @override
+  String get window48h => '48 Std.';
+
+  @override
+  String get window72h => '72 Std.';
+
+  @override
+  String get timelineNotAvailableForReport =>
+      'Zeitverlauf ist für diesen Bericht nicht verfügbar.';
+
+  @override
+  String timeZoneLabel(String timeZone) {
+    return 'Lokale Zeit ($timeZone)';
+  }
+
+  @override
+  String get unusualIncreaseBadge => 'Ungewöhnlicher Anstieg';
+
+  @override
+  String baselineLabel(String baseline) {
+    return 'Basislinie: $baseline';
+  }
+
+  @override
+  String get noComparisonData => 'Keine Vergleichsdaten';
+
+  @override
+  String uncoveredHourHint(int count) {
+    return 'Vor Erfassungsbeginn ($count Nachrichten)';
+  }
+
+  @override
+  String get currentHourIncomplete => 'Unvollständige Stunde';
+
+  @override
+  String coverageHint(int hours) {
+    return 'Scan deckt die letzten $hours Stunden dieses Fensters ab.';
+  }
+
+  @override
+  String hourlyTooltipDetails(String count, String delta) {
+    return '$count Nachrichten ($delta)';
+  }
+
+  @override
+  String hourlyTooltipMatches(String matches, String share) {
+    return '$matches Treffer ($share%)';
+  }
+
+  @override
+  String get dailyProductionTitle => 'Tägliche Produktionsverteilung';
+
+  @override
+  String get dailyProductionSubtitle => 'Nachrichten pro Kalendertag';
+
+  @override
+  String get partialCoverageBadge => 'Teilweise erfasst';
+
+  @override
+  String dailyMatchesShare(String matches, String share) {
+    return '$matches ($share%)';
+  }
+
+  @override
+  String get valueFilterButton => 'Nach Feldwert filtern';
+
+  @override
+  String valueFilterActive(String path, String value) {
+    return 'Filter: $path = $value';
+  }
+
+  @override
+  String get valueFilterClear => 'Filter entfernen';
+
+  @override
+  String get valueFilterDialogTitle => 'Nach Feldwert filtern';
+
+  @override
+  String get valueFilterDialogFieldPath => 'Feldpfad (z. B. attributes.region)';
+
+  @override
+  String get valueFilterDialogValue => 'Exakter Wert';
+
+  @override
+  String get valueFilterApply => 'Filter anwenden';
+
+  @override
+  String get valueFilterValidationEmpty => 'Feldpfad darf nicht leer sein';
+
+  @override
+  String get valueFilterMatchCardTitle => 'Filter-Treffer';
+
+  @override
+  String valueFilterMatchCount(String count) {
+    return '$count Treffer';
+  }
+
+  @override
+  String valueFilterShareOfTotal(String percent) {
+    return '$percent% aller gescannten Nachrichten';
+  }
+
+  @override
+  String valueFilterShareOfField(String percent) {
+    return '$percent% der Nachrichten mit diesem Feld';
+  }
+
+  @override
+  String valueFilterRemainder(String remainder) {
+    return '$remainder nicht-übereinstimmende Nachrichten';
+  }
+
+  @override
+  String get drillDownDialogTitle => 'Feldwert-Details';
+
+  @override
+  String drillDownFieldPath(String path) {
+    return 'Feld: $path';
+  }
+
+  @override
+  String drillDownValue(String value) {
+    return 'Wert: $value';
+  }
+
+  @override
+  String drillDownCount(String count) {
+    return 'Anzahl: $count';
+  }
+
+  @override
+  String drillDownShareOfAll(String percent) {
+    return 'Anteil an allen Nachrichten: $percent%';
+  }
+
+  @override
+  String drillDownShareOfField(String percent) {
+    return 'Anteil am Vorkommen: $percent%';
+  }
+
+  @override
+  String get drillDownRescanButton => 'Mit diesem Filter neu scannen';
+
+  @override
+  String get drillDownApproximateBadge => 'Ungefähr (Werte begrenzt)';
+
+  @override
+  String get drillDownTruncatedNotice =>
+      'Wert wurde gekürzt (>80 Zeichen). Neu-Scan kann nicht mit gekürzten Werten gestartet werden.';
+
+  @override
+  String get drillDownRescanUnavailableImported =>
+      'Neu-Scan ist für importierte Berichte nicht verfügbar.';
+
+  @override
+  String get duplicateScopeLabel => 'Duplikatskriterium';
+
+  @override
+  String get duplicateScopePayloadOnly => 'Nutzlast (Wert)';
+
+  @override
+  String get duplicateScopeKeyAndPayload => 'Key + Nutzlast';
+
+  @override
+  String get duplicateMessagesCardTitle => 'Mehrfach publizierte Nachrichten';
+
+  @override
+  String duplicateMessagesRate(String rate) {
+    return '$rate% der Nachrichten';
+  }
+
+  @override
+  String duplicateMessagesSubtitle(String unique, String scope) {
+    return '$unique eindeutig • $scope';
+  }
+
+  @override
+  String get topDuplicatesTitle => 'Häufigste Nachrichten-Duplikate';
+
+  @override
+  String get topDuplicatesSubtitle =>
+      'Zeigt bis zu 20 der am häufigsten duplizierten Nachrichten';
+
+  @override
+  String get noDuplicatesDetected => 'Keine Duplikate in diesem Scan gefunden.';
+
+  @override
+  String get duplicateAnalysisUnavailable =>
+      'Duplikatanalyse für diesen Bericht nicht verfügbar.';
+
+  @override
+  String sampleLocation(int partition, int offset) {
+    return 'Partition $partition, Offset $offset';
+  }
+
+  @override
+  String get copyPayload => 'Nutzlast kopieren';
+
+  @override
+  String get copyKey => 'Key kopieren';
+
+  @override
+  String get copiedPayload => 'Nutzlast in Zwischenablage kopiert';
+
+  @override
+  String get copiedKey => 'Key in Zwischenablage kopiert';
+
+  @override
+  String get duplicateRankHeader => '#';
+
+  @override
+  String get duplicateCountHeader => 'Vorkommen';
+
+  @override
+  String get duplicateShareHeader => 'Anteil';
+
+  @override
+  String get duplicateKeyHeader => 'Key';
+
+  @override
+  String get duplicatePayloadPreviewHeader => 'Nutzlast-Vorschau';
+
+  @override
+  String get duplicateSampleCoordinatesHeader => 'Beispiel-Ort';
+
+  @override
+  String get duplicateDetailsTitle => 'Duplikat-Details';
+
+  @override
+  String duplicateDetailsSubtitle(int rank, String count, String share) {
+    return 'Rang #$rank • $count Vorkommen ($share%)';
+  }
+
+  @override
+  String get openInMessages => 'In Nachrichten anzeigen';
+
+  @override
+  String get filterDuplicatesInMessages => 'In Nachrichten filtern';
+
+  @override
+  String get jumpToSampleOffset => 'Zum Beispiel springen';
+
+  @override
+  String get duplicateCoordinates => 'Koordinaten';
+
+  @override
+  String get duplicateTimestamp => 'Zeitstempel';
+
+  @override
+  String get duplicateKey => 'Key';
+
+  @override
+  String get duplicatePayload => 'Dekodierte Nutzlast';
+
+  @override
+  String get inspectDuplicateTooltip => 'Duplikat-Details anzeigen';
 }

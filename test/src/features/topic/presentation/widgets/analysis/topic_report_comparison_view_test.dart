@@ -27,6 +27,11 @@ TopicAnalysisReport _report(String topic, int messages) => TopicAnalysisReport(
   sizePercentilesEstimated: false,
   estimatedDistinctKeys: 0,
   keyCardinalityCapped: false,
+  hourlyTimeline: const [],
+  scanReferenceTimeMs: null,
+  completeFromMs: null,
+  timelineOutsideCount: 0,
+  valueFilterResult: null,
 );
 
 Widget _wrap(Widget child) => MaterialApp(

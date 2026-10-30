@@ -29,19 +29,46 @@ void main() {
           count: 100,
           percentage: 100.0,
           topValues: [
-            FieldValueOccurrence(value: 'SUCCESS', count: 60, percentage: 60.0),
-            FieldValueOccurrence(value: 'PENDING', count: 30, percentage: 30.0),
-            FieldValueOccurrence(value: 'FAILED', count: 10, percentage: 10.0),
+            FieldValueOccurrence(
+              value: 'SUCCESS',
+              count: 60,
+              percentage: 60.0,
+              truncated: false,
+            ),
+            FieldValueOccurrence(
+              value: 'PENDING',
+              count: 30,
+              percentage: 30.0,
+              truncated: false,
+            ),
+            FieldValueOccurrence(
+              value: 'FAILED',
+              count: 10,
+              percentage: 10.0,
+              truncated: false,
+            ),
           ],
+          valuesCapped: false,
         ),
         FieldOccurrence(
           fieldName: 'userId',
           count: 90,
           percentage: 90.0,
           topValues: [
-            FieldValueOccurrence(value: 'user_1', count: 40, percentage: 44.4),
-            FieldValueOccurrence(value: 'user_2', count: 30, percentage: 33.3),
+            FieldValueOccurrence(
+              value: 'user_1',
+              count: 40,
+              percentage: 44.4,
+              truncated: false,
+            ),
+            FieldValueOccurrence(
+              value: 'user_2',
+              count: 30,
+              percentage: 33.3,
+              truncated: false,
+            ),
           ],
+          valuesCapped: false,
         ),
       ];
 
@@ -86,4 +113,107 @@ void main() {
       expect(find.text('userId'), findsNothing);
     },
   );
+
+  testWidgets(
+    'Drill-down dialog displays metrics and triggers rescan callback',
+    (tester) async {
+      FieldValueFilter? rescanFilter;
+
+      const fieldFrequencies = [
+        FieldOccurrence(
+          fieldName: 'status',
+          count: 100,
+          percentage: 100.0,
+          topValues: [
+            FieldValueOccurrence(
+              value: 'SUCCESS',
+              count: 60,
+              percentage: 60.0,
+              truncated: false,
+            ),
+          ],
+          valuesCapped: true,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: FieldValueExplorer(
+              fieldFrequencies: fieldFrequencies,
+              totalMessages: 200,
+              onRescanWithFilter: (f) => rescanFilter = f,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the info icon for SUCCESS
+      await tester.tap(find.byIcon(Icons.info_outline));
+      await tester.pumpAndSettle();
+
+      // Dialog opens
+      expect(find.byType(FieldValueDrillDownDialog), findsOneWidget);
+      expect(find.text('Field Value Details'), findsOneWidget);
+      expect(find.text('Approximate (values capped)'), findsOneWidget);
+      expect(find.text('Share of all messages: 30.00%'), findsOneWidget);
+
+      // Click Re-scan with this filter
+      await tester.tap(find.text('Re-scan with this filter'));
+      await tester.pumpAndSettle();
+
+      expect(rescanFilter, isNotNull);
+      expect(rescanFilter!.fieldPath, 'status');
+      expect(rescanFilter!.value, 'SUCCESS');
+    },
+  );
+
+  testWidgets('Drill-down dialog disables rescan for truncated values', (
+    tester,
+  ) async {
+    const fieldFrequencies = [
+      FieldOccurrence(
+        fieldName: 'description',
+        count: 10,
+        percentage: 10.0,
+        topValues: [
+          FieldValueOccurrence(
+            value: 'very long text that was truncated...',
+            count: 10,
+            percentage: 100.0,
+            truncated: true,
+          ),
+        ],
+        valuesCapped: false,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: FieldValueExplorer(
+            fieldFrequencies: fieldFrequencies,
+            totalMessages: 100,
+            onRescanWithFilter: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.info_outline));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Value was truncated'), findsOneWidget);
+    // Button is disabled
+    final button = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Re-scan with this filter'),
+    );
+    expect(button.onPressed, isNull);
+  });
 }

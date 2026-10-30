@@ -78,7 +78,7 @@ class KafkalyzerRustLib
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 1105382635;
+  int get rustContentHash => 116515548;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -94,6 +94,13 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
     required String topic,
     PlatformInt64? maxMessages,
     required bool sampleFromLatest,
+  });
+
+  Stream<TopicAnalysisProgress>
+  crateApiKafkaAnalyzerAnalyzeTopicContentWithOptions({
+    required ClusterProfile profile,
+    required String topic,
+    required TopicAnalysisOptions options,
   });
 
   Future<SchemaCompatibilityResult>
@@ -199,6 +206,8 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
 
   Future<int> crateApiKafkaUtilsToPositive({required int number});
 
+  Future<TopicAnalysisOptions> crateApiKafkaTypesTopicAnalysisOptionsDefault();
+
   Future<bool> crateApiKafkaMetadataValidateConnection({
     required ClusterProfile profile,
   });
@@ -276,6 +285,51 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       );
 
   @override
+  Stream<TopicAnalysisProgress>
+  crateApiKafkaAnalyzerAnalyzeTopicContentWithOptions({
+    required ClusterProfile profile,
+    required String topic,
+    required TopicAnalysisOptions options,
+  }) {
+    final sink = RustStreamSink<TopicAnalysisProgress>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_box_autoadd_cluster_profile(profile, serializer);
+            sse_encode_String(topic, serializer);
+            sse_encode_box_autoadd_topic_analysis_options(options, serializer);
+            sse_encode_StreamSink_topic_analysis_progress_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 2,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: sse_decode_AnyhowException,
+          ),
+          constMeta:
+              kCrateApiKafkaAnalyzerAnalyzeTopicContentWithOptionsConstMeta,
+          argValues: [profile, topic, options, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta
+  get kCrateApiKafkaAnalyzerAnalyzeTopicContentWithOptionsConstMeta =>
+      const TaskConstMeta(
+        debugName: "analyze_topic_content_with_options",
+        argNames: ["profile", "topic", "options", "sink"],
+      );
+
+  @override
   Future<SchemaCompatibilityResult>
   crateApiSchemaRegistryCheckSchemaCompatibility({
     required ClusterProfile profile,
@@ -294,7 +348,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 3,
             port: port_,
           );
         },
@@ -324,7 +378,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 4,
             port: port_,
           );
         },
@@ -356,7 +410,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 5,
             port: port_,
           );
         },
@@ -420,7 +474,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 5,
+              funcId: 6,
               port: port_,
             );
           },
@@ -489,7 +543,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 7,
             port: port_,
           );
         },
@@ -520,7 +574,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 8,
             port: port_,
           );
         },
@@ -555,7 +609,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 9,
             port: port_,
           );
         },
@@ -588,7 +642,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 10,
             port: port_,
           );
         },
@@ -621,7 +675,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 11,
             port: port_,
           );
         },
@@ -658,7 +712,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 12,
             port: port_,
           );
         },
@@ -693,7 +747,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 13,
             port: port_,
           );
         },
@@ -726,7 +780,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 14,
             port: port_,
           );
         },
@@ -758,7 +812,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 15,
             port: port_,
           );
         },
@@ -791,7 +845,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 16,
             port: port_,
           );
         },
@@ -818,7 +872,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 17,
             port: port_,
           );
         },
@@ -846,7 +900,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 18,
             port: port_,
           );
         },
@@ -878,7 +932,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 19,
             port: port_,
           );
         },
@@ -915,7 +969,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 20,
             port: port_,
           );
         },
@@ -950,7 +1004,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 21,
             port: port_,
           );
         },
@@ -983,7 +1037,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 22,
             port: port_,
           );
         },
@@ -1014,7 +1068,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 23,
             port: port_,
           );
         },
@@ -1033,6 +1087,36 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       const TaskConstMeta(debugName: "to_positive", argNames: ["number"]);
 
   @override
+  Future<TopicAnalysisOptions> crateApiKafkaTypesTopicAnalysisOptionsDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 24,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_topic_analysis_options,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiKafkaTypesTopicAnalysisOptionsDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaTypesTopicAnalysisOptionsDefaultConstMeta =>
+      const TaskConstMeta(
+        debugName: "topic_analysis_options_default",
+        argNames: [],
+      );
+
+  @override
   Future<bool> crateApiKafkaMetadataValidateConnection({
     required ClusterProfile profile,
   }) {
@@ -1044,7 +1128,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 25,
             port: port_,
           );
         },
@@ -1077,7 +1161,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 26,
             port: port_,
           );
         },
@@ -1170,9 +1254,31 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  DuplicateAnalysisResult dco_decode_box_autoadd_duplicate_analysis_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_duplicate_analysis_result(raw);
+  }
+
+  @protected
+  DuplicateDetectionScope dco_decode_box_autoadd_duplicate_detection_scope(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_duplicate_detection_scope(raw);
+  }
+
+  @protected
   double dco_decode_box_autoadd_f_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as double;
+  }
+
+  @protected
+  FieldValueFilter dco_decode_box_autoadd_field_value_filter(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_field_value_filter(raw);
   }
 
   @protected
@@ -1200,11 +1306,25 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  TopicAnalysisOptions dco_decode_box_autoadd_topic_analysis_options(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_topic_analysis_options(raw);
+  }
+
+  @protected
   TopicAnalysisReport dco_decode_box_autoadd_topic_analysis_report(
     dynamic raw,
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_topic_analysis_report(raw);
+  }
+
+  @protected
+  ValueFilterResult dco_decode_box_autoadd_value_filter_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_value_filter_result(raw);
   }
 
   @protected
@@ -1286,6 +1406,28 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  DuplicateAnalysisResult dco_decode_duplicate_analysis_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return DuplicateAnalysisResult(
+      scope: dco_decode_duplicate_detection_scope(arr[0]),
+      totalMessages: dco_decode_i_64(arr[1]),
+      uniqueMessages: dco_decode_i_64(arr[2]),
+      duplicateMessages: dco_decode_i_64(arr[3]),
+      duplicateRate: dco_decode_f_64(arr[4]),
+      topDuplicates: dco_decode_list_top_duplicate_occurrence(arr[5]),
+    );
+  }
+
+  @protected
+  DuplicateDetectionScope dco_decode_duplicate_detection_scope(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DuplicateDetectionScope.values[raw as int];
+  }
+
+  @protected
   double dco_decode_f_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as double;
@@ -1311,13 +1453,26 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   FieldOccurrence dco_decode_field_occurrence(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
     return FieldOccurrence(
       fieldName: dco_decode_String(arr[0]),
       count: dco_decode_i_64(arr[1]),
       percentage: dco_decode_f_64(arr[2]),
       topValues: dco_decode_list_field_value_occurrence(arr[3]),
+      valuesCapped: dco_decode_bool(arr[4]),
+    );
+  }
+
+  @protected
+  FieldValueFilter dco_decode_field_value_filter(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return FieldValueFilter(
+      fieldPath: dco_decode_String(arr[0]),
+      value: dco_decode_String(arr[1]),
     );
   }
 
@@ -1325,12 +1480,13 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   FieldValueOccurrence dco_decode_field_value_occurrence(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
     return FieldValueOccurrence(
       value: dco_decode_String(arr[0]),
       count: dco_decode_i_64(arr[1]),
       percentage: dco_decode_f_64(arr[2]),
+      truncated: dco_decode_bool(arr[3]),
     );
   }
 
@@ -1338,6 +1494,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   FilterType dco_decode_filter_type(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return FilterType.values[raw as int];
+  }
+
+  @protected
+  HourBucket dco_decode_hour_bucket(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return HourBucket(
+      epochHour: dco_decode_i_64(arr[0]),
+      count: dco_decode_i_64(arr[1]),
+    );
   }
 
   @protected
@@ -1458,6 +1626,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  List<HourBucket> dco_decode_list_hour_bucket(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_hour_bucket).toList();
+  }
+
+  @protected
   List<HourlyCount> dco_decode_list_hourly_count(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_hourly_count).toList();
@@ -1515,6 +1689,16 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  List<TopDuplicateOccurrence> dco_decode_list_top_duplicate_occurrence(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_top_duplicate_occurrence)
+        .toList();
   }
 
   @protected
@@ -1583,9 +1767,35 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  DuplicateAnalysisResult? dco_decode_opt_box_autoadd_duplicate_analysis_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null
+        ? null
+        : dco_decode_box_autoadd_duplicate_analysis_result(raw);
+  }
+
+  @protected
+  DuplicateDetectionScope? dco_decode_opt_box_autoadd_duplicate_detection_scope(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null
+        ? null
+        : dco_decode_box_autoadd_duplicate_detection_scope(raw);
+  }
+
+  @protected
   double? dco_decode_opt_box_autoadd_f_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_f_64(raw);
+  }
+
+  @protected
+  FieldValueFilter? dco_decode_opt_box_autoadd_field_value_filter(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_field_value_filter(raw);
   }
 
   @protected
@@ -1620,6 +1830,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     return raw == null
         ? null
         : dco_decode_box_autoadd_topic_analysis_report(raw);
+  }
+
+  @protected
+  ValueFilterResult? dco_decode_opt_box_autoadd_value_filter_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_value_filter_result(raw);
   }
 
   @protected
@@ -1713,6 +1931,39 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  TopDuplicateOccurrence dco_decode_top_duplicate_occurrence(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return TopDuplicateOccurrence(
+      key: dco_decode_opt_String(arr[0]),
+      payloadPreview: dco_decode_String(arr[1]),
+      count: dco_decode_i_64(arr[2]),
+      percentage: dco_decode_f_64(arr[3]),
+      samplePartition: dco_decode_i_32(arr[4]),
+      sampleOffset: dco_decode_i_64(arr[5]),
+      sampleTimestampMs: dco_decode_i_64(arr[6]),
+    );
+  }
+
+  @protected
+  TopicAnalysisOptions dco_decode_topic_analysis_options(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return TopicAnalysisOptions(
+      maxMessages: dco_decode_opt_box_autoadd_i_64(arr[0]),
+      sampleFromLatest: dco_decode_bool(arr[1]),
+      valueFilter: dco_decode_opt_box_autoadd_field_value_filter(arr[2]),
+      duplicateScope: dco_decode_opt_box_autoadd_duplicate_detection_scope(
+        arr[3],
+      ),
+    );
+  }
+
+  @protected
   TopicAnalysisProgress dco_decode_topic_analysis_progress(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -1734,8 +1985,8 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   TopicAnalysisReport dco_decode_topic_analysis_report(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 19)
-      throw Exception('unexpected arr length: expect 19 but see ${arr.length}');
+    if (arr.length != 25)
+      throw Exception('unexpected arr length: expect 25 but see ${arr.length}');
     return TopicAnalysisReport(
       topic: dco_decode_String(arr[0]),
       totalMessages: dco_decode_i_64(arr[1]),
@@ -1758,6 +2009,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       sizePercentilesEstimated: dco_decode_bool(arr[16]),
       estimatedDistinctKeys: dco_decode_i_64(arr[17]),
       keyCardinalityCapped: dco_decode_bool(arr[18]),
+      hourlyTimeline: dco_decode_list_hour_bucket(arr[19]),
+      scanReferenceTimeMs: dco_decode_opt_box_autoadd_i_64(arr[20]),
+      completeFromMs: dco_decode_opt_box_autoadd_i_64(arr[21]),
+      timelineOutsideCount: dco_decode_i_64(arr[22]),
+      valueFilterResult: dco_decode_opt_box_autoadd_value_filter_result(
+        arr[23],
+      ),
+      duplicateAnalysisResult:
+          dco_decode_opt_box_autoadd_duplicate_analysis_result(arr[24]),
     );
   }
 
@@ -1856,6 +2116,21 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  ValueFilterResult dco_decode_value_filter_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return ValueFilterResult(
+      fieldPath: dco_decode_String(arr[0]),
+      value: dco_decode_String(arr[1]),
+      messagesWithField: dco_decode_i_64(arr[2]),
+      matchedMessages: dco_decode_i_64(arr[3]),
+      matchedTimeline: dco_decode_list_hour_bucket(arr[4]),
+    );
+  }
+
+  @protected
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_String(deserializer);
@@ -1931,9 +2206,33 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  DuplicateAnalysisResult sse_decode_box_autoadd_duplicate_analysis_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_duplicate_analysis_result(deserializer));
+  }
+
+  @protected
+  DuplicateDetectionScope sse_decode_box_autoadd_duplicate_detection_scope(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_duplicate_detection_scope(deserializer));
+  }
+
+  @protected
   double sse_decode_box_autoadd_f_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_f_64(deserializer));
+  }
+
+  @protected
+  FieldValueFilter sse_decode_box_autoadd_field_value_filter(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_field_value_filter(deserializer));
   }
 
   @protected
@@ -1965,11 +2264,27 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  TopicAnalysisOptions sse_decode_box_autoadd_topic_analysis_options(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_topic_analysis_options(deserializer));
+  }
+
+  @protected
   TopicAnalysisReport sse_decode_box_autoadd_topic_analysis_report(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_topic_analysis_report(deserializer));
+  }
+
+  @protected
+  ValueFilterResult sse_decode_box_autoadd_value_filter_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_value_filter_result(deserializer));
   }
 
   @protected
@@ -2077,6 +2392,38 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  DuplicateAnalysisResult sse_decode_duplicate_analysis_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_scope = sse_decode_duplicate_detection_scope(deserializer);
+    var var_totalMessages = sse_decode_i_64(deserializer);
+    var var_uniqueMessages = sse_decode_i_64(deserializer);
+    var var_duplicateMessages = sse_decode_i_64(deserializer);
+    var var_duplicateRate = sse_decode_f_64(deserializer);
+    var var_topDuplicates = sse_decode_list_top_duplicate_occurrence(
+      deserializer,
+    );
+    return DuplicateAnalysisResult(
+      scope: var_scope,
+      totalMessages: var_totalMessages,
+      uniqueMessages: var_uniqueMessages,
+      duplicateMessages: var_duplicateMessages,
+      duplicateRate: var_duplicateRate,
+      topDuplicates: var_topDuplicates,
+    );
+  }
+
+  @protected
+  DuplicateDetectionScope sse_decode_duplicate_detection_scope(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return DuplicateDetectionScope.values[inner];
+  }
+
+  @protected
   double sse_decode_f_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getFloat64();
@@ -2108,12 +2455,22 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     var var_count = sse_decode_i_64(deserializer);
     var var_percentage = sse_decode_f_64(deserializer);
     var var_topValues = sse_decode_list_field_value_occurrence(deserializer);
+    var var_valuesCapped = sse_decode_bool(deserializer);
     return FieldOccurrence(
       fieldName: var_fieldName,
       count: var_count,
       percentage: var_percentage,
       topValues: var_topValues,
+      valuesCapped: var_valuesCapped,
     );
+  }
+
+  @protected
+  FieldValueFilter sse_decode_field_value_filter(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_fieldPath = sse_decode_String(deserializer);
+    var var_value = sse_decode_String(deserializer);
+    return FieldValueFilter(fieldPath: var_fieldPath, value: var_value);
   }
 
   @protected
@@ -2124,10 +2481,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     var var_value = sse_decode_String(deserializer);
     var var_count = sse_decode_i_64(deserializer);
     var var_percentage = sse_decode_f_64(deserializer);
+    var var_truncated = sse_decode_bool(deserializer);
     return FieldValueOccurrence(
       value: var_value,
       count: var_count,
       percentage: var_percentage,
+      truncated: var_truncated,
     );
   }
 
@@ -2136,6 +2495,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
     return FilterType.values[inner];
+  }
+
+  @protected
+  HourBucket sse_decode_hour_bucket(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_epochHour = sse_decode_i_64(deserializer);
+    var var_count = sse_decode_i_64(deserializer);
+    return HourBucket(epochHour: var_epochHour, count: var_count);
   }
 
   @protected
@@ -2306,6 +2673,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  List<HourBucket> sse_decode_list_hour_bucket(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HourBucket>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_hour_bucket(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<HourlyCount> sse_decode_list_hourly_count(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -2414,6 +2793,20 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  List<TopDuplicateOccurrence> sse_decode_list_top_duplicate_occurrence(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TopDuplicateOccurrence>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_top_duplicate_occurrence(deserializer));
+    }
+    return ans_;
   }
 
   @protected
@@ -2527,11 +2920,50 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  DuplicateAnalysisResult? sse_decode_opt_box_autoadd_duplicate_analysis_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_duplicate_analysis_result(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  DuplicateDetectionScope? sse_decode_opt_box_autoadd_duplicate_detection_scope(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_duplicate_detection_scope(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_f_64(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  FieldValueFilter? sse_decode_opt_box_autoadd_field_value_filter(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_field_value_filter(deserializer));
     } else {
       return null;
     }
@@ -2593,6 +3025,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_topic_analysis_report(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  ValueFilterResult? sse_decode_opt_box_autoadd_value_filter_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_value_filter_result(deserializer));
     } else {
       return null;
     }
@@ -2705,6 +3150,49 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  TopDuplicateOccurrence sse_decode_top_duplicate_occurrence(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_key = sse_decode_opt_String(deserializer);
+    var var_payloadPreview = sse_decode_String(deserializer);
+    var var_count = sse_decode_i_64(deserializer);
+    var var_percentage = sse_decode_f_64(deserializer);
+    var var_samplePartition = sse_decode_i_32(deserializer);
+    var var_sampleOffset = sse_decode_i_64(deserializer);
+    var var_sampleTimestampMs = sse_decode_i_64(deserializer);
+    return TopDuplicateOccurrence(
+      key: var_key,
+      payloadPreview: var_payloadPreview,
+      count: var_count,
+      percentage: var_percentage,
+      samplePartition: var_samplePartition,
+      sampleOffset: var_sampleOffset,
+      sampleTimestampMs: var_sampleTimestampMs,
+    );
+  }
+
+  @protected
+  TopicAnalysisOptions sse_decode_topic_analysis_options(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_maxMessages = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_sampleFromLatest = sse_decode_bool(deserializer);
+    var var_valueFilter = sse_decode_opt_box_autoadd_field_value_filter(
+      deserializer,
+    );
+    var var_duplicateScope =
+        sse_decode_opt_box_autoadd_duplicate_detection_scope(deserializer);
+    return TopicAnalysisOptions(
+      maxMessages: var_maxMessages,
+      sampleFromLatest: var_sampleFromLatest,
+      valueFilter: var_valueFilter,
+      duplicateScope: var_duplicateScope,
+    );
+  }
+
+  @protected
   TopicAnalysisProgress sse_decode_topic_analysis_progress(
     SseDeserializer deserializer,
   ) {
@@ -2758,6 +3246,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     var var_sizePercentilesEstimated = sse_decode_bool(deserializer);
     var var_estimatedDistinctKeys = sse_decode_i_64(deserializer);
     var var_keyCardinalityCapped = sse_decode_bool(deserializer);
+    var var_hourlyTimeline = sse_decode_list_hour_bucket(deserializer);
+    var var_scanReferenceTimeMs = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_completeFromMs = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_timelineOutsideCount = sse_decode_i_64(deserializer);
+    var var_valueFilterResult = sse_decode_opt_box_autoadd_value_filter_result(
+      deserializer,
+    );
+    var var_duplicateAnalysisResult =
+        sse_decode_opt_box_autoadd_duplicate_analysis_result(deserializer);
     return TopicAnalysisReport(
       topic: var_topic,
       totalMessages: var_totalMessages,
@@ -2778,6 +3275,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       sizePercentilesEstimated: var_sizePercentilesEstimated,
       estimatedDistinctKeys: var_estimatedDistinctKeys,
       keyCardinalityCapped: var_keyCardinalityCapped,
+      hourlyTimeline: var_hourlyTimeline,
+      scanReferenceTimeMs: var_scanReferenceTimeMs,
+      completeFromMs: var_completeFromMs,
+      timelineOutsideCount: var_timelineOutsideCount,
+      valueFilterResult: var_valueFilterResult,
+      duplicateAnalysisResult: var_duplicateAnalysisResult,
     );
   }
 
@@ -2885,6 +3388,25 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  ValueFilterResult sse_decode_value_filter_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_fieldPath = sse_decode_String(deserializer);
+    var var_value = sse_decode_String(deserializer);
+    var var_messagesWithField = sse_decode_i_64(deserializer);
+    var var_matchedMessages = sse_decode_i_64(deserializer);
+    var var_matchedTimeline = sse_decode_list_hour_bucket(deserializer);
+    return ValueFilterResult(
+      fieldPath: var_fieldPath,
+      value: var_value,
+      messagesWithField: var_messagesWithField,
+      matchedMessages: var_matchedMessages,
+      matchedTimeline: var_matchedTimeline,
+    );
+  }
+
+  @protected
   void sse_encode_AnyhowException(
     AnyhowException self,
     SseSerializer serializer,
@@ -2981,9 +3503,36 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_box_autoadd_duplicate_analysis_result(
+    DuplicateAnalysisResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_duplicate_analysis_result(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_duplicate_detection_scope(
+    DuplicateDetectionScope self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_duplicate_detection_scope(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_f_64(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_field_value_filter(
+    FieldValueFilter self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_field_value_filter(self, serializer);
   }
 
   @protected
@@ -3020,12 +3569,30 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_box_autoadd_topic_analysis_options(
+    TopicAnalysisOptions self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_topic_analysis_options(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_topic_analysis_report(
     TopicAnalysisReport self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_topic_analysis_report(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_value_filter_result(
+    ValueFilterResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_value_filter_result(self, serializer);
   }
 
   @protected
@@ -3099,6 +3666,29 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_duplicate_analysis_result(
+    DuplicateAnalysisResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_duplicate_detection_scope(self.scope, serializer);
+    sse_encode_i_64(self.totalMessages, serializer);
+    sse_encode_i_64(self.uniqueMessages, serializer);
+    sse_encode_i_64(self.duplicateMessages, serializer);
+    sse_encode_f_64(self.duplicateRate, serializer);
+    sse_encode_list_top_duplicate_occurrence(self.topDuplicates, serializer);
+  }
+
+  @protected
+  void sse_encode_duplicate_detection_scope(
+    DuplicateDetectionScope self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_f_64(double self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putFloat64(self);
@@ -3125,6 +3715,17 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_i_64(self.count, serializer);
     sse_encode_f_64(self.percentage, serializer);
     sse_encode_list_field_value_occurrence(self.topValues, serializer);
+    sse_encode_bool(self.valuesCapped, serializer);
+  }
+
+  @protected
+  void sse_encode_field_value_filter(
+    FieldValueFilter self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.fieldPath, serializer);
+    sse_encode_String(self.value, serializer);
   }
 
   @protected
@@ -3136,12 +3737,20 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_String(self.value, serializer);
     sse_encode_i_64(self.count, serializer);
     sse_encode_f_64(self.percentage, serializer);
+    sse_encode_bool(self.truncated, serializer);
   }
 
   @protected
   void sse_encode_filter_type(FilterType self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_hour_bucket(HourBucket self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.epochHour, serializer);
+    sse_encode_i_64(self.count, serializer);
   }
 
   @protected
@@ -3275,6 +3884,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_list_hour_bucket(
+    List<HourBucket> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_hour_bucket(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_hourly_count(
     List<HourlyCount> self,
     SseSerializer serializer,
@@ -3391,6 +4012,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_list_top_duplicate_occurrence(
+    List<TopDuplicateOccurrence> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_top_duplicate_occurrence(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_topic_metadata(
     List<TopicMetadata> self,
     SseSerializer serializer,
@@ -3478,12 +4111,51 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_duplicate_analysis_result(
+    DuplicateAnalysisResult? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_duplicate_analysis_result(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_duplicate_detection_scope(
+    DuplicateDetectionScope? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_duplicate_detection_scope(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_f_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_field_value_filter(
+    FieldValueFilter? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_field_value_filter(self, serializer);
     }
   }
 
@@ -3546,6 +4218,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_topic_analysis_report(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_value_filter_result(
+    ValueFilterResult? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_value_filter_result(self, serializer);
     }
   }
 
@@ -3639,6 +4324,36 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_top_duplicate_occurrence(
+    TopDuplicateOccurrence self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_String(self.key, serializer);
+    sse_encode_String(self.payloadPreview, serializer);
+    sse_encode_i_64(self.count, serializer);
+    sse_encode_f_64(self.percentage, serializer);
+    sse_encode_i_32(self.samplePartition, serializer);
+    sse_encode_i_64(self.sampleOffset, serializer);
+    sse_encode_i_64(self.sampleTimestampMs, serializer);
+  }
+
+  @protected
+  void sse_encode_topic_analysis_options(
+    TopicAnalysisOptions self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_box_autoadd_i_64(self.maxMessages, serializer);
+    sse_encode_bool(self.sampleFromLatest, serializer);
+    sse_encode_opt_box_autoadd_field_value_filter(self.valueFilter, serializer);
+    sse_encode_opt_box_autoadd_duplicate_detection_scope(
+      self.duplicateScope,
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_topic_analysis_progress(
     TopicAnalysisProgress self,
     SseSerializer serializer,
@@ -3685,6 +4400,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_bool(self.sizePercentilesEstimated, serializer);
     sse_encode_i_64(self.estimatedDistinctKeys, serializer);
     sse_encode_bool(self.keyCardinalityCapped, serializer);
+    sse_encode_list_hour_bucket(self.hourlyTimeline, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.scanReferenceTimeMs, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.completeFromMs, serializer);
+    sse_encode_i_64(self.timelineOutsideCount, serializer);
+    sse_encode_opt_box_autoadd_value_filter_result(
+      self.valueFilterResult,
+      serializer,
+    );
+    sse_encode_opt_box_autoadd_duplicate_analysis_result(
+      self.duplicateAnalysisResult,
+      serializer,
+    );
   }
 
   @protected
@@ -3765,6 +4492,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   void sse_encode_usize(BigInt self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putBigUint64(self);
+  }
+
+  @protected
+  void sse_encode_value_filter_result(
+    ValueFilterResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.fieldPath, serializer);
+    sse_encode_String(self.value, serializer);
+    sse_encode_i_64(self.messagesWithField, serializer);
+    sse_encode_i_64(self.matchedMessages, serializer);
+    sse_encode_list_hour_bucket(self.matchedTimeline, serializer);
   }
 }
 

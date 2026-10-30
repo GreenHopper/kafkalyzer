@@ -37,6 +37,11 @@ void main() {
       sizePercentilesEstimated: false,
       estimatedDistinctKeys: 0,
       keyCardinalityCapped: false,
+      hourlyTimeline: [],
+      scanReferenceTimeMs: null,
+      completeFromMs: null,
+      timelineOutsideCount: 0,
+      valueFilterResult: null,
     );
 
     await tester.pumpWidget(
@@ -60,6 +65,7 @@ void main() {
     bool estimated = false,
     int distinctKeys = 0,
     bool capped = false,
+    DuplicateAnalysisResult? duplicateAnalysisResult,
   }) => TopicAnalysisReport(
     topic: 'test-topic',
     totalMessages: 1000,
@@ -80,6 +86,12 @@ void main() {
     sizePercentilesEstimated: estimated,
     estimatedDistinctKeys: distinctKeys,
     keyCardinalityCapped: capped,
+    hourlyTimeline: const [],
+    scanReferenceTimeMs: null,
+    completeFromMs: null,
+    timelineOutsideCount: 0,
+    valueFilterResult: null,
+    duplicateAnalysisResult: duplicateAnalysisResult,
   );
 
   Future<void> pump(WidgetTester tester, TopicAnalysisReport report) async {
@@ -132,4 +144,27 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'renders duplicate messages card when duplicateAnalysisResult is present',
+    (WidgetTester tester) async {
+      await pump(
+        tester,
+        reportWith(
+          duplicateAnalysisResult: const DuplicateAnalysisResult(
+            scope: DuplicateDetectionScope.payloadOnly,
+            totalMessages: 1000,
+            uniqueMessages: 850,
+            duplicateMessages: 150,
+            duplicateRate: 15.0,
+            topDuplicates: [],
+          ),
+        ),
+      );
+
+      expect(find.text('Duplicate Messages'), findsOneWidget);
+      expect(find.text('150 (15.0%)'), findsOneWidget);
+      expect(find.textContaining('850 unique'), findsOneWidget);
+    },
+  );
 }

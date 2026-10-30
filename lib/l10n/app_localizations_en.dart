@@ -2048,4 +2048,278 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return 'Rate: $rate | Delta: $delta over $interval | Status: $status';
   }
+
+  @override
+  String get recentProductionTitle => 'Recent Production';
+
+  @override
+  String get recentProductionSubtitle => 'Message volume over recent hours';
+
+  @override
+  String get window6h => '6h';
+
+  @override
+  String get window12h => '12h';
+
+  @override
+  String get window24h => '24h';
+
+  @override
+  String get window48h => '48h';
+
+  @override
+  String get window72h => '72h';
+
+  @override
+  String get timelineNotAvailableForReport =>
+      'Timeline is not available for this report.';
+
+  @override
+  String timeZoneLabel(String timeZone) {
+    return 'Local time ($timeZone)';
+  }
+
+  @override
+  String get unusualIncreaseBadge => 'Unusual increase';
+
+  @override
+  String baselineLabel(String baseline) {
+    return 'Baseline: $baseline';
+  }
+
+  @override
+  String get noComparisonData => 'No comparison data';
+
+  @override
+  String uncoveredHourHint(int count) {
+    return 'Before coverage start ($count messages)';
+  }
+
+  @override
+  String get currentHourIncomplete => 'Incomplete hour';
+
+  @override
+  String coverageHint(int hours) {
+    return 'Scan covers the last $hours hours of this window.';
+  }
+
+  @override
+  String hourlyTooltipDetails(String count, String delta) {
+    return '$count messages ($delta)';
+  }
+
+  @override
+  String hourlyTooltipMatches(String matches, String share) {
+    return '$matches matching ($share%)';
+  }
+
+  @override
+  String get dailyProductionTitle => 'Daily Production Distribution';
+
+  @override
+  String get dailyProductionSubtitle => 'Messages per calendar day';
+
+  @override
+  String get partialCoverageBadge => 'Partial coverage';
+
+  @override
+  String dailyMatchesShare(String matches, String share) {
+    return '$matches ($share%)';
+  }
+
+  @override
+  String get valueFilterButton => 'Filter by Field Value';
+
+  @override
+  String valueFilterActive(String path, String value) {
+    return 'Filter: $path = $value';
+  }
+
+  @override
+  String get valueFilterClear => 'Clear filter';
+
+  @override
+  String get valueFilterDialogTitle => 'Filter by Field Value';
+
+  @override
+  String get valueFilterDialogFieldPath =>
+      'Field path (e.g. attributes.region)';
+
+  @override
+  String get valueFilterDialogValue => 'Exact value';
+
+  @override
+  String get valueFilterApply => 'Apply Filter';
+
+  @override
+  String get valueFilterValidationEmpty => 'Field path cannot be empty';
+
+  @override
+  String get valueFilterMatchCardTitle => 'Filter Matches';
+
+  @override
+  String valueFilterMatchCount(String count) {
+    return '$count matches';
+  }
+
+  @override
+  String valueFilterShareOfTotal(String percent) {
+    return '$percent% of all scanned messages';
+  }
+
+  @override
+  String valueFilterShareOfField(String percent) {
+    return '$percent% of messages with this field';
+  }
+
+  @override
+  String valueFilterRemainder(String remainder) {
+    return '$remainder non-matching messages';
+  }
+
+  @override
+  String get drillDownDialogTitle => 'Field Value Details';
+
+  @override
+  String drillDownFieldPath(String path) {
+    return 'Field: $path';
+  }
+
+  @override
+  String drillDownValue(String value) {
+    return 'Value: $value';
+  }
+
+  @override
+  String drillDownCount(String count) {
+    return 'Count: $count';
+  }
+
+  @override
+  String drillDownShareOfAll(String percent) {
+    return 'Share of all messages: $percent%';
+  }
+
+  @override
+  String drillDownShareOfField(String percent) {
+    return 'Share of field occurrences: $percent%';
+  }
+
+  @override
+  String get drillDownRescanButton => 'Re-scan with this filter';
+
+  @override
+  String get drillDownApproximateBadge => 'Approximate (values capped)';
+
+  @override
+  String get drillDownTruncatedNotice =>
+      'Value was truncated (>80 chars). Re-scan cannot use truncated values.';
+
+  @override
+  String get drillDownRescanUnavailableImported =>
+      'Re-scan is not available for imported reports.';
+
+  @override
+  String get duplicateScopeLabel => 'Duplicate Scope';
+
+  @override
+  String get duplicateScopePayloadOnly => 'Payload (Value)';
+
+  @override
+  String get duplicateScopeKeyAndPayload => 'Key + Payload';
+
+  @override
+  String get duplicateMessagesCardTitle => 'Duplicate Messages';
+
+  @override
+  String duplicateMessagesRate(String rate) {
+    return '$rate% of messages';
+  }
+
+  @override
+  String duplicateMessagesSubtitle(String unique, String scope) {
+    return '$unique unique • $scope';
+  }
+
+  @override
+  String get topDuplicatesTitle => 'Top Duplicated Messages';
+
+  @override
+  String get topDuplicatesSubtitle =>
+      'Showing up to 20 most frequent duplicated messages';
+
+  @override
+  String get noDuplicatesDetected =>
+      'No duplicate messages detected in this scan.';
+
+  @override
+  String get duplicateAnalysisUnavailable =>
+      'Duplicate analysis is not available for this report.';
+
+  @override
+  String sampleLocation(int partition, int offset) {
+    return 'Partition $partition, Offset $offset';
+  }
+
+  @override
+  String get copyPayload => 'Copy payload';
+
+  @override
+  String get copyKey => 'Copy key';
+
+  @override
+  String get copiedPayload => 'Payload copied to clipboard';
+
+  @override
+  String get copiedKey => 'Key copied to clipboard';
+
+  @override
+  String get duplicateRankHeader => '#';
+
+  @override
+  String get duplicateCountHeader => 'Occurrences';
+
+  @override
+  String get duplicateShareHeader => 'Share';
+
+  @override
+  String get duplicateKeyHeader => 'Key';
+
+  @override
+  String get duplicatePayloadPreviewHeader => 'Payload Preview';
+
+  @override
+  String get duplicateSampleCoordinatesHeader => 'Sample Location';
+
+  @override
+  String get duplicateDetailsTitle => 'Duplicate Message Details';
+
+  @override
+  String duplicateDetailsSubtitle(int rank, String count, String share) {
+    return 'Rank #$rank • $count occurrences ($share%)';
+  }
+
+  @override
+  String get openInMessages => 'Open in Messages';
+
+  @override
+  String get filterDuplicatesInMessages => 'Filter in Messages';
+
+  @override
+  String get jumpToSampleOffset => 'Jump to Sample';
+
+  @override
+  String get duplicateCoordinates => 'Coordinates';
+
+  @override
+  String get duplicateTimestamp => 'Timestamp';
+
+  @override
+  String get duplicateKey => 'Key';
+
+  @override
+  String get duplicatePayload => 'Decoded Payload';
+
+  @override
+  String get inspectDuplicateTooltip => 'View duplicate details';
 }

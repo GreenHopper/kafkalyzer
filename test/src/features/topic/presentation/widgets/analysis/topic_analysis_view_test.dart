@@ -63,6 +63,11 @@ TopicAnalysisReportFile _file(String topic, int messages) =>
         sizePercentilesEstimated: false,
         estimatedDistinctKeys: 0,
         keyCardinalityCapped: false,
+        hourlyTimeline: const [],
+        scanReferenceTimeMs: null,
+        completeFromMs: null,
+        timelineOutsideCount: 0,
+        valueFilterResult: null,
       ),
     );
 
@@ -102,8 +107,14 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
         count: 900,
         percentage: 90.0,
         topValues: [
-          FieldValueOccurrence(value: '1', count: 10, percentage: 1.11),
+          FieldValueOccurrence(
+            value: '1',
+            count: 10,
+            percentage: 1.11,
+            truncated: false,
+          ),
         ],
+        valuesCapped: false,
       ),
     ],
     scanDurationMs: 12345,
@@ -111,6 +122,11 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
     sizePercentilesEstimated: false,
     estimatedDistinctKeys: 0,
     keyCardinalityCapped: false,
+    hourlyTimeline: const [],
+    scanReferenceTimeMs: null,
+    completeFromMs: null,
+    timelineOutsideCount: 0,
+    valueFilterResult: null,
   ),
 );
 
@@ -374,5 +390,228 @@ void main() {
       );
       expect(find.text('Partition Health & Replication'), findsOneWidget);
     });
+
+    testWidgets(
+      'renders timeline and daily production sections for populated report',
+      (tester) async {
+        useBigTestSurface(tester);
+        final refMs = DateTime.utc(2026, 10, 30, 12).millisecondsSinceEpoch;
+        final refHour = (refMs / 3600000).floor();
+
+        final reportWithTimeline = TopicAnalysisReportFile(
+          exportedAt: DateTime.utc(2026, 10, 30, 12),
+          clusterName: 'prod-eu-1',
+          report: TopicAnalysisReport(
+            topic: 'orders',
+            totalMessages: 500,
+            totalBytes: 10000,
+            minMessageSize: 10,
+            maxMessageSize: 50,
+            avgMessageSize: 20.0,
+            tombstonesCount: 0,
+            isCompacted: false,
+            nullKeysCount: 0,
+            partitionStats: const [],
+            hourlyDistribution: const [],
+            topKeys: const [],
+            contentTypeDistribution: const [],
+            fieldFrequencies: const [],
+            scanDurationMs: 1000,
+            messageSizePercentiles: null,
+            sizePercentilesEstimated: false,
+            estimatedDistinctKeys: 0,
+            keyCardinalityCapped: false,
+            hourlyTimeline: [HourBucket(epochHour: refHour, count: 500)],
+            scanReferenceTimeMs: refMs,
+            completeFromMs: null,
+            timelineOutsideCount: 0,
+            valueFilterResult: null,
+          ),
+        );
+
+        final fake = FakeExportService()..importResult = reportWithTimeline;
+        final controller = TopicAnalysisController(exportService: fake);
+        await tester.pumpWidget(buildView(controller));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Import Analysis Report'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Recent Production'), findsOneWidget);
+        expect(find.text('Daily Production Distribution'), findsOneWidget);
+        expect(find.text('Filter Matches'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'renders ValueFilterMatchCard when filter matches are present',
+      (tester) async {
+        useBigTestSurface(tester);
+        final refMs = DateTime.utc(2026, 10, 30, 12).millisecondsSinceEpoch;
+        final refHour = (refMs / 3600000).floor();
+
+        final filteredReport = TopicAnalysisReportFile(
+          exportedAt: DateTime.utc(2026, 10, 30, 12),
+          clusterName: 'prod-eu-1',
+          report: TopicAnalysisReport(
+            topic: 'orders',
+            totalMessages: 1000,
+            totalBytes: 20000,
+            minMessageSize: 10,
+            maxMessageSize: 50,
+            avgMessageSize: 20.0,
+            tombstonesCount: 0,
+            isCompacted: false,
+            nullKeysCount: 0,
+            partitionStats: const [],
+            hourlyDistribution: const [],
+            topKeys: const [],
+            contentTypeDistribution: const [],
+            fieldFrequencies: const [],
+            scanDurationMs: 1000,
+            messageSizePercentiles: null,
+            sizePercentilesEstimated: false,
+            estimatedDistinctKeys: 0,
+            keyCardinalityCapped: false,
+            hourlyTimeline: [HourBucket(epochHour: refHour, count: 1000)],
+            scanReferenceTimeMs: refMs,
+            completeFromMs: null,
+            timelineOutsideCount: 0,
+            valueFilterResult: ValueFilterResult(
+              fieldPath: 'attributes.region',
+              value: 'EU',
+              messagesWithField: 400,
+              matchedMessages: 100,
+              matchedTimeline: [HourBucket(epochHour: refHour, count: 100)],
+            ),
+          ),
+        );
+
+        final fake = FakeExportService()..importResult = filteredReport;
+        final controller = TopicAnalysisController(exportService: fake);
+        await tester.pumpWidget(buildView(controller));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Import Analysis Report'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Filter Matches'), findsOneWidget);
+        expect(find.text('attributes.region = "EU"'), findsOneWidget);
+        expect(find.text('100 matches'), findsOneWidget);
+      },
+    );
+
+    testWidgets('imported v1 report displays timeline not available notice', (
+      tester,
+    ) async {
+      useBigTestSurface(tester);
+      final v1Report = TopicAnalysisReportFile(
+        version: 1,
+        exportedAt: DateTime.utc(2026, 8, 1),
+        clusterName: 'legacy',
+        report: TopicAnalysisReport(
+          topic: 'orders',
+          totalMessages: 100,
+          totalBytes: 2000,
+          minMessageSize: 10,
+          maxMessageSize: 50,
+          avgMessageSize: 20.0,
+          tombstonesCount: 0,
+          isCompacted: false,
+          nullKeysCount: 0,
+          partitionStats: const [],
+          hourlyDistribution: const [],
+          topKeys: const [],
+          contentTypeDistribution: const [],
+          fieldFrequencies: const [],
+          scanDurationMs: 500,
+          messageSizePercentiles: null,
+          sizePercentilesEstimated: false,
+          estimatedDistinctKeys: 0,
+          keyCardinalityCapped: false,
+          hourlyTimeline: const [],
+          scanReferenceTimeMs: null,
+          completeFromMs: null,
+          timelineOutsideCount: 0,
+          valueFilterResult: null,
+        ),
+      );
+
+      final fake = FakeExportService()..importResult = v1Report;
+      final controller = TopicAnalysisController(exportService: fake);
+      await tester.pumpWidget(buildView(controller));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Import Analysis Report'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Timeline is not available for this report.'),
+        findsNWidgets(2),
+      );
+    });
+
+    testWidgets(
+      'renders duplicate analysis section when duplicateAnalysisResult is present',
+      (tester) async {
+        useBigTestSurface(tester);
+        final reportWithDup = TopicAnalysisReportFile(
+          version: 3,
+          exportedAt: DateTime.utc(2026, 8, 1),
+          clusterName: 'test-cluster',
+          report: TopicAnalysisReport(
+            topic: 'orders',
+            totalMessages: 100,
+            totalBytes: 2000,
+            minMessageSize: 10,
+            maxMessageSize: 50,
+            avgMessageSize: 20.0,
+            tombstonesCount: 0,
+            isCompacted: false,
+            nullKeysCount: 0,
+            partitionStats: const [],
+            hourlyDistribution: const [],
+            topKeys: const [],
+            contentTypeDistribution: const [],
+            fieldFrequencies: const [],
+            scanDurationMs: 500,
+            messageSizePercentiles: null,
+            sizePercentilesEstimated: false,
+            estimatedDistinctKeys: 0,
+            keyCardinalityCapped: false,
+            hourlyTimeline: const [],
+            scanReferenceTimeMs: null,
+            completeFromMs: null,
+            timelineOutsideCount: 0,
+            valueFilterResult: null,
+            duplicateAnalysisResult: const DuplicateAnalysisResult(
+              scope: DuplicateDetectionScope.payloadOnly,
+              totalMessages: 100,
+              uniqueMessages: 75,
+              duplicateMessages: 25,
+              duplicateRate: 25.0,
+              topDuplicates: [
+                TopDuplicateOccurrence(
+                  count: 25,
+                  percentage: 25.0,
+                  key: 'k-dup',
+                  payloadPreview: '{"dup": true}',
+                  samplePartition: 0,
+                  sampleOffset: 12,
+                  sampleTimestampMs: 1730000000000,
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final fake = FakeExportService()..importResult = reportWithDup;
+        final controller = TopicAnalysisController(exportService: fake);
+        await tester.pumpWidget(buildView(controller));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Import Analysis Report'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Top Duplicated Messages'), findsOneWidget);
+        expect(find.text('{"dup": true}'), findsOneWidget);
+      },
+    );
   });
 }

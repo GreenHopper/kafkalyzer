@@ -1,6 +1,8 @@
+import 'dart:math' as math;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/topic/models/duplicate_navigation_target.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
@@ -67,6 +69,62 @@ class _TopicDetailViewState extends State<TopicDetailView>
       setState(() => _viewMode = TopicViewMode.messages);
     }
     _messagesViewKey.currentState?.setActiveView('schema');
+  }
+
+  void _handleDuplicateNavigation(DuplicateNavigationTarget target) {
+    setState(() {
+      _viewMode = TopicViewMode.messages;
+      _fastTraceEnabled = false;
+
+      if (target.filterOccurrences) {
+        // Clear partition constraint to scan all partitions
+        _partitionController.clear();
+
+        // Configure search filter
+        if (target.key != null && target.key!.isNotEmpty) {
+          _filterController.text = target.key!;
+          _searchScope = SearchScope.key;
+          _filterType = FilterType.exact;
+        } else {
+          final preview = target.payloadPreview.trim();
+          _filterController.text = preview.length > 200
+              ? preview.substring(0, 200)
+              : preview;
+          _searchScope = SearchScope.value;
+          _filterType = FilterType.contains;
+        }
+
+        // Configure scan mode to offsetEarliest starting from offset 0
+        _scanMode = TopicScanMode.offsetEarliest;
+        _startStrategy = MultiSearchStartStrategy.earliest;
+        _offsetController.text = '0';
+
+        // Ensure sufficient result limit
+        final currentMax = int.tryParse(_maxResultsController.text) ?? 200;
+        final targetMax = math.max(currentMax, math.max(200, target.count));
+        _limitResults = true;
+        _maxResultsController.text = targetMax.toString();
+      } else {
+        // Jump to sample message coordinates
+        _partitionController.text = target.samplePartition.toString();
+        _offsetController.text = target.sampleOffset.toString();
+        _scanMode = TopicScanMode.offsetEarliest;
+        _startStrategy = MultiSearchStartStrategy.customOffset;
+      }
+    });
+    startStreaming();
+  }
+
+  void _navigateToMessage(int partition, int offset) {
+    setState(() {
+      _viewMode = TopicViewMode.messages;
+      _partitionController.text = partition.toString();
+      _offsetController.text = offset.toString();
+      _scanMode = TopicScanMode.offsetEarliest;
+      _startStrategy = MultiSearchStartStrategy.customOffset;
+      _fastTraceEnabled = false;
+    });
+    startStreaming();
   }
 
   @override
@@ -209,6 +267,8 @@ class _TopicDetailViewState extends State<TopicDetailView>
                   topic: widget.topic,
                   profile: widget.profile,
                   controller: analysisController,
+                  onNavigateToTarget: _handleDuplicateNavigation,
+                  onNavigateToMessage: _navigateToMessage,
                 ),
               ),
             ],

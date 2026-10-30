@@ -70,7 +70,20 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ClusterProfile dco_decode_box_autoadd_cluster_profile(dynamic raw);
 
   @protected
+  DuplicateAnalysisResult dco_decode_box_autoadd_duplicate_analysis_result(
+    dynamic raw,
+  );
+
+  @protected
+  DuplicateDetectionScope dco_decode_box_autoadd_duplicate_detection_scope(
+    dynamic raw,
+  );
+
+  @protected
   double dco_decode_box_autoadd_f_64(dynamic raw);
+
+  @protected
+  FieldValueFilter dco_decode_box_autoadd_field_value_filter(dynamic raw);
 
   @protected
   int dco_decode_box_autoadd_i_32(dynamic raw);
@@ -85,7 +98,15 @@ abstract class KafkalyzerRustLibApiImplPlatform
   SizePercentiles dco_decode_box_autoadd_size_percentiles(dynamic raw);
 
   @protected
+  TopicAnalysisOptions dco_decode_box_autoadd_topic_analysis_options(
+    dynamic raw,
+  );
+
+  @protected
   TopicAnalysisReport dco_decode_box_autoadd_topic_analysis_report(dynamic raw);
+
+  @protected
+  ValueFilterResult dco_decode_box_autoadd_value_filter_result(dynamic raw);
 
   @protected
   BrokerEndpoint dco_decode_broker_endpoint(dynamic raw);
@@ -100,6 +121,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ConsumerGroupMember dco_decode_consumer_group_member(dynamic raw);
 
   @protected
+  DuplicateAnalysisResult dco_decode_duplicate_analysis_result(dynamic raw);
+
+  @protected
+  DuplicateDetectionScope dco_decode_duplicate_detection_scope(dynamic raw);
+
+  @protected
   double dco_decode_f_64(dynamic raw);
 
   @protected
@@ -109,10 +136,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   FieldOccurrence dco_decode_field_occurrence(dynamic raw);
 
   @protected
+  FieldValueFilter dco_decode_field_value_filter(dynamic raw);
+
+  @protected
   FieldValueOccurrence dco_decode_field_value_occurrence(dynamic raw);
 
   @protected
   FilterType dco_decode_filter_type(dynamic raw);
+
+  @protected
+  HourBucket dco_decode_hour_bucket(dynamic raw);
 
   @protected
   HourlyCount dco_decode_hourly_count(dynamic raw);
@@ -156,6 +189,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  List<HourBucket> dco_decode_list_hour_bucket(dynamic raw);
+
+  @protected
   List<HourlyCount> dco_decode_list_hourly_count(dynamic raw);
 
   @protected
@@ -186,6 +222,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  List<TopDuplicateOccurrence> dco_decode_list_top_duplicate_occurrence(
+    dynamic raw,
+  );
+
+  @protected
   List<TopicMetadata> dco_decode_list_topic_metadata(dynamic raw);
 
   @protected
@@ -210,7 +251,20 @@ abstract class KafkalyzerRustLibApiImplPlatform
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
 
   @protected
+  DuplicateAnalysisResult? dco_decode_opt_box_autoadd_duplicate_analysis_result(
+    dynamic raw,
+  );
+
+  @protected
+  DuplicateDetectionScope? dco_decode_opt_box_autoadd_duplicate_detection_scope(
+    dynamic raw,
+  );
+
+  @protected
   double? dco_decode_opt_box_autoadd_f_64(dynamic raw);
+
+  @protected
+  FieldValueFilter? dco_decode_opt_box_autoadd_field_value_filter(dynamic raw);
 
   @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
@@ -226,6 +280,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   TopicAnalysisReport? dco_decode_opt_box_autoadd_topic_analysis_report(
+    dynamic raw,
+  );
+
+  @protected
+  ValueFilterResult? dco_decode_opt_box_autoadd_value_filter_result(
     dynamic raw,
   );
 
@@ -252,6 +311,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   SizePercentiles dco_decode_size_percentiles(dynamic raw);
+
+  @protected
+  TopDuplicateOccurrence dco_decode_top_duplicate_occurrence(dynamic raw);
+
+  @protected
+  TopicAnalysisOptions dco_decode_topic_analysis_options(dynamic raw);
 
   @protected
   TopicAnalysisProgress dco_decode_topic_analysis_progress(dynamic raw);
@@ -285,6 +350,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   BigInt dco_decode_usize(dynamic raw);
+
+  @protected
+  ValueFilterResult dco_decode_value_filter_result(dynamic raw);
 
   @protected
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
@@ -327,7 +395,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  DuplicateAnalysisResult sse_decode_box_autoadd_duplicate_analysis_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DuplicateDetectionScope sse_decode_box_autoadd_duplicate_detection_scope(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
+  FieldValueFilter sse_decode_box_autoadd_field_value_filter(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int sse_decode_box_autoadd_i_32(SseDeserializer deserializer);
@@ -346,7 +429,17 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  TopicAnalysisOptions sse_decode_box_autoadd_topic_analysis_options(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   TopicAnalysisReport sse_decode_box_autoadd_topic_analysis_report(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ValueFilterResult sse_decode_box_autoadd_value_filter_result(
     SseDeserializer deserializer,
   );
 
@@ -365,6 +458,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  DuplicateAnalysisResult sse_decode_duplicate_analysis_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DuplicateDetectionScope sse_decode_duplicate_detection_scope(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double sse_decode_f_64(SseDeserializer deserializer);
 
   @protected
@@ -374,12 +477,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   FieldOccurrence sse_decode_field_occurrence(SseDeserializer deserializer);
 
   @protected
+  FieldValueFilter sse_decode_field_value_filter(SseDeserializer deserializer);
+
+  @protected
   FieldValueOccurrence sse_decode_field_value_occurrence(
     SseDeserializer deserializer,
   );
 
   @protected
   FilterType sse_decode_filter_type(SseDeserializer deserializer);
+
+  @protected
+  HourBucket sse_decode_hour_bucket(SseDeserializer deserializer);
 
   @protected
   HourlyCount sse_decode_hourly_count(SseDeserializer deserializer);
@@ -431,6 +540,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  List<HourBucket> sse_decode_list_hour_bucket(SseDeserializer deserializer);
+
+  @protected
   List<HourlyCount> sse_decode_list_hourly_count(SseDeserializer deserializer);
 
   @protected
@@ -467,6 +579,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  List<TopDuplicateOccurrence> sse_decode_list_top_duplicate_occurrence(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<TopicMetadata> sse_decode_list_topic_metadata(
     SseDeserializer deserializer,
   );
@@ -499,7 +616,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
 
   @protected
+  DuplicateAnalysisResult? sse_decode_opt_box_autoadd_duplicate_analysis_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DuplicateDetectionScope? sse_decode_opt_box_autoadd_duplicate_detection_scope(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
+
+  @protected
+  FieldValueFilter? sse_decode_opt_box_autoadd_field_value_filter(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer);
@@ -519,6 +651,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   TopicAnalysisReport? sse_decode_opt_box_autoadd_topic_analysis_report(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ValueFilterResult? sse_decode_opt_box_autoadd_value_filter_result(
     SseDeserializer deserializer,
   );
 
@@ -549,6 +686,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   SizePercentiles sse_decode_size_percentiles(SseDeserializer deserializer);
+
+  @protected
+  TopDuplicateOccurrence sse_decode_top_duplicate_occurrence(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicAnalysisOptions sse_decode_topic_analysis_options(
+    SseDeserializer deserializer,
+  );
 
   @protected
   TopicAnalysisProgress sse_decode_topic_analysis_progress(
@@ -590,6 +737,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   BigInt sse_decode_usize(SseDeserializer deserializer);
+
+  @protected
+  ValueFilterResult sse_decode_value_filter_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   void sse_encode_AnyhowException(
@@ -639,7 +791,25 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_duplicate_analysis_result(
+    DuplicateAnalysisResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_duplicate_detection_scope(
+    DuplicateDetectionScope self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_field_value_filter(
+    FieldValueFilter self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_box_autoadd_i_32(int self, SseSerializer serializer);
@@ -663,8 +833,20 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_topic_analysis_options(
+    TopicAnalysisOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_topic_analysis_report(
     TopicAnalysisReport self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_value_filter_result(
+    ValueFilterResult self,
     SseSerializer serializer,
   );
 
@@ -693,6 +875,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_duplicate_analysis_result(
+    DuplicateAnalysisResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_duplicate_detection_scope(
+    DuplicateDetectionScope self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_f_64(double self, SseSerializer serializer);
 
   @protected
@@ -705,6 +899,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_field_value_filter(
+    FieldValueFilter self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_field_value_occurrence(
     FieldValueOccurrence self,
     SseSerializer serializer,
@@ -712,6 +912,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_filter_type(FilterType self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_hour_bucket(HourBucket self, SseSerializer serializer);
 
   @protected
   void sse_encode_hourly_count(HourlyCount self, SseSerializer serializer);
@@ -771,6 +974,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_hour_bucket(
+    List<HourBucket> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_hourly_count(
     List<HourlyCount> self,
     SseSerializer serializer,
@@ -825,6 +1034,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_top_duplicate_occurrence(
+    List<TopDuplicateOccurrence> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_topic_metadata(
     List<TopicMetadata> self,
     SseSerializer serializer,
@@ -861,7 +1076,25 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_box_autoadd_duplicate_analysis_result(
+    DuplicateAnalysisResult? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_duplicate_detection_scope(
+    DuplicateDetectionScope? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_field_value_filter(
+    FieldValueFilter? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer);
@@ -887,6 +1120,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_opt_box_autoadd_topic_analysis_report(
     TopicAnalysisReport? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_value_filter_result(
+    ValueFilterResult? self,
     SseSerializer serializer,
   );
 
@@ -926,6 +1165,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_size_percentiles(
     SizePercentiles self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_top_duplicate_occurrence(
+    TopDuplicateOccurrence self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_analysis_options(
+    TopicAnalysisOptions self,
     SseSerializer serializer,
   );
 
@@ -979,6 +1230,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_usize(BigInt self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_value_filter_result(
+    ValueFilterResult self,
+    SseSerializer serializer,
+  );
 }
 
 // Section: wire_class

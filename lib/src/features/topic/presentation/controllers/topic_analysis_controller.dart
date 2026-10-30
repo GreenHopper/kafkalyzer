@@ -43,6 +43,11 @@ class TopicAnalysisController extends ChangeNotifier {
 
   int? _maxMessages;
   bool _sampleFromLatest = true;
+  FieldValueFilter? _valueFilter;
+  DuplicateDetectionScope _duplicateScope = DuplicateDetectionScope.payloadOnly;
+
+  ClusterProfile? _lastProfile;
+  String? _lastTopic;
 
   // Comparison of the displayed report against a second one.
   TopicAnalysisReport? _baseReport;
@@ -84,6 +89,25 @@ class TopicAnalysisController extends ChangeNotifier {
   int get scannedMessages => _progress?.scannedMessages ?? 0;
   int get totalMessagesToScan => _progress?.totalMessagesToScan ?? 0;
   double get messagesPerSecond => _progress?.messagesPerSecond ?? 0.0;
+  FieldValueFilter? get valueFilter => _valueFilter;
+  DuplicateDetectionScope get duplicateScope => _duplicateScope;
+  ClusterProfile? get lastProfile => _lastProfile;
+  String? get lastTopic => _lastTopic;
+
+  void setDuplicateScope(DuplicateDetectionScope scope) {
+    _duplicateScope = scope;
+    notifyListeners();
+  }
+
+  void setValueFilter(FieldValueFilter? filter) {
+    _valueFilter = filter;
+    notifyListeners();
+  }
+
+  void clearValueFilter() {
+    _valueFilter = null;
+    notifyListeners();
+  }
 
   void setMaxMessages(int? count) {
     _maxMessages = count;
@@ -216,9 +240,25 @@ class TopicAnalysisController extends ChangeNotifier {
     String topic, {
     int? maxMessages,
     bool sampleFromLatest = true,
+    FieldValueFilter? valueFilter,
+    DuplicateDetectionScope? duplicateScope,
   }) async {
+    if (duplicateScope != null) {
+      _duplicateScope = duplicateScope;
+    }
+    if (valueFilter != null) {
+      if (valueFilter.fieldPath.trim().isEmpty) {
+        _error = 'Field path cannot be empty';
+        notifyListeners();
+        return;
+      }
+      _valueFilter = valueFilter;
+    }
+
     await stopAnalysis();
 
+    _lastProfile = profile;
+    _lastTopic = topic;
     _maxMessages = maxMessages;
     _sampleFromLatest = sampleFromLatest;
     _isAnalyzing = true;
@@ -234,11 +274,15 @@ class TopicAnalysisController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final stream = analyzeTopicContent(
+      final stream = analyzeTopicContentWithOptions(
         profile: profile,
         topic: topic,
-        maxMessages: _maxMessages,
-        sampleFromLatest: _sampleFromLatest,
+        options: TopicAnalysisOptions(
+          maxMessages: _maxMessages,
+          sampleFromLatest: _sampleFromLatest,
+          valueFilter: _valueFilter,
+          duplicateScope: _duplicateScope,
+        ),
       );
 
       _subscription = stream.listen(
@@ -260,6 +304,29 @@ class TopicAnalysisController extends ChangeNotifier {
       _isAnalyzing = false;
       notifyListeners();
     }
+  }
+
+  /// Restarts the scan with the last-used profile, topic, and message limits,
+  /// but using the specified [filter].
+  Future<void> rescanWithFilter(FieldValueFilter filter) async {
+    if (filter.fieldPath.trim().isEmpty) {
+      _error = 'Field path cannot be empty';
+      notifyListeners();
+      return;
+    }
+    if (_lastProfile == null || _lastTopic == null) {
+      _error = 'No previous analysis scope to rescan';
+      notifyListeners();
+      return;
+    }
+    setValueFilter(filter);
+    return startAnalysis(
+      _lastProfile!,
+      _lastTopic!,
+      maxMessages: _maxMessages,
+      sampleFromLatest: _sampleFromLatest,
+      valueFilter: filter,
+    );
   }
 
   void _onProgressReceived(TopicAnalysisProgress progress) {
@@ -295,6 +362,7 @@ class TopicAnalysisController extends ChangeNotifier {
     _reportExportedAt = null;
     _importErrorKind = null;
     _importErrorFoundVersion = null;
+    _valueFilter = null;
     clearComparison();
     notifyListeners();
   }

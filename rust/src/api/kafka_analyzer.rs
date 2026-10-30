@@ -1,4 +1,4 @@
-use crate::api::kafka_types::{ClusterProfile, TopicAnalysisProgress};
+use crate::api::kafka_types::{ClusterProfile, TopicAnalysisOptions, TopicAnalysisProgress};
 use crate::frb_generated::StreamSink;
 use anyhow::Result;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -9,6 +9,26 @@ pub async fn analyze_topic_content(
     topic: String,
     max_messages: Option<i64>,
     sample_from_latest: bool,
+    sink: StreamSink<TopicAnalysisProgress>,
+) -> Result<()> {
+    analyze_topic_content_with_options(
+        profile,
+        topic,
+        TopicAnalysisOptions {
+            max_messages,
+            sample_from_latest,
+            value_filter: None,
+            duplicate_scope: None,
+        },
+        sink,
+    )
+    .await
+}
+
+pub async fn analyze_topic_content_with_options(
+    profile: ClusterProfile,
+    topic: String,
+    options: TopicAnalysisOptions,
     sink: StreamSink<TopicAnalysisProgress>,
 ) -> Result<()> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
@@ -30,13 +50,13 @@ pub async fn analyze_topic_content(
 
     let kafka_sink = kafkalyzer_kafka::kafka_consumer::StreamSink::new(tx);
     let domain_profile = profile.to_domain();
+    let domain_options = options.to_domain();
 
     tokio::task::spawn_blocking(move || {
         kafkalyzer_kafka::kafka_analyzer::analyze_topic_content(
             domain_profile,
             topic,
-            max_messages,
-            sample_from_latest,
+            domain_options,
             kafka_sink,
             cancel_flag,
         )

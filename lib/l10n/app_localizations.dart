@@ -3648,6 +3648,456 @@ abstract class AppLocalizations {
     String interval,
     String status,
   );
+
+  /// No description provided for @recentProductionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Production'**
+  String get recentProductionTitle;
+
+  /// No description provided for @recentProductionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message volume over recent hours'**
+  String get recentProductionSubtitle;
+
+  /// No description provided for @window6h.
+  ///
+  /// In en, this message translates to:
+  /// **'6h'**
+  String get window6h;
+
+  /// No description provided for @window12h.
+  ///
+  /// In en, this message translates to:
+  /// **'12h'**
+  String get window12h;
+
+  /// No description provided for @window24h.
+  ///
+  /// In en, this message translates to:
+  /// **'24h'**
+  String get window24h;
+
+  /// No description provided for @window48h.
+  ///
+  /// In en, this message translates to:
+  /// **'48h'**
+  String get window48h;
+
+  /// No description provided for @window72h.
+  ///
+  /// In en, this message translates to:
+  /// **'72h'**
+  String get window72h;
+
+  /// No description provided for @timelineNotAvailableForReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline is not available for this report.'**
+  String get timelineNotAvailableForReport;
+
+  /// No description provided for @timeZoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Local time ({timeZone})'**
+  String timeZoneLabel(String timeZone);
+
+  /// No description provided for @unusualIncreaseBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Unusual increase'**
+  String get unusualIncreaseBadge;
+
+  /// No description provided for @baselineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline: {baseline}'**
+  String baselineLabel(String baseline);
+
+  /// No description provided for @noComparisonData.
+  ///
+  /// In en, this message translates to:
+  /// **'No comparison data'**
+  String get noComparisonData;
+
+  /// No description provided for @uncoveredHourHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Before coverage start ({count} messages)'**
+  String uncoveredHourHint(int count);
+
+  /// No description provided for @currentHourIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete hour'**
+  String get currentHourIncomplete;
+
+  /// No description provided for @coverageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan covers the last {hours} hours of this window.'**
+  String coverageHint(int hours);
+
+  /// No description provided for @hourlyTooltipDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} messages ({delta})'**
+  String hourlyTooltipDetails(String count, String delta);
+
+  /// No description provided for @hourlyTooltipMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'{matches} matching ({share}%)'**
+  String hourlyTooltipMatches(String matches, String share);
+
+  /// No description provided for @dailyProductionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Production Distribution'**
+  String get dailyProductionTitle;
+
+  /// No description provided for @dailyProductionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages per calendar day'**
+  String get dailyProductionSubtitle;
+
+  /// No description provided for @partialCoverageBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial coverage'**
+  String get partialCoverageBadge;
+
+  /// No description provided for @dailyMatchesShare.
+  ///
+  /// In en, this message translates to:
+  /// **'{matches} ({share}%)'**
+  String dailyMatchesShare(String matches, String share);
+
+  /// No description provided for @valueFilterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by Field Value'**
+  String get valueFilterButton;
+
+  /// No description provided for @valueFilterActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter: {path} = {value}'**
+  String valueFilterActive(String path, String value);
+
+  /// No description provided for @valueFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filter'**
+  String get valueFilterClear;
+
+  /// No description provided for @valueFilterDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by Field Value'**
+  String get valueFilterDialogTitle;
+
+  /// No description provided for @valueFilterDialogFieldPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Field path (e.g. attributes.region)'**
+  String get valueFilterDialogFieldPath;
+
+  /// No description provided for @valueFilterDialogValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact value'**
+  String get valueFilterDialogValue;
+
+  /// No description provided for @valueFilterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply Filter'**
+  String get valueFilterApply;
+
+  /// No description provided for @valueFilterValidationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Field path cannot be empty'**
+  String get valueFilterValidationEmpty;
+
+  /// No description provided for @valueFilterMatchCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter Matches'**
+  String get valueFilterMatchCardTitle;
+
+  /// No description provided for @valueFilterMatchCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} matches'**
+  String valueFilterMatchCount(String count);
+
+  /// No description provided for @valueFilterShareOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of all scanned messages'**
+  String valueFilterShareOfTotal(String percent);
+
+  /// No description provided for @valueFilterShareOfField.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of messages with this field'**
+  String valueFilterShareOfField(String percent);
+
+  /// No description provided for @valueFilterRemainder.
+  ///
+  /// In en, this message translates to:
+  /// **'{remainder} non-matching messages'**
+  String valueFilterRemainder(String remainder);
+
+  /// No description provided for @drillDownDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Value Details'**
+  String get drillDownDialogTitle;
+
+  /// No description provided for @drillDownFieldPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Field: {path}'**
+  String drillDownFieldPath(String path);
+
+  /// No description provided for @drillDownValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value: {value}'**
+  String drillDownValue(String value);
+
+  /// No description provided for @drillDownCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Count: {count}'**
+  String drillDownCount(String count);
+
+  /// No description provided for @drillDownShareOfAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of all messages: {percent}%'**
+  String drillDownShareOfAll(String percent);
+
+  /// No description provided for @drillDownShareOfField.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of field occurrences: {percent}%'**
+  String drillDownShareOfField(String percent);
+
+  /// No description provided for @drillDownRescanButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-scan with this filter'**
+  String get drillDownRescanButton;
+
+  /// No description provided for @drillDownApproximateBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Approximate (values capped)'**
+  String get drillDownApproximateBadge;
+
+  /// No description provided for @drillDownTruncatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Value was truncated (>80 chars). Re-scan cannot use truncated values.'**
+  String get drillDownTruncatedNotice;
+
+  /// No description provided for @drillDownRescanUnavailableImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-scan is not available for imported reports.'**
+  String get drillDownRescanUnavailableImported;
+
+  /// No description provided for @duplicateScopeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Scope'**
+  String get duplicateScopeLabel;
+
+  /// No description provided for @duplicateScopePayloadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload (Value)'**
+  String get duplicateScopePayloadOnly;
+
+  /// No description provided for @duplicateScopeKeyAndPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Key + Payload'**
+  String get duplicateScopeKeyAndPayload;
+
+  /// No description provided for @duplicateMessagesCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Messages'**
+  String get duplicateMessagesCardTitle;
+
+  /// No description provided for @duplicateMessagesRate.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate}% of messages'**
+  String duplicateMessagesRate(String rate);
+
+  /// No description provided for @duplicateMessagesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{unique} unique • {scope}'**
+  String duplicateMessagesSubtitle(String unique, String scope);
+
+  /// No description provided for @topDuplicatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top Duplicated Messages'**
+  String get topDuplicatesTitle;
+
+  /// No description provided for @topDuplicatesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing up to 20 most frequent duplicated messages'**
+  String get topDuplicatesSubtitle;
+
+  /// No description provided for @noDuplicatesDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'No duplicate messages detected in this scan.'**
+  String get noDuplicatesDetected;
+
+  /// No description provided for @duplicateAnalysisUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate analysis is not available for this report.'**
+  String get duplicateAnalysisUnavailable;
+
+  /// No description provided for @sampleLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition {partition}, Offset {offset}'**
+  String sampleLocation(int partition, int offset);
+
+  /// No description provided for @copyPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy payload'**
+  String get copyPayload;
+
+  /// No description provided for @copyKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy key'**
+  String get copyKey;
+
+  /// No description provided for @copiedPayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload copied to clipboard'**
+  String get copiedPayload;
+
+  /// No description provided for @copiedKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key copied to clipboard'**
+  String get copiedKey;
+
+  /// No description provided for @duplicateRankHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'#'**
+  String get duplicateRankHeader;
+
+  /// No description provided for @duplicateCountHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Occurrences'**
+  String get duplicateCountHeader;
+
+  /// No description provided for @duplicateShareHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get duplicateShareHeader;
+
+  /// No description provided for @duplicateKeyHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get duplicateKeyHeader;
+
+  /// No description provided for @duplicatePayloadPreviewHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload Preview'**
+  String get duplicatePayloadPreviewHeader;
+
+  /// No description provided for @duplicateSampleCoordinatesHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample Location'**
+  String get duplicateSampleCoordinatesHeader;
+
+  /// No description provided for @duplicateDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Message Details'**
+  String get duplicateDetailsTitle;
+
+  /// No description provided for @duplicateDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank #{rank} • {count} occurrences ({share}%)'**
+  String duplicateDetailsSubtitle(int rank, String count, String share);
+
+  /// No description provided for @openInMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Messages'**
+  String get openInMessages;
+
+  /// No description provided for @filterDuplicatesInMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter in Messages'**
+  String get filterDuplicatesInMessages;
+
+  /// No description provided for @jumpToSampleOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to Sample'**
+  String get jumpToSampleOffset;
+
+  /// No description provided for @duplicateCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates'**
+  String get duplicateCoordinates;
+
+  /// No description provided for @duplicateTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamp'**
+  String get duplicateTimestamp;
+
+  /// No description provided for @duplicateKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get duplicateKey;
+
+  /// No description provided for @duplicatePayload.
+  ///
+  /// In en, this message translates to:
+  /// **'Decoded Payload'**
+  String get duplicatePayload;
+
+  /// No description provided for @inspectDuplicateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'View duplicate details'**
+  String get inspectDuplicateTooltip;
 }
 
 class _AppLocalizationsDelegate

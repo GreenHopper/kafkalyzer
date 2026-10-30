@@ -6,8 +6,17 @@ import 'package:material_ui/material_ui.dart';
 
 class FieldValueExplorer extends StatefulWidget {
   final List<FieldOccurrence> fieldFrequencies;
+  final int? totalMessages;
+  final ValueChanged<FieldValueFilter>? onRescanWithFilter;
+  final bool isImported;
 
-  const FieldValueExplorer({super.key, required this.fieldFrequencies});
+  const FieldValueExplorer({
+    super.key,
+    required this.fieldFrequencies,
+    this.totalMessages,
+    this.onRescanWithFilter,
+    this.isImported = false,
+  });
 
   @override
   State<FieldValueExplorer> createState() => _FieldValueExplorerState();
@@ -464,6 +473,38 @@ class _FieldValueExplorerState extends State<FieldValueExplorer> {
                                         ),
                                       ),
                                       IconButton(
+                                        icon: const Icon(
+                                          Icons.info_outline,
+                                          size: 14,
+                                        ),
+                                        tooltip:
+                                            l10n?.drillDownDialogTitle ??
+                                            'Details',
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                          minWidth: 20,
+                                          minHeight: 20,
+                                        ),
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (_) =>
+                                                FieldValueDrillDownDialog(
+                                                  fieldPath: field.fieldName,
+                                                  occurrence: v,
+                                                  valuesCapped:
+                                                      field.valuesCapped,
+                                                  totalMessages:
+                                                      widget.totalMessages,
+                                                  onRescanWithFilter:
+                                                      widget.onRescanWithFilter,
+                                                  isImported: widget.isImported,
+                                                ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(width: 4),
+                                      IconButton(
                                         icon: const Icon(Icons.copy, size: 13),
                                         tooltip:
                                             l10n?.copyMessage ?? 'Copy value',
@@ -527,6 +568,151 @@ class _FieldValueExplorerState extends State<FieldValueExplorer> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Drill-down dialog for an inspected field value occurrence.
+class FieldValueDrillDownDialog extends StatelessWidget {
+  final String fieldPath;
+  final FieldValueOccurrence occurrence;
+  final bool valuesCapped;
+  final int? totalMessages;
+  final ValueChanged<FieldValueFilter>? onRescanWithFilter;
+  final bool isImported;
+
+  const FieldValueDrillDownDialog({
+    super.key,
+    required this.fieldPath,
+    required this.occurrence,
+    required this.valuesCapped,
+    this.totalMessages,
+    this.onRescanWithFilter,
+    this.isImported = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    final numberFormat = NumberFormat.decimalPattern();
+
+    final count = occurrence.count;
+    final shareOfField = occurrence.percentage;
+    final shareOfAll = (totalMessages != null && totalMessages! > 0)
+        ? (count / totalMessages!) * 100.0
+        : null;
+
+    final canRescan =
+        !occurrence.truncated && !isImported && onRescanWithFilter != null;
+
+    return AlertDialog(
+      title: Text(l10n.drillDownDialogTitle),
+      content: SizedBox(
+        width: 440,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.drillDownFieldPath(fieldPath),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+                if (valuesCapped)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.tertiaryContainer,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      l10n.drillDownApproximateBadge,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 9,
+                        color: colorScheme.onTertiaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: SelectableText(
+                occurrence.value,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(l10n.drillDownCount(numberFormat.format(count))),
+            const SizedBox(height: 4),
+            Text(l10n.drillDownShareOfField(shareOfField.toStringAsFixed(2))),
+            if (shareOfAll != null) ...[
+              const SizedBox(height: 4),
+              Text(l10n.drillDownShareOfAll(shareOfAll.toStringAsFixed(2))),
+            ],
+            if (occurrence.truncated) ...[
+              const SizedBox(height: 12),
+              Text(
+                l10n.drillDownTruncatedNotice,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.error,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ] else if (isImported) ...[
+              const SizedBox(height: 12),
+              Text(
+                l10n.drillDownRescanUnavailableImported,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.outline,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(MaterialLocalizations.of(context).closeButtonLabel),
+        ),
+        FilledButton.icon(
+          icon: const Icon(Icons.refresh_rounded, size: 16),
+          label: Text(l10n.drillDownRescanButton),
+          onPressed: canRescan
+              ? () {
+                  Navigator.of(context).pop();
+                  onRescanWithFilter!(
+                    FieldValueFilter(
+                      fieldPath: fieldPath,
+                      value: occurrence.value,
+                    ),
+                  );
+                }
+              : null,
+        ),
+      ],
     );
   }
 }

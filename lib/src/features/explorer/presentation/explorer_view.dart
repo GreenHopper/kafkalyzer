@@ -357,6 +357,9 @@ class _ExplorerViewState extends State<ExplorerView> {
     TopicController topicController,
   ) {
     final isActive = activeController.activeProfile?.name == cluster.name;
+    final isConnecting =
+        activeController.connectingProfile?.name == cluster.name ||
+        (isActive && activeController.isConnecting);
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(8),
@@ -374,11 +377,13 @@ class _ExplorerViewState extends State<ExplorerView> {
           isActive,
           topicController,
         ),
-        onTap: () {
-          getIt<ActiveConnectionController>().connect(cluster);
-          getIt<SchemaController>().fetchSchemas(cluster);
-        },
-        trailing: isActive && activeController.isConnecting
+        onTap: isConnecting
+            ? null
+            : () {
+                getIt<ActiveConnectionController>().connect(cluster);
+                getIt<SchemaController>().fetchSchemas(cluster);
+              },
+        trailing: isConnecting
             ? const SizedBox(
                 width: 12,
                 height: 12,
@@ -633,6 +638,7 @@ class _ExplorerViewState extends State<ExplorerView> {
     if (activeController.activeProfile == null) {
       return ExplorerOnboardingView(
         clusters: clusterController.clusters,
+        connectingProfile: activeController.connectingProfile,
         onAddCluster: () async {
           final result = await showDialog<ClusterProfile>(
             context: context,

@@ -41,6 +41,7 @@ class ActiveConnectionController extends ChangeNotifier {
       >(); // Use getter to avoid constructor dependency cycle if any (lazy singleton handles it though)
 
   ClusterProfile? _activeProfile;
+  ClusterProfile? _connectingProfile;
   // _topics removed
   bool _isConnecting = false;
   bool _showInternalTopics = false;
@@ -68,6 +69,9 @@ class ActiveConnectionController extends ChangeNotifier {
   }
 
   ClusterProfile? get activeProfile => _activeProfile;
+  ClusterProfile? get connectingProfile => _connectingProfile;
+  bool isConnectingCluster(ClusterProfile profile) =>
+      _connectingProfile?.name == profile.name;
   List<TopicMetadata> get topics {
     if (_activeProfile == null) return [];
 
@@ -337,6 +341,11 @@ class ActiveConnectionController extends ChangeNotifier {
   }
 
   Future<void> connect(ClusterProfile profile) async {
+    if (_connectingProfile?.name == profile.name) {
+      return;
+    }
+
+    _connectingProfile = profile;
     _isConnecting = true;
     _error = null;
     notifyListeners();
@@ -352,8 +361,6 @@ class ActiveConnectionController extends ChangeNotifier {
         // This will update listeners but won't fetch if not forced
         await _topicController.fetchTopics(profile);
         await _restoreSessionTabs(profile);
-        _isConnecting = false;
-        notifyListeners();
         return;
       }
 
@@ -393,12 +400,14 @@ class ActiveConnectionController extends ChangeNotifier {
         _error = "Connection Failed: ${errorString.split('\n').first}";
       }
     } finally {
+      _connectingProfile = null;
       _isConnecting = false;
       notifyListeners();
     }
   }
 
   void disconnect() {
+    _connectingProfile = null;
     _activeProfile = null;
     _activeTopic = null;
     _openTopics.clear();

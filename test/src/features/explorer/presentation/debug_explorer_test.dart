@@ -63,6 +63,7 @@ void main() {
     when(mockSchemaController.getSchemas(any)).thenReturn([]);
 
     when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(false);
+    when(mockActiveConnectionController.connectingProfile).thenReturn(null);
   });
 
   Widget createWidgetUnderTest() {

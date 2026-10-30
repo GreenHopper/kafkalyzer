@@ -268,11 +268,229 @@ impl From<kafkalyzer_core::kafka_types::TypeOccurrence> for TypeOccurrence {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HourBucket {
+    pub epoch_hour: i64,
+    pub count: i64,
+}
+
+impl From<kafkalyzer_core::kafka_types::HourBucket> for HourBucket {
+    fn from(b: kafkalyzer_core::kafka_types::HourBucket) -> Self {
+        Self {
+            epoch_hour: b.epoch_hour,
+            count: b.count,
+        }
+    }
+}
+
+impl HourBucket {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::HourBucket {
+        kafkalyzer_core::kafka_types::HourBucket {
+            epoch_hour: self.epoch_hour,
+            count: self.count,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FieldValueFilter {
+    pub field_path: String,
+    pub value: String,
+}
+
+impl From<kafkalyzer_core::kafka_types::FieldValueFilter> for FieldValueFilter {
+    fn from(f: kafkalyzer_core::kafka_types::FieldValueFilter) -> Self {
+        Self {
+            field_path: f.field_path,
+            value: f.value,
+        }
+    }
+}
+
+impl FieldValueFilter {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::FieldValueFilter {
+        kafkalyzer_core::kafka_types::FieldValueFilter {
+            field_path: self.field_path.clone(),
+            value: self.value.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DuplicateDetectionScope {
+    PayloadOnly,
+    KeyAndPayload,
+}
+
+impl From<kafkalyzer_core::kafka_types::DuplicateDetectionScope> for DuplicateDetectionScope {
+    fn from(s: kafkalyzer_core::kafka_types::DuplicateDetectionScope) -> Self {
+        match s {
+            kafkalyzer_core::kafka_types::DuplicateDetectionScope::PayloadOnly => Self::PayloadOnly,
+            kafkalyzer_core::kafka_types::DuplicateDetectionScope::KeyAndPayload => {
+                Self::KeyAndPayload
+            }
+        }
+    }
+}
+
+impl DuplicateDetectionScope {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::DuplicateDetectionScope {
+        match self {
+            Self::PayloadOnly => kafkalyzer_core::kafka_types::DuplicateDetectionScope::PayloadOnly,
+            Self::KeyAndPayload => {
+                kafkalyzer_core::kafka_types::DuplicateDetectionScope::KeyAndPayload
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TopDuplicateOccurrence {
+    pub key: Option<String>,
+    pub payload_preview: String,
+    pub count: i64,
+    pub percentage: f64,
+    pub sample_partition: i32,
+    pub sample_offset: i64,
+    pub sample_timestamp_ms: i64,
+}
+
+impl From<kafkalyzer_core::kafka_types::TopDuplicateOccurrence> for TopDuplicateOccurrence {
+    fn from(o: kafkalyzer_core::kafka_types::TopDuplicateOccurrence) -> Self {
+        Self {
+            key: o.key,
+            payload_preview: o.payload_preview,
+            count: o.count,
+            percentage: o.percentage,
+            sample_partition: o.sample_partition,
+            sample_offset: o.sample_offset,
+            sample_timestamp_ms: o.sample_timestamp_ms,
+        }
+    }
+}
+
+impl TopDuplicateOccurrence {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::TopDuplicateOccurrence {
+        kafkalyzer_core::kafka_types::TopDuplicateOccurrence {
+            key: self.key.clone(),
+            payload_preview: self.payload_preview.clone(),
+            count: self.count,
+            percentage: self.percentage,
+            sample_partition: self.sample_partition,
+            sample_offset: self.sample_offset,
+            sample_timestamp_ms: self.sample_timestamp_ms,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DuplicateAnalysisResult {
+    pub scope: DuplicateDetectionScope,
+    pub total_messages: i64,
+    pub unique_messages: i64,
+    pub duplicate_messages: i64,
+    pub duplicate_rate: f64,
+    pub top_duplicates: Vec<TopDuplicateOccurrence>,
+}
+
+impl From<kafkalyzer_core::kafka_types::DuplicateAnalysisResult> for DuplicateAnalysisResult {
+    fn from(r: kafkalyzer_core::kafka_types::DuplicateAnalysisResult) -> Self {
+        Self {
+            scope: DuplicateDetectionScope::from(r.scope),
+            total_messages: r.total_messages,
+            unique_messages: r.unique_messages,
+            duplicate_messages: r.duplicate_messages,
+            duplicate_rate: r.duplicate_rate,
+            top_duplicates: r
+                .top_duplicates
+                .into_iter()
+                .map(TopDuplicateOccurrence::from)
+                .collect(),
+        }
+    }
+}
+
+impl DuplicateAnalysisResult {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::DuplicateAnalysisResult {
+        kafkalyzer_core::kafka_types::DuplicateAnalysisResult {
+            scope: self.scope.to_domain(),
+            total_messages: self.total_messages,
+            unique_messages: self.unique_messages,
+            duplicate_messages: self.duplicate_messages,
+            duplicate_rate: self.duplicate_rate,
+            top_duplicates: self.top_duplicates.iter().map(|d| d.to_domain()).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TopicAnalysisOptions {
+    pub max_messages: Option<i64>,
+    pub sample_from_latest: bool,
+    pub value_filter: Option<FieldValueFilter>,
+    #[serde(default)]
+    pub duplicate_scope: Option<DuplicateDetectionScope>,
+}
+
+impl TopicAnalysisOptions {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::TopicAnalysisOptions {
+        kafkalyzer_core::kafka_types::TopicAnalysisOptions {
+            max_messages: self.max_messages,
+            sample_from_latest: self.sample_from_latest,
+            value_filter: self.value_filter.as_ref().map(|f| f.to_domain()),
+            duplicate_scope: self.duplicate_scope.map(|s| s.to_domain()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ValueFilterResult {
+    pub field_path: String,
+    pub value: String,
+    pub messages_with_field: i64,
+    pub matched_messages: i64,
+    pub matched_timeline: Vec<HourBucket>,
+}
+
+impl From<kafkalyzer_core::kafka_types::ValueFilterResult> for ValueFilterResult {
+    fn from(r: kafkalyzer_core::kafka_types::ValueFilterResult) -> Self {
+        Self {
+            field_path: r.field_path,
+            value: r.value,
+            messages_with_field: r.messages_with_field,
+            matched_messages: r.matched_messages,
+            matched_timeline: r
+                .matched_timeline
+                .into_iter()
+                .map(HourBucket::from)
+                .collect(),
+        }
+    }
+}
+
+impl ValueFilterResult {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::ValueFilterResult {
+        kafkalyzer_core::kafka_types::ValueFilterResult {
+            field_path: self.field_path.clone(),
+            value: self.value.clone(),
+            messages_with_field: self.messages_with_field,
+            matched_messages: self.matched_messages,
+            matched_timeline: self
+                .matched_timeline
+                .iter()
+                .map(|b| b.to_domain())
+                .collect(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldValueOccurrence {
     pub value: String,
     pub count: i64,
     pub percentage: f64,
+    #[serde(default)]
+    pub truncated: bool,
 }
 
 impl From<kafkalyzer_core::kafka_types::FieldValueOccurrence> for FieldValueOccurrence {
@@ -281,6 +499,7 @@ impl From<kafkalyzer_core::kafka_types::FieldValueOccurrence> for FieldValueOccu
             value: f.value,
             count: f.count,
             percentage: f.percentage,
+            truncated: f.truncated,
         }
     }
 }
@@ -291,6 +510,8 @@ pub struct FieldOccurrence {
     pub count: i64,
     pub percentage: f64,
     pub top_values: Vec<FieldValueOccurrence>,
+    #[serde(default)]
+    pub values_capped: bool,
 }
 
 impl From<kafkalyzer_core::kafka_types::FieldOccurrence> for FieldOccurrence {
@@ -304,6 +525,7 @@ impl From<kafkalyzer_core::kafka_types::FieldOccurrence> for FieldOccurrence {
                 .into_iter()
                 .map(FieldValueOccurrence::from)
                 .collect(),
+            values_capped: f.values_capped,
         }
     }
 }
@@ -334,6 +556,18 @@ pub struct TopicAnalysisReport {
     pub estimated_distinct_keys: i64,
     #[serde(default)]
     pub key_cardinality_capped: bool,
+    #[serde(default)]
+    pub hourly_timeline: Vec<HourBucket>,
+    #[serde(default)]
+    pub scan_reference_time_ms: Option<i64>,
+    #[serde(default)]
+    pub complete_from_ms: Option<i64>,
+    #[serde(default)]
+    pub timeline_outside_count: i64,
+    #[serde(default)]
+    pub value_filter_result: Option<ValueFilterResult>,
+    #[serde(default)]
+    pub duplicate_analysis_result: Option<DuplicateAnalysisResult>,
 }
 
 /// Message-size percentiles at the bridge boundary.
@@ -431,8 +665,10 @@ impl TopicAnalysisReport {
                             value: v.value.clone(),
                             count: v.count,
                             percentage: v.percentage,
+                            truncated: v.truncated,
                         })
                         .collect(),
+                    values_capped: f.values_capped,
                 })
                 .collect(),
             scan_duration_ms: self.scan_duration_ms,
@@ -443,6 +679,15 @@ impl TopicAnalysisReport {
             size_percentiles_estimated: self.size_percentiles_estimated,
             estimated_distinct_keys: self.estimated_distinct_keys,
             key_cardinality_capped: self.key_cardinality_capped,
+            hourly_timeline: self.hourly_timeline.iter().map(|b| b.to_domain()).collect(),
+            scan_reference_time_ms: self.scan_reference_time_ms,
+            complete_from_ms: self.complete_from_ms,
+            timeline_outside_count: self.timeline_outside_count,
+            value_filter_result: self.value_filter_result.as_ref().map(|r| r.to_domain()),
+            duplicate_analysis_result: self
+                .duplicate_analysis_result
+                .as_ref()
+                .map(|d| d.to_domain()),
         }
     }
 }
@@ -485,6 +730,18 @@ impl From<kafkalyzer_core::kafka_types::TopicAnalysisReport> for TopicAnalysisRe
             size_percentiles_estimated: r.size_percentiles_estimated,
             estimated_distinct_keys: r.estimated_distinct_keys,
             key_cardinality_capped: r.key_cardinality_capped,
+            hourly_timeline: r
+                .hourly_timeline
+                .into_iter()
+                .map(HourBucket::from)
+                .collect(),
+            scan_reference_time_ms: r.scan_reference_time_ms,
+            complete_from_ms: r.complete_from_ms,
+            timeline_outside_count: r.timeline_outside_count,
+            value_filter_result: r.value_filter_result.map(ValueFilterResult::from),
+            duplicate_analysis_result: r
+                .duplicate_analysis_result
+                .map(DuplicateAnalysisResult::from),
         }
     }
 }

@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1105382635;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 116515548;
 
 // Section: executor
 
@@ -89,6 +89,57 @@ fn wire__crate__api__kafka_analyzer__analyze_topic_content_impl(
                             api_sink,
                         )
                         .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_analyzer__analyze_topic_content_with_options_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "analyze_topic_content_with_options",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_topic = <String>::sse_decode(&mut deserializer);
+            let api_options =
+                <crate::api::kafka_types::TopicAnalysisOptions>::sse_decode(&mut deserializer);
+            let api_sink = <StreamSink<
+                crate::api::kafka_types::TopicAnalysisProgress,
+                flutter_rust_bridge::for_generated::SseCodec,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::kafka_analyzer::analyze_topic_content_with_options(
+                                api_profile,
+                                api_topic,
+                                api_options,
+                                api_sink,
+                            )
+                            .await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -917,6 +968,40 @@ fn wire__crate__api__kafka_utils__to_positive_impl(
         },
     )
 }
+fn wire__crate__api__kafka_types__topic_analysis_options_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "topic_analysis_options_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::kafka_types::TopicAnalysisOptions::default(),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__kafka_metadata__validate_connection_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1179,6 +1264,40 @@ impl SseDecode for crate::api::kafka_types::ConsumerGroupMember {
     }
 }
 
+impl SseDecode for crate::api::kafka_types::DuplicateAnalysisResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_scope =
+            <crate::api::kafka_types::DuplicateDetectionScope>::sse_decode(deserializer);
+        let mut var_totalMessages = <i64>::sse_decode(deserializer);
+        let mut var_uniqueMessages = <i64>::sse_decode(deserializer);
+        let mut var_duplicateMessages = <i64>::sse_decode(deserializer);
+        let mut var_duplicateRate = <f64>::sse_decode(deserializer);
+        let mut var_topDuplicates =
+            <Vec<crate::api::kafka_types::TopDuplicateOccurrence>>::sse_decode(deserializer);
+        return crate::api::kafka_types::DuplicateAnalysisResult {
+            scope: var_scope,
+            total_messages: var_totalMessages,
+            unique_messages: var_uniqueMessages,
+            duplicate_messages: var_duplicateMessages,
+            duplicate_rate: var_duplicateRate,
+            top_duplicates: var_topDuplicates,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::DuplicateDetectionScope {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_types::DuplicateDetectionScope::PayloadOnly,
+            1 => crate::api::kafka_types::DuplicateDetectionScope::KeyAndPayload,
+            _ => unreachable!("Invalid variant for DuplicateDetectionScope: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for f64 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1214,11 +1333,25 @@ impl SseDecode for crate::api::kafka_types::FieldOccurrence {
         let mut var_percentage = <f64>::sse_decode(deserializer);
         let mut var_topValues =
             <Vec<crate::api::kafka_types::FieldValueOccurrence>>::sse_decode(deserializer);
+        let mut var_valuesCapped = <bool>::sse_decode(deserializer);
         return crate::api::kafka_types::FieldOccurrence {
             field_name: var_fieldName,
             count: var_count,
             percentage: var_percentage,
             top_values: var_topValues,
+            values_capped: var_valuesCapped,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::FieldValueFilter {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_fieldPath = <String>::sse_decode(deserializer);
+        let mut var_value = <String>::sse_decode(deserializer);
+        return crate::api::kafka_types::FieldValueFilter {
+            field_path: var_fieldPath,
+            value: var_value,
         };
     }
 }
@@ -1229,10 +1362,12 @@ impl SseDecode for crate::api::kafka_types::FieldValueOccurrence {
         let mut var_value = <String>::sse_decode(deserializer);
         let mut var_count = <i64>::sse_decode(deserializer);
         let mut var_percentage = <f64>::sse_decode(deserializer);
+        let mut var_truncated = <bool>::sse_decode(deserializer);
         return crate::api::kafka_types::FieldValueOccurrence {
             value: var_value,
             count: var_count,
             percentage: var_percentage,
+            truncated: var_truncated,
         };
     }
 }
@@ -1246,6 +1381,18 @@ impl SseDecode for crate::api::kafka_types::FilterType {
             1 => crate::api::kafka_types::FilterType::Regex,
             2 => crate::api::kafka_types::FilterType::Exact,
             _ => unreachable!("Invalid variant for FilterType: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::HourBucket {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_epochHour = <i64>::sse_decode(deserializer);
+        let mut var_count = <i64>::sse_decode(deserializer);
+        return crate::api::kafka_types::HourBucket {
+            epoch_hour: var_epochHour,
+            count: var_count,
         };
     }
 }
@@ -1429,6 +1576,20 @@ impl SseDecode for Vec<crate::api::kafka_types::FieldValueOccurrence> {
     }
 }
 
+impl SseDecode for Vec<crate::api::kafka_types::HourBucket> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_types::HourBucket>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_types::HourlyCount> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1549,6 +1710,18 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for Vec<crate::api::kafka_types::TopDuplicateOccurrence> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_types::TopDuplicateOccurrence>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_metadata::TopicMetadata> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1661,11 +1834,50 @@ impl SseDecode for Option<bool> {
     }
 }
 
+impl SseDecode for Option<crate::api::kafka_types::DuplicateAnalysisResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::kafka_types::DuplicateAnalysisResult>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::kafka_types::DuplicateDetectionScope> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::kafka_types::DuplicateDetectionScope>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<f64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<f64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::kafka_types::FieldValueFilter> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::kafka_types::FieldValueFilter>::sse_decode(
+                deserializer,
+            ));
         } else {
             return None;
         }
@@ -1725,6 +1937,19 @@ impl SseDecode for Option<crate::api::kafka_types::TopicAnalysisReport> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<crate::api::kafka_types::TopicAnalysisReport>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::kafka_types::ValueFilterResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::kafka_types::ValueFilterResult>::sse_decode(
                 deserializer,
             ));
         } else {
@@ -1852,6 +2077,46 @@ impl SseDecode for crate::api::kafka_types::SizePercentiles {
     }
 }
 
+impl SseDecode for crate::api::kafka_types::TopDuplicateOccurrence {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_key = <Option<String>>::sse_decode(deserializer);
+        let mut var_payloadPreview = <String>::sse_decode(deserializer);
+        let mut var_count = <i64>::sse_decode(deserializer);
+        let mut var_percentage = <f64>::sse_decode(deserializer);
+        let mut var_samplePartition = <i32>::sse_decode(deserializer);
+        let mut var_sampleOffset = <i64>::sse_decode(deserializer);
+        let mut var_sampleTimestampMs = <i64>::sse_decode(deserializer);
+        return crate::api::kafka_types::TopDuplicateOccurrence {
+            key: var_key,
+            payload_preview: var_payloadPreview,
+            count: var_count,
+            percentage: var_percentage,
+            sample_partition: var_samplePartition,
+            sample_offset: var_sampleOffset,
+            sample_timestamp_ms: var_sampleTimestampMs,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::TopicAnalysisOptions {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_maxMessages = <Option<i64>>::sse_decode(deserializer);
+        let mut var_sampleFromLatest = <bool>::sse_decode(deserializer);
+        let mut var_valueFilter =
+            <Option<crate::api::kafka_types::FieldValueFilter>>::sse_decode(deserializer);
+        let mut var_duplicateScope =
+            <Option<crate::api::kafka_types::DuplicateDetectionScope>>::sse_decode(deserializer);
+        return crate::api::kafka_types::TopicAnalysisOptions {
+            max_messages: var_maxMessages,
+            sample_from_latest: var_sampleFromLatest,
+            value_filter: var_valueFilter,
+            duplicate_scope: var_duplicateScope,
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_types::TopicAnalysisProgress {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1905,6 +2170,15 @@ impl SseDecode for crate::api::kafka_types::TopicAnalysisReport {
         let mut var_sizePercentilesEstimated = <bool>::sse_decode(deserializer);
         let mut var_estimatedDistinctKeys = <i64>::sse_decode(deserializer);
         let mut var_keyCardinalityCapped = <bool>::sse_decode(deserializer);
+        let mut var_hourlyTimeline =
+            <Vec<crate::api::kafka_types::HourBucket>>::sse_decode(deserializer);
+        let mut var_scanReferenceTimeMs = <Option<i64>>::sse_decode(deserializer);
+        let mut var_completeFromMs = <Option<i64>>::sse_decode(deserializer);
+        let mut var_timelineOutsideCount = <i64>::sse_decode(deserializer);
+        let mut var_valueFilterResult =
+            <Option<crate::api::kafka_types::ValueFilterResult>>::sse_decode(deserializer);
+        let mut var_duplicateAnalysisResult =
+            <Option<crate::api::kafka_types::DuplicateAnalysisResult>>::sse_decode(deserializer);
         return crate::api::kafka_types::TopicAnalysisReport {
             topic: var_topic,
             total_messages: var_totalMessages,
@@ -1925,6 +2199,12 @@ impl SseDecode for crate::api::kafka_types::TopicAnalysisReport {
             size_percentiles_estimated: var_sizePercentilesEstimated,
             estimated_distinct_keys: var_estimatedDistinctKeys,
             key_cardinality_capped: var_keyCardinalityCapped,
+            hourly_timeline: var_hourlyTimeline,
+            scan_reference_time_ms: var_scanReferenceTimeMs,
+            complete_from_ms: var_completeFromMs,
+            timeline_outside_count: var_timelineOutsideCount,
+            value_filter_result: var_valueFilterResult,
+            duplicate_analysis_result: var_duplicateAnalysisResult,
         };
     }
 }
@@ -2037,6 +2317,25 @@ impl SseDecode for usize {
     }
 }
 
+impl SseDecode for crate::api::kafka_types::ValueFilterResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_fieldPath = <String>::sse_decode(deserializer);
+        let mut var_value = <String>::sse_decode(deserializer);
+        let mut var_messagesWithField = <i64>::sse_decode(deserializer);
+        let mut var_matchedMessages = <i64>::sse_decode(deserializer);
+        let mut var_matchedTimeline =
+            <Vec<crate::api::kafka_types::HourBucket>>::sse_decode(deserializer);
+        return crate::api::kafka_types::ValueFilterResult {
+            field_path: var_fieldPath,
+            value: var_value,
+            messages_with_field: var_messagesWithField,
+            matched_messages: var_matchedMessages,
+            matched_timeline: var_matchedTimeline,
+        };
+    }
+}
+
 fn pde_ffi_dispatcher_primary_impl(
     func_id: i32,
     port: flutter_rust_bridge::for_generated::MessagePort,
@@ -2052,110 +2351,122 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        2 => wire__crate__api__schema_registry__check_schema_compatibility_impl(
+        2 => wire__crate__api__kafka_analyzer__analyze_topic_content_with_options_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        3 => wire__crate__api__kafka_types__cluster_profile_default_impl(
+        3 => wire__crate__api__schema_registry__check_schema_compatibility_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        4 => wire__crate__api__report_compare__compare_reports_impl(
+        4 => wire__crate__api__kafka_types__cluster_profile_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        5 => wire__crate__api__kafka_consumer__consume_with_filter_impl(
+        5 => wire__crate__api__report_compare__compare_reports_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        6 => wire__crate__api__kafka_utils__create_config_impl(port, ptr, rust_vec_len, data_len),
-        7 => wire__crate__api__json_path__deserialize_cluster_profile_impl(
+        6 => wire__crate__api__kafka_consumer__consume_with_filter_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        8 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
+        7 => wire__crate__api__kafka_utils__create_config_impl(port, ptr, rust_vec_len, data_len),
+        8 => wire__crate__api__json_path__deserialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        9 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+        9 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+        10 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        11 => {
+        11 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        12 => {
             wire__crate__api__schema_registry__fetch_schema_impl(port, ptr, rust_vec_len, data_len)
         }
-        12 => wire__crate__api__schema_registry__fetch_schema_versions_impl(
+        13 => wire__crate__api__schema_registry__fetch_schema_versions_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        13 => wire__crate__api__schema_registry__fetch_subjects_impl(
+        14 => wire__crate__api__schema_registry__fetch_subjects_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
+        15 => wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        15 => {
+        16 => {
             wire__crate__api__kafka_metadata__fetch_topics_impl(port, ptr, rust_vec_len, data_len)
         }
-        16 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+        17 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        19 => {
+        20 => {
             wire__crate__api__json_path__resolve_json_path_impl(port, ptr, rust_vec_len, data_len)
         }
-        20 => wire__crate__api__json_path__resolve_json_path_batch_impl(
+        21 => wire__crate__api__json_path__resolve_json_path_batch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        21 => wire__crate__api__json_path__serialize_cluster_profile_impl(
+        22 => wire__crate__api__json_path__serialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        22 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__kafka_metadata__validate_connection_impl(
+        23 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        24 => wire__crate__api__json_path__validate_filter_patterns_impl(
+        25 => wire__crate__api__kafka_metadata__validate_connection_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        26 => wire__crate__api__json_path__validate_filter_patterns_impl(
             port,
             ptr,
             rust_vec_len,
@@ -2311,6 +2622,52 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::ConsumerGroupMem
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::DuplicateAnalysisResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.scope.into_into_dart().into_dart(),
+            self.total_messages.into_into_dart().into_dart(),
+            self.unique_messages.into_into_dart().into_dart(),
+            self.duplicate_messages.into_into_dart().into_dart(),
+            self.duplicate_rate.into_into_dart().into_dart(),
+            self.top_duplicates.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::DuplicateAnalysisResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::DuplicateAnalysisResult>
+    for crate::api::kafka_types::DuplicateAnalysisResult
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::DuplicateAnalysisResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::DuplicateDetectionScope {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::PayloadOnly => 0.into_dart(),
+            Self::KeyAndPayload => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::DuplicateDetectionScope
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::DuplicateDetectionScope>
+    for crate::api::kafka_types::DuplicateDetectionScope
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::DuplicateDetectionScope {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::report_compare::FieldDelta {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -2343,6 +2700,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::FieldOccurrence 
             self.count.into_into_dart().into_dart(),
             self.percentage.into_into_dart().into_dart(),
             self.top_values.into_into_dart().into_dart(),
+            self.values_capped.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2359,12 +2717,34 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::FieldOccurrence>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::FieldValueFilter {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.field_path.into_into_dart().into_dart(),
+            self.value.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::FieldValueFilter
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::FieldValueFilter>
+    for crate::api::kafka_types::FieldValueFilter
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::FieldValueFilter {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::FieldValueOccurrence {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.value.into_into_dart().into_dart(),
             self.count.into_into_dart().into_dart(),
             self.percentage.into_into_dart().into_dart(),
+            self.truncated.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2399,6 +2779,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::FilterType>
     for crate::api::kafka_types::FilterType
 {
     fn into_into_dart(self) -> crate::api::kafka_types::FilterType {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::HourBucket {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.epoch_hour.into_into_dart().into_dart(),
+            self.count.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::HourBucket
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::HourBucket>
+    for crate::api::kafka_types::HourBucket
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::HourBucket {
         self
     }
 }
@@ -2680,6 +3081,55 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::SizePercentiles>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::TopDuplicateOccurrence {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.key.into_into_dart().into_dart(),
+            self.payload_preview.into_into_dart().into_dart(),
+            self.count.into_into_dart().into_dart(),
+            self.percentage.into_into_dart().into_dart(),
+            self.sample_partition.into_into_dart().into_dart(),
+            self.sample_offset.into_into_dart().into_dart(),
+            self.sample_timestamp_ms.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::TopDuplicateOccurrence
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::TopDuplicateOccurrence>
+    for crate::api::kafka_types::TopDuplicateOccurrence
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::TopDuplicateOccurrence {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::TopicAnalysisOptions {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.max_messages.into_into_dart().into_dart(),
+            self.sample_from_latest.into_into_dart().into_dart(),
+            self.value_filter.into_into_dart().into_dart(),
+            self.duplicate_scope.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::TopicAnalysisOptions
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::TopicAnalysisOptions>
+    for crate::api::kafka_types::TopicAnalysisOptions
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::TopicAnalysisOptions {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::TopicAnalysisProgress {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -2729,6 +3179,12 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::TopicAnalysisRep
             self.size_percentiles_estimated.into_into_dart().into_dart(),
             self.estimated_distinct_keys.into_into_dart().into_dart(),
             self.key_cardinality_capped.into_into_dart().into_dart(),
+            self.hourly_timeline.into_into_dart().into_dart(),
+            self.scan_reference_time_ms.into_into_dart().into_dart(),
+            self.complete_from_ms.into_into_dart().into_dart(),
+            self.timeline_outside_count.into_into_dart().into_dart(),
+            self.value_filter_result.into_into_dart().into_dart(),
+            self.duplicate_analysis_result.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2858,6 +3314,30 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::TypeOccurrence>
     for crate::api::kafka_types::TypeOccurrence
 {
     fn into_into_dart(self) -> crate::api::kafka_types::TypeOccurrence {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ValueFilterResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.field_path.into_into_dart().into_dart(),
+            self.value.into_into_dart().into_dart(),
+            self.messages_with_field.into_into_dart().into_dart(),
+            self.matched_messages.into_into_dart().into_dart(),
+            self.matched_timeline.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::ValueFilterResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::ValueFilterResult>
+    for crate::api::kafka_types::ValueFilterResult
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::ValueFilterResult {
         self
     }
 }
@@ -2993,6 +3473,37 @@ impl SseEncode for crate::api::kafka_types::ConsumerGroupMember {
     }
 }
 
+impl SseEncode for crate::api::kafka_types::DuplicateAnalysisResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::kafka_types::DuplicateDetectionScope>::sse_encode(self.scope, serializer);
+        <i64>::sse_encode(self.total_messages, serializer);
+        <i64>::sse_encode(self.unique_messages, serializer);
+        <i64>::sse_encode(self.duplicate_messages, serializer);
+        <f64>::sse_encode(self.duplicate_rate, serializer);
+        <Vec<crate::api::kafka_types::TopDuplicateOccurrence>>::sse_encode(
+            self.top_duplicates,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::DuplicateDetectionScope {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_types::DuplicateDetectionScope::PayloadOnly => 0,
+                crate::api::kafka_types::DuplicateDetectionScope::KeyAndPayload => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for f64 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3022,6 +3533,15 @@ impl SseEncode for crate::api::kafka_types::FieldOccurrence {
             self.top_values,
             serializer,
         );
+        <bool>::sse_encode(self.values_capped, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::FieldValueFilter {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.field_path, serializer);
+        <String>::sse_encode(self.value, serializer);
     }
 }
 
@@ -3031,6 +3551,7 @@ impl SseEncode for crate::api::kafka_types::FieldValueOccurrence {
         <String>::sse_encode(self.value, serializer);
         <i64>::sse_encode(self.count, serializer);
         <f64>::sse_encode(self.percentage, serializer);
+        <bool>::sse_encode(self.truncated, serializer);
     }
 }
 
@@ -3048,6 +3569,14 @@ impl SseEncode for crate::api::kafka_types::FilterType {
             },
             serializer,
         );
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::HourBucket {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i64>::sse_encode(self.epoch_hour, serializer);
+        <i64>::sse_encode(self.count, serializer);
     }
 }
 
@@ -3185,6 +3714,16 @@ impl SseEncode for Vec<crate::api::kafka_types::FieldValueOccurrence> {
     }
 }
 
+impl SseEncode for Vec<crate::api::kafka_types::HourBucket> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_types::HourBucket>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::kafka_types::HourlyCount> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3275,6 +3814,16 @@ impl SseEncode for Vec<u8> {
     }
 }
 
+impl SseEncode for Vec<crate::api::kafka_types::TopDuplicateOccurrence> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_types::TopDuplicateOccurrence>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::kafka_metadata::TopicMetadata> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3356,12 +3905,42 @@ impl SseEncode for Option<bool> {
     }
 }
 
+impl SseEncode for Option<crate::api::kafka_types::DuplicateAnalysisResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_types::DuplicateAnalysisResult>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::kafka_types::DuplicateDetectionScope> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_types::DuplicateDetectionScope>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<f64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <f64>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::kafka_types::FieldValueFilter> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_types::FieldValueFilter>::sse_encode(value, serializer);
         }
     }
 }
@@ -3412,6 +3991,16 @@ impl SseEncode for Option<crate::api::kafka_types::TopicAnalysisReport> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::api::kafka_types::TopicAnalysisReport>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::kafka_types::ValueFilterResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_types::ValueFilterResult>::sse_encode(value, serializer);
         }
     }
 }
@@ -3503,6 +4092,35 @@ impl SseEncode for crate::api::kafka_types::SizePercentiles {
     }
 }
 
+impl SseEncode for crate::api::kafka_types::TopDuplicateOccurrence {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<String>>::sse_encode(self.key, serializer);
+        <String>::sse_encode(self.payload_preview, serializer);
+        <i64>::sse_encode(self.count, serializer);
+        <f64>::sse_encode(self.percentage, serializer);
+        <i32>::sse_encode(self.sample_partition, serializer);
+        <i64>::sse_encode(self.sample_offset, serializer);
+        <i64>::sse_encode(self.sample_timestamp_ms, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::TopicAnalysisOptions {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<i64>>::sse_encode(self.max_messages, serializer);
+        <bool>::sse_encode(self.sample_from_latest, serializer);
+        <Option<crate::api::kafka_types::FieldValueFilter>>::sse_encode(
+            self.value_filter,
+            serializer,
+        );
+        <Option<crate::api::kafka_types::DuplicateDetectionScope>>::sse_encode(
+            self.duplicate_scope,
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::api::kafka_types::TopicAnalysisProgress {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3557,6 +4175,18 @@ impl SseEncode for crate::api::kafka_types::TopicAnalysisReport {
         <bool>::sse_encode(self.size_percentiles_estimated, serializer);
         <i64>::sse_encode(self.estimated_distinct_keys, serializer);
         <bool>::sse_encode(self.key_cardinality_capped, serializer);
+        <Vec<crate::api::kafka_types::HourBucket>>::sse_encode(self.hourly_timeline, serializer);
+        <Option<i64>>::sse_encode(self.scan_reference_time_ms, serializer);
+        <Option<i64>>::sse_encode(self.complete_from_ms, serializer);
+        <i64>::sse_encode(self.timeline_outside_count, serializer);
+        <Option<crate::api::kafka_types::ValueFilterResult>>::sse_encode(
+            self.value_filter_result,
+            serializer,
+        );
+        <Option<crate::api::kafka_types::DuplicateAnalysisResult>>::sse_encode(
+            self.duplicate_analysis_result,
+            serializer,
+        );
     }
 }
 
@@ -3636,6 +4266,17 @@ impl SseEncode for usize {
             .cursor
             .write_u64::<NativeEndian>(self as _)
             .unwrap();
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::ValueFilterResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.field_path, serializer);
+        <String>::sse_encode(self.value, serializer);
+        <i64>::sse_encode(self.messages_with_field, serializer);
+        <i64>::sse_encode(self.matched_messages, serializer);
+        <Vec<crate::api::kafka_types::HourBucket>>::sse_encode(self.matched_timeline, serializer);
     }
 }
 

@@ -45,6 +45,7 @@ TopicAnalysisReport _report(String topic, int messages) => TopicAnalysisReport(
       count: 800,
       percentage: 80.0,
       topValues: [],
+      valuesCapped: false,
     ),
   ],
   scanDurationMs: 1000,
@@ -52,6 +53,11 @@ TopicAnalysisReport _report(String topic, int messages) => TopicAnalysisReport(
   sizePercentilesEstimated: false,
   estimatedDistinctKeys: 0,
   keyCardinalityCapped: false,
+  hourlyTimeline: const [],
+  scanReferenceTimeMs: null,
+  completeFromMs: null,
+  timelineOutsideCount: 0,
+  valueFilterResult: null,
 );
 
 TopicAnalysisReportFile _file(String topic, int messages) =>

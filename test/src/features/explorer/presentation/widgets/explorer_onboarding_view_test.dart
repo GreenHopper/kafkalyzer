@@ -124,4 +124,39 @@ void main() {
     expect(selectedCluster, 'PROD');
     expect(selectedTopic, 'orders-topic');
   });
+
+  testWidgets(
+    'renders progress indicator and disables connect button when cluster is connecting',
+    (tester) async {
+      bool selectCalled = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ExplorerOnboardingView(
+              clusters: [testCluster],
+              connectingProfile: testCluster,
+              onAddCluster: () {},
+              onSelectCluster: (_) {
+                selectCalled = true;
+              },
+              onSelectRecentTopic: (_, _) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Connect'),
+      );
+      expect(button.onPressed, isNull);
+
+      await tester.tap(find.text('Connect'));
+      await tester.pump();
+      expect(selectCalled, isFalse);
+    },
+  );
 }

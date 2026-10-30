@@ -38,8 +38,8 @@ class TopicAnalysisImportError implements Exception {
 /// in one place and can be evolved (and unit-tested) without touching the UI.
 class TopicAnalysisReportFile {
   static const String formatIdentifier = 'topic-analysis-report';
-  static const int currentVersion = 1;
-  static const Set<int> supportedVersions = {1};
+  static const int currentVersion = 3;
+  static const Set<int> supportedVersions = {1, 2, 3};
 
   final int version;
   final DateTime exportedAt;
@@ -167,6 +167,14 @@ Map<String, dynamic> _reportToMap(TopicAnalysisReport r) => <String, dynamic>{
   'size_percentiles_estimated': r.sizePercentilesEstimated,
   'estimated_distinct_keys': r.estimatedDistinctKeys.toInt(),
   'key_cardinality_capped': r.keyCardinalityCapped,
+  'hourly_timeline': r.hourlyTimeline.map(_hourBucketToMap).toList(),
+  'scan_reference_time_ms': r.scanReferenceTimeMs?.toInt(),
+  'complete_from_ms': r.completeFromMs?.toInt(),
+  'timeline_outside_count': r.timelineOutsideCount.toInt(),
+  'value_filter_result': _valueFilterResultToMap(r.valueFilterResult),
+  'duplicate_analysis_result': _duplicateAnalysisResultToMap(
+    r.duplicateAnalysisResult,
+  ),
 };
 
 TopicAnalysisReport _reportFromMap(
@@ -192,10 +200,105 @@ TopicAnalysisReport _reportFromMap(
   fieldFrequencies: _list(m['field_frequencies']).map(_fieldFromMap).toList(),
   scanDurationMs: _toInt(m['scan_duration_ms']),
   messageSizePercentiles: _percentilesFromMap(m['message_size_percentiles']),
-  sizePercentilesEstimated: _toBool(m['size_percentiles_estimated']),
-  estimatedDistinctKeys: _toInt(m['estimated_distinct_keys']),
-  keyCardinalityCapped: _toBool(m['key_cardinality_capped']),
+  sizePercentilesEstimated: _toBool(m['size_percentiles_estimated'] ?? false),
+  estimatedDistinctKeys: _toInt(m['estimated_distinct_keys'] ?? 0),
+  keyCardinalityCapped: _toBool(m['key_cardinality_capped'] ?? false),
+  hourlyTimeline: _list(m['hourly_timeline']).map(_hourBucketFromMap).toList(),
+  scanReferenceTimeMs: _toOptionalInt(m['scan_reference_time_ms']),
+  completeFromMs: _toOptionalInt(m['complete_from_ms']),
+  timelineOutsideCount: _toInt(m['timeline_outside_count'] ?? 0),
+  valueFilterResult: _valueFilterResultFromMap(m['value_filter_result']),
+  duplicateAnalysisResult: _duplicateAnalysisResultFromMap(
+    m['duplicate_analysis_result'],
+  ),
 );
+
+Map<String, dynamic> _hourBucketToMap(HourBucket b) => <String, dynamic>{
+  'epoch_hour': b.epochHour.toInt(),
+  'count': b.count.toInt(),
+};
+
+HourBucket _hourBucketFromMap(Map<String, dynamic> m) =>
+    HourBucket(epochHour: _toInt(m['epoch_hour']), count: _toInt(m['count']));
+
+Map<String, dynamic>? _valueFilterResultToMap(ValueFilterResult? r) {
+  if (r == null) return null;
+  return <String, dynamic>{
+    'field_path': r.fieldPath,
+    'value': r.value,
+    'messages_with_field': r.messagesWithField.toInt(),
+    'matched_messages': r.matchedMessages.toInt(),
+    'matched_timeline': r.matchedTimeline.map(_hourBucketToMap).toList(),
+  };
+}
+
+ValueFilterResult? _valueFilterResultFromMap(dynamic raw) {
+  if (raw is! Map) return null;
+  return ValueFilterResult(
+    fieldPath: _toStr(raw['field_path']),
+    value: _toStr(raw['value']),
+    messagesWithField: _toInt(raw['messages_with_field']),
+    matchedMessages: _toInt(raw['matched_messages']),
+    matchedTimeline: _list(
+      raw['matched_timeline'],
+    ).map(_hourBucketFromMap).toList(),
+  );
+}
+
+Map<String, dynamic>? _duplicateAnalysisResultToMap(
+  DuplicateAnalysisResult? r,
+) {
+  if (r == null) return null;
+  return <String, dynamic>{
+    'scope': r.scope.name,
+    'total_messages': r.totalMessages.toInt(),
+    'unique_messages': r.uniqueMessages.toInt(),
+    'duplicate_messages': r.duplicateMessages.toInt(),
+    'duplicate_rate': r.duplicateRate,
+    'top_duplicates': r.topDuplicates.map(_topDuplicateToMap).toList(),
+  };
+}
+
+Map<String, dynamic> _topDuplicateToMap(TopDuplicateOccurrence d) =>
+    <String, dynamic>{
+      'key': d.key,
+      'payload_preview': d.payloadPreview,
+      'count': d.count.toInt(),
+      'percentage': d.percentage,
+      'sample_partition': d.samplePartition,
+      'sample_offset': d.sampleOffset.toInt(),
+      'sample_timestamp_ms': d.sampleTimestampMs.toInt(),
+    };
+
+DuplicateAnalysisResult? _duplicateAnalysisResultFromMap(dynamic raw) {
+  if (raw is! Map) return null;
+  final scopeStr = _toStr(raw['scope']);
+  final scope = DuplicateDetectionScope.values.firstWhere(
+    (s) => s.name == scopeStr,
+    orElse: () => DuplicateDetectionScope.payloadOnly,
+  );
+  return DuplicateAnalysisResult(
+    scope: scope,
+    totalMessages: _toInt(raw['total_messages']),
+    uniqueMessages: _toInt(raw['unique_messages']),
+    duplicateMessages: _toInt(raw['duplicate_messages']),
+    duplicateRate: _toDouble(raw['duplicate_rate']),
+    topDuplicates: _list(
+      raw['top_duplicates'],
+    ).map(_topDuplicateFromMap).toList(),
+  );
+}
+
+TopDuplicateOccurrence _topDuplicateFromMap(Map<String, dynamic> m) =>
+    TopDuplicateOccurrence(
+      key: m['key'] as String?,
+      payloadPreview: _toStr(m['payload_preview']),
+      count: _toInt(m['count']),
+      percentage: _toDouble(m['percentage']),
+      samplePartition: _toInt(m['sample_partition']),
+      sampleOffset: _toInt(m['sample_offset']),
+      sampleTimestampMs: _toInt(m['sample_timestamp_ms']),
+    );
 
 /// Percentiles are optional in version 1 files: a missing block stays unavailable
 /// instead of turning into zeros.
@@ -277,6 +380,7 @@ Map<String, dynamic> _fieldValueToMap(FieldValueOccurrence f) =>
       'value': f.value,
       'count': f.count.toInt(),
       'percentage': f.percentage,
+      'truncated': f.truncated,
     };
 
 FieldValueOccurrence _fieldValueFromMap(Map<String, dynamic> m) =>
@@ -284,6 +388,7 @@ FieldValueOccurrence _fieldValueFromMap(Map<String, dynamic> m) =>
       value: _toStr(m['value']),
       count: _toInt(m['count']),
       percentage: _toDouble(m['percentage']),
+      truncated: _toBool(m['truncated'] ?? false),
     );
 
 Map<String, dynamic> _fieldToMap(FieldOccurrence f) => <String, dynamic>{
@@ -291,6 +396,7 @@ Map<String, dynamic> _fieldToMap(FieldOccurrence f) => <String, dynamic>{
   'count': f.count.toInt(),
   'percentage': f.percentage,
   'top_values': f.topValues.map(_fieldValueToMap).toList(),
+  'values_capped': f.valuesCapped,
 };
 
 FieldOccurrence _fieldFromMap(Map<String, dynamic> m) => FieldOccurrence(
@@ -298,9 +404,15 @@ FieldOccurrence _fieldFromMap(Map<String, dynamic> m) => FieldOccurrence(
   count: _toInt(m['count']),
   percentage: _toDouble(m['percentage']),
   topValues: _list(m['top_values']).map(_fieldValueFromMap).toList(),
+  valuesCapped: _toBool(m['values_capped'] ?? false),
 );
 
 // --- Lenient primitive coercion (any throw becomes `malformed`) ---------------
+
+int? _toOptionalInt(dynamic value) {
+  if (value == null) return null;
+  return _toInt(value);
+}
 
 List<Map<String, dynamic>> _list(dynamic value) {
   if (value == null) return <Map<String, dynamic>>[];

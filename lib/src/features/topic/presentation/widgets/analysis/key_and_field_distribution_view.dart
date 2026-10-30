@@ -8,12 +8,18 @@ class KeyAndFieldDistributionView extends StatelessWidget {
   final List<KeyOccurrence> topKeys;
   final List<TypeOccurrence> contentTypes;
   final List<FieldOccurrence> fieldFrequencies;
+  final int? totalMessages;
+  final ValueChanged<FieldValueFilter>? onRescanWithFilter;
+  final bool isImported;
 
   const KeyAndFieldDistributionView({
     super.key,
     required this.topKeys,
     required this.contentTypes,
     required this.fieldFrequencies,
+    this.totalMessages,
+    this.onRescanWithFilter,
+    this.isImported = false,
   });
 
   @override
@@ -43,7 +49,12 @@ class KeyAndFieldDistributionView extends StatelessWidget {
               _ContentTypesCard(contentTypes: contentTypes),
             ],
             const SizedBox(height: 16),
-            FieldValueExplorer(fieldFrequencies: fieldFrequencies),
+            FieldValueExplorer(
+              fieldFrequencies: fieldFrequencies,
+              totalMessages: totalMessages,
+              onRescanWithFilter: onRescanWithFilter,
+              isImported: isImported,
+            ),
           ],
         );
       },

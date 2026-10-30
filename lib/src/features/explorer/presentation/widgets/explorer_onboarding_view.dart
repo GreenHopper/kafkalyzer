@@ -9,6 +9,7 @@ class ExplorerOnboardingView extends StatelessWidget {
   final VoidCallback onAddCluster;
   final ValueChanged<ClusterProfile> onSelectCluster;
   final void Function(String clusterName, String topicName) onSelectRecentTopic;
+  final ClusterProfile? connectingProfile;
 
   const ExplorerOnboardingView({
     super.key,
@@ -16,6 +17,7 @@ class ExplorerOnboardingView extends StatelessWidget {
     required this.onAddCluster,
     required this.onSelectCluster,
     required this.onSelectRecentTopic,
+    this.connectingProfile,
   });
 
   @override
@@ -245,8 +247,19 @@ class ExplorerOnboardingView extends StatelessWidget {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: FilledButton.tonalIcon(
-                                  onPressed: () => onSelectCluster(cluster),
-                                  icon: const Icon(Icons.login, size: 18),
+                                  onPressed:
+                                      connectingProfile?.name == cluster.name
+                                      ? null
+                                      : () => onSelectCluster(cluster),
+                                  icon: connectingProfile?.name == cluster.name
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.login, size: 18),
                                   label: Text(
                                     l10n?.connectCluster ?? 'Connect',
                                   ),

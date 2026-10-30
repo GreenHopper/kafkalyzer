@@ -121,6 +121,12 @@ mod tests {
             size_percentiles_estimated: false,
             estimated_distinct_keys: 7,
             key_cardinality_capped: false,
+            hourly_timeline: vec![],
+            scan_reference_time_ms: None,
+            complete_from_ms: None,
+            timeline_outside_count: 0,
+            value_filter_result: None,
+            duplicate_analysis_result: None,
         }
     }
 

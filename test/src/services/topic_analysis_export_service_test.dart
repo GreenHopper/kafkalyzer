@@ -90,8 +90,14 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
         count: 900,
         percentage: 90.0,
         topValues: [
-          FieldValueOccurrence(value: '1', count: 10, percentage: 1.11),
+          FieldValueOccurrence(
+            value: '1',
+            count: 10,
+            percentage: 1.11,
+            truncated: false,
+          ),
         ],
+        valuesCapped: false,
       ),
     ],
     scanDurationMs: 12345,
@@ -99,6 +105,11 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
     sizePercentilesEstimated: false,
     estimatedDistinctKeys: 0,
     keyCardinalityCapped: false,
+    hourlyTimeline: const [],
+    scanReferenceTimeMs: null,
+    completeFromMs: null,
+    timelineOutsideCount: 0,
+    valueFilterResult: null,
   ),
 );
 

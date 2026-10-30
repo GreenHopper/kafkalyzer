@@ -1,12 +1,18 @@
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
+import 'package:kafkalyzer/src/features/topic/domain/production_timeline.dart';
+import 'package:kafkalyzer/src/features/topic/models/duplicate_navigation_target.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/daily_production_view.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/duplicate_analysis_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/hourly_production_chart.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/key_and_field_distribution_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/partition_balance_view.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/recent_production_chart.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_report_comparison_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_summary_cards.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/value_filter_widgets.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_table.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -19,12 +25,16 @@ class TopicAnalysisView extends StatefulWidget {
   final TopicMetadata topic;
   final ClusterProfile profile;
   final TopicAnalysisController controller;
+  final void Function(DuplicateNavigationTarget target)? onNavigateToTarget;
+  final void Function(int partition, int offset)? onNavigateToMessage;
 
   const TopicAnalysisView({
     super.key,
     required this.topic,
     required this.profile,
     required this.controller,
+    this.onNavigateToTarget,
+    this.onNavigateToMessage,
   });
 
   @override
@@ -35,6 +45,17 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
   ScanScopeOption _selectedScope = ScanScopeOption.full;
   bool _importing = false;
   bool _exporting = false;
+
+  TopicAnalysisReport? _lastReport;
+  ProductionTimeline? _timeline;
+
+  ProductionTimeline _getTimeline(TopicAnalysisReport report) {
+    if (!identical(_lastReport, report) || _timeline == null) {
+      _lastReport = report;
+      _timeline = ProductionTimeline(report: report);
+    }
+    return _timeline!;
+  }
 
   bool get _busy => _importing || _exporting;
 
@@ -64,12 +85,23 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                   children: [
                     if (report != null) ...[
                       TopicAnalysisSummaryCards(report: report),
+                      if (report.valueFilterResult != null) ...[
+                        const SizedBox(height: 16),
+                        ValueFilterMatchCard(
+                          result: report.valueFilterResult!,
+                          totalMessages: report.totalMessages,
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       _buildComparison(context, l10n),
                       const SizedBox(height: 16),
                       HourlyProductionChart(
                         hourlyDistribution: report.hourlyDistribution,
                       ),
+                      const SizedBox(height: 16),
+                      RecentProductionChart(timeline: _getTimeline(report)),
+                      const SizedBox(height: 16),
+                      DailyProductionView(timeline: _getTimeline(report)),
                       const SizedBox(height: 16),
                       PartitionBalanceView(
                         partitionStats: report.partitionStats,
@@ -82,6 +114,16 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                         topKeys: report.topKeys,
                         contentTypes: report.contentTypeDistribution,
                         fieldFrequencies: report.fieldFrequencies,
+                        totalMessages: report.totalMessages,
+                        onRescanWithFilter: (filter) =>
+                            widget.controller.rescanWithFilter(filter),
+                        isImported: widget.controller.isImported,
+                      ),
+                      const SizedBox(height: 16),
+                      DuplicateAnalysisView(
+                        result: report.duplicateAnalysisResult,
+                        onNavigateToTarget: widget.onNavigateToTarget,
+                        onNavigateToMessage: widget.onNavigateToMessage,
                       ),
                     ] else if (!isAnalyzing) ...[
                       _buildEmptyState(context, colorScheme, l10n, theme),
@@ -167,6 +209,57 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                 ),
               ],
             ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${l10n?.duplicateScopeLabel ?? 'Duplicate Scope'}:',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 8),
+                DropdownButton<DuplicateDetectionScope>(
+                  key: const Key('analysis_duplicate_scope_dropdown'),
+                  value: widget.controller.duplicateScope,
+                  onChanged: isAnalyzing
+                      ? null
+                      : (val) {
+                          if (val != null) {
+                            setState(() {
+                              widget.controller.setDuplicateScope(val);
+                            });
+                          }
+                        },
+                  items: [
+                    DropdownMenuItem(
+                      value: DuplicateDetectionScope.payloadOnly,
+                      child: Text(
+                        l10n?.duplicateScopePayloadOnly ?? 'Payload (Value)',
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: DuplicateDetectionScope.keyAndPayload,
+                      child: Text(
+                        l10n?.duplicateScopeKeyAndPayload ?? 'Key + Payload',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            ValueFilterControl(
+              activeFilter: widget.controller.valueFilter,
+              isAnalyzing: isAnalyzing,
+              availableFieldPaths:
+                  widget.controller.report?.fieldFrequencies
+                      .map((f) => f.fieldName)
+                      .toList() ??
+                  const [],
+              onFilterChanged: (filter) {
+                widget.controller.setValueFilter(filter);
+              },
+            ),
             if (widget.controller.isImported) _buildImportedChip(context, l10n),
             _buildImportButton(context, l10n),
             _buildExportButton(context, l10n),
@@ -215,6 +308,8 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
       widget.topic.name,
       maxMessages: maxMsgs,
       sampleFromLatest: true,
+      valueFilter: widget.controller.valueFilter,
+      duplicateScope: widget.controller.duplicateScope,
     );
   }
 

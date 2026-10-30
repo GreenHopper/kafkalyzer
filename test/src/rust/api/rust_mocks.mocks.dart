@@ -70,6 +70,12 @@ class _FakeTopicPartitionDetails_5 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakeTopicAnalysisOptions_6 extends _i1.SmartFake
+    implements _i3.TopicAnalysisOptions {
+  _FakeTopicAnalysisOptions_6(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [KafkalyzerRustLibApi].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -133,6 +139,23 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               #maxMessages: maxMessages,
               #sampleFromLatest: sampleFromLatest,
             }),
+            returnValue: _i11.Stream<_i3.TopicAnalysisProgress>.empty(),
+          )
+          as _i11.Stream<_i3.TopicAnalysisProgress>);
+
+  @override
+  _i11.Stream<_i3.TopicAnalysisProgress>
+  crateApiKafkaAnalyzerAnalyzeTopicContentWithOptions({
+    required _i3.ClusterProfile? profile,
+    required String? topic,
+    required _i3.TopicAnalysisOptions? options,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #crateApiKafkaAnalyzerAnalyzeTopicContentWithOptions,
+              [],
+              {#profile: profile, #topic: topic, #options: options},
+            ),
             returnValue: _i11.Stream<_i3.TopicAnalysisProgress>.empty(),
           )
           as _i11.Stream<_i3.TopicAnalysisProgress>);
@@ -522,6 +545,26 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
             returnValue: _i11.Future<int>.value(0),
           )
           as _i11.Future<int>);
+
+  @override
+  _i11.Future<_i3.TopicAnalysisOptions>
+  crateApiKafkaTypesTopicAnalysisOptionsDefault() =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #crateApiKafkaTypesTopicAnalysisOptionsDefault,
+              [],
+            ),
+            returnValue: _i11.Future<_i3.TopicAnalysisOptions>.value(
+              _FakeTopicAnalysisOptions_6(
+                this,
+                Invocation.method(
+                  #crateApiKafkaTypesTopicAnalysisOptionsDefault,
+                  [],
+                ),
+              ),
+            ),
+          )
+          as _i11.Future<_i3.TopicAnalysisOptions>);
 
   @override
   _i11.Future<bool> crateApiKafkaMetadataValidateConnection({

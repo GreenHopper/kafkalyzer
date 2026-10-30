@@ -18,3 +18,14 @@ Stream<TopicAnalysisProgress> analyzeTopicContent({
   maxMessages: maxMessages,
   sampleFromLatest: sampleFromLatest,
 );
+
+Stream<TopicAnalysisProgress> analyzeTopicContentWithOptions({
+  required ClusterProfile profile,
+  required String topic,
+  required TopicAnalysisOptions options,
+}) => KafkalyzerRustLib.instance.api
+    .crateApiKafkaAnalyzerAnalyzeTopicContentWithOptions(
+      profile: profile,
+      topic: topic,
+      options: options,
+    );

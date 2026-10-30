@@ -273,6 +273,14 @@ class MockActiveConnectionController extends _i1.Mock
   );
 
   @override
+  bool isConnectingCluster(_i6.ClusterProfile? profile) =>
+      (super.noSuchMethod(
+            Invocation.method(#isConnectingCluster, [profile]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   void updateTopicFilter(String? filter) => super.noSuchMethod(
     Invocation.method(#updateTopicFilter, [filter]),
     returnValueForMissingStub: null,

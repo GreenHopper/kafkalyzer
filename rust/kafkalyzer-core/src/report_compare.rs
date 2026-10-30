@@ -240,6 +240,7 @@ mod tests {
                     count: messages,
                     percentage: 100.0,
                     top_values: vec![],
+                    values_capped: false,
                 })
                 .collect(),
             scan_duration_ms: 1_000,
@@ -247,6 +248,12 @@ mod tests {
             size_percentiles_estimated: false,
             estimated_distinct_keys: 0,
             key_cardinality_capped: false,
+            hourly_timeline: vec![],
+            scan_reference_time_ms: None,
+            complete_from_ms: None,
+            timeline_outside_count: 0,
+            value_filter_result: None,
+            duplicate_analysis_result: None,
         }
     }
 

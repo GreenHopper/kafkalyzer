@@ -1012,5 +1012,193 @@
       "interval": { "type": "String" },
       "status": { "type": "String" }
     }
-  }
+  },
+  "recentProductionTitle": "Recent Production",
+  "recentProductionSubtitle": "Message volume over recent hours",
+  "window6h": "6h",
+  "window12h": "12h",
+  "window24h": "24h",
+  "window48h": "48h",
+  "window72h": "72h",
+  "timelineNotAvailableForReport": "Timeline is not available for this report.",
+  "timeZoneLabel": "Local time ({timeZone})",
+  "@timeZoneLabel": {
+    "placeholders": {
+      "timeZone": { "type": "String" }
+    }
+  },
+  "unusualIncreaseBadge": "Unusual increase",
+  "baselineLabel": "Baseline: {baseline}",
+  "@baselineLabel": {
+    "placeholders": {
+      "baseline": { "type": "String" }
+    }
+  },
+  "noComparisonData": "No comparison data",
+  "uncoveredHourHint": "Before coverage start ({count} messages)",
+  "@uncoveredHourHint": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "currentHourIncomplete": "Incomplete hour",
+  "coverageHint": "Scan covers the last {hours} hours of this window.",
+  "@coverageHint": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "hourlyTooltipDetails": "{count} messages ({delta})",
+  "@hourlyTooltipDetails": {
+    "placeholders": {
+      "count": { "type": "String" },
+      "delta": { "type": "String" }
+    }
+  },
+  "hourlyTooltipMatches": "{matches} matching ({share}%)",
+  "@hourlyTooltipMatches": {
+    "placeholders": {
+      "matches": { "type": "String" },
+      "share": { "type": "String" }
+    }
+  },
+  "dailyProductionTitle": "Daily Production Distribution",
+  "dailyProductionSubtitle": "Messages per calendar day",
+  "partialCoverageBadge": "Partial coverage",
+  "dailyMatchesShare": "{matches} ({share}%)",
+  "@dailyMatchesShare": {
+    "placeholders": {
+      "matches": { "type": "String" },
+      "share": { "type": "String" }
+    }
+  },
+  "valueFilterButton": "Filter by Field Value",
+  "valueFilterActive": "Filter: {path} = {value}",
+  "@valueFilterActive": {
+    "placeholders": {
+      "path": { "type": "String" },
+      "value": { "type": "String" }
+    }
+  },
+  "valueFilterClear": "Clear filter",
+  "valueFilterDialogTitle": "Filter by Field Value",
+  "valueFilterDialogFieldPath": "Field path (e.g. attributes.region)",
+  "valueFilterDialogValue": "Exact value",
+  "valueFilterApply": "Apply Filter",
+  "valueFilterValidationEmpty": "Field path cannot be empty",
+  "valueFilterMatchCardTitle": "Filter Matches",
+  "valueFilterMatchCount": "{count} matches",
+  "@valueFilterMatchCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "valueFilterShareOfTotal": "{percent}% of all scanned messages",
+  "@valueFilterShareOfTotal": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+  "valueFilterShareOfField": "{percent}% of messages with this field",
+  "@valueFilterShareOfField": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+  "valueFilterRemainder": "{remainder} non-matching messages",
+  "@valueFilterRemainder": {
+    "placeholders": {
+      "remainder": { "type": "String" }
+    }
+  },
+  "drillDownDialogTitle": "Field Value Details",
+  "drillDownFieldPath": "Field: {path}",
+  "@drillDownFieldPath": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "drillDownValue": "Value: {value}",
+  "@drillDownValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "drillDownCount": "Count: {count}",
+  "@drillDownCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "drillDownShareOfAll": "Share of all messages: {percent}%",
+  "@drillDownShareOfAll": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+  "drillDownShareOfField": "Share of field occurrences: {percent}%",
+  "@drillDownShareOfField": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+  "drillDownRescanButton": "Re-scan with this filter",
+  "drillDownApproximateBadge": "Approximate (values capped)",
+  "drillDownTruncatedNotice": "Value was truncated (>80 chars). Re-scan cannot use truncated values.",
+  "drillDownRescanUnavailableImported": "Re-scan is not available for imported reports.",
+  "duplicateScopeLabel": "Duplicate Scope",
+  "duplicateScopePayloadOnly": "Payload (Value)",
+  "duplicateScopeKeyAndPayload": "Key + Payload",
+  "duplicateMessagesCardTitle": "Duplicate Messages",
+  "duplicateMessagesRate": "{rate}% of messages",
+  "@duplicateMessagesRate": {
+    "placeholders": {
+      "rate": { "type": "String" }
+    }
+  },
+  "duplicateMessagesSubtitle": "{unique} unique • {scope}",
+  "@duplicateMessagesSubtitle": {
+    "placeholders": {
+      "unique": { "type": "String" },
+      "scope": { "type": "String" }
+    }
+  },
+  "topDuplicatesTitle": "Top Duplicated Messages",
+  "topDuplicatesSubtitle": "Showing up to 20 most frequent duplicated messages",
+  "noDuplicatesDetected": "No duplicate messages detected in this scan.",
+  "duplicateAnalysisUnavailable": "Duplicate analysis is not available for this report.",
+  "sampleLocation": "Partition {partition}, Offset {offset}",
+  "@sampleLocation": {
+    "placeholders": {
+      "partition": { "type": "int" },
+      "offset": { "type": "int" }
+    }
+  },
+  "copyPayload": "Copy payload",
+  "copyKey": "Copy key",
+  "copiedPayload": "Payload copied to clipboard",
+  "copiedKey": "Key copied to clipboard",
+  "duplicateRankHeader": "#",
+  "duplicateCountHeader": "Occurrences",
+  "duplicateShareHeader": "Share",
+  "duplicateKeyHeader": "Key",
+  "duplicatePayloadPreviewHeader": "Payload Preview",
+  "duplicateSampleCoordinatesHeader": "Sample Location",
+  "duplicateDetailsTitle": "Duplicate Message Details",
+  "duplicateDetailsSubtitle": "Rank #{rank} • {count} occurrences ({share}%)",
+  "@duplicateDetailsSubtitle": {
+    "placeholders": {
+      "rank": { "type": "int" },
+      "count": { "type": "String" },
+      "share": { "type": "String" }
+    }
+  },
+  "openInMessages": "Open in Messages",
+  "filterDuplicatesInMessages": "Filter in Messages",
+  "jumpToSampleOffset": "Jump to Sample",
+  "duplicateCoordinates": "Coordinates",
+  "duplicateTimestamp": "Timestamp",
+  "duplicateKey": "Key",
+  "duplicatePayload": "Decoded Payload",
+  "inspectDuplicateTooltip": "View duplicate details"
 }

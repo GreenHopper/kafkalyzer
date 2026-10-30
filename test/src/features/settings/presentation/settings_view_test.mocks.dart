@@ -263,6 +263,14 @@ class MockActiveConnectionController extends _i1.Mock
   );
 
   @override
+  bool isConnectingCluster(_i5.ClusterProfile? profile) =>
+      (super.noSuchMethod(
+            Invocation.method(#isConnectingCluster, [profile]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   void updateTopicFilter(String? filter) => super.noSuchMethod(
     Invocation.method(#updateTopicFilter, [filter]),
     returnValueForMissingStub: null,
@@ -456,7 +464,6 @@ class MockSettingsService extends _i1.Mock implements _i11.SettingsService {
               #includeSensitiveCredentials: includeSensitiveCredentials,
             }),
             returnValue: _i6.Future<String?>.value(),
-            returnValueForMissingStub: _i6.Future<String?>.value(),
           )
           as _i6.Future<String?>);
 

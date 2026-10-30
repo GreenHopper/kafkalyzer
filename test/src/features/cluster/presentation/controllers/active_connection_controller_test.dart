@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
@@ -34,9 +35,13 @@ class MockLogger extends Logger {
 
 class MockKafkaMetadataService extends KafkaMetadataService {
   bool shouldValidate = true;
+  Future<bool> Function({required ClusterProfile profile})? onValidate;
 
   @override
   Future<bool> validateConnection({required ClusterProfile profile}) async {
+    if (onValidate != null) {
+      return onValidate!(profile: profile);
+    }
     if (!shouldValidate) throw Exception('Connection Refused');
     return true;
   }
@@ -114,6 +119,79 @@ void main() {
       expect(controller.error, contains('Connection Refused'));
       expect(controller.isConnecting, isFalse);
     });
+
+    test(
+      'tracks connectingProfile and isConnecting during in-flight validation and clears on success',
+      () async {
+        final completer = Completer<bool>();
+        mockMetadataService.onValidate = ({required profile}) =>
+            completer.future;
+
+        expect(controller.connectingProfile, isNull);
+        expect(controller.isConnecting, isFalse);
+
+        final connectFuture = controller.connect(validProfile);
+
+        // Verify connecting state immediately set
+        expect(controller.connectingProfile, equals(validProfile));
+        expect(controller.isConnectingCluster(validProfile), isTrue);
+        expect(controller.isConnecting, isTrue);
+        expect(controller.activeProfile, isNull);
+
+        completer.complete(true);
+        await connectFuture;
+
+        expect(controller.connectingProfile, isNull);
+        expect(controller.isConnectingCluster(validProfile), isFalse);
+        expect(controller.isConnecting, isFalse);
+        expect(controller.activeProfile, equals(validProfile));
+      },
+    );
+
+    test(
+      'tracks connectingProfile during timeout/failure and clears cleanly with error recorded',
+      () async {
+        final completer = Completer<bool>();
+        mockMetadataService.onValidate = ({required profile}) =>
+            completer.future;
+
+        final connectFuture = controller.connect(validProfile);
+
+        expect(controller.connectingProfile, equals(validProfile));
+        expect(controller.isConnecting, isTrue);
+        expect(controller.activeProfile, isNull);
+
+        completer.completeError(
+          Exception('BrokerTransportFailure: Connection timed out'),
+        );
+        await connectFuture;
+
+        expect(controller.connectingProfile, isNull);
+        expect(controller.isConnecting, isFalse);
+        expect(controller.activeProfile, isNull);
+        expect(controller.error, contains('Broker Transport Failure'));
+      },
+    );
+
+    test(
+      'ignores duplicate concurrent connect calls to the same connecting profile',
+      () async {
+        int validateCallCount = 0;
+        final completer = Completer<bool>();
+        mockMetadataService.onValidate = ({required profile}) {
+          validateCallCount++;
+          return completer.future;
+        };
+
+        final future1 = controller.connect(validProfile);
+        final future2 = controller.connect(validProfile);
+
+        expect(validateCallCount, equals(1));
+        completer.complete(true);
+        await Future.wait([future1, future2]);
+        expect(validateCallCount, equals(1));
+      },
+    );
 
     test('disconnect clears state', () async {
       mockMetadataService.shouldValidate = true;

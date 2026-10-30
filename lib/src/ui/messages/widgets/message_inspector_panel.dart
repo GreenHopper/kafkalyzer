@@ -391,130 +391,14 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                      // Search in message toggle
-                      Tooltip(
-                        message: l10n.searchInMessage,
-                        child: IconButton(
-                          icon: Icon(
-                            _isSearchOpen ? Icons.search_off : Icons.search,
-                            size: 16,
-                            color: _isSearchOpen ? colorScheme.primary : null,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isSearchOpen = !_isSearchOpen;
-                              if (!_isSearchOpen) {
-                                _searchController.clear();
-                                _totalMatches = 0;
-                                _currentMatchIndex = 0;
-                              }
-                            });
-                            if (_isSearchOpen) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                _searchFocusNode.requestFocus();
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Copy Entire Message as JSON
-                      Tooltip(
-                        message: l10n.copyMessage,
-                        child: IconButton(
-                          icon: const Icon(Icons.copy_all, size: 16),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          onPressed: () {
-                            final fullJson = _formatFullMessageJson(dateStr);
-                            Clipboard.setData(ClipboardData(text: fullJson));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.fullMessageCopied),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Copy Shareable Link
-                      Tooltip(
-                        message: l10n.copyShareableLink,
-                        child: IconButton(
-                          key: const Key('copy_shareable_link_button'),
-                          icon: const Icon(Icons.link, size: 16),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          onPressed: () {
-                            final ref = MessageReference(
-                              cluster: widget.profile?.name,
-                              topic: widget.message.topic,
-                              partition: widget.message.partition,
-                              offset: widget.message.offset,
-                              filter: widget.searchPhrase,
-                            );
-                            Clipboard.setData(
-                              ClipboardData(text: ref.toString()),
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.shareableLinkCopied),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Maximize / Focus Mode Toggle
-                      if (widget.onToggleMaximize != null) ...[
+                        // Search in message toggle
                         Tooltip(
-                          message: widget.isMaximized
-                              ? l10n.exitFocusMode
-                              : l10n.focusMode,
+                          message: l10n.searchInMessage,
                           child: IconButton(
                             icon: Icon(
-                              widget.isMaximized
-                                  ? Icons.fullscreen_exit
-                                  : Icons.fullscreen,
-                              size: 18,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 28,
-                              minHeight: 28,
-                            ),
-                            onPressed: widget.onToggleMaximize,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      // Docking Toggle (when not maximized)
-                      if (!widget.isMaximized) ...[
-                        Tooltip(
-                          message: isBottom ? l10n.dockSide : l10n.dockBottom,
-                          child: IconButton(
-                            icon: Icon(
-                              isBottom
-                                  ? Icons.view_sidebar_outlined
-                                  : Icons.dock_outlined,
+                              _isSearchOpen ? Icons.search_off : Icons.search,
                               size: 16,
+                              color: _isSearchOpen ? colorScheme.primary : null,
                             ),
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.zero,
@@ -522,32 +406,150 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                               minWidth: 28,
                               minHeight: 28,
                             ),
-                            onPressed: widget.onToggleDockPosition,
+                            onPressed: () {
+                              setState(() {
+                                _isSearchOpen = !_isSearchOpen;
+                                if (!_isSearchOpen) {
+                                  _searchController.clear();
+                                  _totalMatches = 0;
+                                  _currentMatchIndex = 0;
+                                }
+                              });
+                              if (_isSearchOpen) {
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  _searchFocusNode.requestFocus();
+                                });
+                              }
+                            },
                           ),
                         ),
                         const SizedBox(width: 4),
-                      ],
-                      // Close Button
-                      Tooltip(
-                        message: l10n.closeInspector,
-                        child: IconButton(
-                          icon: const Icon(Icons.close, size: 16),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
+                        // Copy Entire Message as JSON
+                        Tooltip(
+                          message: l10n.copyMessage,
+                          child: IconButton(
+                            icon: const Icon(Icons.copy_all, size: 16),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
+                            ),
+                            onPressed: () {
+                              final fullJson = _formatFullMessageJson(dateStr);
+                              Clipboard.setData(ClipboardData(text: fullJson));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(l10n.fullMessageCopied),
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            },
                           ),
-                          onPressed: widget.onClose,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 4),
+                        // Copy Shareable Link
+                        Tooltip(
+                          message: l10n.copyShareableLink,
+                          child: IconButton(
+                            key: const Key('copy_shareable_link_button'),
+                            icon: const Icon(Icons.link, size: 16),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
+                            ),
+                            onPressed: () {
+                              final ref = MessageReference(
+                                cluster: widget.profile?.name,
+                                topic: widget.message.topic,
+                                partition: widget.message.partition,
+                                offset: widget.message.offset,
+                                filter: widget.searchPhrase,
+                              );
+                              Clipboard.setData(
+                                ClipboardData(text: ref.toString()),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(l10n.shareableLinkCopied),
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        // Maximize / Focus Mode Toggle
+                        if (widget.onToggleMaximize != null) ...[
+                          Tooltip(
+                            message: widget.isMaximized
+                                ? l10n.exitFocusMode
+                                : l10n.focusMode,
+                            child: IconButton(
+                              icon: Icon(
+                                widget.isMaximized
+                                    ? Icons.fullscreen_exit
+                                    : Icons.fullscreen,
+                                size: 18,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              onPressed: widget.onToggleMaximize,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        // Docking Toggle (when not maximized)
+                        if (!widget.isMaximized) ...[
+                          Tooltip(
+                            message: isBottom ? l10n.dockSide : l10n.dockBottom,
+                            child: IconButton(
+                              icon: Icon(
+                                isBottom
+                                    ? Icons.view_sidebar_outlined
+                                    : Icons.dock_outlined,
+                                size: 16,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              onPressed: widget.onToggleDockPosition,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        // Close Button
+                        Tooltip(
+                          message: l10n.closeInspector,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, size: 16),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
+                            ),
+                            onPressed: widget.onClose,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        );
+            ],
+          );
         },
       ),
     );

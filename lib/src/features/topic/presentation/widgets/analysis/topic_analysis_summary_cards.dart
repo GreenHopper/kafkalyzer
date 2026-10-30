@@ -22,11 +22,14 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
     final nullKeysPct = totalMsgs > 0 ? (nullKeys / totalMsgs) * 100.0 : 0.0;
     final keyedCount = totalMsgs - nullKeys;
     final keyedPct = totalMsgs > 0 ? (keyedCount / totalMsgs) * 100.0 : 0.0;
+    final dupResult = report.duplicateAnalysisResult;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = (constraints.maxWidth - 36) / 4;
-        final minWidth = cardWidth < 220 ? double.infinity : cardWidth;
+        final cardCount = dupResult != null ? 5 : 4;
+        final cardWidth =
+            (constraints.maxWidth - (cardCount - 1) * 12) / cardCount;
+        final minWidth = cardWidth < 200 ? double.infinity : cardWidth;
 
         return Wrap(
           spacing: 12,
@@ -93,10 +96,38 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
                     ' • ${_distinctKeysLine(l10n, numberFormat)}',
               ),
             ),
+            if (dupResult != null)
+              SizedBox(
+                width: minWidth,
+                child: _SummaryCard(
+                  icon: Icons.copy_all_outlined,
+                  iconColor: Colors.deepOrange,
+                  title:
+                      l10n?.duplicateMessagesCardTitle ?? 'Duplicate Messages',
+                  mainValue:
+                      '${numberFormat.format(dupResult.duplicateMessages)} '
+                      '(${dupResult.duplicateRate.toStringAsFixed(1)}%)',
+                  subtitle:
+                      l10n?.duplicateMessagesSubtitle(
+                        numberFormat.format(dupResult.uniqueMessages),
+                        _scopeLabel(dupResult.scope, l10n),
+                      ) ??
+                      '${numberFormat.format(dupResult.uniqueMessages)} unique • ${_scopeLabel(dupResult.scope, l10n)}',
+                ),
+              ),
           ],
         );
       },
     );
+  }
+
+  String _scopeLabel(DuplicateDetectionScope scope, AppLocalizations? l10n) {
+    switch (scope) {
+      case DuplicateDetectionScope.payloadOnly:
+        return l10n?.duplicateScopePayloadOnly ?? 'Payload (Value)';
+      case DuplicateDetectionScope.keyAndPayload:
+        return l10n?.duplicateScopeKeyAndPayload ?? 'Key + Payload';
+    }
   }
 
   /// p50 / p95 / p99 of message sizes. Only labeled as an estimate when the scan

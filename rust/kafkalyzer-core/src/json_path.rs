@@ -79,6 +79,78 @@ fn unescape_pointer_token(token: &str) -> String {
     token.replace("~1", "/").replace("~0", "~")
 }
 
+pub fn escape_pointer_token(token: &str) -> String {
+    token.replace('~', "~0").replace('/', "~1")
+}
+
+/// Check whether a path segment is safe to format using dot notation.
+pub fn is_safe_segment(seg: &str) -> bool {
+    !seg.is_empty()
+        && !seg.starts_with('$')
+        && !seg.chars().all(|c| c.is_ascii_digit())
+        && !seg.contains(['.', '/', '[', ']', '~', ' ', '\t', '\n', '\r'])
+}
+
+/// Build a canonical path string from path segments.
+///
+/// Uses dot notation (`a.b.c`) when all segments are safe, and RFC 6901 JSON
+/// Pointer (`/a/b~1c`) otherwise.
+pub fn build_canonical_path<S: AsRef<str>>(segments: &[S]) -> String {
+    if segments.is_empty() {
+        return String::new();
+    }
+    let all_safe = segments.iter().all(|s| is_safe_segment(s.as_ref()));
+    if all_safe {
+        segments
+            .iter()
+            .map(|s| s.as_ref())
+            .collect::<Vec<_>>()
+            .join(".")
+    } else {
+        let mut pointer = String::new();
+        for seg in segments {
+            pointer.push('/');
+            pointer.push_str(&escape_pointer_token(seg.as_ref()));
+        }
+        pointer
+    }
+}
+
+/// Pre-parsed field path that can be repeatedly resolved without re-tokenizing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FieldPath {
+    tokens: Vec<String>,
+}
+
+impl FieldPath {
+    pub fn parse(path: &str) -> Option<Self> {
+        let tokens = tokenize(path)?;
+        Some(Self { tokens })
+    }
+
+    pub fn lookup<'a>(&self, value: &'a Value) -> Option<&'a Value> {
+        get(value, &self.tokens)
+    }
+
+    pub fn tokens(&self) -> &[String] {
+        &self.tokens
+    }
+}
+
+/// Format a value specifically for field frequency statistics and exact value matching.
+///
+/// Strings are unquoted, numbers and booleans are formatted as literals,
+/// null is formatted as `"null"`, and containers (arrays/objects) yield `None`.
+pub fn render_for_statistics(value: &Value) -> Option<String> {
+    match value {
+        Value::String(s) => Some(s.clone()),
+        Value::Null => Some("null".to_string()),
+        Value::Number(n) => Some(n.to_string()),
+        Value::Bool(b) => Some(b.to_string()),
+        Value::Array(_) | Value::Object(_) => None,
+    }
+}
+
 fn get<'a>(value: &'a Value, tokens: &[String]) -> Option<&'a Value> {
     let mut current = value;
     for token in tokens {
@@ -216,6 +288,107 @@ mod tests {
                 Some("new".to_string()),
                 None,
             ]
+        );
+    }
+
+    #[test]
+    fn field_path_lookup_distinguishes_present_null_from_absent() {
+        let val: Value = serde_json::from_str(PAYLOAD).unwrap();
+
+        let null_path = FieldPath::parse("nothing").unwrap();
+        let lookup_null = null_path.lookup(&val);
+        assert_eq!(lookup_null, Some(&Value::Null));
+        assert_eq!(render_for_statistics(lookup_null.unwrap()), Some("null".to_string()));
+
+        let absent_path = FieldPath::parse("order.missing").unwrap();
+        assert_eq!(absent_path.lookup(&val), None);
+    }
+
+    #[test]
+    fn field_path_resolves_various_notations() {
+        let val: Value = serde_json::from_str(PAYLOAD).unwrap();
+
+        for path in [
+            "order.status",
+            "$.order.status",
+            "/order/status",
+            "order.items[1].sku",
+            "order.items.1.sku",
+            "/order/items/1/sku",
+        ] {
+            let fp = FieldPath::parse(path).unwrap();
+            let looked_up = fp.lookup(&val).unwrap();
+            let rendered = render_for_statistics(looked_up);
+            let expected = if path.contains("items") { "B-2" } else { "shipped" };
+            assert_eq!(rendered.as_deref(), Some(expected));
+        }
+    }
+
+    #[test]
+    fn render_for_statistics_handles_types() {
+        assert_eq!(render_for_statistics(&Value::String("hello".into())), Some("hello".into()));
+        assert_eq!(render_for_statistics(&Value::Null), Some("null".into()));
+        assert_eq!(render_for_statistics(&Value::from(42)), Some("42".into()));
+        assert_eq!(render_for_statistics(&Value::Bool(true)), Some("true".into()));
+        assert_eq!(render_for_statistics(&serde_json::json!([1, 2])), None);
+        assert_eq!(render_for_statistics(&serde_json::json!({"a": 1})), None);
+    }
+
+    #[test]
+    fn canonical_path_builder_and_roundtrip_lookup() {
+        let payload = r#"{
+            "order": {
+                "id": "A1",
+                "nested": { "deep": 123 }
+            },
+            "labels": {
+                "app.kubernetes.io/name": "kafkalyzer",
+                "c~d": "tilde_val",
+                "special/slash": "slash_val"
+            }
+        }"#;
+        let val: Value = serde_json::from_str(payload).unwrap();
+
+        // 1. Safe segments -> dot notation
+        let path1 = build_canonical_path(&["order", "id"]);
+        assert_eq!(path1, "order.id");
+        let fp1 = FieldPath::parse(&path1).unwrap();
+        assert_eq!(
+            fp1.lookup(&val).and_then(render_for_statistics).as_deref(),
+            Some("A1")
+        );
+
+        let path2 = build_canonical_path(&["order", "nested", "deep"]);
+        assert_eq!(path2, "order.nested.deep");
+        let fp2 = FieldPath::parse(&path2).unwrap();
+        assert_eq!(
+            fp2.lookup(&val).and_then(render_for_statistics).as_deref(),
+            Some("123")
+        );
+
+        // 2. Unsafe segments -> JSON Pointer
+        let path3 = build_canonical_path(&["labels", "app.kubernetes.io/name"]);
+        assert_eq!(path3, "/labels/app.kubernetes.io~1name");
+        let fp3 = FieldPath::parse(&path3).unwrap();
+        assert_eq!(
+            fp3.lookup(&val).and_then(render_for_statistics).as_deref(),
+            Some("kafkalyzer")
+        );
+
+        let path4 = build_canonical_path(&["labels", "c~d"]);
+        assert_eq!(path4, "/labels/c~0d");
+        let fp4 = FieldPath::parse(&path4).unwrap();
+        assert_eq!(
+            fp4.lookup(&val).and_then(render_for_statistics).as_deref(),
+            Some("tilde_val")
+        );
+
+        let path5 = build_canonical_path(&["labels", "special/slash"]);
+        assert_eq!(path5, "/labels/special~1slash");
+        let fp5 = FieldPath::parse(&path5).unwrap();
+        assert_eq!(
+            fp5.lookup(&val).and_then(render_for_statistics).as_deref(),
+            Some("slash_val")
         );
     }
 }

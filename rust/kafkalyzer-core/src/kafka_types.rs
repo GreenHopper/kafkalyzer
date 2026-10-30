@@ -145,11 +145,70 @@ pub struct TypeOccurrence {
     pub percentage: f64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HourBucket {
+    pub epoch_hour: i64,
+    pub count: i64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DuplicateDetectionScope {
+    PayloadOnly,
+    KeyAndPayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TopDuplicateOccurrence {
+    pub key: Option<String>,
+    pub payload_preview: String,
+    pub count: i64,
+    pub percentage: f64,
+    pub sample_partition: i32,
+    pub sample_offset: i64,
+    pub sample_timestamp_ms: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DuplicateAnalysisResult {
+    pub scope: DuplicateDetectionScope,
+    pub total_messages: i64,
+    pub unique_messages: i64,
+    pub duplicate_messages: i64,
+    pub duplicate_rate: f64,
+    pub top_duplicates: Vec<TopDuplicateOccurrence>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FieldValueFilter {
+    pub field_path: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TopicAnalysisOptions {
+    pub max_messages: Option<i64>,
+    pub sample_from_latest: bool,
+    pub value_filter: Option<FieldValueFilter>,
+    #[serde(default)]
+    pub duplicate_scope: Option<DuplicateDetectionScope>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ValueFilterResult {
+    pub field_path: String,
+    pub value: String,
+    pub messages_with_field: i64,
+    pub matched_messages: i64,
+    pub matched_timeline: Vec<HourBucket>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldValueOccurrence {
     pub value: String,
     pub count: i64,
     pub percentage: f64,
+    #[serde(default)]
+    pub truncated: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -158,6 +217,8 @@ pub struct FieldOccurrence {
     pub count: i64,
     pub percentage: f64,
     pub top_values: Vec<FieldValueOccurrence>,
+    #[serde(default)]
+    pub values_capped: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -190,6 +251,18 @@ pub struct TopicAnalysisReport {
     /// lower bound rather than an exact number.
     #[serde(default)]
     pub key_cardinality_capped: bool,
+    #[serde(default)]
+    pub hourly_timeline: Vec<HourBucket>,
+    #[serde(default)]
+    pub scan_reference_time_ms: Option<i64>,
+    #[serde(default)]
+    pub complete_from_ms: Option<i64>,
+    #[serde(default)]
+    pub timeline_outside_count: i64,
+    #[serde(default)]
+    pub value_filter_result: Option<ValueFilterResult>,
+    #[serde(default)]
+    pub duplicate_analysis_result: Option<DuplicateAnalysisResult>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -202,4 +275,53 @@ pub struct TopicAnalysisProgress {
     pub is_complete: bool,
     pub error_message: Option<String>,
     pub partial_report: Option<TopicAnalysisReport>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_report_deserialization_without_new_fields() {
+        let legacy_json = r#"{
+            "topic": "test-topic",
+            "total_messages": 100,
+            "total_bytes": 1024,
+            "min_message_size": 10,
+            "max_message_size": 100,
+            "avg_message_size": 10.24,
+            "tombstones_count": 0,
+            "is_compacted": false,
+            "null_keys_count": 5,
+            "partition_stats": [],
+            "hourly_distribution": [],
+            "top_keys": [],
+            "content_type_distribution": [],
+            "field_frequencies": [
+                {
+                    "field_name": "status",
+                    "count": 50,
+                    "percentage": 50.0,
+                    "top_values": [
+                        {
+                            "value": "OK",
+                            "count": 50,
+                            "percentage": 100.0
+                        }
+                    ]
+                }
+            ],
+            "scan_duration_ms": 120
+        }"#;
+
+        let report: TopicAnalysisReport = serde_json::from_str(legacy_json).unwrap();
+        assert_eq!(report.topic, "test-topic");
+        assert!(report.hourly_timeline.is_empty());
+        assert_eq!(report.scan_reference_time_ms, None);
+        assert_eq!(report.complete_from_ms, None);
+        assert_eq!(report.timeline_outside_count, 0);
+        assert!(report.value_filter_result.is_none());
+        assert!(!report.field_frequencies[0].values_capped);
+        assert!(!report.field_frequencies[0].top_values[0].truncated);
+    }
 }

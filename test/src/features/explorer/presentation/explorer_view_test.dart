@@ -123,12 +123,14 @@ void main() {
         forceNew: anyNamed('forceNew'),
       ),
     ).thenReturn(null);
+    when(mockActiveConnectionController.connectingProfile).thenReturn(null);
   });
 
   void stubIdleSidebarState() {
     when(mockClusterListController.isLoading).thenReturn(false);
     when(mockClusterListController.clusters).thenReturn([testProfile]);
     when(mockActiveConnectionController.activeProfile).thenReturn(null);
+    when(mockActiveConnectionController.connectingProfile).thenReturn(null);
     when(mockActiveConnectionController.isConnecting).thenReturn(false);
     when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
     when(mockActiveConnectionController.error).thenReturn(null);
@@ -233,6 +235,39 @@ void main() {
       verify(mockActiveConnectionController.connect(testProfile)).called(1);
       verify(mockSchemaController.fetchSchemas(testProfile)).called(1);
     });
+
+    testWidgets(
+      'shows progress indicator next to connecting cluster in sidebar and disables repeat tap',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([testProfile]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+        when(
+          mockActiveConnectionController.connectingProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(true);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(mockActiveConnectionController.error).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsWidgets);
+
+        await tester.tap(find.text('test-cluster').first);
+        await tester.pump();
+
+        verifyNever(mockActiveConnectionController.connect(any));
+      },
+    );
 
     testWidgets('filtering updates topics', (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
