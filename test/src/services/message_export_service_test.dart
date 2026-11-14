@@ -8,6 +8,7 @@ import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
@@ -65,7 +66,7 @@ void main() {
 
   group('MessageExportService', () {
     test('exportMessages does nothing when messages is empty', () async {
-      await service.exportMessages([]);
+      await service.exportMessages([], dialogTitle: 'Export Messages');
       expect(mockFilePicker.saveFileCalled, isFalse);
     });
 
@@ -92,7 +93,7 @@ void main() {
       final targetPath = p.join(tempDir, 'export.json');
       mockFilePicker.savePath = targetPath;
 
-      await service.exportMessages(messages);
+      await service.exportMessages(messages, dialogTitle: 'Export Messages');
 
       expect(mockFilePicker.saveFileCalled, isTrue);
       expect(mockFilePicker.lastFileName, startsWith('topic-a_'));
@@ -143,7 +144,7 @@ void main() {
       final targetPath = p.join(tempDir, 'export.zip');
       mockFilePicker.savePath = targetPath;
 
-      await service.exportMessages(messages);
+      await service.exportMessages(messages, dialogTitle: 'Export Messages');
 
       expect(mockFilePicker.saveFileCalled, isTrue);
       expect(mockFilePicker.lastFileName, startsWith('messages_export_'));
@@ -189,7 +190,10 @@ void main() {
 
       mockFilePicker.savePath = null;
 
-      final result = await service.exportMessages(messages);
+      final result = await service.exportMessages(
+        messages,
+        dialogTitle: 'Export Messages',
+      );
 
       expect(mockFilePicker.saveFileCalled, isTrue);
       expect(result, isNull);
@@ -210,7 +214,10 @@ void main() {
       final targetPath = p.join(tempDir, 'returned_path.json');
       mockFilePicker.savePath = targetPath;
 
-      final result = await service.exportMessages(messages);
+      final result = await service.exportMessages(
+        messages,
+        dialogTitle: 'Export Messages',
+      );
 
       expect(result, equals(targetPath));
       expect(File(targetPath).existsSync(), isTrue);
@@ -230,7 +237,10 @@ void main() {
 
       mockFilePicker.savePath = null;
 
-      final result = await service.exportMessagesCsv(messages);
+      final result = await service.exportMessagesCsv(
+        messages,
+        dialogTitle: 'Export Messages',
+      );
 
       expect(mockFilePicker.saveFileCalled, isTrue);
       expect(result, isNull);
@@ -256,7 +266,7 @@ void main() {
       );
 
       expect(
-        () => service.exportMessages(messages),
+        () => service.exportMessages(messages, dialogTitle: 'Export Messages'),
         throwsA(isA<FileSystemException>()),
       );
     });
@@ -285,7 +295,11 @@ void main() {
       final targetPath = p.join(tempDir, 'orders.csv');
       mockFilePicker.savePath = targetPath;
 
-      await service.exportMessages(messages, format: ExportFormat.csv);
+      await service.exportMessages(
+        messages,
+        dialogTitle: 'Export Messages',
+        format: ExportFormat.csv,
+      );
 
       expect(mockFilePicker.saveFileCalled, isTrue);
       expect(mockFilePicker.lastFileName, startsWith('orders_'));
@@ -336,7 +350,11 @@ void main() {
           ],
         );
 
-        await service.exportMessagesCsv(messages, columnConfig: columnConfig);
+        await service.exportMessagesCsv(
+          messages,
+          dialogTitle: 'Export Messages',
+          columnConfig: columnConfig,
+        );
 
         final exportedFile = File(targetPath);
         expect(exportedFile.existsSync(), isTrue);
@@ -382,7 +400,10 @@ void main() {
         final targetPath = p.join(tempDir, 'export_csv.zip');
         mockFilePicker.savePath = targetPath;
 
-        await service.exportMessagesCsv(messages);
+        await service.exportMessagesCsv(
+          messages,
+          dialogTitle: 'Export Messages',
+        );
 
         expect(mockFilePicker.saveFileCalled, isTrue);
         expect(mockFilePicker.lastFileName, startsWith('messages_export_'));
@@ -395,6 +416,320 @@ void main() {
         final archive = ZipDecoder().decodeBytes(bytes);
         final fileNames = archive.map((f) => f.name).toList();
         expect(fileNames, containsAll(['topic-1.csv', 'topic-2.csv']));
+      },
+    );
+
+    test('JSON export includes timestampIso, headers, and schemas', () async {
+      final messages = [
+        const KafkaMessage(
+          topic: 'orders',
+          partition: 2,
+          offset: 42,
+          key: 'order-1',
+          payload: '{"amount": 99}',
+          timestamp: 1700000000000,
+          headers: [
+            KafkaHeader(key: 'traceId', value: 'abc'),
+            KafkaHeader(key: 'traceId', value: 'def'),
+          ],
+          keySchema: null,
+          valueSchema: MessageSchema(
+            schemaId: 128,
+            subject: 'orders-value',
+            version: 4,
+          ),
+        ),
+        const KafkaMessage(
+          topic: 'orders',
+          partition: 0,
+          offset: 43,
+          key: null,
+          payload: null,
+          timestamp: 0,
+          headers: null,
+        ),
+        const KafkaMessage(
+          topic: 'orders',
+          partition: 0,
+          offset: 44,
+          key: '',
+          payload: 'null',
+          timestamp: 1700000000000,
+        ),
+        const KafkaMessage(
+          topic: 'orders',
+          partition: 0,
+          offset: 45,
+          key: '',
+          payload: '',
+          timestamp: 1700000000000,
+        ),
+      ];
+
+      final targetPath = p.join(tempDir, 'metadata.json');
+      mockFilePicker.savePath = targetPath;
+
+      await service.exportMessages(messages, dialogTitle: 'Export Messages');
+
+      final parsed =
+          jsonDecode(File(targetPath).readAsStringSync()) as List<dynamic>;
+      expect(parsed.length, 4);
+
+      expect(parsed[0]['topic'], 'orders');
+      expect(parsed[0]['partition'], 2);
+      expect(parsed[0]['offset'], '42');
+      expect(parsed[0]['timestamp'], '1700000000000');
+      expect(parsed[0]['timestampIso'], '2023-11-14T22:13:20.000Z');
+      expect(parsed[0]['headers'], [
+        {'key': 'traceId', 'value': 'abc'},
+        {'key': 'traceId', 'value': 'def'},
+      ]);
+      expect(parsed[0]['keySchema'], isNull);
+      expect(parsed[0]['valueSchema'], {
+        'schemaId': 128,
+        'subject': 'orders-value',
+        'version': 4,
+      });
+
+      expect(parsed[1]['timestamp'], '0');
+      expect(parsed[1]['timestampIso'], isNull);
+      expect(parsed[1]['headers'], isEmpty);
+      expect(parsed[1]['key'], isNull);
+      expect(parsed[1]['payload'], isNull);
+
+      expect(parsed[2]['key'], '');
+      expect(parsed[2]['payload'], 'null');
+
+      expect(parsed[3]['key'], '');
+      expect(parsed[3]['payload'], '');
+    });
+
+    test(
+      'NDJSON single topic writes one compact JSON object per line',
+      () async {
+        final messages = [
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 1,
+            key: 'k1',
+            payload: '{"a": 1}',
+            timestamp: 1700000000000,
+          ),
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 2,
+            key: null,
+            payload: null,
+            timestamp: 0,
+          ),
+        ];
+
+        final targetPath = p.join(tempDir, 'single.ndjson');
+        mockFilePicker.savePath = targetPath;
+
+        await service.exportMessages(
+          messages,
+          dialogTitle: 'Export Messages',
+          format: ExportFormat.ndjson,
+        );
+
+        expect(mockFilePicker.saveFileCalled, isTrue);
+        expect(mockFilePicker.lastFileName, startsWith('orders_'));
+        expect(mockFilePicker.lastFileName, endsWith('.ndjson'));
+
+        final content = File(targetPath).readAsStringSync();
+        final lines = const LineSplitter().convert(content);
+        expect(lines.length, 2);
+        final obj0 = jsonDecode(lines[0]) as Map<String, dynamic>;
+        final obj1 = jsonDecode(lines[1]) as Map<String, dynamic>;
+        expect(obj0['offset'], '1');
+        expect(obj0['timestampIso'], '2023-11-14T22:13:20.000Z');
+        expect(obj1['offset'], '2');
+        expect(obj1['payload'], isNull);
+      },
+    );
+
+    test(
+      'NDJSON multi-topic writes ZIP with <topic>.ndjson in input order',
+      () async {
+        final messages = [
+          const KafkaMessage(
+            topic: 'topic-b',
+            partition: 0,
+            offset: 1,
+            key: 'k1',
+            payload: 'p1',
+            timestamp: 1700000000000,
+          ),
+          const KafkaMessage(
+            topic: 'topic-a',
+            partition: 0,
+            offset: 2,
+            key: 'k2',
+            payload: 'p2',
+            timestamp: 1700000000001,
+          ),
+          const KafkaMessage(
+            topic: 'topic-b',
+            partition: 0,
+            offset: 3,
+            key: 'k3',
+            payload: 'p3',
+            timestamp: 1700000000002,
+          ),
+        ];
+
+        final targetPath = p.join(tempDir, 'multi_ndjson.zip');
+        mockFilePicker.savePath = targetPath;
+
+        await service.exportMessages(
+          messages,
+          dialogTitle: 'Export Messages',
+          format: ExportFormat.ndjson,
+        );
+
+        expect(mockFilePicker.saveFileCalled, isTrue);
+        expect(mockFilePicker.lastFileName, startsWith('messages_export_'));
+        expect(mockFilePicker.lastFileName, endsWith('.zip'));
+
+        final bytes = File(targetPath).readAsBytesSync();
+        final archive = ZipDecoder().decodeBytes(bytes);
+        expect(archive.map((f) => f.name).toList(), [
+          'topic-b.ndjson',
+          'topic-a.ndjson',
+        ]);
+
+        final bLines = const LineSplitter().convert(
+          utf8.decode(archive[0].content as List<int>),
+        );
+        expect(bLines.length, 2);
+        expect((jsonDecode(bLines[0]) as Map<String, dynamic>)['offset'], '1');
+        expect((jsonDecode(bLines[1]) as Map<String, dynamic>)['offset'], '3');
+      },
+    );
+
+    test(
+      'CSV distinguishes null key/payload from empty string and quotes lone LF',
+      () async {
+        final messages = [
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 1,
+            key: null,
+            payload: null,
+            timestamp: 1000,
+          ),
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 2,
+            key: '',
+            payload: '',
+            timestamp: 2000,
+          ),
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 3,
+            key: 'k3',
+            payload: 'line1\nline2',
+            timestamp: 3000,
+          ),
+        ];
+
+        final csv = await service.generateCsvContent(messages);
+        expect(
+          csv,
+          'Timestamp,Partition,Offset,Key,Payload\r\n'
+          '1000,0,1,,\r\n'
+          '2000,0,2,"",""\r\n'
+          '3000,0,3,k3,"line1\nline2"',
+        );
+      },
+    );
+
+    test(
+      'CSV includeHeadersColumn appends Headers column with JSON array',
+      () async {
+        final messages = [
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 1,
+            key: 'k1',
+            payload: 'p1',
+            timestamp: 1000,
+            headers: [
+              KafkaHeader(key: 'h', value: '1'),
+              KafkaHeader(key: 'h', value: '2'),
+            ],
+          ),
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 2,
+            key: 'k2',
+            payload: 'p2',
+            timestamp: 2000,
+            headers: null,
+          ),
+        ];
+
+        final csvDefault = await service.generateCsvContent(messages);
+        expect(
+          csvDefault.split('\r\n').first,
+          'Timestamp,Partition,Offset,Key,Payload',
+        );
+
+        final csvWithHeaders = await service.generateCsvContent(
+          messages,
+          includeHeadersColumn: true,
+        );
+        final lines = csvWithHeaders.split('\r\n');
+        expect(lines[0], 'Timestamp,Partition,Offset,Key,Payload,Headers');
+        expect(
+          lines[1],
+          '1000,0,1,k1,p1,"[{""key"":""h"",""value"":""1""},{""key"":""h"",""value"":""2""}]"',
+        );
+        expect(lines[2], '2000,0,2,k2,p2,[]');
+      },
+    );
+
+    test(
+      'CSV Step column holds stepName for ScriptResultMessage and Global otherwise',
+      () async {
+        final messages = [
+          const ScriptResultMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 1,
+            key: 'k1',
+            payload: 'p1',
+            timestamp: 1000,
+            stepName: 'Filter Orders',
+            stepId: 'step-1',
+          ),
+          const KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: 2,
+            key: 'k2',
+            payload: 'p2',
+            timestamp: 2000,
+          ),
+        ];
+
+        final csv = await service.generateCsvContent(
+          messages,
+          isScriptingView: true,
+        );
+        final lines = csv.split('\r\n');
+        expect(lines[0], 'Timestamp,Step,Topic,Partition,Offset,Key,Payload');
+        expect(lines[1], '1000,Filter Orders,orders,0,1,k1,p1');
+        expect(lines[2], '2000,Global,orders,0,2,k2,p2');
       },
     );
   });

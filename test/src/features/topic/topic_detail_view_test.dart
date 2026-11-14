@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 
@@ -70,7 +71,7 @@ class FakeActiveConnectionController extends ChangeNotifier
   bool get isConnecting => false;
 
   @override
-  String? get error => null;
+  ConnectionError? get error => null;
 
   @override
   List<TopicMetadata> get topics => [?topic];
@@ -85,19 +86,44 @@ class FakeActiveConnectionController extends ChangeNotifier
 class FakeMessageStreamController extends ChangeNotifier
     implements MessageStreamController {
   bool clearMessagesCalled = false;
+  bool pauseCalled = false;
+  bool resumeCalled = false;
   String? errorMessage;
+  bool streaming = false;
+  bool paused = false;
+  int pending = 0;
+  int received = 0;
+  int dropped = 0;
+  int limit = 50000;
+  int consumed = 0;
+  List<KafkaMessage> fakeMessages = [];
 
   @override
-  List<KafkaMessage> get messages => [];
+  List<KafkaMessage> get messages => fakeMessages;
 
   @override
-  bool get isStreaming => false;
+  bool get isStreaming => streaming;
+
+  @override
+  bool get isPaused => paused;
+
+  @override
+  int get pendingCount => pending;
+
+  @override
+  int get receivedCount => received;
+
+  @override
+  int get droppedCount => dropped;
+
+  @override
+  int get bufferLimit => limit;
 
   @override
   String? get error => errorMessage;
 
   @override
-  int get totalConsumed => 0;
+  int get totalConsumed => consumed;
 
   @override
   int get totalToScan => 0;
@@ -107,6 +133,21 @@ class FakeMessageStreamController extends ChangeNotifier
 
   @override
   DateTime? get startTime => null;
+
+  @override
+  void pause() {
+    pauseCalled = true;
+    paused = true;
+    notifyListeners();
+  }
+
+  @override
+  void resume() {
+    resumeCalled = true;
+    paused = false;
+    pending = 0;
+    notifyListeners();
+  }
 
   @override
   void clearMessages() {
@@ -604,4 +645,89 @@ void main() {
     expect(find.text('Failed to fetch messages'), findsOneWidget);
     expect(find.text('Consumer group timeout'), findsOneWidget);
   });
+
+  testWidgets(
+    'shows Pause while streaming, Resume with pending count while paused, and keeps error visible while paused',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final sc = fakeActiveController.mockStreamController;
+
+      // Not streaming and not paused -> no Pause/Resume button
+      await tester.pumpWidget(detailView(threePartitionTopic));
+      await tester.pumpAndSettle();
+      expect(find.text('Pause'), findsNothing);
+      expect(find.textContaining('Resume'), findsNothing);
+
+      // Streaming -> Pause button shown
+      sc.streaming = true;
+      sc.notifyListeners();
+      await tester.pump();
+      expect(find.text('Pause'), findsOneWidget);
+
+      await tester.tap(find.text('Pause'));
+      await tester.pump();
+      expect(sc.pauseCalled, isTrue);
+
+      // Paused with 42 new messages + error -> Resume shows 42 new & error visible
+      sc.fakeMessages = const [
+        KafkaMessage(
+          topic: 'orders',
+          partition: 0,
+          offset: 1,
+          key: 'k1',
+          payload: 'v1',
+          timestamp: 1000,
+        ),
+      ];
+      sc.pending = 42;
+      sc.errorMessage = 'Transient broker error';
+      sc.notifyListeners();
+      await tester.pump();
+      expect(find.text('Resume · 42 new'), findsOneWidget);
+      expect(find.textContaining('Transient broker error'), findsOneWidget);
+
+      // Stream stopped while still paused -> Resume button remains visible
+      sc.streaming = false;
+      sc.notifyListeners();
+      await tester.pump();
+      expect(find.text('Resume · 42 new'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'shows dropped indicator only when drops > 0 and match count uses receivedCount',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final sc = fakeActiveController.mockStreamController;
+      sc.consumed = 5000;
+      sc.received = 1234;
+      sc.dropped = 0;
+      sc.limit = 50000;
+
+      await tester.pumpWidget(detailView(threePartitionTopic));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('1.234 matches found'), findsOneWidget);
+      expect(find.textContaining('dropped'), findsNothing);
+
+      sc.received = 51200;
+      sc.dropped = 1200;
+      sc.notifyListeners();
+      await tester.pump();
+
+      expect(find.textContaining('51.200 matches found'), findsOneWidget);
+      expect(
+        find.text('1,200 oldest messages dropped (limit 50,000)'),
+        findsOneWidget,
+      );
+    },
+  );
 }

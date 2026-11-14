@@ -39,15 +39,16 @@ class ScriptTimelineWidget extends StatelessWidget {
             }
 
             // Determine how far the line goes
+            final colorScheme = Theme.of(context).colorScheme;
             int progressToIndex = -1;
-            Color lineColor = Colors.green;
+            Color lineColor = colorScheme.primary;
 
             if (runningIndex != -1) {
               progressToIndex = runningIndex;
-              lineColor = Colors.blue;
+              lineColor = colorScheme.secondary;
             } else if (lastCompletedIndex != -1) {
               progressToIndex = lastCompletedIndex;
-              lineColor = Colors.green;
+              lineColor = colorScheme.primary;
             }
 
             return SizedBox(
@@ -138,10 +139,11 @@ class ScriptTimelineWidget extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             "$index",
-            style: TextStyle(
-              color: Colors.grey.withValues(alpha: 0.7),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               fontWeight: FontWeight.bold,
-              fontSize: 10,
             ),
           ),
         );
@@ -174,25 +176,31 @@ class ScriptTimelineWidget extends StatelessWidget {
         );
         break;
       case StepStatus.completed:
+        final colorScheme = Theme.of(context).colorScheme;
         child = Container(
           width: 30,
           height: 30,
-          decoration: const BoxDecoration(
-            color: Colors.green,
+          decoration: BoxDecoration(
+            color: colorScheme.primary,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check, color: Colors.white, size: 18),
+          child: Icon(Icons.check, color: colorScheme.onPrimary, size: 18),
         );
         break;
       case StepStatus.error:
+        final colorScheme = Theme.of(context).colorScheme;
         child = Container(
           width: 30,
           height: 30,
-          decoration: const BoxDecoration(
-            color: Colors.red,
+          decoration: BoxDecoration(
+            color: colorScheme.error,
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.priority_high, color: Colors.white, size: 18),
+          child: Icon(
+            Icons.priority_high,
+            color: colorScheme.onError,
+            size: 18,
+          ),
         );
         break;
     }

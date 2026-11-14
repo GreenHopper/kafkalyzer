@@ -377,4 +377,51 @@ void main() {
       );
     },
   );
+
+  testWidgets('renders German headers and filter dialog texts', (tester) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final m1 = KafkaMessage(
+      topic: 'orders',
+      partition: 0,
+      offset: 1,
+      key: 'k1',
+      payload: 'hello',
+      timestamp: 1000,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: MessagesTableView(messages: [m1])),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Zeitstempel'), findsOneWidget);
+    expect(find.text('Key'), findsOneWidget);
+    expect(find.text('Inhalt'), findsOneWidget);
+
+    final contentFilter = find.byTooltip('Inhalt filtern');
+    expect(contentFilter, findsOneWidget);
+    final filterSize = tester.getSize(contentFilter);
+    expect(filterSize.width, greaterThanOrEqualTo(24.0));
+    expect(filterSize.height, greaterThanOrEqualTo(24.0));
+
+    await tester.tap(contentFilter);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Inhalt filtern'), findsOneWidget);
+    expect(find.text('Suchtext zum Filtern eingeben...'), findsOneWidget);
+    expect(find.text('Leeren'), findsOneWidget);
+    expect(find.text('Anwenden'), findsOneWidget);
+  });
 }

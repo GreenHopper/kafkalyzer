@@ -11,8 +11,9 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/main_layout.dart';
 import 'package:kafkalyzer/src/features/navigation/main_navigation_controller.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
-import 'package:kafkalyzer/src/theme_controller.dart';
+import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
@@ -50,13 +51,15 @@ class FakeActiveConnectionController extends ChangeNotifier
   @override
   OpenTopicRecord? get activeTopic => null;
   @override
-  String? get error => null;
+  ConnectionError? get error => null;
   @override
   String get topicFilter => "";
   @override
   bool get showInternalTopics => false;
   @override
   bool get showStreamTopics => false;
+  @override
+  List<String> get unrestoredTopics => const [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -176,7 +179,9 @@ void main() {
 
     await getIt.reset();
     getIt.registerSingleton<Logger>(Logger());
-    getIt.registerSingleton<ThemeController>(ThemeController());
+    final appearance = AppearanceSettings();
+    await appearance.load(prefs);
+    getIt.registerSingleton<AppearanceSettings>(appearance);
     getIt.registerSingleton<MainNavigationController>(
       MainNavigationController(),
     );
@@ -261,8 +266,8 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
 
-    final themeController = getIt<ThemeController>();
-    expect(themeController.isDarkMode, isFalse);
+    final appearance = getIt<AppearanceSettings>();
+    expect(appearance.themeMode, ThemeMode.light);
 
     // Find the toggle button
     final themeButtonFinder = find.byTooltip('Switch to Dark Mode');
@@ -271,8 +276,32 @@ void main() {
     await tester.tap(themeButtonFinder);
     await tester.pumpAndSettle();
 
-    expect(themeController.isDarkMode, isTrue);
+    expect(appearance.themeMode, ThemeMode.dark);
   });
+
+  testWidgets(
+    'toggles from System mode to explicit Dark mode when light is shown',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final appearance = getIt<AppearanceSettings>();
+      await appearance.setThemeMode(ThemeMode.system);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final themeButtonFinder = find.byTooltip('Switch to Dark Mode');
+      expect(themeButtonFinder, findsOneWidget);
+
+      await tester.tap(themeButtonFinder);
+      await tester.pumpAndSettle();
+
+      expect(appearance.themeMode, ThemeMode.dark);
+    },
+  );
 
   testWidgets(
     'hosts TlsTransitionDialog sequentially for queued decisions, handling keep/disable/dismiss',
@@ -598,4 +627,21 @@ void main() {
       expect(find.byType(CommandPaletteDialog), findsOneWidget);
     },
   );
+
+  testWidgets('shows update SnackBar for manual AvailableUpdate', (
+    tester,
+  ) async {
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    GetIt.instance<UpdateService>().availableUpdateNotifier.value =
+        const AvailableUpdate(version: '1.5.0', canAutoApply: false);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('A new version of Kafkalyzer (v1.5.0) is available.'),
+      findsOneWidget,
+    );
+    expect(find.text('Update'), findsOneWidget);
+  });
 }

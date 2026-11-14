@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:watch_it/watch_it.dart';
+import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
@@ -10,6 +11,7 @@ import 'package:kafkalyzer/src/features/navigation/widgets/quick_jump_dialog.dar
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
+import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
@@ -20,7 +22,9 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_it
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/topic/utils/dlq_topic_detector.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment_tag.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
+import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/cluster_overview_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -40,6 +44,9 @@ class ExplorerView extends WatchingStatefulWidget {
 
 class _ExplorerViewState extends State<ExplorerView> {
   late TextEditingController _filterController;
+  final TextEditingController _clusterFilterController =
+      TextEditingController();
+  String _clusterFilterQuery = '';
   final ScrollController _tabScrollController = ScrollController();
   bool _isSidebarCollapsed = false;
   double _sidebarWidth = ExplorerView.defaultSidebarWidth;
@@ -81,6 +88,7 @@ class _ExplorerViewState extends State<ExplorerView> {
   @override
   void dispose() {
     _filterController.dispose();
+    _clusterFilterController.dispose();
     _tabScrollController.dispose();
     super.dispose();
   }
@@ -103,6 +111,22 @@ class _ExplorerViewState extends State<ExplorerView> {
     final clusterController = watchIt<ClusterListController>();
     final activeController = watchIt<ActiveConnectionController>();
     final topicController = watchIt<TopicController>();
+
+    final unrestored = activeController.unrestoredTopics;
+    if (unrestored.isNotEmpty) {
+      final snapshot = List<String>.from(unrestored);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        activeController.acknowledgeUnrestoredTopics();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.unrestoredTabsMessage(snapshot.length, snapshot.join(', ')),
+            ),
+          ),
+        );
+      });
+    }
     final schemaController = watchIt<SchemaController>();
 
     return CallbackShortcuts(
@@ -289,35 +313,10 @@ class _ExplorerViewState extends State<ExplorerView> {
             if (activeController.activeProfile != null &&
                 schemaController.errorFor(activeController.activeProfile!) !=
                     null)
-              Container(
+              ErrorBanner(
                 margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        l10n.subjectsLoadFailed(
-                          schemaController.errorFor(
-                            activeController.activeProfile!,
-                          )!,
-                        ),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                      ),
-                    ),
-                  ],
+                title: l10n.subjectsLoadFailed(
+                  schemaController.errorFor(activeController.activeProfile!)!,
                 ),
               ),
             if (activeController.error != null)
@@ -355,27 +354,109 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
   }
 
+  ClusterProfile _resolveLatestProfile(
+    ClusterProfile fallback,
+    ClusterListController clusterController,
+  ) {
+    return clusterController.clusters.cast<ClusterProfile?>().firstWhere(
+          (c) => c?.name == fallback.name,
+          orElse: () => null,
+        ) ??
+        fallback;
+  }
+
+  Future<void> _handleDisconnectCluster(
+    BuildContext context,
+    ClusterProfile cluster,
+    ActiveConnectionController activeController,
+  ) async {
+    if (activeController.hasRunningOperations(cluster)) {
+      final l10n = AppLocalizations.of(context)!;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(l10n.disconnectConfirmTitle(cluster.name)),
+          content: Text(l10n.disconnectConfirmBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(l10n.disconnectConfirmAction),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    activeController.disconnect();
+  }
+
   Widget _buildSidebarClusterList(
     BuildContext context,
     ClusterListController clusterController,
     ActiveConnectionController activeController,
     TopicController topicController,
   ) {
-    return LimitedBox(
-      maxHeight: 200,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: clusterController.clusters.map((cluster) {
-            return _buildClusterListItem(
-              context,
-              cluster,
-              activeController,
-              topicController,
-            );
-          }).toList(),
-        ),
-      ),
+    final l10n = AppLocalizations.of(context)!;
+    final showFilter = clusterController.clusters.length > 5;
+    final filtered = showFilter
+        ? clusterController.clusters
+              .where((c) => matchesClusterFilter(c, _clusterFilterQuery))
+              .toList()
+        : clusterController.clusters;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showFilter) ...[
+          ClusterFilterField(
+            controller: _clusterFilterController,
+            dense: true,
+            onChanged: (q) => setState(() => _clusterFilterQuery = q),
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (showFilter && filtered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              children: [
+                Text(
+                  l10n.clusterFilterNoMatch,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                TextButton(
+                  onPressed: () {
+                    _clusterFilterController.clear();
+                    setState(() => _clusterFilterQuery = '');
+                  },
+                  child: Text(l10n.clusterFilterClear),
+                ),
+              ],
+            ),
+          )
+        else
+          LimitedBox(
+            maxHeight: 200,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: filtered.map((cluster) {
+                  return _buildClusterListItem(
+                    context,
+                    cluster,
+                    activeController,
+                    topicController,
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -385,6 +466,7 @@ class _ExplorerViewState extends State<ExplorerView> {
     ActiveConnectionController activeController,
     TopicController topicController,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final isActive = activeController.activeProfile?.name == cluster.name;
     final isConnecting =
         activeController.connectingProfile?.name == cluster.name ||
@@ -418,7 +500,22 @@ class _ExplorerViewState extends State<ExplorerView> {
                 height: 12,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : null,
+            : (isActive
+                  ? Semantics(
+                      label: l10n.disconnectClusterTooltip,
+                      button: true,
+                      child: IconButton(
+                        icon: const Icon(Icons.link_off, size: 16),
+                        tooltip: l10n.disconnectClusterTooltip,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _handleDisconnectCluster(
+                          context,
+                          cluster,
+                          activeController,
+                        ),
+                      ),
+                    )
+                  : null),
       ),
     );
   }
@@ -440,17 +537,25 @@ class _ExplorerViewState extends State<ExplorerView> {
               color: Theme.of(context).colorScheme.primary,
             ),
           ),
-        Text(
-          cluster.name,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isActive
-                ? Theme.of(context).colorScheme.onPrimaryContainer
-                : (topicController.hasCachedTopics(cluster)
-                      ? Theme.of(context).colorScheme.primary
-                      : null),
+        Flexible(
+          child: Text(
+            cluster.name,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: isActive
+                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  : (topicController.hasCachedTopics(cluster)
+                        ? Theme.of(context).colorScheme.primary
+                        : null),
+            ),
           ),
         ),
+        if (cluster.environmentLabel != null &&
+            cluster.environmentLabel!.trim().isNotEmpty) ...[
+          const SizedBox(width: 6),
+          EnvironmentTagChip(profile: cluster, compact: true),
+        ],
       ],
     );
   }
@@ -481,14 +586,13 @@ class _ExplorerViewState extends State<ExplorerView> {
             icon: const Icon(Icons.bolt, size: 16),
             tooltip: l10n.quickJumpTitle,
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
             onPressed: () => _showQuickJumpDialog(context),
           ),
           const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.refresh, size: 16),
+            tooltip: l10n.refreshTooltip,
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
             onPressed:
                 activeController.isConnecting ||
                     topicController.isLoading(
@@ -551,6 +655,7 @@ class _ExplorerViewState extends State<ExplorerView> {
               suffixIcon: _filterController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 16),
+                      tooltip: l10n.clear,
                       onPressed: () {
                         _filterController.clear();
                         activeController.updateTopicFilter("");
@@ -598,39 +703,11 @@ class _ExplorerViewState extends State<ExplorerView> {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error,
-                  size: 32,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.topicsLoadFailedTitle,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  topicError,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: () =>
-                      topicController.fetchTopics(activeProfile, force: true),
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: Text(l10n.retry),
-                ),
-              ],
+            child: ErrorBanner(
+              title: l10n.topicsLoadFailedTitle,
+              detail: topicError,
+              onRetry: () =>
+                  topicController.fetchTopics(activeProfile, force: true),
             ),
           ),
         ),
@@ -689,17 +766,38 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
   }
 
+  String _connectionErrorTitle(
+    AppLocalizations l10n,
+    ConnectionErrorKind kind,
+  ) {
+    switch (kind) {
+      case ConnectionErrorKind.invalidBootstrapServers:
+        return l10n.connectionErrorInvalidBootstrapServers;
+      case ConnectionErrorKind.tlsVerificationFailed:
+        return l10n.connectionErrorTlsVerificationFailed;
+      case ConnectionErrorKind.validationFailed:
+        return l10n.connectionErrorValidationFailed;
+      case ConnectionErrorKind.brokerTransport:
+        return l10n.connectionErrorBrokerTransport;
+      case ConnectionErrorKind.connectionRefused:
+        return l10n.connectionErrorConnectionRefused;
+      case ConnectionErrorKind.other:
+        return l10n.connectionErrorOther;
+    }
+  }
+
   Widget _buildErrorBox(
     BuildContext context,
     ActiveConnectionController activeController,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Text(
-        "Error: ${activeController.error}",
-        style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
-      ),
+    final err = activeController.error!;
+    final l10n = AppLocalizations.of(context)!;
+    final title = _connectionErrorTitle(l10n, err.kind);
+    return ErrorBanner(
+      margin: const EdgeInsets.all(12),
+      title: title,
+      detail: err.detail,
+      onDismiss: activeController.clearError,
     );
   }
 
@@ -806,8 +904,17 @@ class _ExplorerViewState extends State<ExplorerView> {
     );
     final safeIndex = activeIndex >= 0 ? activeIndex : 0;
 
+    final activeBannerProfile = activeController.activeProfile != null
+        ? _resolveLatestProfile(
+            activeController.activeProfile!,
+            getIt<ClusterListController>(),
+          )
+        : null;
+
     return Column(
       children: [
+        if (activeBannerProfile != null)
+          EnvironmentBanner(profile: activeBannerProfile),
         _buildTabBar(context, l10n, activeController),
         _buildTabViews(activeController, safeIndex),
       ],
@@ -949,6 +1056,10 @@ class _ExplorerViewState extends State<ExplorerView> {
     final title = _getTabTitle(activeController, record);
     final isRunning = streamCtrl.isStreaming || analysisCtrl.isAnalyzing;
 
+    final resolvedTabProfile = getIt.isRegistered<ClusterListController>()
+        ? _resolveLatestProfile(record.profile, getIt<ClusterListController>())
+        : record.profile;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -980,18 +1091,19 @@ class _ExplorerViewState extends State<ExplorerView> {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.15),
+                      color: Theme.of(context).colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: Colors.red.withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.error.withValues(alpha: 0.5),
                       ),
                     ),
                     child: Text(
                       l10n.dlqBadgeLabel,
-                      style: TextStyle(
-                        fontSize: 9,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: Colors.red.shade800,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
                       ),
                     ),
                   ),
@@ -1002,15 +1114,22 @@ class _ExplorerViewState extends State<ExplorerView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  record.profile.name,
-                  style: TextStyle(
+                  resolvedTabProfile.name,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Theme.of(
                       context,
                     ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                    fontSize: 10,
                   ),
                 ),
-                if (record.profile.tlsVerification ==
+                if (resolvedTabProfile.environmentLabel != null &&
+                    resolvedTabProfile.environmentLabel!.trim().isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  EnvironmentTagChip(
+                    profile: resolvedTabProfile,
+                    compact: true,
+                  ),
+                ],
+                if (resolvedTabProfile.tlsVerification ==
                     TlsVerification.disabled) ...[
                   const SizedBox(width: 4),
                   const InsecureTlsBadge(compact: true),
@@ -1043,8 +1162,9 @@ class _ExplorerViewState extends State<ExplorerView> {
         IconButton(
           icon: const Icon(Icons.add_to_photos_outlined, size: 14),
           tooltip: l10n.duplicateTab,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+          padding: const EdgeInsets.all(4),
+          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+          visualDensity: VisualDensity.compact,
           onPressed: () => activeController.openTopic(
             topic: record.topic,
             profile: record.profile,
@@ -1052,19 +1172,19 @@ class _ExplorerViewState extends State<ExplorerView> {
           ),
         ),
         const SizedBox(width: 4),
-        InkWell(
-          onTap: () => confirmCloseTab(
+        IconButton(
+          icon: Icon(
+            Icons.close,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          tooltip: l10n.closeTab,
+          padding: const EdgeInsets.all(4),
+          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+          onPressed: () => confirmCloseTab(
             context,
             isOperationRunning: isRunning,
             onClose: () => activeController.closeTopicTab(record.id),
-          ),
-          child: Tooltip(
-            message: l10n.closeTab,
-            child: Icon(
-              Icons.close,
-              size: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
           ),
         ),
       ],
@@ -1111,8 +1231,7 @@ class _ExplorerViewState extends State<ExplorerView> {
               }
               return Text(
                 etaText,
-                style: TextStyle(
-                  fontSize: 9,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               );
@@ -1135,8 +1254,7 @@ class _ExplorerViewState extends State<ExplorerView> {
       ),
       child: Text(
         "${streamCtrl.messages.length}",
-        style: TextStyle(
-          fontSize: 10,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.bold,
           color: Theme.of(context).colorScheme.onSecondaryContainer,
         ),

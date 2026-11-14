@@ -184,13 +184,13 @@ class MockClusterListController extends _i1.Mock
   @override
   _i8.Future<List<int>> exportClustersZip(
     List<_i7.ClusterProfile>? clustersToExport, {
-    bool? includeSecrets = false,
+    String? encryptionPassphrase,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #exportClustersZip,
               [clustersToExport],
-              {#includeSecrets: includeSecrets},
+              {#encryptionPassphrase: encryptionPassphrase},
             ),
             returnValue: _i8.Future<List<int>>.value(<int>[]),
           )
@@ -198,23 +198,14 @@ class MockClusterListController extends _i1.Mock
 
   @override
   _i8.Future<String> exportClusters(
-    List<_i7.ClusterProfile>? clustersToExport, {
-    bool? includeSecrets = false,
-  }) =>
+    List<_i7.ClusterProfile>? clustersToExport,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #exportClusters,
-              [clustersToExport],
-              {#includeSecrets: includeSecrets},
-            ),
+            Invocation.method(#exportClusters, [clustersToExport]),
             returnValue: _i8.Future<String>.value(
               _i10.dummyValue<String>(
                 this,
-                Invocation.method(
-                  #exportClusters,
-                  [clustersToExport],
-                  {#includeSecrets: includeSecrets},
-                ),
+                Invocation.method(#exportClusters, [clustersToExport]),
               ),
             ),
           )
@@ -303,6 +294,14 @@ class MockActiveConnectionController extends _i1.Mock
           as List<_i12.OpenTopicRecord>);
 
   @override
+  List<String> get unrestoredTopics =>
+      (super.noSuchMethod(
+            Invocation.getter(#unrestoredTopics),
+            returnValue: <String>[],
+          )
+          as List<String>);
+
+  @override
   bool get hasListeners =>
       (super.noSuchMethod(Invocation.getter(#hasListeners), returnValue: false)
           as bool);
@@ -338,6 +337,20 @@ class MockActiveConnectionController extends _i1.Mock
     Invocation.method(#updateTopicFilter, [filter]),
     returnValueForMissingStub: null,
   );
+
+  @override
+  void acknowledgeUnrestoredTopics() => super.noSuchMethod(
+    Invocation.method(#acknowledgeUnrestoredTopics, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  bool hasRunningOperations(_i7.ClusterProfile? profile) =>
+      (super.noSuchMethod(
+            Invocation.method(#hasRunningOperations, [profile]),
+            returnValue: false,
+          )
+          as bool);
 
   @override
   _i12.OpenTopicRecord? openTopic({

@@ -7,7 +7,9 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/encrypted_bundle.dart';
 import 'package:kafkalyzer/src/services/secure_storage_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
@@ -18,33 +20,173 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:path/path.dart' as p;
 
+class ImportConfigurationResult {
+  final ImportSummary? summary;
+  const ImportConfigurationResult({this.summary});
+}
+
+class IntSetting {
+  final String key;
+  final int defaultValue;
+  final int min;
+  final int max;
+
+  const IntSetting(this.key, this.defaultValue, this.min, this.max);
+}
+
 class SettingsService {
   /// Group lag above which the lag view warns. 0 disables the warning.
   static const lagWarnThresholdKey = 'consumer_lag_warn_threshold';
 
+  static const maxRunHistorySetting = IntSetting(
+    'scripting_max_run_history',
+    30,
+    0,
+    1000,
+  );
+  static const maxConcurrentLagQueriesSetting = IntSetting(
+    'consumer_max_concurrent_queries',
+    5,
+    1,
+    20,
+  );
+  static const lagWarnThresholdSetting = IntSetting(
+    lagWarnThresholdKey,
+    0,
+    0,
+    1000000000000,
+  );
+  static const defaultResultLimitSetting = IntSetting(
+    'default_result_limit',
+    200,
+    1,
+    100000,
+  );
+
+  static int readInt(SharedPreferences prefs, IntSetting setting) {
+    final raw = prefs.get(setting.key);
+    if (raw is int && raw >= setting.min && raw <= setting.max) {
+      return raw;
+    }
+    return setting.defaultValue;
+  }
+
+  static int? parseInt(String text, IntSetting setting) {
+    final parsed = int.tryParse(text.trim());
+    if (parsed == null || parsed < setting.min || parsed > setting.max) {
+      return null;
+    }
+    return parsed;
+  }
+
+  Future<void> writeInt(IntSetting setting, int value) async {
+    if (value < setting.min || value > setting.max) {
+      throw ArgumentError.value(
+        value,
+        'value',
+        'Must be between ${setting.min} and ${setting.max}',
+      );
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(setting.key, value);
+    if (setting.key == defaultResultLimitSetting.key) {
+      defaultResultLimit.value = value;
+    }
+  }
+
+  final ValueNotifier<int> defaultResultLimit = ValueNotifier<int>(
+    defaultResultLimitSetting.defaultValue,
+  );
+
+  Future<int> loadDefaultResultLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    final value = readInt(prefs, defaultResultLimitSetting);
+    defaultResultLimit.value = value;
+    return value;
+  }
+
+  Future<void> setDefaultResultLimit(int limit) async {
+    await writeInt(defaultResultLimitSetting, limit);
+  }
+
+  /// Maximum retained messages per result list (topic stream or search target).
+  static const messageBufferLimitKey = 'message_buffer_limit';
+  static const int defaultMessageBufferLimit = 50000;
+  static const int minMessageBufferLimit = 1000;
+  static const int maxMessageBufferLimit = 1000000;
+
+  final ValueNotifier<int> messageBufferLimit = ValueNotifier<int>(
+    defaultMessageBufferLimit,
+  );
+
+  static int? parseMessageBufferLimit(String input) {
+    final parsed = int.tryParse(input.trim());
+    if (parsed == null ||
+        parsed < minMessageBufferLimit ||
+        parsed > maxMessageBufferLimit) {
+      return null;
+    }
+    return parsed;
+  }
+
+  Future<int> loadMessageBufferLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.get(messageBufferLimitKey);
+    if (raw is int &&
+        raw >= minMessageBufferLimit &&
+        raw <= maxMessageBufferLimit) {
+      messageBufferLimit.value = raw;
+      return raw;
+    }
+    messageBufferLimit.value = defaultMessageBufferLimit;
+    return defaultMessageBufferLimit;
+  }
+
+  Future<void> setMessageBufferLimit(int limit) async {
+    if (limit < minMessageBufferLimit || limit > maxMessageBufferLimit) {
+      throw ArgumentError.value(
+        limit,
+        'limit',
+        'Must be between $minMessageBufferLimit and $maxMessageBufferLimit',
+      );
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(messageBufferLimitKey, limit);
+    messageBufferLimit.value = limit;
+  }
+
   Future<int> lagWarnThreshold() async {
     final prefs = await SharedPreferences.getInstance();
-    final value = prefs.getInt(lagWarnThresholdKey);
-    return (value == null || value < 0) ? 0 : value;
+    return readInt(prefs, lagWarnThresholdSetting);
   }
 
   Future<void> setLagWarnThreshold(int messages) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(lagWarnThresholdKey, messages < 0 ? 0 : messages);
+    final clamped = messages < lagWarnThresholdSetting.min
+        ? lagWarnThresholdSetting.min
+        : (messages > lagWarnThresholdSetting.max
+              ? lagWarnThresholdSetting.max
+              : messages);
+    await writeInt(lagWarnThresholdSetting, clamped);
+  }
+
+  Future<String?> defaultOutputDirectory() async {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      final docsDir = await getApplicationDocumentsDirectory();
+      return p.join(docsDir.path, 'Kafkalyzer', 'Output');
+    }
+    return null;
   }
 
   Future<void> initializeSettings() async {
+    await loadMessageBufferLimit();
+    await loadDefaultResultLimit();
     final prefs = await SharedPreferences.getInstance();
     final defaultDir = prefs.getString('general_default_output_dir');
     if (defaultDir == null ||
         defaultDir.isEmpty ||
         !await Directory(defaultDir).exists()) {
       debugPrint('⚠️ Invalid or missing default output dir: $defaultDir');
-      String? newDefaultDir;
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        final docsDir = await getApplicationDocumentsDirectory();
-        newDefaultDir = p.join(docsDir.path, 'Kafkalyzer', 'Output');
-      }
+      final newDefaultDir = await defaultOutputDirectory();
 
       if (newDefaultDir != null) {
         debugPrint('✅ Setting new default output dir: $newDefaultDir');
@@ -59,11 +201,42 @@ class SettingsService {
     }
   }
 
+  Future<void> resetGeneralSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await writeInt(
+      defaultResultLimitSetting,
+      defaultResultLimitSetting.defaultValue,
+    );
+    await writeInt(maxRunHistorySetting, maxRunHistorySetting.defaultValue);
+    await writeInt(
+      maxConcurrentLagQueriesSetting,
+      maxConcurrentLagQueriesSetting.defaultValue,
+    );
+    await writeInt(
+      lagWarnThresholdSetting,
+      lagWarnThresholdSetting.defaultValue,
+    );
+    await setMessageBufferLimit(defaultMessageBufferLimit);
+    await prefs.setBool('general_restore_tabs', true);
+
+    final defaultDir = await defaultOutputDirectory();
+    if (defaultDir != null) {
+      await prefs.setString('general_default_output_dir', defaultDir);
+      try {
+        await Directory(defaultDir).create(recursive: true);
+      } catch (e) {
+        debugPrint('❌ Failed to create default dir: $e');
+      }
+    }
+  }
+
   Future<String?> exportConfiguration({
-    bool includeSensitiveCredentials = false,
+    required String dialogTitle,
+    String? encryptionPassphrase,
   }) async {
+    final isEncrypted = encryptionPassphrase != null;
     debugPrint(
-      'DEBUG: Starting Configuration Export (includeSensitiveCredentials: $includeSensitiveCredentials)...',
+      'DEBUG: Starting Configuration Export (encrypted: $isEncrypted)...',
     );
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -94,7 +267,7 @@ class SettingsService {
           final Map<String, dynamic> exportedCluster = Map.from(clusterJson);
           debugPrint('DEBUG: Processing cluster: ${exportedCluster['name']}');
 
-          if (!includeSensitiveCredentials) {
+          if (!isEncrypted) {
             for (final field in SecureStorageService.secretFields) {
               exportedCluster.remove(field);
             }
@@ -158,22 +331,30 @@ class SettingsService {
         ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
       );
 
-      // 4. Save Zip
+      // 4. Save Zip (or encrypted .zip.age)
       final zipBytes = ZipEncoder().encode(archive);
 
       String? outputFile;
       if (!kIsWeb) {
         outputFile = await FilePicker.saveFile(
-          dialogTitle: 'Export Configuration',
-          fileName: 'kafkalyzer_config.zip',
+          dialogTitle: dialogTitle,
+          fileName: isEncrypted
+              ? 'kafkalyzer_config.zip.age'
+              : 'kafkalyzer_config.zip',
           type: FileType.custom,
-          allowedExtensions: ['zip'],
+          allowedExtensions: isEncrypted ? ['age'] : ['zip'],
         );
       }
 
       if (outputFile != null) {
+        if (isEncrypted && !outputFile.endsWith('.age')) {
+          outputFile = '$outputFile.age';
+        }
+        final outputBytes = encryptionPassphrase != null
+            ? await encryptBundle(zipBytes, encryptionPassphrase)
+            : zipBytes;
         final file = File(outputFile);
-        await file.writeAsBytes(zipBytes);
+        await file.writeAsBytes(outputBytes);
         debugPrint('DEBUG: Export success to $outputFile');
         return outputFile;
       }
@@ -184,7 +365,9 @@ class SettingsService {
     }
   }
 
-  Future<ImportSummary?> importConfiguration({
+  Future<ImportConfigurationResult?> importConfiguration({
+    required String dialogTitle,
+    required PassphrasePrompt promptPassphrase,
     Future<ImportConflictChoice?> Function(
       ClusterProfile imported,
       String suggestedName,
@@ -193,9 +376,9 @@ class SettingsService {
   }) async {
     try {
       final result = await FilePicker.pickFiles(
-        dialogTitle: 'Import Configuration',
+        dialogTitle: dialogTitle,
         type: FileType.custom,
-        allowedExtensions: ['zip'],
+        allowedExtensions: ['zip', 'age'],
         withData: true, // Needed for web/some platforms, but safer for IO
       );
 
@@ -209,7 +392,13 @@ class SettingsService {
 
       if (fileBytes == null) throw Exception('Could not read imported file');
 
-      final archive = ZipDecoder().decodeBytes(fileBytes);
+      final decryptedBytes = await decryptIfEncrypted(
+        fileBytes,
+        promptPassphrase,
+      );
+      if (decryptedBytes == null) return null;
+
+      final archive = ZipDecoder().decodeBytes(decryptedBytes);
       // Changed to getApplicationSupportDirectory to match documentation (AppData on Windows)
       final appSupportDir = await getApplicationSupportDirectory();
       // Use platform-aware path construction
@@ -383,9 +572,14 @@ class SettingsService {
         // 3. Reload Controllers
         await getIt<ClusterListController>().loadClusters();
         await getIt<ScriptController>().loadScripts();
+        await loadMessageBufferLimit();
+        await loadDefaultResultLimit();
+        if (getIt.isRegistered<AppearanceSettings>()) {
+          await getIt<AppearanceSettings>().load();
+        }
       }
 
-      return mergeResult?.summary;
+      return ImportConfigurationResult(summary: mergeResult?.summary);
     } catch (e) {
       debugPrint('Error importing configuration: $e');
       rethrow;

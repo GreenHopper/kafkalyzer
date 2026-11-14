@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 
@@ -33,12 +34,13 @@ class TopicProgressTile extends StatelessWidget {
         contentPadding: contentPadding,
         leading: Icon(
           _getStatusIcon(status),
-          color: _getStatusColor(status),
+          color: _getStatusColor(context, status),
           size: 16,
         ),
         title: Text(topic, overflow: TextOverflow.ellipsis),
         subtitle: Builder(
           builder: (context) {
+            final l10n = AppLocalizations.of(context);
             final children = <Widget>[];
 
             if (progress != null) {
@@ -47,6 +49,12 @@ class TopicProgressTile extends StatelessWidget {
                 final estText = est != null
                     ? " (~${_formatDuration(est)})"
                     : "";
+                final remainingText =
+                    l10n?.remainingCount(
+                      progress!.remaining,
+                      _formatNumber(progress!.remaining),
+                    ) ??
+                    "${_formatNumber(progress!.remaining)} remaining";
 
                 children.add(
                   Column(
@@ -59,10 +67,8 @@ class TopicProgressTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "${_formatNumber(progress!.remaining)} remaining$estText",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(fontSize: 10),
+                        "$remainingText$estText",
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
@@ -78,10 +84,14 @@ class TopicProgressTile extends StatelessWidget {
                     children: [
                       const SizedBox(height: 4),
                       Text(
-                        "$matches matches found (${_formatNumber(scanned)} scanned)",
+                        l10n?.matchesFoundScanned(
+                              matches,
+                              _formatNumber(matches),
+                              _formatNumber(scanned),
+                            ) ??
+                            "${_formatNumber(matches)} matches found (${_formatNumber(scanned)} scanned)",
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 10,
-                          color: Colors.green,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ],
@@ -110,8 +120,11 @@ class TopicProgressTile extends StatelessWidget {
         trailing:
             trailing ??
             Text(
-              _getStatusText(status),
-              style: TextStyle(color: _getStatusColor(status), fontSize: 11),
+              _getStatusText(context, status),
+              style: TextStyle(
+                color: _getStatusColor(context, status),
+                fontSize: 11,
+              ),
             ),
       ),
     );
@@ -130,29 +143,31 @@ class TopicProgressTile extends StatelessWidget {
     }
   }
 
-  Color _getStatusColor(StepStatus status) {
+  Color _getStatusColor(BuildContext context, StepStatus status) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case StepStatus.pending:
-        return Colors.grey;
+        return colorScheme.outline;
       case StepStatus.running:
-        return Colors.blue;
+        return colorScheme.secondary;
       case StepStatus.completed:
-        return Colors.green;
+        return colorScheme.primary;
       case StepStatus.error:
-        return Colors.red;
+        return colorScheme.error;
     }
   }
 
-  String _getStatusText(StepStatus status) {
+  String _getStatusText(BuildContext context, StepStatus status) {
+    final l10n = AppLocalizations.of(context);
     switch (status) {
       case StepStatus.pending:
-        return "PENDING";
+        return l10n?.stepStatusPending ?? "PENDING";
       case StepStatus.running:
-        return "RUNNING";
+        return l10n?.stepStatusRunning ?? "RUNNING";
       case StepStatus.completed:
-        return "COMPLETED";
+        return l10n?.stepStatusCompleted ?? "COMPLETED";
       case StepStatus.error:
-        return "FAILED";
+        return l10n?.stepStatusFailed ?? "FAILED";
     }
   }
 

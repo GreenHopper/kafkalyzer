@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -887867212;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -777892988;
 
 // Section: executor
 
@@ -46,6 +46,36 @@ flutter_rust_bridge::frb_generated_default_handler!();
 
 // Section: wire_funcs
 
+fn wire__crate__api__profile_tools__allowed_extra_properties_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "allowed_extra_properties",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok =
+                    Result::<_, ()>::Ok(crate::api::profile_tools::allowed_extra_properties())?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__kafka_analyzer__analyze_topic_content_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -373,6 +403,45 @@ fn wire__crate__api__kafka_utils__create_config_impl(
         },
     )
 }
+fn wire__crate__api__profile_crypto__decrypt_bundle_with_passphrase_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "decrypt_bundle_with_passphrase",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_ciphertext = <Vec<u8>>::sse_decode(&mut deserializer);
+            let api_passphrase = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::profile_crypto::decrypt_bundle_with_passphrase(
+                            api_ciphertext,
+                            api_passphrase,
+                        ),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__json_path__deserialize_cluster_profile_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -442,6 +511,45 @@ fn wire__crate__api__connection_diagnostics__diagnose_connection_impl(
                         Ok(output_ok)
                     })(),
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__profile_crypto__encrypt_bundle_with_passphrase_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "encrypt_bundle_with_passphrase",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_plaintext = <Vec<u8>>::sse_decode(&mut deserializer);
+            let api_passphrase = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::profile_crypto::encrypt_bundle_with_passphrase(
+                            api_plaintext,
+                            api_passphrase,
+                        ),
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -907,6 +1015,44 @@ fn wire__crate__api__kafka_utils__murmur2_impl(
         },
     )
 }
+fn wire__crate__api__profile_tools__parse_client_properties_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "parse_client_properties",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_content = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::api::profile_tools::parse_client_properties(api_content).await,
+                        )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__kafka_types__partition_lag_status_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -935,6 +1081,44 @@ fn wire__crate__api__kafka_types__partition_lag_status_default_impl(
                     let output_ok = Result::<_, ()>::Ok(
                         crate::api::kafka_types::PartitionLagStatus::default(),
                     )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_utils__predict_default_partition_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "predict_default_partition",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_key = <String>::sse_decode(&mut deserializer);
+            let api_partition_count = <i32>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::kafka_utils::predict_default_partition(
+                            api_key,
+                            api_partition_count,
+                        ))?;
                     Ok(output_ok)
                 })())
             }
@@ -1227,6 +1411,38 @@ fn wire__crate__api__kafka_types__topic_analysis_options_default_impl(
         },
     )
 }
+fn wire__crate__api__profile_tools__validate_bootstrap_servers_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "validate_bootstrap_servers",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_value = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(
+                    crate::api::profile_tools::validate_bootstrap_servers(api_value),
+                )?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__kafka_metadata__validate_connection_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1261,6 +1477,38 @@ fn wire__crate__api__kafka_metadata__validate_connection_impl(
                     })(),
                 )
             }
+        },
+    )
+}
+fn wire__crate__api__profile_tools__validate_extra_properties_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "validate_extra_properties",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_text = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(
+                    crate::api::profile_tools::validate_extra_properties(api_text),
+                )?;
+                Ok(output_ok)
+            })())
         },
     )
 }
@@ -1383,10 +1631,50 @@ impl SseDecode for String {
     }
 }
 
+impl SseDecode for crate::api::profile_tools::AllowedExtraProperty {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_key = <String>::sse_decode(deserializer);
+        let mut var_valueHint = <String>::sse_decode(deserializer);
+        return crate::api::profile_tools::AllowedExtraProperty {
+            key: var_key,
+            value_hint: var_valueHint,
+        };
+    }
+}
+
 impl SseDecode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_u8().unwrap() != 0
+    }
+}
+
+impl SseDecode for crate::api::profile_tools::BootstrapServerIssue {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_entry = <String>::sse_decode(deserializer);
+        let mut var_kind =
+            <crate::api::profile_tools::BootstrapServerIssueKind>::sse_decode(deserializer);
+        return crate::api::profile_tools::BootstrapServerIssue {
+            entry: var_entry,
+            kind: var_kind,
+        };
+    }
+}
+
+impl SseDecode for crate::api::profile_tools::BootstrapServerIssueKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::profile_tools::BootstrapServerIssueKind::NoEntries,
+            1 => crate::api::profile_tools::BootstrapServerIssueKind::MissingPort,
+            2 => crate::api::profile_tools::BootstrapServerIssueKind::InvalidPort,
+            3 => crate::api::profile_tools::BootstrapServerIssueKind::InvalidHost,
+            4 => crate::api::profile_tools::BootstrapServerIssueKind::SchemeNotAllowed,
+            _ => unreachable!("Invalid variant for BootstrapServerIssueKind: {}", inner),
+        };
     }
 }
 
@@ -1400,6 +1688,67 @@ impl SseDecode for crate::api::kafka_metadata::BrokerEndpoint {
             id: var_id,
             host: var_host,
             port: var_port,
+        };
+    }
+}
+
+impl SseDecode for crate::api::profile_crypto::BundleCryptoErrorKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::profile_crypto::BundleCryptoErrorKind::WrongPassphrase,
+            1 => crate::api::profile_crypto::BundleCryptoErrorKind::NotPassphraseEncrypted,
+            2 => crate::api::profile_crypto::BundleCryptoErrorKind::Corrupt,
+            3 => crate::api::profile_crypto::BundleCryptoErrorKind::ExcessiveWork,
+            4 => crate::api::profile_crypto::BundleCryptoErrorKind::PassphraseTooShort,
+            5 => crate::api::profile_crypto::BundleCryptoErrorKind::Internal,
+            _ => unreachable!("Invalid variant for BundleCryptoErrorKind: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::profile_crypto::BundleCryptoResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_data = <Option<Vec<u8>>>::sse_decode(deserializer);
+        let mut var_error =
+            <Option<crate::api::profile_crypto::BundleCryptoErrorKind>>::sse_decode(deserializer);
+        let mut var_message = <Option<String>>::sse_decode(deserializer);
+        return crate::api::profile_crypto::BundleCryptoResult {
+            data: var_data,
+            error: var_error,
+            message: var_message,
+        };
+    }
+}
+
+impl SseDecode for crate::api::profile_tools::ClientPropertiesPreview {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_profile = <crate::api::kafka_types::ClusterProfile>::sse_decode(deserializer);
+        let mut var_extraProperties = <String>::sse_decode(deserializer);
+        let mut var_skipped =
+            <Vec<crate::api::profile_tools::SkippedClientProperty>>::sse_decode(deserializer);
+        return crate::api::profile_tools::ClientPropertiesPreview {
+            profile: var_profile,
+            extra_properties: var_extraProperties,
+            skipped: var_skipped,
+        };
+    }
+}
+
+impl SseDecode for crate::api::profile_tools::ClientPropertySkipReason {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::profile_tools::ClientPropertySkipReason::NotAllowed,
+            1 => crate::api::profile_tools::ClientPropertySkipReason::Unsupported,
+            2 => crate::api::profile_tools::ClientPropertySkipReason::Placeholder,
+            3 => crate::api::profile_tools::ClientPropertySkipReason::VerificationOverride,
+            4 => crate::api::profile_tools::ClientPropertySkipReason::InvalidValue,
+            _ => unreachable!("Invalid variant for ClientPropertySkipReason: {}", inner),
         };
     }
 }
@@ -1430,6 +1779,9 @@ impl SseDecode for crate::api::kafka_types::ClusterProfile {
         let mut var_sslPemKeyPassword = <Option<String>>::sse_decode(deserializer);
         let mut var_tlsVerification =
             <crate::api::kafka_types::TlsVerification>::sse_decode(deserializer);
+        let mut var_environmentLabel = <Option<String>>::sse_decode(deserializer);
+        let mut var_environmentColor = <Option<String>>::sse_decode(deserializer);
+        let mut var_extraProperties = <Option<String>>::sse_decode(deserializer);
         return crate::api::kafka_types::ClusterProfile {
             name: var_name,
             bootstrap_servers: var_bootstrapServers,
@@ -1453,6 +1805,9 @@ impl SseDecode for crate::api::kafka_types::ClusterProfile {
             ssl_pem_key_location: var_sslPemKeyLocation,
             ssl_pem_key_password: var_sslPemKeyPassword,
             tls_verification: var_tlsVerification,
+            environment_label: var_environmentLabel,
+            environment_color: var_environmentColor,
+            extra_properties: var_extraProperties,
         };
     }
 }
@@ -1610,6 +1965,37 @@ impl SseDecode for crate::api::kafka_types::DuplicateDetectionScope {
             0 => crate::api::kafka_types::DuplicateDetectionScope::PayloadOnly,
             1 => crate::api::kafka_types::DuplicateDetectionScope::KeyAndPayload,
             _ => unreachable!("Invalid variant for DuplicateDetectionScope: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::profile_tools::ExtraPropertyIssue {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_line = <usize>::sse_decode(deserializer);
+        let mut var_key = <String>::sse_decode(deserializer);
+        let mut var_kind =
+            <crate::api::profile_tools::ExtraPropertyIssueKind>::sse_decode(deserializer);
+        let mut var_allowed = <Option<String>>::sse_decode(deserializer);
+        return crate::api::profile_tools::ExtraPropertyIssue {
+            line: var_line,
+            key: var_key,
+            kind: var_kind,
+            allowed: var_allowed,
+        };
+    }
+}
+
+impl SseDecode for crate::api::profile_tools::ExtraPropertyIssueKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::profile_tools::ExtraPropertyIssueKind::Syntax,
+            1 => crate::api::profile_tools::ExtraPropertyIssueKind::NotAllowed,
+            2 => crate::api::profile_tools::ExtraPropertyIssueKind::InvalidValue,
+            3 => crate::api::profile_tools::ExtraPropertyIssueKind::Duplicate,
+            _ => unreachable!("Invalid variant for ExtraPropertyIssueKind: {}", inner),
         };
     }
 }
@@ -1808,6 +2194,30 @@ impl SseDecode for Vec<String> {
     }
 }
 
+impl SseDecode for Vec<crate::api::profile_tools::AllowedExtraProperty> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::profile_tools::AllowedExtraProperty>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::profile_tools::BootstrapServerIssue> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::profile_tools::BootstrapServerIssue>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_metadata::BrokerEndpoint> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1843,6 +2253,20 @@ impl SseDecode for Vec<crate::api::kafka_types::ConsumerGroupMember> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<crate::api::kafka_types::ConsumerGroupMember>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::profile_tools::ExtraPropertyIssue> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::profile_tools::ExtraPropertyIssue>::sse_decode(
                 deserializer,
             ));
         }
@@ -2038,6 +2462,18 @@ impl SseDecode for Vec<crate::api::connection_diagnostics::ServerCheck> {
     }
 }
 
+impl SseDecode for Vec<crate::api::profile_tools::SkippedClientProperty> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::profile_tools::SkippedClientProperty>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::connection_diagnostics::StageResult> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2180,6 +2616,19 @@ impl SseDecode for Option<bool> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<bool>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::profile_crypto::BundleCryptoErrorKind> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::profile_crypto::BundleCryptoErrorKind>::sse_decode(deserializer),
+            );
         } else {
             return None;
         }
@@ -2371,6 +2820,17 @@ impl SseDecode for Option<Vec<crate::api::kafka_consumer::KafkaHeader>> {
     }
 }
 
+impl SseDecode for Option<Vec<u8>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<Vec<u8>>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for crate::api::kafka_types::PartitionAnalysis {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2529,6 +2989,19 @@ impl SseDecode for crate::api::kafka_types::SizePercentiles {
             p50: var_p50,
             p95: var_p95,
             p99: var_p99,
+        };
+    }
+}
+
+impl SseDecode for crate::api::profile_tools::SkippedClientProperty {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_key = <String>::sse_decode(deserializer);
+        let mut var_reason =
+            <crate::api::profile_tools::ClientPropertySkipReason>::sse_decode(deserializer);
+        return crate::api::profile_tools::SkippedClientProperty {
+            key: var_key,
+            reason: var_reason,
         };
     }
 }
@@ -2917,161 +3390,185 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        1 => wire__crate__api__kafka_analyzer__analyze_topic_content_impl(
+        2 => wire__crate__api__kafka_analyzer__analyze_topic_content_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        2 => wire__crate__api__kafka_analyzer__analyze_topic_content_with_options_impl(
+        3 => wire__crate__api__kafka_analyzer__analyze_topic_content_with_options_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        3 => wire__crate__api__schema_registry__check_schema_compatibility_impl(
+        4 => wire__crate__api__schema_registry__check_schema_compatibility_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        4 => wire__crate__api__kafka_types__cluster_profile_default_impl(
+        5 => wire__crate__api__kafka_types__cluster_profile_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        5 => wire__crate__api__report_compare__compare_reports_impl(
+        6 => wire__crate__api__report_compare__compare_reports_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        6 => wire__crate__api__kafka_consumer__consume_with_filter_impl(
+        7 => wire__crate__api__kafka_consumer__consume_with_filter_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        7 => wire__crate__api__kafka_utils__create_config_impl(port, ptr, rust_vec_len, data_len),
-        8 => wire__crate__api__json_path__deserialize_cluster_profile_impl(
+        8 => wire__crate__api__kafka_utils__create_config_impl(port, ptr, rust_vec_len, data_len),
+        9 => wire__crate__api__profile_crypto__decrypt_bundle_with_passphrase_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        9 => wire__crate__api__connection_diagnostics__diagnose_connection_impl(
+        10 => wire__crate__api__json_path__deserialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
+        11 => wire__crate__api__connection_diagnostics__diagnose_connection_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        11 => wire__crate__api__kafka_metadata__fetch_consumer_group_lags_impl(
+        12 => wire__crate__api__profile_crypto__encrypt_bundle_with_passphrase_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        12 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+        13 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        13 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+        14 => wire__crate__api__kafka_metadata__fetch_consumer_group_lags_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => {
+        15 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        16 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        17 => {
             wire__crate__api__schema_registry__fetch_schema_impl(port, ptr, rust_vec_len, data_len)
         }
-        15 => wire__crate__api__schema_registry__fetch_schema_versions_impl(
+        18 => wire__crate__api__schema_registry__fetch_schema_versions_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        16 => wire__crate__api__schema_registry__fetch_subjects_impl(
+        19 => wire__crate__api__schema_registry__fetch_subjects_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        17 => wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
+        20 => wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        18 => {
+        21 => {
             wire__crate__api__kafka_metadata__fetch_topics_impl(port, ptr, rust_vec_len, data_len)
         }
-        19 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
-        20 => {
+        22 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
+        23 => {
             wire__crate__api__diagnostics__init_rust_logging_impl(port, ptr, rust_vec_len, data_len)
         }
-        21 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
+        24 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__profile_tools__parse_client_properties_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        23 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
+        26 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        24 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+        27 => wire__crate__api__kafka_utils__predict_default_partition_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        25 => {
+        28 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        29 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        30 => {
             wire__crate__api__json_path__resolve_json_path_impl(port, ptr, rust_vec_len, data_len)
         }
-        26 => wire__crate__api__json_path__resolve_json_path_batch_impl(
+        31 => wire__crate__api__json_path__resolve_json_path_batch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        27 => wire__crate__api__json_path__serialize_cluster_profile_impl(
+        32 => wire__crate__api__json_path__serialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        28 => wire__crate__api__kafka_types__tls_verification_default_impl(
+        33 => wire__crate__api__kafka_types__tls_verification_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        29 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
-        30 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
+        34 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
+        35 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        31 => wire__crate__api__kafka_metadata__validate_connection_impl(
+        37 => wire__crate__api__kafka_metadata__validate_connection_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        32 => wire__crate__api__json_path__validate_filter_patterns_impl(
+        39 => wire__crate__api__json_path__validate_filter_patterns_impl(
             port,
             ptr,
             rust_vec_len,
@@ -3089,6 +3586,21 @@ fn pde_ffi_dispatcher_sync_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
+        1 => wire__crate__api__profile_tools__allowed_extra_properties_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        36 => wire__crate__api__profile_tools__validate_bootstrap_servers_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        38 => wire__crate__api__profile_tools__validate_extra_properties_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
         _ => unreachable!(),
     }
 }
@@ -3111,6 +3623,72 @@ impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<ClientConfig>> for ClientConfi
 }
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_tools::AllowedExtraProperty {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.key.into_into_dart().into_dart(),
+            self.value_hint.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_tools::AllowedExtraProperty
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::AllowedExtraProperty>
+    for crate::api::profile_tools::AllowedExtraProperty
+{
+    fn into_into_dart(self) -> crate::api::profile_tools::AllowedExtraProperty {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_tools::BootstrapServerIssue {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.entry.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_tools::BootstrapServerIssue
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::BootstrapServerIssue>
+    for crate::api::profile_tools::BootstrapServerIssue
+{
+    fn into_into_dart(self) -> crate::api::profile_tools::BootstrapServerIssue {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_tools::BootstrapServerIssueKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::NoEntries => 0.into_dart(),
+            Self::MissingPort => 1.into_dart(),
+            Self::InvalidPort => 2.into_dart(),
+            Self::InvalidHost => 3.into_dart(),
+            Self::SchemeNotAllowed => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_tools::BootstrapServerIssueKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::BootstrapServerIssueKind>
+    for crate::api::profile_tools::BootstrapServerIssueKind
+{
+    fn into_into_dart(self) -> crate::api::profile_tools::BootstrapServerIssueKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::BrokerEndpoint {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -3129,6 +3707,99 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::BrokerEndpoin
     for crate::api::kafka_metadata::BrokerEndpoint
 {
     fn into_into_dart(self) -> crate::api::kafka_metadata::BrokerEndpoint {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_crypto::BundleCryptoErrorKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::WrongPassphrase => 0.into_dart(),
+            Self::NotPassphraseEncrypted => 1.into_dart(),
+            Self::Corrupt => 2.into_dart(),
+            Self::ExcessiveWork => 3.into_dart(),
+            Self::PassphraseTooShort => 4.into_dart(),
+            Self::Internal => 5.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_crypto::BundleCryptoErrorKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_crypto::BundleCryptoErrorKind>
+    for crate::api::profile_crypto::BundleCryptoErrorKind
+{
+    fn into_into_dart(self) -> crate::api::profile_crypto::BundleCryptoErrorKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_crypto::BundleCryptoResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.data.into_into_dart().into_dart(),
+            self.error.into_into_dart().into_dart(),
+            self.message.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_crypto::BundleCryptoResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_crypto::BundleCryptoResult>
+    for crate::api::profile_crypto::BundleCryptoResult
+{
+    fn into_into_dart(self) -> crate::api::profile_crypto::BundleCryptoResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_tools::ClientPropertiesPreview {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.profile.into_into_dart().into_dart(),
+            self.extra_properties.into_into_dart().into_dart(),
+            self.skipped.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_tools::ClientPropertiesPreview
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::ClientPropertiesPreview>
+    for crate::api::profile_tools::ClientPropertiesPreview
+{
+    fn into_into_dart(self) -> crate::api::profile_tools::ClientPropertiesPreview {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_tools::ClientPropertySkipReason {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::NotAllowed => 0.into_dart(),
+            Self::Unsupported => 1.into_dart(),
+            Self::Placeholder => 2.into_dart(),
+            Self::VerificationOverride => 3.into_dart(),
+            Self::InvalidValue => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_tools::ClientPropertySkipReason
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::ClientPropertySkipReason>
+    for crate::api::profile_tools::ClientPropertySkipReason
+{
+    fn into_into_dart(self) -> crate::api::profile_tools::ClientPropertySkipReason {
         self
     }
 }
@@ -3160,6 +3831,9 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ClusterProfile {
             self.ssl_pem_key_location.into_into_dart().into_dart(),
             self.ssl_pem_key_password.into_into_dart().into_dart(),
             self.tls_verification.into_into_dart().into_dart(),
+            self.environment_label.into_into_dart().into_dart(),
+            self.environment_color.into_into_dart().into_dart(),
+            self.extra_properties.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -3375,6 +4049,52 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::DuplicateDetecti
     for crate::api::kafka_types::DuplicateDetectionScope
 {
     fn into_into_dart(self) -> crate::api::kafka_types::DuplicateDetectionScope {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_tools::ExtraPropertyIssue {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.line.into_into_dart().into_dart(),
+            self.key.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+            self.allowed.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_tools::ExtraPropertyIssue
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::ExtraPropertyIssue>
+    for crate::api::profile_tools::ExtraPropertyIssue
+{
+    fn into_into_dart(self) -> crate::api::profile_tools::ExtraPropertyIssue {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_tools::ExtraPropertyIssueKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Syntax => 0.into_dart(),
+            Self::NotAllowed => 1.into_dart(),
+            Self::InvalidValue => 2.into_dart(),
+            Self::Duplicate => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_tools::ExtraPropertyIssueKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::ExtraPropertyIssueKind>
+    for crate::api::profile_tools::ExtraPropertyIssueKind
+{
+    fn into_into_dart(self) -> crate::api::profile_tools::ExtraPropertyIssueKind {
         self
     }
 }
@@ -3908,6 +4628,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::SizePercentiles>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::profile_tools::SkippedClientProperty {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.key.into_into_dart().into_dart(),
+            self.reason.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::profile_tools::SkippedClientProperty
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::SkippedClientProperty>
+    for crate::api::profile_tools::SkippedClientProperty
+{
+    fn into_into_dart(self) -> crate::api::profile_tools::SkippedClientProperty {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::StageResult {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4377,10 +5118,45 @@ impl SseEncode for String {
     }
 }
 
+impl SseEncode for crate::api::profile_tools::AllowedExtraProperty {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.key, serializer);
+        <String>::sse_encode(self.value_hint, serializer);
+    }
+}
+
 impl SseEncode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_u8(self as _).unwrap();
+    }
+}
+
+impl SseEncode for crate::api::profile_tools::BootstrapServerIssue {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.entry, serializer);
+        <crate::api::profile_tools::BootstrapServerIssueKind>::sse_encode(self.kind, serializer);
+    }
+}
+
+impl SseEncode for crate::api::profile_tools::BootstrapServerIssueKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::profile_tools::BootstrapServerIssueKind::NoEntries => 0,
+                crate::api::profile_tools::BootstrapServerIssueKind::MissingPort => 1,
+                crate::api::profile_tools::BootstrapServerIssueKind::InvalidPort => 2,
+                crate::api::profile_tools::BootstrapServerIssueKind::InvalidHost => 3,
+                crate::api::profile_tools::BootstrapServerIssueKind::SchemeNotAllowed => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -4390,6 +5166,68 @@ impl SseEncode for crate::api::kafka_metadata::BrokerEndpoint {
         <i32>::sse_encode(self.id, serializer);
         <String>::sse_encode(self.host, serializer);
         <i32>::sse_encode(self.port, serializer);
+    }
+}
+
+impl SseEncode for crate::api::profile_crypto::BundleCryptoErrorKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::profile_crypto::BundleCryptoErrorKind::WrongPassphrase => 0,
+                crate::api::profile_crypto::BundleCryptoErrorKind::NotPassphraseEncrypted => 1,
+                crate::api::profile_crypto::BundleCryptoErrorKind::Corrupt => 2,
+                crate::api::profile_crypto::BundleCryptoErrorKind::ExcessiveWork => 3,
+                crate::api::profile_crypto::BundleCryptoErrorKind::PassphraseTooShort => 4,
+                crate::api::profile_crypto::BundleCryptoErrorKind::Internal => 5,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::profile_crypto::BundleCryptoResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<Vec<u8>>>::sse_encode(self.data, serializer);
+        <Option<crate::api::profile_crypto::BundleCryptoErrorKind>>::sse_encode(
+            self.error, serializer,
+        );
+        <Option<String>>::sse_encode(self.message, serializer);
+    }
+}
+
+impl SseEncode for crate::api::profile_tools::ClientPropertiesPreview {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::kafka_types::ClusterProfile>::sse_encode(self.profile, serializer);
+        <String>::sse_encode(self.extra_properties, serializer);
+        <Vec<crate::api::profile_tools::SkippedClientProperty>>::sse_encode(
+            self.skipped,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::profile_tools::ClientPropertySkipReason {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::profile_tools::ClientPropertySkipReason::NotAllowed => 0,
+                crate::api::profile_tools::ClientPropertySkipReason::Unsupported => 1,
+                crate::api::profile_tools::ClientPropertySkipReason::Placeholder => 2,
+                crate::api::profile_tools::ClientPropertySkipReason::VerificationOverride => 3,
+                crate::api::profile_tools::ClientPropertySkipReason::InvalidValue => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -4418,6 +5256,9 @@ impl SseEncode for crate::api::kafka_types::ClusterProfile {
         <Option<String>>::sse_encode(self.ssl_pem_key_location, serializer);
         <Option<String>>::sse_encode(self.ssl_pem_key_password, serializer);
         <crate::api::kafka_types::TlsVerification>::sse_encode(self.tls_verification, serializer);
+        <Option<String>>::sse_encode(self.environment_label, serializer);
+        <Option<String>>::sse_encode(self.environment_color, serializer);
+        <Option<String>>::sse_encode(self.extra_properties, serializer);
     }
 }
 
@@ -4555,6 +5396,34 @@ impl SseEncode for crate::api::kafka_types::DuplicateDetectionScope {
             match self {
                 crate::api::kafka_types::DuplicateDetectionScope::PayloadOnly => 0,
                 crate::api::kafka_types::DuplicateDetectionScope::KeyAndPayload => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::profile_tools::ExtraPropertyIssue {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <usize>::sse_encode(self.line, serializer);
+        <String>::sse_encode(self.key, serializer);
+        <crate::api::profile_tools::ExtraPropertyIssueKind>::sse_encode(self.kind, serializer);
+        <Option<String>>::sse_encode(self.allowed, serializer);
+    }
+}
+
+impl SseEncode for crate::api::profile_tools::ExtraPropertyIssueKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::profile_tools::ExtraPropertyIssueKind::Syntax => 0,
+                crate::api::profile_tools::ExtraPropertyIssueKind::NotAllowed => 1,
+                crate::api::profile_tools::ExtraPropertyIssueKind::InvalidValue => 2,
+                crate::api::profile_tools::ExtraPropertyIssueKind::Duplicate => 3,
                 _ => {
                     unimplemented!("");
                 }
@@ -4714,6 +5583,26 @@ impl SseEncode for Vec<String> {
     }
 }
 
+impl SseEncode for Vec<crate::api::profile_tools::AllowedExtraProperty> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::profile_tools::AllowedExtraProperty>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::profile_tools::BootstrapServerIssue> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::profile_tools::BootstrapServerIssue>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::kafka_metadata::BrokerEndpoint> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4740,6 +5629,16 @@ impl SseEncode for Vec<crate::api::kafka_types::ConsumerGroupMember> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::kafka_types::ConsumerGroupMember>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::profile_tools::ExtraPropertyIssue> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::profile_tools::ExtraPropertyIssue>::sse_encode(item, serializer);
         }
     }
 }
@@ -4884,6 +5783,16 @@ impl SseEncode for Vec<crate::api::connection_diagnostics::ServerCheck> {
     }
 }
 
+impl SseEncode for Vec<crate::api::profile_tools::SkippedClientProperty> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::profile_tools::SkippedClientProperty>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::connection_diagnostics::StageResult> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4997,6 +5906,16 @@ impl SseEncode for Option<bool> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <bool>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::profile_crypto::BundleCryptoErrorKind> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::profile_crypto::BundleCryptoErrorKind>::sse_encode(value, serializer);
         }
     }
 }
@@ -5151,6 +6070,16 @@ impl SseEncode for Option<Vec<crate::api::kafka_consumer::KafkaHeader>> {
     }
 }
 
+impl SseEncode for Option<Vec<u8>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <Vec<u8>>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for crate::api::kafka_types::PartitionAnalysis {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5276,6 +6205,14 @@ impl SseEncode for crate::api::kafka_types::SizePercentiles {
         <i64>::sse_encode(self.p50, serializer);
         <i64>::sse_encode(self.p95, serializer);
         <i64>::sse_encode(self.p99, serializer);
+    }
+}
+
+impl SseEncode for crate::api::profile_tools::SkippedClientProperty {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.key, serializer);
+        <crate::api::profile_tools::ClientPropertySkipReason>::sse_encode(self.reason, serializer);
     }
 }
 

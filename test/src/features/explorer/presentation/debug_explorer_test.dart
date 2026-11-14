@@ -49,6 +49,7 @@ void main() {
     when(mockActiveConnectionController.addListener(any)).thenReturn(null);
     when(mockActiveConnectionController.removeListener(any)).thenReturn(null);
     when(mockActiveConnectionController.hasListeners).thenReturn(false);
+    when(mockActiveConnectionController.unrestoredTopics).thenReturn(const []);
 
     when(mockClusterListController.addListener(any)).thenReturn(null);
     when(mockClusterListController.removeListener(any)).thenReturn(null);

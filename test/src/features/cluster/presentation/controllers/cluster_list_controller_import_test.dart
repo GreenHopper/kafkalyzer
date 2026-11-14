@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/profile_crypto.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
@@ -237,7 +238,7 @@ void main() {
   );
 
   test(
-    'exportClustersZip and exportClusters scrub secrets by default and include them on opt-in',
+    'exportClustersZip scrubs secrets by default, encrypts with secrets when passphrase given, and exportClusters never includes secrets',
     () async {
       const profileWithSecrets = ClusterProfile(
         name: 'AuthCluster',
@@ -249,13 +250,14 @@ void main() {
         tlsVerification: TlsVerification.enabled,
       );
 
-      // Default export scrubs all secrets.
+      // JSON export never contains secrets.
       final defaultJson = await controller.exportClusters([profileWithSecrets]);
       expect(defaultJson, isNot(contains('sasl-secret')));
       expect(defaultJson, isNot(contains('oauth-secret')));
       expect(defaultJson, isNot(contains('pem-secret')));
       expect(defaultJson, isNot(contains('sr-secret')));
 
+      // Default ZIP export scrubs all secrets.
       final defaultZip = await controller.exportClustersZip([
         profileWithSecrets,
       ]);
@@ -268,19 +270,31 @@ void main() {
       expect(defaultClustersJson, isNot(contains('pem-secret')));
       expect(defaultClustersJson, isNot(contains('sr-secret')));
 
-      // Opt-in export includes all secrets.
-      final optInJson = await controller.exportClusters([
-        profileWithSecrets,
-      ], includeSecrets: true);
-      expect(optInJson, contains('sasl-secret'));
-      expect(optInJson, contains('oauth-secret'));
-      expect(optInJson, contains('pem-secret'));
-      expect(optInJson, contains('sr-secret'));
+      // Encrypted ZIP export passes ZIP with secrets to bridge and returns encrypted bytes.
+      List<int>? capturedPlaintext;
+      final fakeEncrypted = Uint8List.fromList([
+        ...utf8.encode('age-encryption.org/v1\n'),
+        1,
+        2,
+        3,
+      ]);
+      when(
+        mockRustApi.crateApiProfileCryptoEncryptBundleWithPassphrase(
+          plaintext: anyNamed('plaintext'),
+          passphrase: 'correct-horse-battery',
+        ),
+      ).thenAnswer((inv) async {
+        capturedPlaintext = inv.namedArguments[#plaintext] as List<int>;
+        return BundleCryptoResult(data: fakeEncrypted);
+      });
 
       final optInZip = await controller.exportClustersZip([
         profileWithSecrets,
-      ], includeSecrets: true);
-      final optInArchive = ZipDecoder().decodeBytes(optInZip);
+      ], encryptionPassphrase: 'correct-horse-battery');
+      expect(optInZip, fakeEncrypted);
+      expect(capturedPlaintext, isNotNull);
+
+      final optInArchive = ZipDecoder().decodeBytes(capturedPlaintext!);
       final optInClustersJson = utf8.decode(
         optInArchive.findFile('clusters.json')!.content as List<int>,
       );

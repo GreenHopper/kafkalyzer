@@ -1,7 +1,9 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
+import 'package:kafkalyzer/src/ui/widgets/dropped_messages_indicator.dart';
 
 class ScriptProgressWidget extends StatelessWidget {
   final Script script;
@@ -46,14 +48,16 @@ class ScriptProgressWidget extends StatelessWidget {
                 final errorMessage = runner.stepErrorMessages[step.id];
 
                 final stepIcon = _getStatusIcon(stepStatus);
-                final stepColor = _getStatusColor(stepStatus);
-                final stepText = _getStatusText(stepStatus);
+                final stepColor = _getStatusColor(context, stepStatus);
+                final stepText = _getStatusText(context, stepStatus);
 
                 final isNoMessages =
                     errorMessage?.contains("No messages found") ?? false;
                 final subtitleColor = isNoMessages
-                    ? Colors.orange
-                    : (stepStatus == StepStatus.error ? Colors.red : null);
+                    ? Theme.of(context).colorScheme.tertiary
+                    : (stepStatus == StepStatus.error
+                          ? Theme.of(context).colorScheme.error
+                          : null);
 
                 return Theme(
                   data: Theme.of(
@@ -93,11 +97,18 @@ class ScriptProgressWidget extends StatelessWidget {
                                       totalMatches += count;
                                       if (count > 0) topicsWithMatches++;
                                     }
+                                    final l10n = AppLocalizations.of(context);
                                     return Text(
-                                      "$totalMatches matches found in $topicsWithMatches topics",
-                                      style: const TextStyle(
+                                      l10n?.matchesFoundInTopics(
+                                            totalMatches,
+                                            topicsWithMatches,
+                                          ) ??
+                                          "$totalMatches matches found in $topicsWithMatches topics",
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.green,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                       ),
                                     );
                                   },
@@ -127,11 +138,23 @@ class ScriptProgressWidget extends StatelessWidget {
                             step.id,
                             topic,
                           );
+                          final droppedCount = runner.getDroppedCount(
+                            step.id,
+                            topic,
+                          );
                           return TopicProgressTile(
                             topic: topic,
                             status: tStatus,
                             progress: progress,
                             matchCount: matchCount,
+                            extraSubtitle: droppedCount > 0
+                                ? DroppedMessagesIndicator(
+                                    droppedCount: droppedCount,
+                                    bufferLimit: runner
+                                        .multiSearchController
+                                        .bufferLimit,
+                                  )
+                                : null,
                           );
                         },
                       );
@@ -159,29 +182,31 @@ class ScriptProgressWidget extends StatelessWidget {
     }
   }
 
-  Color _getStatusColor(StepStatus status) {
+  Color _getStatusColor(BuildContext context, StepStatus status) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case StepStatus.pending:
-        return Colors.grey;
+        return colorScheme.outline;
       case StepStatus.running:
-        return Colors.blue;
+        return colorScheme.secondary;
       case StepStatus.completed:
-        return Colors.green;
+        return colorScheme.primary;
       case StepStatus.error:
-        return Colors.red;
+        return colorScheme.error;
     }
   }
 
-  String _getStatusText(StepStatus status) {
+  String _getStatusText(BuildContext context, StepStatus status) {
+    final l10n = AppLocalizations.of(context);
     switch (status) {
       case StepStatus.pending:
-        return "PENDING";
+        return l10n?.stepStatusPending ?? "PENDING";
       case StepStatus.running:
-        return "RUNNING";
+        return l10n?.stepStatusRunning ?? "RUNNING";
       case StepStatus.completed:
-        return "COMPLETED";
+        return l10n?.stepStatusCompleted ?? "COMPLETED";
       case StepStatus.error:
-        return "FAILED";
+        return l10n?.stepStatusFailed ?? "FAILED";
     }
   }
 }

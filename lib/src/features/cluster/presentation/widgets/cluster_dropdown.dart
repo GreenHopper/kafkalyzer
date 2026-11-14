@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment_tag.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
@@ -55,17 +56,25 @@ class ClusterDropdown extends StatelessWidget {
                             color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                      Text(
-                        c.name,
-                        style: TextStyle(
-                          color: topicController.hasCachedTopics(c)
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
-                          fontWeight: topicController.hasCachedTopics(c)
-                              ? FontWeight.w600
-                              : null,
+                      Flexible(
+                        child: Text(
+                          c.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: topicController.hasCachedTopics(c)
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                            fontWeight: topicController.hasCachedTopics(c)
+                                ? FontWeight.w600
+                                : null,
+                          ),
                         ),
                       ),
+                      if (c.environmentLabel != null &&
+                          c.environmentLabel!.trim().isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        EnvironmentTagChip(profile: c, compact: true),
+                      ],
                     ],
                   ),
                 ),

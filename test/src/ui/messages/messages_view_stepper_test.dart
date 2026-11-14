@@ -16,9 +16,11 @@ class FakeMessageExportService implements MessageExportService {
   @override
   Future<String?> exportMessages(
     List<KafkaMessage> messages, {
+    required String dialogTitle,
     ExportFormat format = ExportFormat.json,
     dynamic columnConfig,
     bool isScriptingView = false,
+    bool includeHeadersColumn = false,
   }) async => null;
 
   @override

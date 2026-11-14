@@ -255,10 +255,10 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
     final Color color;
     if (delta > 0) {
       text = "+${_formatNum(delta)}";
-      color = Colors.red;
+      color = Theme.of(context).colorScheme.error;
     } else if (delta < 0) {
       text = _formatNum(delta);
-      color = Colors.green;
+      color = Theme.of(context).colorScheme.primary;
     } else {
       text = "0";
       color = Theme.of(context).colorScheme.outline;
@@ -303,8 +303,6 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
       final cmp = a.toLowerCase().compareTo(b.toLowerCase());
       return _sortTopicsAscending ? cmp : -cmp;
     });
-
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
 
     Widget buildHeaderCell({
       required String label,
@@ -400,7 +398,7 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
             child: Row(
               children: [
                 buildHeaderCell(
-                  label: isGerman ? 'Topic' : 'Topic',
+                  label: widget.l10n.topic,
                   isSelected: !_sortByLag,
                   isAscending: _sortTopicsAscending,
                   onTap: () {
@@ -417,7 +415,7 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                 ),
                 const Spacer(flex: 8),
                 buildHeaderCell(
-                  label: isGerman ? 'Lag' : 'Lag',
+                  label: widget.l10n.lagCol,
                   isSelected: _sortByLag,
                   isAscending: _sortTopicsAscending,
                   onTap: () {
@@ -437,7 +435,7 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      isGerman ? 'Abarbeitung' : 'Processed',
+                      widget.l10n.processedCol,
                       style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -454,9 +452,7 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
               padding: const EdgeInsets.all(16.0),
               child: Center(
                 child: Text(
-                  isGerman
-                      ? "Keine aktiven Partitionen gefunden."
-                      : "No active partition assignments.",
+                  widget.l10n.noActivePartitionAssignments,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.outline,
                     fontStyle: FontStyle.italic,

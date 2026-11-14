@@ -19,9 +19,11 @@ class FakeMessageExportService implements MessageExportService {
   @override
   Future<String?> exportMessages(
     List<KafkaMessage> messages, {
+    required String dialogTitle,
     ExportFormat format = ExportFormat.json,
     dynamic columnConfig,
     bool isScriptingView = false,
+    bool includeHeadersColumn = false,
   }) async => null;
 
   @override
@@ -205,5 +207,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Run Summary'), findsOneWidget);
+  });
+
+  testWidgets('renders German localization in details view and sidebar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: const [Locale('en'), Locale('de')],
+        home: Scaffold(
+          body: ScriptRunDetailsView(run: run, script: script, onBack: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Details'), findsOneWidget);
+    expect(find.text('Nach Topic'), findsOneWidget);
+    expect(find.textContaining('Cluster:'), findsOneWidget);
   });
 }

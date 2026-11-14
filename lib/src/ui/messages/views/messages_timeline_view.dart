@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:timelines_plus/timelines_plus.dart';
@@ -142,8 +143,11 @@ class _MessagesTimelineViewState extends State<MessagesTimelineView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (widget.messages.isEmpty) {
-      return const Center(child: Text("No messages to display"));
+      return Center(
+        child: Text(l10n?.noMessagesToDisplay ?? 'No messages to display'),
+      );
     }
 
     return Timeline.tileBuilder(
@@ -160,7 +164,7 @@ class _MessagesTimelineViewState extends State<MessagesTimelineView> {
           final message = widget.messages[index];
           final stepName = message is ScriptResultMessage
               ? message.stepName
-              : 'Global (No Step)';
+              : (l10n?.globalNoStep ?? 'Global (No Step)');
           final extractedValues = _getExtractedValues(message);
           final isMatch = _isMatch(message, stepName);
 

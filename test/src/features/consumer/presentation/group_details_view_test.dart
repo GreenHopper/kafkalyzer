@@ -42,9 +42,13 @@ void main() {
     ownershipKnown: ownershipKnown,
   );
 
-  Widget createWidgetUnderTest(ConsumerGroupLag groupLag) {
+  Widget createWidgetUnderTest(ConsumerGroupLag groupLag, {Locale? locale}) {
     return MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: SizedBox(
@@ -295,4 +299,19 @@ void main() {
       expect(find.byKey(const Key('group_ownership_unknown')), findsNothing);
     },
   );
+
+  testWidgets('renders German headers and empty partition notice', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      createWidgetUnderTest(
+        group(members: const [], unassigned: const []),
+        locale: const Locale('de'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Abarbeitung'), findsOneWidget);
+    expect(find.text('Keine aktiven Partitionen gefunden.'), findsOneWidget);
+  });
 }

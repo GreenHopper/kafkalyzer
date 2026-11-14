@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/services/time_display_settings.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/copyable_node_text.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_composite_badge.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_virtual_json_tree.dart';
@@ -476,5 +480,255 @@ void main() {
       expect(jsonDecode(copiedText!), nested);
       expect(copiedText, const JsonEncoder.withIndent('  ').convert(nested));
     });
+
+    testWidgets(
+      'decodes JSON string inline, hides pin/filter in decoded subtree, and clears via Show original only',
+      (tester) async {
+        final pinned = <String>[];
+        final filtered = <String>[];
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 700,
+                height: 400,
+                child: SmartVirtualJsonTree(
+                  json: {'payload': '{"innerKey": 99}', 'other': 'ok'},
+                  onPinToColumn: pinned.add,
+                  onFilterByField: filtered.add,
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Originally 2 rows have pin & filter buttons
+        expect(find.byIcon(Icons.push_pin_outlined), findsNWidgets(2));
+        expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
+
+        // Open Decode as… menu on first string row ('payload')
+        await tester.tap(find.byIcon(Icons.transform).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('JSON').last);
+        await tester.pumpAndSettle();
+
+        // Decoded subtree is visible
+        expect(find.text('innerKey: '), findsOneWidget);
+        expect(find.text('99'), findsOneWidget);
+        // Pin and filter buttons are NOT added for decoded child rows
+        expect(find.byIcon(Icons.push_pin_outlined), findsNWidgets(2));
+        expect(find.byIcon(Icons.filter_alt_outlined), findsNWidgets(2));
+
+        // Clear via 'Show original only' tooltip close icon on the chip
+        await tester.tap(find.byTooltip('Show original only').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('innerKey: '), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'chains Base64 -> gzip -> JSON and renders binary row with copy as hex',
+      (tester) async {
+        String? copiedText;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'Clipboard.setData') {
+                copiedText = (call.arguments as Map)['text'] as String?;
+              }
+              return null;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null),
+        );
+
+        final gzBytes = gzip.encode(utf8.encode('{"msg":"hi"}'));
+        final b64 = base64Encode(gzBytes);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 700,
+                height: 400,
+                child: SmartVirtualJsonTree(json: {'blob': b64}),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Decode blob as Base64 -> binary row
+        await tester.tap(find.byIcon(Icons.transform).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Base64').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('${gzBytes.length} bytes'), findsOneWidget);
+        expect(find.byTooltip('Copy as hex'), findsOneWidget);
+
+        // Copy as hex
+        await tester.tap(find.byTooltip('Copy as hex'));
+        await tester.pump();
+        expect(copiedText, isNotNull);
+        expect(copiedText!.startsWith('1f 8b'), isTrue);
+
+        // Chain decode binary row as gzip -> text -> JSON
+        await tester.tap(find.byIcon(Icons.transform).last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('gzip').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('"{"msg":"hi"}"'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'shows dismissible decode error and clears decodes when json changes',
+      (tester) async {
+        Map<String, dynamic> currentJson = {'bad': 'not-json'};
+
+        late StateSetter setOuterState;
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) {
+              setOuterState = setState;
+              return MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: SizedBox(
+                    width: 700,
+                    height: 400,
+                    child: SmartVirtualJsonTree(json: currentJson),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.transform).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('JSON').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Not valid JSON'), findsOneWidget);
+
+        // Dismiss error
+        await tester.tap(find.byIcon(Icons.close).first);
+        await tester.pumpAndSettle();
+        expect(find.text('Not valid JSON'), findsNothing);
+
+        // Decode again then change json -> error cleared
+        await tester.tap(find.byIcon(Icons.transform).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('JSON').last);
+        await tester.pumpAndSettle();
+        expect(find.text('Not valid JSON'), findsOneWidget);
+
+        setOuterState(() {
+          currentJson = {'bad': 'other'};
+        });
+        await tester.pumpAndSettle();
+        expect(find.text('Not valid JSON'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'right-click context menu on string row opens Decode as… and decodes',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 700,
+                height: 400,
+                child: SmartVirtualJsonTree(json: {'payload': '{"ctx": 42}'}),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final target = find.textContaining('"{"ctx": 42}"');
+        await tester.tap(target, buttons: kSecondaryMouseButton);
+        await tester.pumpAndSettle();
+
+        expect(find.text('JSON'), findsOneWidget);
+        await tester.tap(find.text('JSON'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('ctx: '), findsOneWidget);
+        expect(find.text('42'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'epoch tooltip renders on plausible epoch and reacts to TimeDisplaySettings; not on 42 or 3.5',
+      (tester) async {
+        final settings = TimeDisplaySettings();
+        if (getIt.isRegistered<TimeDisplaySettings>()) {
+          getIt.unregister<TimeDisplaySettings>();
+        }
+        getIt.registerSingleton<TimeDisplaySettings>(settings);
+        addTearDown(() {
+          if (getIt.isRegistered<TimeDisplaySettings>()) {
+            getIt.unregister<TimeDisplaySettings>();
+          }
+          settings.dispose();
+        });
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 700,
+                height: 400,
+                child: SmartVirtualJsonTree(
+                  json: {'ts': 1700000000000, 'small': 42, 'dbl': 3.5},
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Only 1 Tooltip for 'ts', none for 'small' or 'dbl'
+        final tooltips = tester
+            .widgetList<Tooltip>(find.byType(Tooltip))
+            .where(
+              (t) => (t.message ?? '').contains('Assumed unit: milliseconds'),
+            );
+        expect(tooltips.length, 1);
+        expect(tooltips.first.message!.startsWith('Local:'), isTrue);
+
+        // Switch to UTC mode
+        settings.value = TimeDisplayMode.utc;
+        await tester.pumpAndSettle();
+
+        final utcTooltips = tester
+            .widgetList<Tooltip>(find.byType(Tooltip))
+            .where(
+              (t) => (t.message ?? '').contains('Assumed unit: milliseconds'),
+            );
+        expect(utcTooltips.length, 1);
+        expect(utcTooltips.first.message!.startsWith('UTC:'), isTrue);
+      },
+    );
   });
 }

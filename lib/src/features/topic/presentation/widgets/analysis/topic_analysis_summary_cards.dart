@@ -43,8 +43,12 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
                 title: l10n?.totalMessages ?? 'Total Messages',
                 mainValue: numberFormat.format(totalMsgs),
                 subtitle:
+                    l10n?.durationPartitionsSummary(
+                      _formatDuration(report.scanDurationMs),
+                      report.partitionStats.length,
+                    ) ??
                     '${_formatDuration(report.scanDurationMs)} • '
-                    '${report.partitionStats.length} partitions',
+                        '${report.partitionStats.length} partitions',
               ),
             ),
             SizedBox(
@@ -66,7 +70,9 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
               width: minWidth,
               child: _SummaryCard(
                 icon: Icons.delete_sweep_outlined,
-                iconColor: report.isCompacted ? Colors.orange : Colors.blueGrey,
+                iconColor: report.isCompacted
+                    ? Theme.of(context).colorScheme.tertiary
+                    : Theme.of(context).colorScheme.outline,
                 title: l10n?.tombstones ?? 'Tombstones',
                 mainValue:
                     '${numberFormat.format(tombstoneCount)} '
@@ -76,8 +82,8 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
                     : (l10n?.nonCompactedTopic ?? 'Delete Policy'),
                 badgeText: report.isCompacted ? 'compact' : 'delete',
                 badgeColor: report.isCompacted
-                    ? Colors.orange.withValues(alpha: 0.2)
-                    : Colors.grey.withValues(alpha: 0.2),
+                    ? Theme.of(context).colorScheme.tertiaryContainer
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
             ),
             SizedBox(

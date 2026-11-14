@@ -1,23 +1,29 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/passphrase_prompt_dialog.dart';
+import 'package:kafkalyzer/src/services/encrypted_bundle.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/services/diagnostics/app_logging.dart';
 import 'package:kafkalyzer/src/services/diagnostics/diagnostics_report.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/file_opener_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
+import 'package:kafkalyzer/src/services/time_display_settings.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
 import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment_tag.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/import_conflict_dialog.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
@@ -42,6 +48,15 @@ class SettingsView extends WatchingStatefulWidget {
 class _SettingsViewState extends State<SettingsView> {
   // Using a Set to store selected cluster names
   final Set<String> _selectedClusterNames = {};
+  final TextEditingController _clusterFilterController =
+      TextEditingController();
+  String _clusterFilterQuery = '';
+
+  @override
+  void dispose() {
+    _clusterFilterController.dispose();
+    super.dispose();
+  }
 
   void _toggleSelection(String clusterName) {
     setState(() {
@@ -83,7 +98,11 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
               ),
               const SizedBox(height: 32),
-              _buildGeneralSettings(context, l10n),
+              _buildAppearanceSection(context, l10n),
+              const SizedBox(height: 32),
+              const Divider(),
+              const SizedBox(height: 32),
+              const _GeneralSettingsSection(),
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 32),
@@ -355,153 +374,159 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
-  Widget _buildGeneralSettings(BuildContext context, AppLocalizations l10n) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.general, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 16),
-        FutureBuilder<SharedPreferences>(
-          future: SharedPreferences.getInstance(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return const SizedBox.shrink();
-            final prefs = snapshot.data!;
-            final defaultDir = prefs.getString('general_default_output_dir');
-            final maxRuns = prefs.getInt('scripting_max_run_history') ?? 30;
-            final maxLagQueries =
-                prefs.getInt('consumer_max_concurrent_queries') ?? 5;
-            final lagThreshold =
-                prefs.getInt(SettingsService.lagWarnThresholdKey) ?? 0;
+  Widget _buildAppearanceSection(BuildContext context, AppLocalizations l10n) {
+    final appearance = getIt.isRegistered<AppearanceSettings>()
+        ? getIt<AppearanceSettings>()
+        : AppearanceSettings();
+    final timeDisplay = getIt.isRegistered<TimeDisplaySettings>()
+        ? getIt<TimeDisplaySettings>()
+        : TimeDisplaySettings.fallback;
 
-            final controller = TextEditingController(text: defaultDir);
-            final maxRunsController = TextEditingController(
-              text: maxRuns.toString(),
-            );
-            final maxLagQueriesController = TextEditingController(
-              text: maxLagQueries.toString(),
-            );
-            final lagThresholdController = TextEditingController(
-              text: lagThreshold.toString(),
-            );
+    return AnimatedBuilder(
+      animation: Listenable.merge([appearance, timeDisplay]),
+      builder: (context, _) {
+        final isCustomScale = !AppearanceSettings.textScalePresets.any(
+          (p) => (p - appearance.textScale).abs() < 0.001,
+        );
+        final scaleEntries = <DropdownMenuEntry<double>>[
+          for (final preset in AppearanceSettings.textScalePresets)
+            DropdownMenuEntry<double>(
+              value: preset,
+              label: '${(preset * 100).round()}%',
+            ),
+          if (isCustomScale)
+            DropdownMenuEntry<double>(
+              value: appearance.textScale,
+              label: l10n.textSizeCustom((appearance.textScale * 100).round()),
+            ),
+        ];
 
-            return Column(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: controller,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: l10n.defaultScriptOutputDir,
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.folder_open),
-                            onPressed: () async {
-                              String? selected =
-                                  await FilePicker.getDirectoryPath();
-                              if (selected != null) {
-                                await prefs.setString(
-                                  'general_default_output_dir',
-                                  selected,
-                                );
-                                controller.text = selected;
-                                getIt<MultiSearchController>().loadDirectory();
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: Text(
+                    l10n.appearanceSectionTitle,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: maxRunsController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: l10n.maxScriptRunHistory,
-                          border: const OutlineInputBorder(),
-                          helperText: "Default: 30",
-                        ),
-                        onChanged: (value) {
-                          final val = int.tryParse(value);
-                          if (val != null) {
-                            prefs.setInt('scripting_max_run_history', val);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextField(
-                        controller: maxLagQueriesController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: l10n.maxConcurrentLagQueries,
-                          border: const OutlineInputBorder(),
-                          helperText: l10n.maxConcurrentLagQueriesHelper,
-                        ),
-                        onChanged: (value) {
-                          final val = int.tryParse(value);
-                          if (val != null) {
-                            prefs.setInt(
-                              'consumer_max_concurrent_queries',
-                              val,
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        key: const Key('lag_warn_threshold_field'),
-                        controller: lagThresholdController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: l10n.lagWarnThresholdLabel,
-                          border: const OutlineInputBorder(),
-                          helperText: l10n.lagWarnThresholdHelp,
-                        ),
-                        onChanged: (value) {
-                          final val = int.tryParse(value);
-                          if (val != null) {
-                            getIt<SettingsService>().setLagWarnThreshold(val);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  key: const Key('restore_open_tabs_switch'),
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l10n.restoreOpenTabsOnStartup),
-                  subtitle: Text(l10n.restoreOpenTabsOnStartupDescription),
-                  value:
-                      prefs.getBool(SessionRestoreService.prefRestoreEnabled) ??
-                      true,
-                  onChanged: (bool value) async {
-                    await getIt<SessionRestoreService>().setRestorationEnabled(
-                      value,
-                    );
-                    setState(() {});
-                  },
+                TextButton(
+                  key: const Key('reset_appearance_button'),
+                  onPressed: () => _confirmSectionReset(
+                    context,
+                    l10n,
+                    l10n.appearanceSectionTitle,
+                    () async {
+                      await appearance.resetToDefaults();
+                      timeDisplay.setMode(TimeDisplayMode.local);
+                    },
+                  ),
+                  child: Text(l10n.resetToDefaults),
                 ),
               ],
-            );
-          },
-        ),
-      ],
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 24,
+              runSpacing: 16,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.themeLabel,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    SegmentedButton<ThemeMode>(
+                      key: const Key('appearance_theme_selector'),
+                      segments: [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: Text(l10n.themeSystem),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          label: Text(l10n.themeLight),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          label: Text(l10n.themeDark),
+                        ),
+                      ],
+                      selected: {appearance.themeMode},
+                      onSelectionChanged: (sel) {
+                        appearance.setThemeMode(sel.first);
+                      },
+                    ),
+                  ],
+                ),
+                DropdownMenu<String>(
+                  key: const Key('appearance_language_dropdown'),
+                  label: Text(l10n.languageLabel),
+                  initialSelection: appearance.locale?.languageCode ?? 'system',
+                  dropdownMenuEntries: [
+                    DropdownMenuEntry(
+                      value: 'system',
+                      label: l10n.languageSystem,
+                    ),
+                    DropdownMenuEntry(value: 'en', label: l10n.languageEnglish),
+                    DropdownMenuEntry(value: 'de', label: l10n.languageGerman),
+                  ],
+                  onSelected: (val) {
+                    if (val == null || val == 'system') {
+                      appearance.setLocale(null);
+                    } else {
+                      appearance.setLocale(Locale(val));
+                    }
+                  },
+                ),
+                DropdownMenu<double>(
+                  key: const Key('appearance_text_scale_dropdown'),
+                  label: Text(l10n.textSizeLabel),
+                  initialSelection: appearance.textScale,
+                  dropdownMenuEntries: scaleEntries,
+                  onSelected: (val) {
+                    if (val != null) {
+                      appearance.setTextScale(val);
+                    }
+                  },
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.timeDisplayLabel,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    SegmentedButton<TimeDisplayMode>(
+                      key: const Key('appearance_time_display_selector'),
+                      segments: [
+                        ButtonSegment(
+                          value: TimeDisplayMode.local,
+                          label: Text(l10n.timeDisplayLocal),
+                        ),
+                        ButtonSegment(
+                          value: TimeDisplayMode.utc,
+                          label: Text(l10n.timeDisplayUtc),
+                        ),
+                      ],
+                      selected: {timeDisplay.value},
+                      onSelectionChanged: (sel) {
+                        timeDisplay.setMode(sel.first);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -533,21 +558,31 @@ class _SettingsViewState extends State<SettingsView> {
                 onPressed: () async {
                   final settingsService = getIt<SettingsService>();
                   try {
-                    final summary = await settingsService.importConfiguration(
-                      onClusterConflict: (imported, suggestedRename) {
-                        if (!context.mounted) return Future.value(null);
-                        return ImportConflictDialog.show(
-                          context,
-                          profileName: imported.name,
-                          suggestedRename: suggestedRename,
-                          takenNormalizedNames: getIt<ClusterListController>()
-                              .clusters
-                              .map((c) => normalizeProfileName(c.name))
-                              .toSet(),
+                    final importResult = await settingsService
+                        .importConfiguration(
+                          dialogTitle: l10n.importConfiguration,
+                          promptPassphrase: ({required previousAttemptFailed}) {
+                            if (!context.mounted) return Future.value(null);
+                            return PassphrasePromptDialog.show(
+                              context,
+                              previousAttemptFailed: previousAttemptFailed,
+                            );
+                          },
+                          onClusterConflict: (imported, suggestedRename) {
+                            if (!context.mounted) return Future.value(null);
+                            return ImportConflictDialog.show(
+                              context,
+                              profileName: imported.name,
+                              suggestedRename: suggestedRename,
+                              takenNormalizedNames:
+                                  getIt<ClusterListController>().clusters
+                                      .map((c) => normalizeProfileName(c.name))
+                                      .toSet(),
+                            );
+                          },
                         );
-                      },
-                    );
-                    if (context.mounted) {
+                    if (importResult != null && context.mounted) {
+                      final summary = importResult.summary;
                       final message = summary != null
                           ? l10n.importSummary(
                               summary.imported,
@@ -559,6 +594,14 @@ class _SettingsViewState extends State<SettingsView> {
                       ScaffoldMessenger.of(
                         context,
                       ).showSnackBar(SnackBar(content: Text(message)));
+                    }
+                  } on EncryptedBundleException catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(_mapEncryptedBundleError(l10n, e)),
+                        ),
+                      );
                     }
                   } on StoredDataUnreadableException {
                     if (context.mounted) {
@@ -653,13 +696,31 @@ class _SettingsViewState extends State<SettingsView> {
                 try {
                   FilePickerResult? result = await FilePicker.pickFiles(
                     type: FileType.custom,
-                    allowedExtensions: ['json', 'zip'],
+                    allowedExtensions: ['json', 'zip', 'age'],
+                    withData: true,
                   );
 
-                  if (result != null && result.files.single.path != null) {
-                    final file = File(result.files.single.path!);
-                    final extension = result.files.single.extension
-                        ?.toLowerCase();
+                  if (result != null && result.files.isNotEmpty) {
+                    final picked = result.files.single;
+                    final rawBytes =
+                        picked.bytes ??
+                        (picked.path != null
+                            ? await File(picked.path!).readAsBytes()
+                            : null);
+                    if (rawBytes == null) {
+                      throw Exception('Could not read imported file');
+                    }
+
+                    final decryptedBytes = await decryptIfEncrypted(rawBytes, ({
+                      required previousAttemptFailed,
+                    }) {
+                      if (!context.mounted) return Future.value(null);
+                      return PassphrasePromptDialog.show(
+                        context,
+                        previousAttemptFailed: previousAttemptFailed,
+                      );
+                    });
+                    if (decryptedBytes == null) return;
 
                     ImportSummary? summary;
                     Future<ImportConflictChoice?> resolveConflict(
@@ -677,14 +738,13 @@ class _SettingsViewState extends State<SettingsView> {
                       );
                     }
 
-                    if (extension == 'zip') {
-                      final bytes = await file.readAsBytes();
+                    if (isZipBytes(decryptedBytes)) {
                       summary = await clusterController.importClustersZip(
-                        bytes,
+                        decryptedBytes,
                         onConflict: resolveConflict,
                       );
                     } else {
-                      final jsonString = await file.readAsString();
+                      final jsonString = utf8.decode(decryptedBytes);
                       summary = await clusterController.importClusters(
                         jsonString,
                         onConflict: resolveConflict,
@@ -705,6 +765,14 @@ class _SettingsViewState extends State<SettingsView> {
                         ),
                       );
                     }
+                  }
+                } on EncryptedBundleException catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(_mapEncryptedBundleError(l10n, e)),
+                      ),
+                    );
                   }
                 } on StoredDataUnreadableException {
                   if (context.mounted) {
@@ -743,35 +811,45 @@ class _SettingsViewState extends State<SettingsView> {
                   ? null
                   : () async {
                       try {
-                        final includeSecrets = await _askExportCredentials(
+                        final choice = await _askExportCredentials(
                           context,
                           l10n,
                           title: l10n.export,
                         );
-                        if (includeSecrets == null) return;
+                        if (choice == null || !context.mounted) return;
 
                         final selectedClusters = clusterController.clusters
                             .where(
                               (c) => _selectedClusterNames.contains(c.name),
                             )
                             .toList();
-                        final zipBytes = await clusterController
-                            .exportClustersZip(
-                              selectedClusters,
-                              includeSecrets: includeSecrets,
-                            );
+                        final isEncrypted = choice.passphrase != null;
+                        final zipBytes = isEncrypted
+                            ? await _runWithProgressDialog(
+                                context,
+                                l10n.encryptingBundle,
+                                () => clusterController.exportClustersZip(
+                                  selectedClusters,
+                                  encryptionPassphrase: choice.passphrase,
+                                ),
+                              )
+                            : await clusterController.exportClustersZip(
+                                selectedClusters,
+                              );
 
                         String? outputFile = await FilePicker.saveFile(
                           dialogTitle: l10n.export,
-                          fileName: 'clusters_export.zip',
+                          fileName: isEncrypted
+                              ? 'clusters_export.zip.age'
+                              : 'clusters_export.zip',
                           type: FileType.custom,
-                          allowedExtensions: ['zip'],
+                          allowedExtensions: isEncrypted ? ['age'] : ['zip'],
                         );
 
                         if (outputFile != null) {
-                          // Ensure extension
-                          if (!outputFile.toLowerCase().endsWith('.zip')) {
-                            outputFile = '$outputFile.zip';
+                          final requiredExt = isEncrypted ? '.age' : '.zip';
+                          if (!outputFile.toLowerCase().endsWith(requiredExt)) {
+                            outputFile = '$outputFile$requiredExt';
                           }
 
                           final file = File(outputFile);
@@ -830,282 +908,317 @@ class _SettingsViewState extends State<SettingsView> {
     if (clusterController.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: clusterController.clusters.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final cluster = clusterController.clusters[index];
-        final isActive = activeController.activeProfile?.name == cluster.name;
-        final isSelected = _selectedClusterNames.contains(cluster.name);
+    final filteredEntries = clusterController.clusters
+        .asMap()
+        .entries
+        .where((e) => matchesClusterFilter(e.value, _clusterFilterQuery))
+        .toList();
 
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 0,
-            vertical: 8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (clusterController.clusters.isNotEmpty) ...[
+          ClusterFilterField(
+            controller: _clusterFilterController,
+            dense: true,
+            onChanged: (q) => setState(() => _clusterFilterQuery = q),
           ),
-          leading: Checkbox(
-            value: isSelected,
-            onChanged: (_) => _toggleSelection(cluster.name),
-          ),
-          title: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              Text(
-                cluster.name,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              if (isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    l10n.active,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+          const SizedBox(height: 12),
+        ],
+        if (clusterController.clusters.isNotEmpty && filteredEntries.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              children: [
+                Text(l10n.clusterFilterNoMatch),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () {
+                    _clusterFilterController.clear();
+                    setState(() => _clusterFilterQuery = '');
+                  },
+                  child: Text(l10n.clusterFilterClear),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filteredEntries.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, filteredIndex) {
+              final entry = filteredEntries[filteredIndex];
+              final index = entry.key;
+              final cluster = entry.value;
+              final isActive =
+                  activeController.activeProfile?.name == cluster.name;
+              final isSelected = _selectedClusterNames.contains(cluster.name);
+
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 0,
+                  vertical: 8,
+                ),
+                leading: Checkbox(
+                  value: isSelected,
+                  onChanged: (_) => _toggleSelection(cluster.name),
+                ),
+                title: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      cluster.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                  ),
-                ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  (cluster.securityProtocol != null &&
-                          cluster.securityProtocol!.isNotEmpty)
-                      ? cluster.securityProtocol!
-                      : 'PLAINTEXT',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              if (cluster.schemaRegistryUrl != null &&
-                  cluster.schemaRegistryUrl!.trim().isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.schema_outlined,
-                        size: 12,
+                    EnvironmentTagChip(profile: cluster, compact: true),
+                    if (isActive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          l10n.active,
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
+                              ),
+                        ),
+                      ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onTertiaryContainer,
+                        ).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        l10n.schemaRegistryConfiguredBadge,
+                      child: Text(
+                        (cluster.securityProtocol != null &&
+                                cluster.securityProtocol!.isNotEmpty)
+                            ? cluster.securityProtocol!
+                            : 'PLAINTEXT',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onTertiaryContainer,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              if (cluster.tlsVerification == TlsVerification.disabled)
-                const InsecureTlsBadge(compact: true),
-            ],
-          ),
-          subtitle: Text(cluster.bootstrapServers),
-          onTap: () => _toggleSelection(cluster.name),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                tooltip: l10n.edit,
-                onPressed: () async {
-                  final result = await showDialog<ClusterProfile>(
-                    context: context,
-                    builder: (context) => ClusterConfigDialog(
-                      cluster: cluster,
-                      existingNames: clusterController.clusters
-                          .asMap()
-                          .entries
-                          .where((e) => e.key != index)
-                          .map((e) => e.value.name)
-                          .toList(),
                     ),
-                  );
-                  if (result != null) {
-                    final oldName = cluster.name;
-                    clusterController.updateCluster(index, result);
-
-                    // If name changed, update selection set
-                    if (oldName != result.name &&
-                        _selectedClusterNames.contains(oldName)) {
-                      setState(() {
-                        _selectedClusterNames.remove(oldName);
-                        _selectedClusterNames.add(result.name);
-                      });
-                    }
-
-                    if (isActive) {
-                      activeController.connect(result);
-                    }
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: l10n.delete,
-                color: Theme.of(context).colorScheme.error,
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(l10n.deleteCluster),
-                      content: Text(
-                        l10n.deleteClusterConfirmation(cluster.name),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(l10n.cancel),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.error,
-                          ),
-                          child: Text(l10n.delete),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    if (isActive) {
-                      activeController.disconnect();
-                    }
-                    clusterController.deleteCluster(index);
-                    if (_selectedClusterNames.contains(cluster.name)) {
-                      setState(() {
-                        _selectedClusterNames.remove(cluster.name);
-                      });
-                    }
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<bool?> _askExportCredentials(
-    BuildContext context,
-    AppLocalizations l10n, {
-    required String title,
-  }) {
-    bool includeCredentials = false;
-
-    return showDialog<bool>(
-      context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(title),
-              content: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CheckboxListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.includeCredentialsInExport),
-                      value: includeCredentials,
-                      onChanged: (val) {
-                        setDialogState(() {
-                          includeCredentials = val ?? false;
-                        });
-                      },
-                    ),
-                    if (includeCredentials) ...[
-                      const SizedBox(height: 12),
+                    if (cluster.schemaRegistryUrl != null &&
+                        cluster.schemaRegistryUrl!.trim().isNotEmpty)
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Theme.of(
                             context,
-                          ).colorScheme.errorContainer.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.error.withValues(alpha: 0.5),
-                          ),
+                          ).colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.warning_amber_rounded,
-                              color: Theme.of(context).colorScheme.error,
-                              size: 20,
+                              Icons.schema_outlined,
+                              size: 12,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onTertiaryContainer,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                l10n.includeCredentialsWarning,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.error,
-                                    ),
-                              ),
+                            const SizedBox(width: 4),
+                            Text(
+                              l10n.schemaRegistryConfiguredBadge,
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onTertiaryContainer,
+                                  ),
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    if (cluster.tlsVerification == TlsVerification.disabled)
+                      const InsecureTlsBadge(compact: true),
                   ],
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(null),
-                  child: Text(l10n.cancel),
+                subtitle: Text(cluster.bootstrapServers),
+                onTap: () => _toggleSelection(cluster.name),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.content_copy_outlined),
+                      tooltip: l10n.duplicateClusterAction,
+                      onPressed: () async {
+                        final result = await showDialog<ClusterProfile>(
+                          context: context,
+                          builder: (context) => ClusterConfigDialog(
+                            cluster: cluster,
+                            isDuplicate: true,
+                            existingNames: clusterController.clusters
+                                .map((c) => c.name)
+                                .toList(),
+                          ),
+                        );
+                        if (result != null) {
+                          clusterController.addCluster(result);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: l10n.edit,
+                      onPressed: () async {
+                        final result = await showDialog<ClusterProfile>(
+                          context: context,
+                          builder: (context) => ClusterConfigDialog(
+                            cluster: cluster,
+                            existingNames: clusterController.clusters
+                                .asMap()
+                                .entries
+                                .where((e) => e.key != index)
+                                .map((e) => e.value.name)
+                                .toList(),
+                          ),
+                        );
+                        if (result != null) {
+                          final oldName = cluster.name;
+                          clusterController.updateCluster(index, result);
+
+                          // If name changed, update selection set
+                          if (oldName != result.name &&
+                              _selectedClusterNames.contains(oldName)) {
+                            setState(() {
+                              _selectedClusterNames.remove(oldName);
+                              _selectedClusterNames.add(result.name);
+                            });
+                          }
+
+                          if (isActive) {
+                            activeController.connect(result);
+                          }
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: l10n.delete,
+                      color: Theme.of(context).colorScheme.error,
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text(l10n.deleteCluster),
+                            content: Text(
+                              l10n.deleteClusterConfirmation(cluster.name),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text(l10n.cancel),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
+                                ),
+                                child: Text(l10n.delete),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          if (isActive) {
+                            activeController.disconnect();
+                          }
+                          clusterController.deleteCluster(index);
+                          if (_selectedClusterNames.contains(cluster.name)) {
+                            setState(() {
+                              _selectedClusterNames.remove(cluster.name);
+                            });
+                          }
+                        }
+                      },
+                    ),
+                  ],
                 ),
-                FilledButton(
-                  onPressed: () =>
-                      Navigator.of(dialogContext).pop(includeCredentials),
-                  child: Text(l10n.export),
-                ),
-              ],
-            );
-          },
-        );
-      },
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  String _mapEncryptedBundleError(
+    AppLocalizations l10n,
+    EncryptedBundleException error,
+  ) {
+    return switch (error.kind) {
+      EncryptedBundleFailure.corrupt => l10n.importEncryptedCorrupt,
+      EncryptedBundleFailure.unsupported => l10n.importEncryptedUnsupported,
+      EncryptedBundleFailure.tooExpensive => l10n.importEncryptedTooExpensive,
+      EncryptedBundleFailure.passphraseTooShort ||
+      EncryptedBundleFailure.internal => l10n.failedToImport(
+        error.message ?? error.kind.name,
+      ),
+    };
+  }
+
+  Future<T> _runWithProgressDialog<T>(
+    BuildContext context,
+    String message,
+    Future<T> Function() action,
+  ) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 16),
+            Expanded(child: Text(message)),
+          ],
+        ),
+      ),
+    );
+    try {
+      return await action();
+    } finally {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+  }
+
+  Future<_ExportCredentialsChoice?> _askExportCredentials(
+    BuildContext context,
+    AppLocalizations l10n, {
+    required String title,
+  }) {
+    return showDialog<_ExportCredentialsChoice>(
+      context: context,
+      builder: (_) => _ExportCredentialsDialog(title: title, l10n: l10n),
     );
   }
 
@@ -1113,19 +1226,28 @@ class _SettingsViewState extends State<SettingsView> {
     BuildContext context,
     AppLocalizations l10n,
   ) async {
-    final includeCredentials = await _askExportCredentials(
+    final choice = await _askExportCredentials(
       context,
       l10n,
       title: l10n.exportConfiguration,
     );
 
-    if (includeCredentials == null) return;
+    if (choice == null || !context.mounted) return;
 
     final settingsService = getIt<SettingsService>();
     try {
-      final outputFile = await settingsService.exportConfiguration(
-        includeSensitiveCredentials: includeCredentials,
-      );
+      final outputFile = choice.passphrase != null
+          ? await _runWithProgressDialog(
+              context,
+              l10n.encryptingBundle,
+              () => settingsService.exportConfiguration(
+                dialogTitle: l10n.exportConfiguration,
+                encryptionPassphrase: choice.passphrase,
+              ),
+            )
+          : await settingsService.exportConfiguration(
+              dialogTitle: l10n.exportConfiguration,
+            );
       if (outputFile != null && context.mounted) {
         showExportSuccessSnackBar(
           context,
@@ -1140,5 +1262,565 @@ class _SettingsViewState extends State<SettingsView> {
         );
       }
     }
+  }
+}
+
+class _MessageBufferLimitField extends StatefulWidget {
+  final int initialValue;
+  final AppLocalizations l10n;
+
+  const _MessageBufferLimitField({
+    super.key,
+    required this.initialValue,
+    required this.l10n,
+  });
+
+  @override
+  State<_MessageBufferLimitField> createState() =>
+      _MessageBufferLimitFieldState();
+}
+
+class _MessageBufferLimitFieldState extends State<_MessageBufferLimitField> {
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue.toString());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      key: const Key('message_buffer_limit_field'),
+      controller: _controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: widget.l10n.messageBufferLimitLabel,
+        border: const OutlineInputBorder(),
+        helperText: widget.l10n.messageBufferLimitHelper,
+        errorText: _errorText,
+      ),
+      onChanged: (value) {
+        final parsed = SettingsService.parseMessageBufferLimit(value);
+        if (parsed == null) {
+          setState(() {
+            _errorText = widget.l10n.messageBufferLimitError;
+          });
+          return;
+        }
+        setState(() {
+          _errorText = null;
+        });
+        getIt<SettingsService>().setMessageBufferLimit(parsed);
+      },
+    );
+  }
+}
+
+class _ExportCredentialsChoice {
+  final String? passphrase;
+  const _ExportCredentialsChoice({this.passphrase});
+}
+
+class _ExportCredentialsDialog extends StatefulWidget {
+  final String title;
+  final AppLocalizations l10n;
+
+  const _ExportCredentialsDialog({required this.title, required this.l10n});
+
+  @override
+  State<_ExportCredentialsDialog> createState() =>
+      _ExportCredentialsDialogState();
+}
+
+class _ExportCredentialsDialogState extends State<_ExportCredentialsDialog> {
+  static const int _minPassphraseLength = 12;
+
+  bool _includeCredentials = false;
+  bool _obscurePassphrase = true;
+  bool _obscureConfirm = true;
+  final _passphraseController = TextEditingController();
+  final _confirmController = TextEditingController();
+
+  @override
+  void dispose() {
+    _passphraseController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final passphrase = _passphraseController.text;
+    final confirm = _confirmController.text;
+    final tooShort = passphrase.runes.length < _minPassphraseLength;
+    final mismatch = confirm.isNotEmpty && passphrase != confirm;
+    final canExport =
+        !_includeCredentials || (!tooShort && passphrase == confirm);
+
+    return AlertDialog(
+      title: Text(widget.title),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.includeCredentialsInExport),
+                value: _includeCredentials,
+                onChanged: (val) {
+                  setState(() {
+                    _includeCredentials = val ?? false;
+                  });
+                },
+              ),
+              if (_includeCredentials) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _passphraseController,
+                  obscureText: _obscurePassphrase,
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  autofillHints: null,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: l10n.exportPassphraseLabel,
+                    errorText: passphrase.isNotEmpty && tooShort
+                        ? l10n.exportPassphraseTooShort(_minPassphraseLength)
+                        : null,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassphrase
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      tooltip: _obscurePassphrase
+                          ? l10n.showPassphrase
+                          : l10n.hidePassphrase,
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassphrase = !_obscurePassphrase;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _confirmController,
+                  obscureText: _obscureConfirm,
+                  enableSuggestions: false,
+                  autocorrect: false,
+                  autofillHints: null,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: l10n.exportPassphraseConfirmLabel,
+                    errorText: mismatch ? l10n.exportPassphraseMismatch : null,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirm
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      tooltip: _obscureConfirm
+                          ? l10n.showPassphrase
+                          : l10n.hidePassphrase,
+                      onPressed: () {
+                        setState(() {
+                          _obscureConfirm = !_obscureConfirm;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.errorContainer.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.error.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.includeCredentialsWarning,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              l10n.exportPassphraseNotRecoverable,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: canExport
+              ? () => Navigator.of(context).pop(
+                  _ExportCredentialsChoice(
+                    passphrase: _includeCredentials
+                        ? _passphraseController.text
+                        : null,
+                  ),
+                )
+              : null,
+          child: Text(l10n.export),
+        ),
+      ],
+    );
+  }
+}
+
+Future<void> _confirmSectionReset(
+  BuildContext context,
+  AppLocalizations l10n,
+  String sectionName,
+  Future<void> Function() onConfirm,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(l10n.resetSectionConfirmTitle(sectionName)),
+      content: Text(l10n.resetSectionConfirmBody(sectionName)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text(l10n.resetConfirmAction),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true) {
+    await onConfirm();
+  }
+}
+
+class _GeneralSettingsSection extends StatefulWidget {
+  const _GeneralSettingsSection();
+
+  @override
+  State<_GeneralSettingsSection> createState() =>
+      _GeneralSettingsSectionState();
+}
+
+class _GeneralSettingsSectionState extends State<_GeneralSettingsSection> {
+  SharedPreferences? _prefs;
+  final TextEditingController _dirController = TextEditingController();
+  int _resetGeneration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _prefs = prefs;
+      _dirController.text = prefs.getString('general_default_output_dir') ?? '';
+    });
+  }
+
+  @override
+  void dispose() {
+    _dirController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _resetGeneral() async {
+    await getIt<SettingsService>().resetGeneralSettings();
+    if (getIt.isRegistered<MultiSearchController>()) {
+      getIt<MultiSearchController>().loadDirectory();
+    }
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _prefs = prefs;
+      _dirController.text = prefs.getString('general_default_output_dir') ?? '';
+      _resetGeneration++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final prefs = _prefs;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.general,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            TextButton(
+              key: const Key('reset_general_button'),
+              onPressed: () => _confirmSectionReset(
+                context,
+                l10n,
+                l10n.general,
+                _resetGeneral,
+              ),
+              child: Text(l10n.resetToDefaults),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (prefs == null)
+          const SizedBox.shrink()
+        else ...[
+          TextField(
+            controller: _dirController,
+            readOnly: true,
+            decoration: InputDecoration(
+              labelText: l10n.defaultScriptOutputDir,
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.folder_open),
+                tooltip: l10n.browseDirectoryTooltip,
+                onPressed: () async {
+                  final selected = await FilePicker.getDirectoryPath();
+                  if (selected != null) {
+                    await prefs.setString(
+                      'general_default_output_dir',
+                      selected,
+                    );
+                    _dirController.text = selected;
+                    if (getIt.isRegistered<MultiSearchController>()) {
+                      getIt<MultiSearchController>().loadDirectory();
+                    }
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _IntSettingField(
+            fieldKey: const Key('default_result_limit_field'),
+            setting: SettingsService.defaultResultLimitSetting,
+            label: l10n.defaultResultLimitLabel,
+            prefs: prefs,
+            resetGeneration: _resetGeneration,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _IntSettingField(
+                  fieldKey: const Key('max_run_history_field'),
+                  setting: SettingsService.maxRunHistorySetting,
+                  label: l10n.maxScriptRunHistory,
+                  prefs: prefs,
+                  resetGeneration: _resetGeneration,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _IntSettingField(
+                  fieldKey: const Key('max_concurrent_lag_queries_field'),
+                  setting: SettingsService.maxConcurrentLagQueriesSetting,
+                  label: l10n.maxConcurrentLagQueries,
+                  prefs: prefs,
+                  resetGeneration: _resetGeneration,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _IntSettingField(
+                  fieldKey: const Key('lag_warn_threshold_field'),
+                  setting: SettingsService.lagWarnThresholdSetting,
+                  label: l10n.lagWarnThresholdLabel,
+                  prefs: prefs,
+                  resetGeneration: _resetGeneration,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _MessageBufferLimitField(
+                  key: ValueKey('msg_buf_$_resetGeneration'),
+                  initialValue:
+                      SettingsService.parseMessageBufferLimit(
+                        prefs
+                                .getInt(SettingsService.messageBufferLimitKey)
+                                ?.toString() ??
+                            '',
+                      ) ??
+                      SettingsService.defaultMessageBufferLimit,
+                  l10n: l10n,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            key: const Key('restore_open_tabs_switch'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.restoreOpenTabsOnStartup),
+            subtitle: Text(l10n.restoreOpenTabsOnStartupDescription),
+            value:
+                prefs.getBool(SessionRestoreService.prefRestoreEnabled) ?? true,
+            onChanged: (bool value) async {
+              await getIt<SessionRestoreService>().setRestorationEnabled(value);
+              setState(() {});
+            },
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _IntSettingField extends StatefulWidget {
+  final Key? fieldKey;
+  final IntSetting setting;
+  final String label;
+  final SharedPreferences prefs;
+  final int resetGeneration;
+
+  const _IntSettingField({
+    this.fieldKey,
+    required this.setting,
+    required this.label,
+    required this.prefs,
+    required this.resetGeneration,
+  });
+
+  @override
+  State<_IntSettingField> createState() => _IntSettingFieldState();
+}
+
+class _IntSettingFieldState extends State<_IntSettingField> {
+  late final TextEditingController _controller;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: SettingsService.readInt(widget.prefs, widget.setting).toString(),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _IntSettingField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.resetGeneration != oldWidget.resetGeneration) {
+      _controller.text = SettingsService.readInt(
+        widget.prefs,
+        widget.setting,
+      ).toString();
+      _errorText = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return TextField(
+      key: widget.fieldKey,
+      controller: _controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        border: const OutlineInputBorder(),
+        helperText: l10n.intSettingRangeHelper(
+          widget.setting.min,
+          widget.setting.max,
+          widget.setting.defaultValue,
+        ),
+        errorText: _errorText,
+      ),
+      onChanged: (value) {
+        final parsed = SettingsService.parseInt(value, widget.setting);
+        if (parsed == null) {
+          setState(() {
+            _errorText = l10n.intSettingRangeError(
+              widget.setting.min,
+              widget.setting.max,
+            );
+          });
+          return;
+        }
+        if (_errorText != null) {
+          setState(() {
+            _errorText = null;
+          });
+        }
+        getIt<SettingsService>().writeInt(widget.setting, parsed);
+      },
+    );
   }
 }

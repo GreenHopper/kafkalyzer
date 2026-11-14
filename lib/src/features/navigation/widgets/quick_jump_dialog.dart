@@ -140,7 +140,7 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
 
     if (_selectedCluster == null) {
       setState(() {
-        _errorMessage = 'No cluster selected';
+        _errorMessage = l10n?.noClusterSelected ?? 'No cluster selected';
       });
       return;
     }
@@ -199,15 +199,18 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
                 children: [
                   Icon(Icons.bolt, color: colorScheme.primary, size: 24),
                   const SizedBox(width: 8),
-                  Text(
-                    l10n?.quickJumpTitle ?? 'Quick Jump / Open Reference',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      l10n?.quickJumpTitle ?? 'Quick Jump / Open Reference',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close, size: 18),
+                    tooltip: l10n?.close ?? 'Close',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -313,10 +316,21 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Topic: ${_parsedRef!.topic}'
-                          '${_parsedRef!.partition != null ? ' • Partition: ${_parsedRef!.partition}' : ''}'
-                          '${_parsedRef!.offset != null ? ' • Offset: ${_parsedRef!.offset}' : ''}'
-                          '${_parsedRef!.filter != null ? ' • Filter: ${_parsedRef!.filter}' : ''}',
+                          [
+                            l10n?.quickJumpTopicLabel(_parsedRef!.topic) ??
+                                'Topic: ${_parsedRef!.topic}',
+                            if (_parsedRef!.partition != null)
+                              l10n?.quickJumpPartitionLabel(
+                                    _parsedRef!.partition!,
+                                  ) ??
+                                  'Partition: ${_parsedRef!.partition}',
+                            if (_parsedRef!.offset != null)
+                              l10n?.quickJumpOffsetLabel(_parsedRef!.offset!) ??
+                                  'Offset: ${_parsedRef!.offset}',
+                            if (_parsedRef!.filter != null)
+                              l10n?.quickJumpFilterLabel(_parsedRef!.filter!) ??
+                                  'Filter: ${_parsedRef!.filter}',
+                          ].join(' • '),
                           style: TextStyle(
                             fontSize: 12,
                             fontFamily: 'monospace',

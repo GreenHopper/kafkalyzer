@@ -5,7 +5,7 @@
 //
 // See https://github.com/rydmike/flex_color_scheme/issues/310
 //
-import 'package:flutter/material.dart' as legacy;
+import 'package:material_ui/material_ui.dart' as legacy;
 import 'package:material_ui/material_ui.dart' as modern;
 
 modern.FloatingLabelAlignment _mapFloatingLabelAlignment(

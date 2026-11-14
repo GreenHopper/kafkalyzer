@@ -32,6 +32,9 @@ class ClusterProfile {
   final String? sslPemKeyLocation;
   final String? sslPemKeyPassword;
   final TlsVerification tlsVerification;
+  final String? environmentLabel;
+  final String? environmentColor;
+  final String? extraProperties;
 
   const ClusterProfile({
     required this.name,
@@ -56,6 +59,9 @@ class ClusterProfile {
     this.sslPemKeyLocation,
     this.sslPemKeyPassword,
     required this.tlsVerification,
+    this.environmentLabel,
+    this.environmentColor,
+    this.extraProperties,
   });
 
   static Future<ClusterProfile> default_() =>
@@ -84,7 +90,10 @@ class ClusterProfile {
       sslPemCertificateLocation.hashCode ^
       sslPemKeyLocation.hashCode ^
       sslPemKeyPassword.hashCode ^
-      tlsVerification.hashCode;
+      tlsVerification.hashCode ^
+      environmentLabel.hashCode ^
+      environmentColor.hashCode ^
+      extraProperties.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -112,7 +121,10 @@ class ClusterProfile {
           sslPemCertificateLocation == other.sslPemCertificateLocation &&
           sslPemKeyLocation == other.sslPemKeyLocation &&
           sslPemKeyPassword == other.sslPemKeyPassword &&
-          tlsVerification == other.tlsVerification;
+          tlsVerification == other.tlsVerification &&
+          environmentLabel == other.environmentLabel &&
+          environmentColor == other.environmentColor &&
+          extraProperties == other.extraProperties;
 }
 
 class ConsumerGroupLag {

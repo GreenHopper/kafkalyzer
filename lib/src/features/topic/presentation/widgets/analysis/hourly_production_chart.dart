@@ -89,9 +89,14 @@ class _HourlyProductionChartState extends State<HourlyProductionChart> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Peak: ${peakHour.toString().padLeft(2, '0')}:00 UTC '
-                      '(${numberFormat.format(peakItem.count)} msgs • '
-                      '${peakItem.percentage.toStringAsFixed(1)}%)',
+                      l10n?.peakHourSummary(
+                            peakHour.toString().padLeft(2, '0'),
+                            numberFormat.format(peakItem.count),
+                            peakItem.percentage.toStringAsFixed(1),
+                          ) ??
+                          'Peak: ${peakHour.toString().padLeft(2, '0')}:00 UTC '
+                              '(${numberFormat.format(peakItem.count)} msgs • '
+                              '${peakItem.percentage.toStringAsFixed(1)}%)',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
@@ -148,10 +153,15 @@ class _HourlyProductionChartState extends State<HourlyProductionChart> {
                             onExit: (_) => setState(() => _hoveredHour = null),
                             child: Tooltip(
                               message:
+                                  l10n?.hourlyTooltipSummary(
+                                    item.hour.toString().padLeft(2, '0'),
+                                    numberFormat.format(item.count),
+                                    item.percentage.toStringAsFixed(1),
+                                  ) ??
                                   '${item.hour.toString().padLeft(2, '0')}:00 - '
-                                  '${item.hour.toString().padLeft(2, '0')}:59 UTC\n'
-                                  '${numberFormat.format(item.count)} msgs '
-                                  '(${item.percentage.toStringAsFixed(1)}%)',
+                                      '${item.hour.toString().padLeft(2, '0')}:59 UTC\n'
+                                      '${numberFormat.format(item.count)} msgs '
+                                      '(${item.percentage.toStringAsFixed(1)}%)',
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
@@ -186,7 +196,6 @@ class _HourlyProductionChartState extends State<HourlyProductionChart> {
                                         ? '${index.toString().padLeft(2, '0')}h'
                                         : '•',
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      fontSize: 10,
                                       color: isPeak || isHovered
                                           ? colorScheme.primary
                                           : colorScheme.onSurfaceVariant

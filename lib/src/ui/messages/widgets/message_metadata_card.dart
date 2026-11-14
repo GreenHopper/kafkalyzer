@@ -66,9 +66,8 @@ class MessageMetadataCard extends StatelessWidget {
             // Time & Duration
             Text(
               durationStr,
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey[700],
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
               ),
               textAlign: TextAlign.right,
@@ -95,7 +94,9 @@ class MessageMetadataCard extends StatelessWidget {
             if (stepName != null)
               Text(
                 stepName,
-                style: const TextStyle(fontSize: 10, color: Colors.black87),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.right,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -106,7 +107,9 @@ class MessageMetadataCard extends StatelessWidget {
             // Technical Details
             Text(
               "P: ${message.partition} | O: ${message.offset}",
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.right,
             ),
             ?_buildCompactSchemaIndicator(context),
@@ -138,7 +141,9 @@ class MessageMetadataCard extends StatelessWidget {
         Text(
           'K: ${formatSchema(keySchema)}',
           key: const Key('metadata_card_schema_key'),
-          style: const TextStyle(fontSize: 10, color: Colors.grey),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.right,
         ),
       );
@@ -151,7 +156,9 @@ class MessageMetadataCard extends StatelessWidget {
               ? 'V: ${formatSchema(valueSchema)}'
               : formatSchema(valueSchema),
           key: const Key('metadata_card_schema_value'),
-          style: const TextStyle(fontSize: 10, color: Colors.grey),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           textAlign: TextAlign.right,
         ),
       );

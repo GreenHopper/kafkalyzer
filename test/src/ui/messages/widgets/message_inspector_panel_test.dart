@@ -207,7 +207,9 @@ void main() {
       when(
         mockSchemaController.getSchemas(any),
       ).thenReturn(['test-orders-value']);
-      when(mockSchemaController.fetchSchemas(any)).thenAnswer((_) async {});
+      when(mockSchemaController.fetchSchemas(any)).thenAnswer((_) async {
+        return;
+      });
       when(mockSchemaController.fetchSchemaContent(any, any)).thenAnswer(
         (_) async =>
             '{"type": "record", "name": "Order", "fields": [{"name": "orderId", "type": "string"}]}',
@@ -235,7 +237,9 @@ void main() {
     when(
       mockSchemaController.getSchemas(any),
     ).thenReturn(['test-orders-value']);
-    when(mockSchemaController.fetchSchemas(any)).thenAnswer((_) async {});
+    when(mockSchemaController.fetchSchemas(any)).thenAnswer((_) async {
+      return;
+    });
     when(mockSchemaController.fetchSchemaContent(any, any)).thenAnswer(
       (_) async =>
           '{"type": "record", "name": "Order", "fields": [{"name": "orderId", "type": "string"}]}',
@@ -577,6 +581,116 @@ void main() {
         find.textContaining('Failed to deserialize payload'),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'keeps Payload mounted across Key & Headers switch and builds Schema lazily',
+    (tester) async {
+      final msg = KafkaMessage(
+        topic: 'test-orders',
+        partition: 0,
+        offset: 1,
+        timestamp: 1695888000000,
+        key: 'k1',
+        payload: '{"outer": {"a": 1, "b": 2}, "second": 3}',
+        headers: [],
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(message: msg, profile: testProfile),
+      );
+      await tester.pumpAndSettle();
+
+      // Schema view is NOT built before its tab is selected
+      expect(find.byType(TopicSchemaInspectorView), findsNothing);
+
+      // Expand 'outer' in Payload tree
+      await tester.tap(find.text('outer: '));
+      await tester.pumpAndSettle();
+      expect(find.text('a: '), findsOneWidget);
+
+      // Switch to Key & Headers and back to Payload -> expansion preserved
+      await tester.tap(find.textContaining('Key & Headers'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Payload'));
+      await tester.pumpAndSettle();
+      expect(find.text('a: '), findsOneWidget);
+
+      // Now select Schema tab -> TopicSchemaInspectorView is built
+      await tester.tap(find.text('Schema'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TopicSchemaInspectorView), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Key & Headers renders per-header JsonOrStringViewer with hex fallback and empty marker',
+    (tester) async {
+      final msg = KafkaMessage(
+        topic: 'test-orders',
+        partition: 0,
+        offset: 2,
+        timestamp: 1695888000000,
+        key: '{"orderId": 7}',
+        payload: '{"ok": true}',
+        headers: [
+          KafkaHeader(key: 'trace-meta', value: '{"traceId": "abc"}'),
+          KafkaHeader(key: 'bin-hdr', value: '0xdeadbeef'),
+          KafkaHeader(key: 'empty-hdr', value: ''),
+        ],
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(message: msg, profile: testProfile),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Key & Headers'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Key'), findsOneWidget);
+      expect(find.text('Headers (3)'), findsOneWidget);
+      expect(find.text('orderId: '), findsOneWidget);
+      expect(find.text('trace-meta'), findsOneWidget);
+      expect(find.text('traceId: '), findsOneWidget);
+      expect(find.text('bin-hdr'), findsOneWidget);
+      expect(find.text('empty-hdr'), findsOneWidget);
+      expect(find.text('Empty value'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'cross-source search counts payload + key + header key + header value and steps across tabs',
+    (tester) async {
+      final msg = KafkaMessage(
+        topic: 'test-orders',
+        partition: 0,
+        offset: 3,
+        timestamp: 1695888000000,
+        key: 'needle-key',
+        payload: '{"p": "needle-payload"}',
+        headers: [KafkaHeader(key: 'x-needle-hdr', value: 'needle-val')],
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(message: msg, profile: testProfile),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.search));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'needle');
+      await tester.pumpAndSettle();
+
+      // 1 in payload + 1 in key + 1 in header key + 1 in header value = 4
+      expect(find.text('1 / 4 matches'), findsOneWidget);
+
+      // Step to match 2 (in Key & Headers tab)
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
+      await tester.pumpAndSettle();
+      expect(find.text('2 / 4 matches'), findsOneWidget);
     },
   );
 }

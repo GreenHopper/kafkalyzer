@@ -610,5 +610,119 @@ void main() {
         expect(loaded.first.tlsVerification, TlsVerification.unreviewed);
       },
     );
+
+    test(
+      'sanitized, withSecrets, and copyWith preserve all non-secret fields',
+      () {
+        const full = ClusterProfile(
+          name: 'orders-prod',
+          bootstrapServers: 'broker-1:9093',
+          saslUsername: 'alice',
+          saslPassword: 'secret-password',
+          mechanism: 'SCRAM-SHA-512',
+          securityProtocol: 'SASL_SSL',
+          schemaRegistryUrl: 'https://sr.example.com',
+          sslKeystoreLocation: '/ks.p12',
+          sslKeystorePassword: 'ks-secret',
+          sslTruststoreLocation: '/ts.p12',
+          sslTruststorePassword: 'ts-secret',
+          schemaRegistryUsername: 'sr-user',
+          schemaRegistryPassword: 'sr-secret',
+          saslKerberosServiceName: 'kafka',
+          saslKerberosKeytab: '/etc/kafka.keytab',
+          saslKerberosPrincipal: 'kafka/host@REALM',
+          saslKerberosConf: '/etc/krb5.conf',
+          saslOauthbearerToken: 'oauth-secret',
+          sslPemCertificateLocation: '/cert.pem',
+          sslPemKeyLocation: '/key.pem',
+          sslPemKeyPassword: 'pem-secret',
+          tlsVerification: TlsVerification.enabled,
+          environmentLabel: 'PROD',
+          environmentColor: 'red',
+          extraProperties: 'client.id=kafkalyzer',
+        );
+
+        void expectNonSecretsPreserved(ClusterProfile p) {
+          expect(p.name, 'orders-prod');
+          expect(p.bootstrapServers, 'broker-1:9093');
+          expect(p.saslUsername, 'alice');
+          expect(p.mechanism, 'SCRAM-SHA-512');
+          expect(p.securityProtocol, 'SASL_SSL');
+          expect(p.schemaRegistryUrl, 'https://sr.example.com');
+          expect(p.sslKeystoreLocation, '/ks.p12');
+          expect(p.sslTruststoreLocation, '/ts.p12');
+          expect(p.schemaRegistryUsername, 'sr-user');
+          expect(p.saslKerberosServiceName, 'kafka');
+          expect(p.saslKerberosKeytab, '/etc/kafka.keytab');
+          expect(p.saslKerberosPrincipal, 'kafka/host@REALM');
+          expect(p.saslKerberosConf, '/etc/krb5.conf');
+          expect(p.sslPemCertificateLocation, '/cert.pem');
+          expect(p.sslPemKeyLocation, '/key.pem');
+          expect(p.tlsVerification, TlsVerification.enabled);
+          expect(p.environmentLabel, 'PROD');
+          expect(p.environmentColor, 'red');
+          expect(p.extraProperties, 'client.id=kafkalyzer');
+        }
+
+        final san = full.sanitized();
+        expectNonSecretsPreserved(san);
+        expect(san.saslPassword, isNull);
+        expect(san.sslKeystorePassword, isNull);
+        expect(san.sslTruststorePassword, isNull);
+        expect(san.schemaRegistryPassword, isNull);
+        expect(san.saslOauthbearerToken, isNull);
+        expect(san.sslPemKeyPassword, isNull);
+
+        final withSec = full.withSecrets(const {});
+        expectNonSecretsPreserved(withSec);
+        expect(withSec.saslPassword, 'secret-password');
+
+        final copied = full.copyWith();
+        expectNonSecretsPreserved(copied);
+        expect(copied.saslPassword, 'secret-password');
+      },
+    );
+
+    test(
+      'suggestCopyName increments (copy) and (copy N) case-insensitively',
+      () {
+        expect(suggestCopyName('prod', const ['prod', 'dev']), 'prod (copy)');
+        expect(
+          suggestCopyName('prod', const ['prod', 'PROD (copy)']),
+          'prod (copy 2)',
+        );
+        expect(
+          suggestCopyName('prod', const [
+            'prod',
+            'prod (copy)',
+            'prod (copy 2)',
+          ]),
+          'prod (copy 3)',
+        );
+      },
+    );
+
+    test('matchesClusterFilter matches name, label, and bootstrap servers', () {
+      const dev = ClusterProfile(
+        name: 'orders-dev',
+        bootstrapServers: '10.0.0.5:9092',
+        tlsVerification: TlsVerification.unreviewed,
+        environmentLabel: 'DEV',
+      );
+      const prod = ClusterProfile(
+        name: 'payments',
+        bootstrapServers: 'prod-broker:9093',
+        tlsVerification: TlsVerification.enabled,
+        environmentLabel: 'PROD',
+      );
+
+      expect(matchesClusterFilter(dev, ''), isTrue);
+      expect(matchesClusterFilter(dev, 'DEV'), isTrue);
+      expect(matchesClusterFilter(dev, '10.0.0.5'), isTrue);
+      expect(matchesClusterFilter(dev, 'prod'), isFalse);
+      expect(matchesClusterFilter(prod, 'prod'), isTrue);
+      expect(matchesClusterFilter(prod, 'PAYMENTS'), isTrue);
+      expect(matchesClusterFilter(prod, '9093'), isTrue);
+    });
   });
 }

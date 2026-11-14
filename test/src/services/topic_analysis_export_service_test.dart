@@ -16,6 +16,7 @@ class MockFilePicker extends FilePickerPlatform {
   String? savePath;
   bool saveFileCalled = false;
   String? lastFileName;
+  String? lastDialogTitle;
   FilePickerResult? pickResult;
   bool pickFilesCalled = false;
 
@@ -31,6 +32,7 @@ class MockFilePicker extends FilePickerPlatform {
   }) async {
     saveFileCalled = true;
     lastFileName = fileName;
+    lastDialogTitle = dialogTitle;
     return savePath;
   }
 
@@ -50,6 +52,7 @@ class MockFilePicker extends FilePickerPlatform {
     bool cancelUploadOnWindowBlur = true,
   }) async {
     pickFilesCalled = true;
+    lastDialogTitle = dialogTitle;
     return pickResult;
   }
 }
@@ -155,10 +158,14 @@ void main() {
       final target = p.join(tempDir, 'orders_analysis.json');
       mockFilePicker.savePath = target;
 
-      final written = await service.export(file);
+      final written = await service.export(
+        file,
+        dialogTitle: 'Topic-Analyse exportieren',
+      );
 
       expect(written, target);
       expect(mockFilePicker.saveFileCalled, isTrue);
+      expect(mockFilePicker.lastDialogTitle, 'Topic-Analyse exportieren');
       expect(mockFilePicker.lastFileName, startsWith('orders_analysis_'));
       expect(mockFilePicker.lastFileName, endsWith('.json'));
       expect(File(target).existsSync(), isTrue);
@@ -172,7 +179,10 @@ void main() {
     test('export returns null when the user cancels', () async {
       mockFilePicker.savePath = null;
 
-      final written = await service.export(_sampleFile());
+      final written = await service.export(
+        _sampleFile(),
+        dialogTitle: 'Export Topic Analysis',
+      );
 
       expect(written, isNull);
       expect(mockFilePicker.saveFileCalled, isTrue);
@@ -184,9 +194,12 @@ void main() {
         ..writeAsStringSync(file.toJson());
       mockFilePicker.pickResult = _pickResultFor(source);
 
-      final imported = await service.importFile();
+      final imported = await service.importFile(
+        dialogTitle: 'Topic-Analyse importieren',
+      );
 
       expect(mockFilePicker.pickFilesCalled, isTrue);
+      expect(mockFilePicker.lastDialogTitle, 'Topic-Analyse importieren');
       expect(imported, isNotNull);
       expect(imported!.toMap(), file.toMap());
     });
@@ -194,7 +207,9 @@ void main() {
     test('importFile returns null when the user cancels', () async {
       mockFilePicker.pickResult = null;
 
-      final imported = await service.importFile();
+      final imported = await service.importFile(
+        dialogTitle: 'Import Topic Analysis',
+      );
 
       expect(imported, isNull);
     });
@@ -207,7 +222,7 @@ void main() {
       mockFilePicker.pickResult = _pickResultFor(source);
 
       expect(
-        service.importFile(),
+        service.importFile(dialogTitle: 'Import Topic Analysis'),
         throwsA(
           isA<TopicAnalysisImportError>().having(
             (e) => e.kind,
@@ -226,7 +241,7 @@ void main() {
       mockFilePicker.pickResult = _pickResultFor(source);
 
       expect(
-        service.importFile(),
+        service.importFile(dialogTitle: 'Import Topic Analysis'),
         throwsA(
           isA<TopicAnalysisImportError>()
               .having(
@@ -245,7 +260,7 @@ void main() {
       mockFilePicker.pickResult = _pickResultFor(source);
 
       expect(
-        service.importFile(),
+        service.importFile(dialogTitle: 'Import Topic Analysis'),
         throwsA(
           isA<TopicAnalysisImportError>().having(
             (e) => e.kind,

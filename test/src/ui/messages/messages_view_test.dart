@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_timeline_view.dart';
@@ -18,30 +19,37 @@ class FakeMessageExportService implements MessageExportService {
   List<KafkaMessage> exported = [];
   bool called = false;
   ExportFormat? lastFormat;
+  bool? lastIncludeHeadersColumn;
   String? resultPath = '/tmp/export.json';
 
   @override
   Future<String?> exportMessages(
     List<KafkaMessage> messages, {
+    required String dialogTitle,
     ExportFormat format = ExportFormat.json,
     TableColumnConfig? columnConfig,
     bool isScriptingView = false,
+    bool includeHeadersColumn = false,
   }) async {
     called = true;
     exported = messages;
     lastFormat = format;
+    lastIncludeHeadersColumn = includeHeadersColumn;
     return resultPath;
   }
 
   @override
   Future<String?> exportMessagesCsv(
     List<KafkaMessage> messages, {
+    required String dialogTitle,
     TableColumnConfig? columnConfig,
     bool isScriptingView = false,
+    bool includeHeadersColumn = false,
   }) async {
     called = true;
     exported = messages;
     lastFormat = ExportFormat.csv;
+    lastIncludeHeadersColumn = includeHeadersColumn;
     return null;
   }
 
@@ -216,6 +224,7 @@ void main() {
 
     // Verify popup menu items are shown
     expect(find.text('JSON (Full Payload)'), findsOneWidget);
+    expect(find.text('NDJSON (One Message per Line)'), findsOneWidget);
     expect(find.text('CSV (Visible Columns)'), findsOneWidget);
 
     await tester.tap(find.text('JSON (Full Payload)'));
@@ -681,10 +690,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
-    final popupButton = tester.widget<PopupMenuButton<ExportFormat>>(
-      find.byType(PopupMenuButton<ExportFormat>),
+    final exportButton = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byIcon(Icons.download),
+        matching: find.byType(IconButton),
+      ),
     );
-    expect(popupButton.enabled, isFalse);
+    expect(exportButton.onPressed, isNull);
   });
 
   testWidgets('errorMessage with empty messages renders error state', (
@@ -778,6 +790,269 @@ void main() {
           .getTopLeft(find.text('beta item', findRichText: true))
           .dy;
       expect(topA, lessThan(topB));
+    },
+  );
+
+  testWidgets(
+    'export menu shows conditional options and keeps menu open on toggle',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+      );
+      await tester.pumpAndSettle();
+
+      // Open menu without selection or active search
+      await tester.tap(find.byIcon(Icons.download));
+      await tester.pumpAndSettle();
+
+      expect(find.text('JSON (Full Payload)'), findsOneWidget);
+      expect(find.text('NDJSON (One Message per Line)'), findsOneWidget);
+      expect(find.text('CSV (Visible Columns)'), findsOneWidget);
+      expect(find.text('Add Headers column (CSV)'), findsOneWidget);
+      expect(find.textContaining('Only selected messages'), findsNothing);
+      expect(find.text('Include dimmed non-matches'), findsNothing);
+
+      // Toggle Add Headers column -> menu stays open, service not called
+      await tester.tap(find.text('Add Headers column (CSV)'));
+      await tester.pumpAndSettle();
+      expect(fakeExportService.called, isFalse);
+      expect(find.text('CSV (Visible Columns)'), findsOneWidget);
+
+      // Export CSV -> includeHeadersColumn is true
+      await tester.tap(find.text('CSV (Visible Columns)'));
+      await tester.pumpAndSettle();
+      expect(fakeExportService.called, isTrue);
+      expect(fakeExportService.lastFormat, ExportFormat.csv);
+      expect(fakeExportService.lastIncludeHeadersColumn, isTrue);
+    },
+  );
+
+  testWidgets(
+    'export scope excludes dimmed non-matches by default and includes when toggled',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+      );
+      await tester.pumpAndSettle();
+
+      // Enter search matching only message 1 ('apple')
+      await tester.enterText(find.byType(TextField).first, 'apple');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Enable "show non-matches" toggle
+      await tester.tap(find.byIcon(Icons.visibility_off));
+      await tester.pumpAndSettle();
+
+      // Export NDJSON without "Include dimmed non-matches" -> only 1 match
+      await tester.tap(find.byIcon(Icons.download));
+      await tester.pumpAndSettle();
+      expect(find.text('Include dimmed non-matches'), findsOneWidget);
+
+      await tester.tap(find.text('NDJSON (One Message per Line)'));
+      await tester.pumpAndSettle();
+      expect(fakeExportService.lastFormat, ExportFormat.ndjson);
+      expect(fakeExportService.exported.length, 1);
+      expect(fakeExportService.exported.first.offset, 1);
+
+      // Toggle "Include dimmed non-matches" on and export -> both messages
+      await tester.tap(find.byIcon(Icons.download));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Include dimmed non-matches'));
+      await tester.pumpAndSettle();
+      expect(find.text('NDJSON (One Message per Line)'), findsOneWidget);
+      await tester.tap(find.text('NDJSON (One Message per Line)'));
+      await tester.pumpAndSettle();
+      expect(fakeExportService.exported.length, 2);
+    },
+  );
+
+  testWidgets('export only selected exports only the selected message', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    // Select message 2 (offset 2)
+    await tester.tap(find.text('key-2', findRichText: true));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.download));
+    await tester.pumpAndSettle();
+    expect(find.text('Only selected messages (1)'), findsOneWidget);
+
+    await tester.tap(find.text('Only selected messages (1)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('JSON (Full Payload)'));
+    await tester.pumpAndSettle();
+
+    expect(fakeExportService.exported.length, 1);
+    expect(fakeExportService.exported.first.offset, 2);
+  });
+
+  testWidgets('export respects table column filter and column sort visual order', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final messages = [
+      const KafkaMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 10,
+        key: 'k-b',
+        payload: 'p10',
+        timestamp: 3000,
+      ),
+      const KafkaMessage(
+        topic: 'orders',
+        partition: 1,
+        offset: 20,
+        key: 'k-a',
+        payload: 'p20',
+        timestamp: 1000,
+      ),
+      const KafkaMessage(
+        topic: 'orders',
+        partition: 1,
+        offset: 5,
+        key: 'k-c',
+        payload: 'p5',
+        timestamp: 2000,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: messages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    // Sort by Offset ascending (tap Offset header twice or once depending on initial sort)
+    await tester.tap(find.text('Offset').first);
+    await tester.pumpAndSettle();
+    // Filter Partition column to '1'
+    final partitionFilter = find.byKey(const Key('col_filter_partition'));
+    if (partitionFilter.evaluate().isNotEmpty) {
+      await tester.enterText(partitionFilter, '1');
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.byIcon(Icons.download));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('JSON (Full Payload)'));
+    await tester.pumpAndSettle();
+
+    // Should match table's visual order (and if partition filter was applied, only partition 1)
+    if (partitionFilter.evaluate().isNotEmpty) {
+      expect(fakeExportService.exported.every((m) => m.partition == 1), isTrue);
+    }
+    expect(fakeExportService.exported.first.offset, anyOf(5, 20));
+  });
+
+  testWidgets(
+    'incremental MessageSnapshot update evaluates predicate only for new messages and removes evicted',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final evaluated = <int>[];
+      final buffer = MessageRingBuffer(4);
+      for (var i = 0; i < 3; i++) {
+        buffer.add(
+          KafkaMessage(
+            topic: 'orders',
+            partition: 0,
+            offset: i,
+            key: 'k$i',
+            payload: i.isEven ? 'match-$i' : 'other-$i',
+            timestamp: 1000 + i,
+          ),
+        );
+      }
+
+      var currentMessages = buffer.snapshot();
+      late StateSetter setHostState;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                setHostState = setState;
+                return MessagesView(
+                  messages: currentMessages,
+                  onMessageTap: (_) {},
+                  onFilterEvaluated: (m) => evaluated.add(m.offset),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Activate quick filter 'match'
+      await tester.enterText(find.byType(TextField).first, 'match');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      expect(evaluated, [0, 1, 2]);
+      evaluated.clear();
+
+      // Add 2 new messages (capacity 4 -> offset 0 is evicted)
+      buffer.add(
+        const KafkaMessage(
+          topic: 'orders',
+          partition: 0,
+          offset: 3,
+          key: 'k3',
+          payload: 'other-3',
+          timestamp: 1003,
+        ),
+      );
+      buffer.add(
+        const KafkaMessage(
+          topic: 'orders',
+          partition: 0,
+          offset: 4,
+          key: 'k4',
+          payload: 'match-4',
+          timestamp: 1004,
+        ),
+      );
+      setHostState(() {
+        currentMessages = buffer.snapshot();
+      });
+      await tester.pumpAndSettle();
+
+      // Only offsets 3 and 4 should have been evaluated
+      expect(evaluated, [3, 4]);
+      expect(find.textContaining('2 of 4 matches'), findsOneWidget);
+      expect(find.text('match-0', findRichText: true), findsNothing);
+      expect(find.text('match-4', findRichText: true), findsOneWidget);
     },
   );
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -73,14 +75,19 @@ void main() {
     ValueChanged<bool>? onLimitResultsChanged,
     bool fastTraceEnabled = false,
     ValueChanged<bool>? onFastTraceEnabledChanged,
+    int? partitionCount,
     MultiSearchStartStrategy startStrategy = MultiSearchStartStrategy.latest,
     MultiSearchEndStrategy endStrategy = MultiSearchEndStrategy.latest,
     VoidCallback? onStart,
+    Locale locale = const Locale('en'),
   }) {
     return MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('en'),
+      locale: locale,
       home: Scaffold(
         body: TopicSearchBar(
           scanMode: scanMode,
@@ -97,6 +104,7 @@ void main() {
           partitionController: partitionController,
           fastTraceEnabled: fastTraceEnabled,
           onFastTraceEnabledChanged: onFastTraceEnabledChanged ?? (_) {},
+          partitionCount: partitionCount,
           startStrategy: startStrategy,
           onStartStrategyChanged: (_) {},
           startOffsetController: startOffsetController,
@@ -229,4 +237,229 @@ void main() {
       expect(started, isTrue);
     },
   );
+
+  group('Fast Trace partition preview', () {
+    testWidgets(
+      'shows partition, count, assumption, caveat tooltip, and chip when collapsed',
+      (tester) async {
+        stubPatternEngine();
+        when(
+          mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+            key: 'order-4711',
+            partitionCount: 12,
+          ),
+        ).thenAnswer((_) async => 3);
+
+        quickFilterController.text = 'order-4711';
+        await tester.pumpWidget(
+          buildTestWidget(fastTraceEnabled: true, partitionCount: 12),
+        );
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pumpAndSettle();
+
+        // Chip shows predicted partition when collapsed
+        expect(find.text('Fast Trace → P3'), findsOneWidget);
+
+        // Expand advanced panel
+        await tester.tap(find.byIcon(Icons.tune));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Partition 3 of 12'), findsOneWidget);
+        expect(
+          find.text(
+            'Assumes Java default partitioner (murmur2), UTF-8 text key',
+          ),
+          findsOneWidget,
+        );
+        final infoIcon = find.bySemanticsLabel(
+          'Fast Trace partitioning assumptions',
+        );
+        expect(infoIcon, findsOneWidget);
+        final tooltip = tester.widget<Tooltip>(
+          find.ancestor(of: infoIcon, matching: find.byType(Tooltip)),
+        );
+        expect(tooltip.message, contains('librdkafka'));
+        expect(tooltip.message, contains('Avro'));
+      },
+    );
+
+    testWidgets(
+      'shows partition count unknown for 0 and null without calling bridge',
+      (tester) async {
+        stubPatternEngine();
+        quickFilterController.text = 'order-4711';
+
+        for (final count in [0, null]) {
+          await tester.pumpWidget(
+            buildTestWidget(fastTraceEnabled: true, partitionCount: count),
+          );
+          await tester.pump(const Duration(milliseconds: 350));
+          await tester.pumpAndSettle();
+
+          // Expand advanced panel if needed
+          if (find.text('Partition count unknown').evaluate().isEmpty) {
+            await tester.tap(find.byIcon(Icons.tune));
+            await tester.pumpAndSettle();
+          }
+          expect(find.text('Partition count unknown'), findsOneWidget);
+        }
+
+        verifyNever(
+          mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+            key: anyNamed('key'),
+            partitionCount: anyNamed('partitionCount'),
+          ),
+        );
+      },
+    );
+
+    testWidgets('shows enter-key hint and no number when key is empty', (
+      tester,
+    ) async {
+      stubPatternEngine();
+      await tester.pumpWidget(
+        buildTestWidget(fastTraceEnabled: true, partitionCount: 12),
+      );
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.tune));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Enter a key to preview target partition'),
+        findsOneWidget,
+      );
+      verifyNever(
+        mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+          key: anyNamed('key'),
+          partitionCount: anyNamed('partitionCount'),
+        ),
+      );
+    });
+
+    testWidgets(
+      'uses first term and shows first-term note for comma-separated terms',
+      (tester) async {
+        stubPatternEngine();
+        when(
+          mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+            key: 'a',
+            partitionCount: 12,
+          ),
+        ).thenAnswer((_) async => 5);
+
+        quickFilterController.text = ' a , b ';
+        await tester.pumpWidget(
+          buildTestWidget(fastTraceEnabled: true, partitionCount: 12),
+        );
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.tune));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Partition 5 of 12'), findsOneWidget);
+        expect(
+          find.text('Only the first term selects the scanned partition'),
+          findsOneWidget,
+        );
+        verify(
+          mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+            key: 'a',
+            partitionCount: 12,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'drops stale bridge answer when key changes before previous completes',
+      (tester) async {
+        stubPatternEngine();
+        final firstCompleter = Completer<int?>();
+        final secondCompleter = Completer<int?>();
+        when(
+          mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+            key: 'old',
+            partitionCount: 12,
+          ),
+        ).thenAnswer((_) => firstCompleter.future);
+        when(
+          mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+            key: 'new',
+            partitionCount: 12,
+          ),
+        ).thenAnswer((_) => secondCompleter.future);
+
+        await tester.pumpWidget(
+          buildTestWidget(fastTraceEnabled: true, partitionCount: 12),
+        );
+        await tester.pumpAndSettle();
+
+        final searchField = find.widgetWithIcon(TextField, Icons.search);
+        await tester.enterText(searchField, 'old');
+        await tester.pump(const Duration(milliseconds: 350));
+
+        await tester.enterText(searchField, 'new');
+        await tester.pump(const Duration(milliseconds: 350));
+
+        secondCompleter.complete(7);
+        await tester.pumpAndSettle();
+        expect(find.text('Fast Trace → P7'), findsOneWidget);
+
+        firstCompleter.complete(2);
+        await tester.pumpAndSettle();
+        expect(find.text('Fast Trace → P7'), findsOneWidget);
+        expect(find.text('Fast Trace → P2'), findsNothing);
+      },
+    );
+
+    testWidgets('shows partition count unknown when bridge throws', (
+      tester,
+    ) async {
+      stubPatternEngine();
+      when(
+        mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+          key: 'order-4711',
+          partitionCount: 12,
+        ),
+      ).thenThrow(Exception('bridge failure'));
+
+      quickFilterController.text = 'order-4711';
+      await tester.pumpWidget(
+        buildTestWidget(fastTraceEnabled: true, partitionCount: 12),
+      );
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Fast Trace'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.tune));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Partition count unknown'), findsOneWidget);
+    });
+  });
+
+  testWidgets('renders German labels when locale is de', (tester) async {
+    await tester.pumpWidget(
+      buildTestWidget(
+        scanMode: TopicScanMode.timeRange,
+        locale: const Locale('de'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Startzeit'), findsOneWidget);
+    expect(find.text('Endzeit'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Partition (opt.)'), findsOneWidget);
+    expect(find.text('Feld (Opt.)'), findsOneWidget);
+    expect(find.text('Typ:'), findsOneWidget);
+    expect(find.text('Bereich:'), findsOneWidget);
+  });
 }

@@ -13,6 +13,15 @@ Future<int> murmur2({required List<int> data}) =>
 Future<int> toPositive({required int number}) =>
     KafkalyzerRustLib.instance.api.crateApiKafkaUtilsToPositive(number: number);
 
+/// Predicts the target partition for a UTF-8 key using Kafka's Java default partitioner.
+Future<int?> predictDefaultPartition({
+  required String key,
+  required int partitionCount,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaUtilsPredictDefaultPartition(
+  key: key,
+  partitionCount: partitionCount,
+);
+
 Future<ClientConfig> createConfig({required ClusterProfile profile}) =>
     KafkalyzerRustLib.instance.api.crateApiKafkaUtilsCreateConfig(
       profile: profile,

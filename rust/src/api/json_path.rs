@@ -104,6 +104,9 @@ mod tests {
             ssl_pem_key_location: Some("/key.pem".to_string()),
             ssl_pem_key_password: Some("pempw".to_string()),
             tls_verification: crate::api::kafka_types::TlsVerification::Disabled,
+            environment_label: Some("PROD".to_string()),
+            environment_color: Some("red".to_string()),
+            extra_properties: Some("client.id=kafkalyzer\nsocket.timeout.ms=30000".to_string()),
         }
     }
 
@@ -126,6 +129,23 @@ mod tests {
         assert_eq!(loaded.bootstrap_servers, "b:9092");
         assert_eq!(loaded.sasl_kerberos_keytab, None);
         assert_eq!(loaded.ssl_pem_key_location, None);
+        assert_eq!(loaded.environment_label, None);
+        assert_eq!(loaded.environment_color, None);
+        assert_eq!(loaded.extra_properties, None);
+    }
+
+    #[test]
+    fn to_domain_parses_extra_properties_and_drops_syntax_errors() {
+        let mut dto = full_profile();
+        dto.extra_properties = Some("client.id=k1\nbad_line\nsocket.timeout.ms=30000".to_string());
+        let domain = dto.to_domain();
+        assert_eq!(
+            domain.extra_properties,
+            vec![
+                ("client.id".to_string(), "k1".to_string()),
+                ("socket.timeout.ms".to_string(), "30000".to_string()),
+            ]
+        );
     }
 
     #[test]

@@ -1,6 +1,9 @@
 import 'package:kafkalyzer/src/ui/smart_tree/context_window_calculator.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/entity_formatter_registry.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/virtual_json_node.dart';
+import 'package:kafkalyzer/src/utils/nested_value_decoder.dart';
+
+typedef DecodedTreeEntry = ({DecodeKind kind, DecodeResult result});
 
 class FlattenResult {
   final List<VirtualJsonNode> nodes;
@@ -48,6 +51,7 @@ class JsonTreeFlattener {
     bool enableIndentationFlattening = false,
     bool hideNullFields = false,
     bool autoExpandSingleItemCollections = false,
+    Map<String, DecodedTreeEntry>? decodedValues,
   }) {
     final activeExpanded = Set<String>.from(expandedPaths ?? {});
     final collapsed = Set<String>.from(manuallyCollapsedPaths ?? {});
@@ -63,7 +67,13 @@ class JsonTreeFlattener {
     // Phase 1: Search indexing & ancestor path expansion
     if (hasSearch) {
       final matchingAncestorPaths = <String>{};
-      _findMatchingAncestors(root, 'root', query, matchingAncestorPaths);
+      _findMatchingAncestors(
+        root,
+        'root',
+        query,
+        matchingAncestorPaths,
+        decodedValues: decodedValues,
+      );
       activeExpanded.addAll(matchingAncestorPaths);
     }
 
@@ -72,286 +82,397 @@ class JsonTreeFlattener {
     final matchIndices = <int>[];
     int hiddenNulls = 0;
 
-    void traverse(dynamic current, String key, String path, int depth) {
-      String displayKey = key;
-      String currentPath = path;
-      dynamic currentNodeValue = current;
+    late void Function(
+      dynamic current,
+      String key,
+      String path,
+      int depth, {
+      bool inDecoded,
+    })
+    traverse;
 
-      // Indentation Flattening for unbranched single-child Map chains
-      if (enableIndentationFlattening &&
-          current is Map &&
-          current.length == 1) {
-        var checkMap = current;
-        var checkKey = key;
-        var checkPath = path;
-        int chainDepth = 0;
-
-        while (checkMap.length == 1 && chainDepth < 20) {
-          final singleEntry = checkMap.entries.first;
-          final childKey = singleEntry.key.toString();
-          final childVal = singleEntry.value;
-
-          if (childVal is Map || childVal is List) {
-            checkKey = checkKey.isEmpty ? childKey : '$checkKey . $childKey';
-            checkPath = '$checkPath.$childKey';
-            currentNodeValue = childVal;
-            if (childVal is Map) {
-              checkMap = childVal;
-            } else {
-              break;
+    void traverseDecoded(
+      DecodeResult result,
+      String decodedPath,
+      int nextDepth,
+    ) {
+      switch (result) {
+        case DecodedJson(:final value):
+          if (value is Map) {
+            for (final entry in value.entries) {
+              final k = entry.key.toString();
+              final v = entry.value;
+              if (hideNullFields && v == null) {
+                hiddenNulls++;
+                continue;
+              }
+              traverse(v, k, '$decodedPath.$k', nextDepth, inDecoded: true);
+            }
+          } else if (value is List) {
+            for (int i = 0; i < value.length; i++) {
+              traverse(
+                value[i],
+                '[$i]',
+                '$decodedPath[$i]',
+                nextDepth,
+                inDecoded: true,
+              );
             }
           } else {
-            break;
+            traverse(value, 'value', decodedPath, nextDepth, inDecoded: true);
           }
-          chainDepth++;
-        }
-
-        displayKey = checkKey;
-        currentPath = checkPath;
-      }
-
-      bool isNodeMatch = false;
-      if (hasSearch) {
-        if (displayKey.toLowerCase().contains(query)) {
-          isNodeMatch = true;
-        }
-      }
-
-      if (currentNodeValue is Map) {
-        final stringMap = <String, dynamic>{};
-        for (final entry in currentNodeValue.entries) {
-          final k = entry.key.toString();
-          final v = entry.value;
-          if (hideNullFields && v == null) {
-            hiddenNulls++;
-            continue;
-          }
-          stringMap[k] = v;
-        }
-
-        // Auto-expand single-entry collection by default if not manually collapsed
-        if (autoExpandSingleItemCollections &&
-            stringMap.length == 1 &&
-            !collapsed.contains(currentPath) &&
-            !collapsed.contains(path)) {
-          activeExpanded.add(currentPath);
-        }
-
-        final isExp =
-            activeExpanded.contains(currentPath) ||
-            activeExpanded.contains(path);
-
-        // Check EntityFormatterRegistry for progressive disclosure when collapsed
-        final badge = EntityFormatterRegistry.tryFormat(stringMap);
-        if (badge != null && !isExp) {
-          if (hasSearch && badge.label.toLowerCase().contains(query)) {
-            isNodeMatch = true;
-          }
-          final node = VirtualJsonNode(
-            path: currentPath,
-            key: displayKey,
-            compoundPathKey: displayKey != key ? displayKey : null,
-            value: stringMap,
-            depth: depth,
-            type: JsonNodeType.compositeBadge,
-            badgeData: badge,
-            isMatch: isNodeMatch,
-            hasChildren: true,
-            isExpanded: false,
-          );
-          if (isNodeMatch) {
-            matchIndices.add(resultNodes.length);
-          }
-          resultNodes.add(node);
-          return;
-        }
-
-        // Standard expandable object
-        final node = VirtualJsonNode(
-          path: currentPath,
-          key: displayKey,
-          compoundPathKey: displayKey != key ? displayKey : null,
-          value: stringMap,
-          depth: depth,
-          type: JsonNodeType.object,
-          isExpanded: isExp,
-          hasChildren: stringMap.isNotEmpty,
-          childCount: stringMap.length,
-          isMatch: isNodeMatch,
-        );
-        if (isNodeMatch) {
-          matchIndices.add(resultNodes.length);
-        }
-        resultNodes.add(node);
-
-        if (isExp) {
-          for (final entry in stringMap.entries) {
-            traverse(
-              entry.value,
-              entry.key,
-              '$currentPath.${entry.key}',
-              depth + 1,
-            );
-          }
-        }
-      } else if (currentNodeValue is List) {
-        final listBadge = EntityFormatterRegistry.tryFormatList(
-          currentNodeValue,
-        );
-
-        // Auto-expand single-item list by default if not manually collapsed
-        // UNLESS it is eligible for compact badge rendering
-        if (autoExpandSingleItemCollections &&
-            currentNodeValue.length == 1 &&
-            listBadge == null &&
-            !collapsed.contains(currentPath) &&
-            !collapsed.contains(path)) {
-          activeExpanded.add(currentPath);
-        }
-
-        final isExp =
-            activeExpanded.contains(currentPath) ||
-            activeExpanded.contains(path);
-
-        if (listBadge != null && !isExp) {
-          if (hasSearch && listBadge.label.toLowerCase().contains(query)) {
-            isNodeMatch = true;
-          }
-          final node = VirtualJsonNode(
-            path: currentPath,
-            key: displayKey,
-            compoundPathKey: displayKey != key ? displayKey : null,
-            value: currentNodeValue,
-            depth: depth,
-            type: JsonNodeType.compositeBadge,
-            badgeData: listBadge,
-            isMatch: isNodeMatch,
-            hasChildren: true,
-            isExpanded: false,
-          );
-          if (isNodeMatch) {
-            matchIndices.add(resultNodes.length);
-          }
-          resultNodes.add(node);
-          return;
-        }
-
-        final node = VirtualJsonNode(
-          path: currentPath,
-          key: displayKey,
-          compoundPathKey: displayKey != key ? displayKey : null,
-          value: currentNodeValue,
-          depth: depth,
-          type: JsonNodeType.array,
-          isExpanded: isExp,
-          hasChildren: currentNodeValue.isNotEmpty,
-          childCount: currentNodeValue.length,
-          isMatch: isNodeMatch,
-        );
-        if (isNodeMatch) {
-          matchIndices.add(resultNodes.length);
-        }
-        resultNodes.add(node);
-
-        if (isExp) {
-          final isForcedShowAll =
-              forcedShowAllArrays?.contains(currentPath) ?? false;
-
-          // Check if Context Windowing should segment this array
-          if (hasSearch && enableContextWindowing && !isForcedShowAll) {
-            final arrayMatches = <int>{};
-            for (int i = 0; i < currentNodeValue.length; i++) {
-              final item = currentNodeValue[i];
-              if ('[$i]'.contains(query) || hasMatchInSubtree(item, query)) {
-                arrayMatches.add(i);
-              }
-            }
-
-            if (arrayMatches.isNotEmpty) {
-              final segments = ContextWindowCalculator.calculateSegments(
-                totalLength: currentNodeValue.length,
-                matchIndices: arrayMatches,
-                radius: contextRadius,
-                forceShowAll: false,
-              );
-
-              for (final segment in segments) {
-                switch (segment) {
-                  case VisibleItemSegment(:final index):
-                    traverse(
-                      currentNodeValue[index],
-                      '[$index]',
-                      '$currentPath[$index]',
-                      depth + 1,
-                    );
-
-                  case CollapsedRangeSegment(
-                    :final startIndex,
-                    :final endIndex,
-                    :final count,
-                  ):
-                    final rangeKey = '$currentPath[$startIndex-$endIndex]';
-                    if (manuallyExpandedRanges?.contains(rangeKey) ?? false) {
-                      for (int i = startIndex; i <= endIndex; i++) {
-                        traverse(
-                          currentNodeValue[i],
-                          '[$i]',
-                          '$currentPath[$i]',
-                          depth + 1,
-                        );
-                      }
-                    } else {
-                      resultNodes.add(
-                        VirtualJsonNode(
-                          path: rangeKey,
-                          key: '',
-                          value: null,
-                          depth: depth + 1,
-                          type: JsonNodeType.collapsedRange,
-                          collapsedRangeStart: startIndex,
-                          collapsedRangeEnd: endIndex,
-                          collapsedCount: count,
-                        ),
-                      );
-                    }
-                }
-              }
-              return;
-            }
-          }
-
-          // Default full iteration when no segmentation applies
-          for (int i = 0; i < currentNodeValue.length; i++) {
-            traverse(
-              currentNodeValue[i],
-              '[$i]',
-              '$currentPath[$i]',
-              depth + 1,
-            );
-          }
-        }
-      } else {
-        // Primitive
-        if (hasSearch &&
-            currentNodeValue != null &&
-            currentNodeValue.toString().toLowerCase().contains(query)) {
-          isNodeMatch = true;
-        }
-        final node = VirtualJsonNode(
-          path: currentPath,
-          key: displayKey,
-          compoundPathKey: displayKey != key ? displayKey : null,
-          value: currentNodeValue,
-          depth: depth,
-          type: JsonNodeType.primitive,
-          isMatch: isNodeMatch,
-        );
-        if (isNodeMatch) {
-          matchIndices.add(resultNodes.length);
-        }
-        resultNodes.add(node);
+        case DecodedText(:final text):
+          traverse(text, 'value', decodedPath, nextDepth, inDecoded: true);
+        case DecodedBytes():
+          traverse(result, 'value', decodedPath, nextDepth, inDecoded: true);
+        case DecodeFailure():
+          break;
       }
     }
+
+    traverse =
+        (
+          dynamic current,
+          String key,
+          String path,
+          int depth, {
+          bool inDecoded = false,
+        }) {
+          String displayKey = key;
+          String currentPath = path;
+          dynamic currentNodeValue = current;
+
+          // Indentation Flattening for unbranched single-child Map chains
+          if (enableIndentationFlattening &&
+              current is Map &&
+              current.length == 1) {
+            var checkMap = current;
+            var checkKey = key;
+            var checkPath = path;
+            int chainDepth = 0;
+
+            while (checkMap.length == 1 && chainDepth < 20) {
+              final singleEntry = checkMap.entries.first;
+              final childKey = singleEntry.key.toString();
+              final childVal = singleEntry.value;
+
+              if (childVal is Map || childVal is List) {
+                checkKey = checkKey.isEmpty
+                    ? childKey
+                    : '$checkKey . $childKey';
+                checkPath = '$checkPath.$childKey';
+                currentNodeValue = childVal;
+                if (childVal is Map) {
+                  checkMap = childVal;
+                } else {
+                  break;
+                }
+              } else {
+                break;
+              }
+              chainDepth++;
+            }
+
+            displayKey = checkKey;
+            currentPath = checkPath;
+          }
+
+          bool isNodeMatch = false;
+          if (hasSearch) {
+            if (displayKey.toLowerCase().contains(query)) {
+              isNodeMatch = true;
+            }
+          }
+
+          if (currentNodeValue is Map) {
+            final stringMap = <String, dynamic>{};
+            for (final entry in currentNodeValue.entries) {
+              final k = entry.key.toString();
+              final v = entry.value;
+              if (hideNullFields && v == null) {
+                hiddenNulls++;
+                continue;
+              }
+              stringMap[k] = v;
+            }
+
+            // Auto-expand single-entry collection by default if not manually collapsed
+            if (autoExpandSingleItemCollections &&
+                stringMap.length == 1 &&
+                !collapsed.contains(currentPath) &&
+                !collapsed.contains(path)) {
+              activeExpanded.add(currentPath);
+            }
+
+            final isExp =
+                activeExpanded.contains(currentPath) ||
+                activeExpanded.contains(path);
+
+            // Check EntityFormatterRegistry for progressive disclosure when collapsed
+            final badge = EntityFormatterRegistry.tryFormat(stringMap);
+            if (badge != null && !isExp) {
+              if (hasSearch && badge.label.toLowerCase().contains(query)) {
+                isNodeMatch = true;
+              }
+              final node = VirtualJsonNode(
+                path: currentPath,
+                key: displayKey,
+                compoundPathKey: displayKey != key ? displayKey : null,
+                value: stringMap,
+                depth: depth,
+                type: JsonNodeType.compositeBadge,
+                badgeData: badge,
+                isMatch: isNodeMatch,
+                hasChildren: true,
+                isExpanded: false,
+                insideDecoded: inDecoded,
+              );
+              if (isNodeMatch) {
+                matchIndices.add(resultNodes.length);
+              }
+              resultNodes.add(node);
+              return;
+            }
+
+            // Standard expandable object
+            final node = VirtualJsonNode(
+              path: currentPath,
+              key: displayKey,
+              compoundPathKey: displayKey != key ? displayKey : null,
+              value: stringMap,
+              depth: depth,
+              type: JsonNodeType.object,
+              isExpanded: isExp,
+              hasChildren: stringMap.isNotEmpty,
+              childCount: stringMap.length,
+              isMatch: isNodeMatch,
+              insideDecoded: inDecoded,
+            );
+            if (isNodeMatch) {
+              matchIndices.add(resultNodes.length);
+            }
+            resultNodes.add(node);
+
+            if (isExp) {
+              for (final entry in stringMap.entries) {
+                traverse(
+                  entry.value,
+                  entry.key,
+                  '$currentPath.${entry.key}',
+                  depth + 1,
+                  inDecoded: inDecoded,
+                );
+              }
+            }
+          } else if (currentNodeValue is List) {
+            final listBadge = EntityFormatterRegistry.tryFormatList(
+              currentNodeValue,
+            );
+
+            // Auto-expand single-item list by default if not manually collapsed
+            // UNLESS it is eligible for compact badge rendering
+            if (autoExpandSingleItemCollections &&
+                currentNodeValue.length == 1 &&
+                listBadge == null &&
+                !collapsed.contains(currentPath) &&
+                !collapsed.contains(path)) {
+              activeExpanded.add(currentPath);
+            }
+
+            final isExp =
+                activeExpanded.contains(currentPath) ||
+                activeExpanded.contains(path);
+
+            if (listBadge != null && !isExp) {
+              if (hasSearch && listBadge.label.toLowerCase().contains(query)) {
+                isNodeMatch = true;
+              }
+              final node = VirtualJsonNode(
+                path: currentPath,
+                key: displayKey,
+                compoundPathKey: displayKey != key ? displayKey : null,
+                value: currentNodeValue,
+                depth: depth,
+                type: JsonNodeType.compositeBadge,
+                badgeData: listBadge,
+                isMatch: isNodeMatch,
+                hasChildren: true,
+                isExpanded: false,
+                insideDecoded: inDecoded,
+              );
+              if (isNodeMatch) {
+                matchIndices.add(resultNodes.length);
+              }
+              resultNodes.add(node);
+              return;
+            }
+
+            final node = VirtualJsonNode(
+              path: currentPath,
+              key: displayKey,
+              compoundPathKey: displayKey != key ? displayKey : null,
+              value: currentNodeValue,
+              depth: depth,
+              type: JsonNodeType.array,
+              isExpanded: isExp,
+              hasChildren: currentNodeValue.isNotEmpty,
+              childCount: currentNodeValue.length,
+              isMatch: isNodeMatch,
+              insideDecoded: inDecoded,
+            );
+            if (isNodeMatch) {
+              matchIndices.add(resultNodes.length);
+            }
+            resultNodes.add(node);
+
+            if (isExp) {
+              final isForcedShowAll =
+                  forcedShowAllArrays?.contains(currentPath) ?? false;
+
+              // Check if Context Windowing should segment this array
+              if (hasSearch && enableContextWindowing && !isForcedShowAll) {
+                final arrayMatches = <int>{};
+                for (int i = 0; i < currentNodeValue.length; i++) {
+                  final item = currentNodeValue[i];
+                  if ('[$i]'.contains(query) ||
+                      hasMatchInSubtree(
+                        item,
+                        query,
+                        path: '$currentPath[$i]',
+                        decodedValues: decodedValues,
+                      )) {
+                    arrayMatches.add(i);
+                  }
+                }
+
+                if (arrayMatches.isNotEmpty) {
+                  final segments = ContextWindowCalculator.calculateSegments(
+                    totalLength: currentNodeValue.length,
+                    matchIndices: arrayMatches,
+                    radius: contextRadius,
+                    forceShowAll: false,
+                  );
+
+                  for (final segment in segments) {
+                    switch (segment) {
+                      case VisibleItemSegment(:final index):
+                        traverse(
+                          currentNodeValue[index],
+                          '[$index]',
+                          '$currentPath[$index]',
+                          depth + 1,
+                          inDecoded: inDecoded,
+                        );
+
+                      case CollapsedRangeSegment(
+                        :final startIndex,
+                        :final endIndex,
+                        :final count,
+                      ):
+                        final rangeKey = '$currentPath[$startIndex-$endIndex]';
+                        if (manuallyExpandedRanges?.contains(rangeKey) ??
+                            false) {
+                          for (int i = startIndex; i <= endIndex; i++) {
+                            traverse(
+                              currentNodeValue[i],
+                              '[$i]',
+                              '$currentPath[$i]',
+                              depth + 1,
+                              inDecoded: inDecoded,
+                            );
+                          }
+                        } else {
+                          resultNodes.add(
+                            VirtualJsonNode(
+                              path: rangeKey,
+                              key: '',
+                              value: null,
+                              depth: depth + 1,
+                              type: JsonNodeType.collapsedRange,
+                              collapsedRangeStart: startIndex,
+                              collapsedRangeEnd: endIndex,
+                              collapsedCount: count,
+                              insideDecoded: inDecoded,
+                            ),
+                          );
+                        }
+                    }
+                  }
+                  return;
+                }
+              }
+
+              // Default full iteration when no segmentation applies
+              for (int i = 0; i < currentNodeValue.length; i++) {
+                traverse(
+                  currentNodeValue[i],
+                  '[$i]',
+                  '$currentPath[$i]',
+                  depth + 1,
+                  inDecoded: inDecoded,
+                );
+              }
+            }
+          } else if (currentNodeValue is DecodedBytes) {
+            final decoded = decodedValues?[currentPath];
+            final isExp =
+                decoded != null &&
+                (activeExpanded.contains(currentPath) ||
+                    activeExpanded.contains(path));
+            final node = VirtualJsonNode(
+              path: currentPath,
+              key: displayKey,
+              compoundPathKey: displayKey != key ? displayKey : null,
+              value: currentNodeValue.bytes,
+              depth: depth,
+              type: JsonNodeType.binary,
+              isMatch: isNodeMatch,
+              hasChildren: decoded != null,
+              isExpanded: isExp,
+              decodedKind: decoded?.kind,
+              insideDecoded: inDecoded,
+            );
+            if (isNodeMatch) {
+              matchIndices.add(resultNodes.length);
+            }
+            resultNodes.add(node);
+            if (decoded != null && isExp) {
+              traverseDecoded(decoded.result, '$currentPath\u{1F}d', depth + 1);
+            }
+          } else {
+            // Primitive
+            if (hasSearch &&
+                currentNodeValue != null &&
+                currentNodeValue.toString().toLowerCase().contains(query)) {
+              isNodeMatch = true;
+            }
+            final decoded = decodedValues?[currentPath];
+            final isExp =
+                decoded != null &&
+                (activeExpanded.contains(currentPath) ||
+                    activeExpanded.contains(path));
+            final node = VirtualJsonNode(
+              path: currentPath,
+              key: displayKey,
+              compoundPathKey: displayKey != key ? displayKey : null,
+              value: currentNodeValue,
+              depth: depth,
+              type: JsonNodeType.primitive,
+              isMatch: isNodeMatch,
+              hasChildren: decoded != null,
+              isExpanded: isExp,
+              decodedKind: decoded?.kind,
+              insideDecoded: inDecoded,
+            );
+            if (isNodeMatch) {
+              matchIndices.add(resultNodes.length);
+            }
+            resultNodes.add(node);
+            if (decoded != null && isExp) {
+              traverseDecoded(decoded.result, '$currentPath\u{1F}d', depth + 1);
+            }
+          }
+        };
 
     if (root is Map || root is List) {
       if (root is Map) {
@@ -385,28 +506,96 @@ class JsonTreeFlattener {
     );
   }
 
-  static bool hasMatchInSubtree(dynamic current, String query) {
+  static bool hasMatchInSubtree(
+    dynamic current,
+    String query, {
+    String? path,
+    Map<String, DecodedTreeEntry>? decodedValues,
+  }) {
     if (current is Map) {
       for (final entry in current.entries) {
-        if (entry.key.toString().toLowerCase().contains(query)) return true;
-        if (hasMatchInSubtree(entry.value, query)) return true;
+        final k = entry.key.toString();
+        if (k.toLowerCase().contains(query)) return true;
+        if (hasMatchInSubtree(
+          entry.value,
+          query,
+          path: path != null ? '$path.$k' : null,
+          decodedValues: decodedValues,
+        )) {
+          return true;
+        }
       }
     } else if (current is List) {
       for (int i = 0; i < current.length; i++) {
-        if (hasMatchInSubtree(current[i], query)) return true;
+        if (hasMatchInSubtree(
+          current[i],
+          query,
+          path: path != null ? '$path[$i]' : null,
+          decodedValues: decodedValues,
+        )) {
+          return true;
+        }
       }
-    } else if (current != null) {
-      if (current.toString().toLowerCase().contains(query)) return true;
+    } else {
+      if (current != null && current is! DecodedBytes) {
+        if (current.toString().toLowerCase().contains(query)) return true;
+      }
+      if (path != null && decodedValues != null) {
+        final decoded = decodedValues[path];
+        if (decoded != null &&
+            _decodedResultHasMatch(
+              decoded.result,
+              '$path\u{1F}d',
+              query,
+              decodedValues,
+            )) {
+          return true;
+        }
+      }
     }
     return false;
+  }
+
+  static bool _decodedResultHasMatch(
+    DecodeResult result,
+    String decodedPath,
+    String query,
+    Map<String, DecodedTreeEntry> decodedValues,
+  ) {
+    switch (result) {
+      case DecodedJson(:final value):
+        return hasMatchInSubtree(
+          value,
+          query,
+          path: decodedPath,
+          decodedValues: decodedValues,
+        );
+      case DecodedText(:final text):
+        return hasMatchInSubtree(
+          text,
+          query,
+          path: decodedPath,
+          decodedValues: decodedValues,
+        );
+      case DecodedBytes():
+        return hasMatchInSubtree(
+          result,
+          query,
+          path: decodedPath,
+          decodedValues: decodedValues,
+        );
+      case DecodeFailure():
+        return false;
+    }
   }
 
   static bool _findMatchingAncestors(
     dynamic current,
     String path,
     String query,
-    Set<String> ancestorsToExpand,
-  ) {
+    Set<String> ancestorsToExpand, {
+    Map<String, DecodedTreeEntry>? decodedValues,
+  }) {
     bool hasMatchInSubtree = false;
 
     if (current is Map) {
@@ -443,6 +632,7 @@ class JsonTreeFlattener {
                 childPath,
                 query,
                 ancestorsToExpand,
+                decodedValues: decodedValues,
               );
 
         if (keyMatches || childMatches || badgeMatches) {
@@ -468,6 +658,7 @@ class JsonTreeFlattener {
             childPath,
             query,
             ancestorsToExpand,
+            decodedValues: decodedValues,
           );
           if (childMatches) {
             hasMatchInSubtree = true;
@@ -476,11 +667,98 @@ class JsonTreeFlattener {
         }
       }
     } else {
-      if (current != null && current.toString().toLowerCase().contains(query)) {
+      if (current != null &&
+          current is! DecodedBytes &&
+          current.toString().toLowerCase().contains(query)) {
         hasMatchInSubtree = true;
+      }
+      final decoded = decodedValues?[path];
+      if (decoded != null) {
+        final decodedPath = '$path\u{1F}d';
+        final childMatches = _findMatchingAncestorsForDecoded(
+          decoded.result,
+          decodedPath,
+          query,
+          ancestorsToExpand,
+          decodedValues!,
+        );
+        if (childMatches) {
+          hasMatchInSubtree = true;
+          ancestorsToExpand.add(path);
+        }
       }
     }
 
     return hasMatchInSubtree;
+  }
+
+  static bool _findMatchingAncestorsForDecoded(
+    DecodeResult result,
+    String decodedPath,
+    String query,
+    Set<String> ancestorsToExpand,
+    Map<String, DecodedTreeEntry> decodedValues,
+  ) {
+    switch (result) {
+      case DecodedJson(:final value):
+        if (value is Map) {
+          var matched = false;
+          for (final entry in value.entries) {
+            final k = entry.key.toString();
+            final childPath = '$decodedPath.$k';
+            final keyMatches = k.toLowerCase().contains(query);
+            final childMatches = _findMatchingAncestors(
+              entry.value,
+              childPath,
+              query,
+              ancestorsToExpand,
+              decodedValues: decodedValues,
+            );
+            if (keyMatches || childMatches) matched = true;
+          }
+          return matched;
+        } else if (value is List) {
+          var matched = false;
+          for (int i = 0; i < value.length; i++) {
+            final childPath = '$decodedPath[$i]';
+            if (_findMatchingAncestors(
+              value[i],
+              childPath,
+              query,
+              ancestorsToExpand,
+              decodedValues: decodedValues,
+            )) {
+              matched = true;
+            }
+          }
+          return matched;
+        } else {
+          return _findMatchingAncestors(
+            value,
+            decodedPath,
+            query,
+            ancestorsToExpand,
+            decodedValues: decodedValues,
+          );
+        }
+      case DecodedText(:final text):
+        return _findMatchingAncestors(
+          text,
+          decodedPath,
+          query,
+          ancestorsToExpand,
+          decodedValues: decodedValues,
+        );
+      case DecodedBytes():
+        return _findMatchingAncestors(
+          result,
+          decodedPath,
+          query,
+          ancestorsToExpand,
+          decodedValues: decodedValues,
+        );
+      case DecodeFailure():
+        return false;
+    }
   }
 }

@@ -82,6 +82,9 @@ class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
     return matchCounts["${stepId}_$topic"] ?? 0;
   }
 
+  @override
+  int getDroppedCount(String stepId, String topic) => 0;
+
   void setMatchCount(String stepId, String topic, int count) {
     matchCounts["${stepId}_$topic"] = count;
     notifyListeners();
@@ -140,14 +143,18 @@ void main() {
     ],
   );
 
-  Widget buildTestWidget(Script testScript) {
+  Widget buildTestWidget(Script testScript, {Locale? locale}) {
     return MaterialApp(
+      locale: locale,
       theme: ThemeData(
         useMaterial3: true,
         splashFactory: InkRipple.splashFactory,
       ),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      supportedLocales: const [Locale('en'), Locale('de')],
       home: Scaffold(body: ScriptRunView(script: testScript)),
     );
   }
@@ -217,8 +224,8 @@ void main() {
     await tester.pump();
 
     // Verify match count text
-    // "5 matches found in 1 topics"
-    expect(find.text('5 matches found in 1 topics'), findsOneWidget);
+    // "5 matches found in 1 topic"
+    expect(find.text('5 matches found in 1 topic'), findsOneWidget);
   });
 
   testWidgets('renders responsive two-column layout on wide screens', (
@@ -416,4 +423,27 @@ void main() {
       expect(find.text('CLI command copied to clipboard'), findsOneWidget);
     },
   );
+
+  testWidgets('ScriptRunView renders German localization', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      buildTestWidget(script, locale: const Locale('de')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pipeline-Vorschau'), findsOneWidget);
+    expect(find.text('Skript starten (1 Schritt)'), findsOneWidget);
+
+    await tester.tap(find.text('Skript starten (1 Schritt)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ausführungsfortschritt'), findsOneWidget);
+    expect(find.text('Stopp'), findsOneWidget);
+  });
 }

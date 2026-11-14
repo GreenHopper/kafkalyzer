@@ -92,4 +92,38 @@ void main() {
     expect(toggleCount, 1);
     expect(sidebarVisible, isFalse);
   });
+
+  testWidgets('renders German localization and back tooltip when running', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: const [Locale('en'), Locale('de')],
+        home: Scaffold(
+          body: ScriptRunHeader(
+            run: null,
+            timelineMode: 'topic',
+            onTimelineModeChanged: (_) {},
+            onBack: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Details'), findsOneWidget);
+    expect(find.text('Läuft...'), findsOneWidget);
+    expect(find.byTooltip('Zurück'), findsOneWidget);
+    expect(find.text('Nach Topic'), findsOneWidget);
+  });
 }

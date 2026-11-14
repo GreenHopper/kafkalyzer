@@ -37,6 +37,15 @@ class _RecordingStreamController extends ChangeNotifier
   bool get isStreaming => false;
 
   @override
+  bool get isPaused => false;
+
+  @override
+  int get droppedCount => 0;
+
+  @override
+  int get receivedCount => 0;
+
+  @override
   int get totalConsumed => 0;
 
   @override

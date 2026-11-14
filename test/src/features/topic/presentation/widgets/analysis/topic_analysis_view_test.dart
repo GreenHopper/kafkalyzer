@@ -27,13 +27,18 @@ class FakeExportService extends TopicAnalysisExportService {
   bool importCalled = false;
 
   @override
-  Future<String?> export(TopicAnalysisReportFile file) async {
+  Future<String?> export(
+    TopicAnalysisReportFile file, {
+    required String dialogTitle,
+  }) async {
     exportCalled = true;
     return exportResult;
   }
 
   @override
-  Future<TopicAnalysisReportFile?> importFile() async {
+  Future<TopicAnalysisReportFile?> importFile({
+    required String dialogTitle,
+  }) async {
     importCalled = true;
     return importResult;
   }
@@ -162,13 +167,17 @@ void main() {
     tlsVerification: TlsVerification.enabled,
   );
 
-  Widget buildView(TopicAnalysisController controller) {
+  Widget buildView(
+    TopicAnalysisController controller, {
+    Locale locale = const Locale('en'),
+  }) {
     return MaterialApp(
+      locale: locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         ...GlobalMaterialLocalizations.delegates,
       ],
-      supportedLocales: const [Locale('en')],
+      supportedLocales: const [Locale('en'), Locale('de')],
       home: Scaffold(
         body: TopicAnalysisView(
           topic: topic,
@@ -612,6 +621,23 @@ void main() {
 
         expect(find.text('Top Duplicated Messages'), findsOneWidget);
         expect(find.text('{"dup": true}'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders localized German validation message for empty field path',
+      (tester) async {
+        useBigTestSurface(tester);
+        final controller = TopicAnalysisController();
+        await controller.rescanWithFilter(
+          const FieldValueFilter(fieldPath: '', value: 'EU'),
+        );
+        await tester.pumpWidget(
+          buildView(controller, locale: const Locale('de')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Feldpfad darf nicht leer sein'), findsOneWidget);
       },
     );
   });

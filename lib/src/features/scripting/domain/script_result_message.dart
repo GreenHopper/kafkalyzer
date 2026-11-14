@@ -11,6 +11,9 @@ class ScriptResultMessage extends KafkaMessage {
     super.key,
     super.payload,
     required super.timestamp,
+    super.headers,
+    super.keySchema,
+    super.valueSchema,
     required this.stepName,
     required this.stepId,
   });

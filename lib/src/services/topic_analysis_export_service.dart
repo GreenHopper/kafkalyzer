@@ -20,13 +20,16 @@ class TopicAnalysisExportService {
   ///
   /// Returns the path of the written file, or `null` if the user cancelled the
   /// save dialog. Throws if the file cannot be written.
-  Future<String?> export(TopicAnalysisReportFile file) async {
+  Future<String?> export(
+    TopicAnalysisReportFile file, {
+    required String dialogTitle,
+  }) async {
     final timestampStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
     final fileName =
         '${_sanitizeFileName(file.report.topic)}_analysis_$timestampStr.json';
 
     final outputFile = await FilePicker.saveFile(
-      dialogTitle: 'Export Topic Analysis',
+      dialogTitle: dialogTitle,
       fileName: fileName,
       type: FileType.custom,
       allowedExtensions: ['json'],
@@ -54,9 +57,11 @@ class TopicAnalysisExportService {
   /// Returns the parsed [TopicAnalysisReportFile], or `null` if the user
   /// cancelled the picker. Throws a [TopicAnalysisImportError] if the chosen
   /// file is not a valid, supported analysis report.
-  Future<TopicAnalysisReportFile?> importFile() async {
+  Future<TopicAnalysisReportFile?> importFile({
+    required String dialogTitle,
+  }) async {
     final result = await FilePicker.pickFiles(
-      dialogTitle: 'Import Topic Analysis',
+      dialogTitle: dialogTitle,
       allowMultiple: false,
       type: FileType.custom,
       allowedExtensions: ['json'],

@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kafkalyzer/src/ui/main_layout.dart';
 import 'package:kafkalyzer/src/theme.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/theme_controller.dart';
+import 'package:kafkalyzer/src/services/appearance_settings.dart';
 
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 
@@ -17,16 +17,28 @@ class KafkalyzerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = getIt<ThemeController>();
+    final appearance = getIt<AppearanceSettings>();
     return AnimatedBuilder(
-      animation: themeController,
+      animation: appearance,
       builder: (context, child) {
         return MaterialApp.router(
           onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
-          themeMode: themeController.themeMode,
+          themeMode: appearance.themeMode,
+          locale: appearance.locale,
+          builder: (context, child) {
+            final mq = MediaQuery.of(context);
+            return MediaQuery(
+              data: mq.copyWith(
+                textScaler: TextScaler.linear(
+                  mq.textScaler.scale(1) * appearance.textScale,
+                ),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           routerConfig: _router,
           localizationsDelegates: const [
             AppLocalizations.delegate,

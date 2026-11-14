@@ -7,6 +7,8 @@ pub mod kafka_consumer;
 pub mod kafka_metadata;
 pub mod kafka_types;
 pub mod kafka_utils;
+pub mod profile_crypto;
+pub mod profile_tools;
 pub mod report_compare;
 pub mod schema_registry;
 

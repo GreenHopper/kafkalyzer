@@ -151,7 +151,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
   Future<void> _loadConcurrencyLimit() async {
     final prefs = await SharedPreferences.getInstance();
-    final limit = prefs.getInt('consumer_max_concurrent_queries') ?? 5;
+    final limit = SettingsService.readInt(
+      prefs,
+      SettingsService.maxConcurrentLagQueriesSetting,
+    );
     final threshold = await getIt<SettingsService>().lagWarnThreshold();
     if (mounted) {
       setState(() {
@@ -512,15 +515,16 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   Color _getStateColor(String state) {
+    final colorScheme = Theme.of(context).colorScheme;
     final s = state.toLowerCase();
     if (s.contains('stable') || s.contains('active')) {
-      return Colors.green;
+      return colorScheme.primary;
     } else if (s.contains('empty')) {
-      return Colors.grey;
+      return colorScheme.outline;
     } else if (s.contains('dead') || s.contains('error')) {
-      return Colors.red;
+      return colorScheme.error;
     }
-    return Colors.orange;
+    return colorScheme.tertiary;
   }
 
   Widget _buildKpiCards(
@@ -528,7 +532,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     AppLocalizations l10n,
     List<ConsumerGroupLag> filteredLags,
   ) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
     final totalGroups = _lags.length;
     final filteredCount = filteredLags.length;
     final stableGroups = filteredLags.where((g) {
@@ -573,9 +576,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       final formattedDelta = totalDelta > 0
           ? "+${_formatNum(totalDelta)}"
           : _formatNum(totalDelta);
-      lagSubtitle = isGerman
-          ? 'Änderung: $formattedDelta'
-          : 'Change: $formattedDelta';
+      lagSubtitle = l10n.lagChangeDelta(formattedDelta);
     } else {
       lagSubtitle = null;
     }
@@ -593,12 +594,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                 SizedBox(
                   width: cardWidth,
                   child: KpiCard(
-                    title: isGerman ? 'Consumer-Gruppen' : 'Consumer Groups',
+                    title: l10n.consumerGroups,
                     value: _formatNum(filteredCount),
                     subtitle: filteredCount < totalGroups
-                        ? (isGerman
-                              ? 'von ${_formatNum(totalGroups)}'
-                              : 'of ${_formatNum(totalGroups)}')
+                        ? l10n.ofTotal(_formatNum(totalGroups))
                         : null,
                     icon: Icons.group_work,
                   ),
@@ -606,33 +605,33 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                 SizedBox(
                   width: cardWidth,
                   child: KpiCard(
-                    title: isGerman ? 'Aktiv / Stabil' : 'Active / Stable',
+                    title: l10n.activeStable,
                     value: _formatNum(stableGroups),
-                    subtitle: isGerman
-                        ? '${_formatNum(filteredCount - stableGroups)} Inaktiv/Leer'
-                        : '${_formatNum(filteredCount - stableGroups)} Idle/Empty',
+                    subtitle: l10n.idleEmptyCount(
+                      _formatNum(filteredCount - stableGroups),
+                    ),
                     icon: Icons.check_circle_outline,
-                    iconColor: Colors.green,
+                    iconColor: Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 SizedBox(
                   width: cardWidth,
                   child: KpiCard(
-                    title: isGerman ? 'Gesamtes Lag' : 'Total Lag',
+                    title: l10n.totalLag,
                     value: _formatNum(totalLag),
                     subtitle: lagSubtitle,
                     icon: Icons.warning_amber_outlined,
-                    iconColor: totalLag > 0 ? Colors.orange : Colors.green,
+                    iconColor: totalLag > 0
+                        ? Theme.of(context).colorScheme.tertiary
+                        : Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 SizedBox(
                   width: cardWidth,
                   child: KpiCard(
-                    title: isGerman ? 'Aktive Abfragen' : 'Active Queries',
+                    title: l10n.activeQueries,
                     value: _formatNum(activeQueries),
-                    subtitle: isGerman
-                        ? 'Warteschlange: $queuedQueries'
-                        : 'Queue: $queuedQueries',
+                    subtitle: l10n.queueCount(queuedQueries),
                     icon: Icons.query_builder,
                     trailing: activeQueries > 0 || queuedQueries > 0
                         ? const SizedBox(
@@ -652,10 +651,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   Widget _buildConnectingState(BuildContext context) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-    final loadingText = isGerman
-        ? "Verbindung zum Cluster wird hergestellt..."
-        : "Connecting to cluster...";
+    final l10n = AppLocalizations.of(context)!;
+    final loadingText = l10n.connectingToCluster;
 
     return Center(
       child: Column(
@@ -826,11 +823,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   Widget _buildLoadingState(BuildContext context) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-    final loadingText = isGerman
-        ? "Verbindung zum Cluster wird hergestellt "
-              "und Offsets werden berechnet..."
-        : "Establishing connection and calculating consumer group offsets...";
+    final l10n = AppLocalizations.of(context)!;
+    final loadingText = l10n.establishingConnectionOffsets;
 
     return Center(
       child: Column(
@@ -852,7 +846,6 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   Widget _buildNoClusterSelected(BuildContext context, AppLocalizations l10n) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
     final theme = Theme.of(context);
     return Center(
       child: Column(
@@ -876,9 +869,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           ),
           const SizedBox(height: 8),
           Text(
-            isGerman
-                ? 'Wähle oben ein Cluster aus, um den Consumer-Lag anzuzeigen.'
-                : 'Select a cluster above to view consumer lag details.',
+            l10n.selectClusterForConsumerLag,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -889,13 +880,14 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   Widget _buildFetchStatusMessage(BuildContext context) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
+    final l10n = AppLocalizations.of(context)!;
     final seconds = (_lastFetchDuration!.inMilliseconds / 1000.0)
         .toStringAsFixed(1);
     final count = _lags.length;
-    final message = isGerman
-        ? 'Erfolgreich ${_formatNum(count)} Consumer-Gruppen in ${seconds}s geladen.'
-        : 'Successfully loaded ${_formatNum(count)} consumer groups in ${seconds}s.';
+    final message = l10n.loadedConsumerGroupsSummary(
+      _formatNum(count),
+      seconds,
+    );
 
     return Row(
       children: [
@@ -1000,6 +992,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: AppLocalizations.of(context)?.refreshTooltip ?? 'Refresh',
             color: Theme.of(context).colorScheme.onErrorContainer,
             onPressed: () => _fetchLags(profile),
           ),
@@ -1023,38 +1016,41 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
             }
           });
         },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                title,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 24),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 4),
-              Icon(
-                _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 14,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              if (isSelected) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildTableHeader(BuildContext context) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -1068,13 +1064,13 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       padding: const EdgeInsets.only(left: 24, right: 64, top: 12, bottom: 12),
       child: Row(
         children: [
-          _buildHeaderCell(0, isGerman ? 'Gruppen-ID' : 'Group ID', flex: 3),
-          _buildHeaderCell(1, isGerman ? 'Status' : 'State', flex: 2),
-          _buildHeaderCell(2, isGerman ? 'Protokoll' : 'Protocol', flex: 2),
-          _buildHeaderCell(3, isGerman ? 'Consumers' : 'Consumers', flex: 2),
-          _buildHeaderCell(4, isGerman ? 'Topics' : 'Topics', flex: 2),
-          _buildHeaderCell(5, isGerman ? 'Gesamtes Lag' : 'Total Lag', flex: 2),
-          _buildHeaderCell(6, isGerman ? 'Abarbeitung' : 'Processed', flex: 2),
+          _buildHeaderCell(0, l10n.groupIdCol, flex: 3),
+          _buildHeaderCell(1, l10n.stateCol, flex: 2),
+          _buildHeaderCell(2, l10n.protocolCol, flex: 2),
+          _buildHeaderCell(3, l10n.consumersCol, flex: 2),
+          _buildHeaderCell(4, l10n.topics, flex: 2),
+          _buildHeaderCell(5, l10n.totalLag, flex: 2),
+          _buildHeaderCell(6, l10n.processedCol, flex: 2),
         ],
       ),
     );

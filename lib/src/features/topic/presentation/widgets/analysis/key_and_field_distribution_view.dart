@@ -110,7 +110,7 @@ class _TopKeysCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: Center(
                   child: Text(
-                    'No keyed messages found',
+                    l10n?.noKeyedMessagesFound ?? 'No keyed messages found',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -231,7 +231,7 @@ class _ContentTypesCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Center(
                   child: Text(
-                    'No content types recorded',
+                    l10n?.noContentTypesRecorded ?? 'No content types recorded',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),

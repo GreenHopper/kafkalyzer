@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
@@ -10,6 +12,8 @@ import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
+
+import '../../../../../helpers/fake_cluster_profile_tools.dart';
 
 // Manual Mocks
 class MockLogger extends Logger {
@@ -56,7 +60,8 @@ class MockKafkaMetadataService extends KafkaMetadataService {
 }
 
 class MockTopicController extends TopicController {
-  List<TopicMetadata> topics = [];
+  List<TopicMetadata>? topics = [];
+  final List<String> clearedClusters = [];
 
   @override
   Future<void> fetchTopics(ClusterProfile cluster, {bool force = false}) async {
@@ -65,6 +70,11 @@ class MockTopicController extends TopicController {
 
   @override
   List<TopicMetadata>? getTopics(ClusterProfile cluster) => topics;
+
+  @override
+  void clearCache(ClusterProfile cluster) {
+    clearedClusters.add(cluster.name);
+  }
 
   @override
   bool isLoading(ClusterProfile cluster) => false;
@@ -90,6 +100,8 @@ void main() {
 
     mockTopicController = MockTopicController();
     getIt.registerSingleton<TopicController>(mockTopicController);
+
+    getIt.registerSingleton<ClusterProfileTools>(FakeClusterProfileTools());
 
     controller = ActiveConnectionController();
   });
@@ -118,7 +130,8 @@ void main() {
 
       expect(controller.activeProfile, isNull);
       expect(controller.error, isNotNull);
-      expect(controller.error, contains('Connection Refused'));
+      expect(controller.error?.kind, ConnectionErrorKind.connectionRefused);
+      expect(controller.error?.detail, contains('Connection Refused'));
       expect(controller.isConnecting, isFalse);
     });
 
@@ -171,7 +184,7 @@ void main() {
         expect(controller.connectingProfile, isNull);
         expect(controller.isConnecting, isFalse);
         expect(controller.activeProfile, isNull);
-        expect(controller.error, contains('Broker Transport Failure'));
+        expect(controller.error?.kind, ConnectionErrorKind.brokerTransport);
       },
     );
 
@@ -514,7 +527,11 @@ void main() {
 
           expect(validateCalled, isFalse);
           expect(controller.activeProfile, isNull);
-          expect(controller.error, contains('self-signed cert'));
+          expect(
+            controller.error?.kind,
+            ConnectionErrorKind.tlsVerificationFailed,
+          );
+          expect(controller.error?.detail, contains('self-signed cert'));
         },
       );
 
@@ -583,6 +600,136 @@ void main() {
             controller.activeProfile?.tlsVerification,
             TlsVerification.enabled,
           );
+        },
+      );
+    });
+
+    group('Cluster-scoped disconnect, bootstrap guard, and sessions (B13)', () {
+      const profileA = ClusterProfile(
+        name: 'Cluster A',
+        bootstrapServers: 'a:9092',
+        tlsVerification: TlsVerification.enabled,
+      );
+      const profileB = ClusterProfile(
+        name: 'Cluster B',
+        bootstrapServers: 'b:9092',
+        tlsVerification: TlsVerification.enabled,
+      );
+
+      TopicMetadata makeTopic(String name) =>
+          TopicMetadata(name: name, partitionCount: 1, replicationFactor: 1);
+
+      test(
+        'connect rejects invalid stored bootstrap without calling validateConnection',
+        () async {
+          var validateCalls = 0;
+          mockMetadataService.onValidate = ({required profile}) async {
+            validateCalls++;
+            return true;
+          };
+
+          const invalid = ClusterProfile(
+            name: 'Broken',
+            bootstrapServers: 'broker-without-port',
+            tlsVerification: TlsVerification.enabled,
+          );
+          await controller.connect(invalid);
+
+          expect(validateCalls, 0);
+          expect(controller.activeProfile, isNull);
+          expect(controller.connectingProfile, isNull);
+          expect(
+            controller.error?.kind,
+            ConnectionErrorKind.invalidBootstrapServers,
+          );
+          expect(controller.error?.detail, contains('broker-without-port'));
+        },
+      );
+
+      test(
+        'disconnect is cluster-scoped, clears cache, and keeps session',
+        () async {
+          await sessionRestoreService.setRestorationEnabled(true);
+          await controller.connect(profileA);
+          controller.openTopic(topic: makeTopic('orders'), profile: profileA);
+
+          await controller.connect(profileB);
+          controller.openTopic(topic: makeTopic('payments'), profile: profileB);
+          await Future<void>.delayed(Duration.zero);
+
+          controller.disconnect();
+
+          expect(controller.activeProfile, isNull);
+          expect(mockTopicController.clearedClusters, ['Cluster B']);
+          expect(
+            controller.openTopics.map(
+              (t) => '${t.profile.name}:${t.topic.name}',
+            ),
+            ['Cluster A:orders'],
+          );
+
+          final sessionB = await sessionRestoreService.getSession('Cluster B');
+          expect(sessionB?.openTopicNames, ['payments']);
+        },
+      );
+
+      test(
+        'sessions stay isolated per cluster and closing non-active tab updates its own session',
+        () async {
+          await sessionRestoreService.setRestorationEnabled(true);
+          await controller.connect(profileA);
+          final tabA = controller.openTopic(
+            topic: makeTopic('orders'),
+            profile: profileA,
+          )!;
+
+          await controller.connect(profileB);
+          controller.openTopic(topic: makeTopic('payments'), profile: profileB);
+          await Future<void>.delayed(Duration.zero);
+
+          var sessionA = await sessionRestoreService.getSession('Cluster A');
+          var sessionB = await sessionRestoreService.getSession('Cluster B');
+          expect(sessionA?.openTopicNames, ['orders']);
+          expect(sessionB?.openTopicNames, ['payments']);
+
+          controller.closeTopicTab(tabA.id);
+          await Future<void>.delayed(Duration.zero);
+
+          sessionA = await sessionRestoreService.getSession('Cluster A');
+          sessionB = await sessionRestoreService.getSession('Cluster B');
+          expect(sessionA?.openTopicNames, isEmpty);
+          expect(sessionB?.openTopicNames, ['payments']);
+        },
+      );
+
+      test(
+        'restore reports missing topics and prunes them, while null topic list preserves session',
+        () async {
+          await sessionRestoreService.setRestorationEnabled(true);
+          await sessionRestoreService.saveSession(
+            'Cluster A',
+            openTopicNames: ['orders', 'legacy-events'],
+            activeTopicName: 'orders',
+          );
+
+          // Null topic list guard
+          mockTopicController.topics = null;
+          await controller.connect(profileA);
+          var sessionA = await sessionRestoreService.getSession('Cluster A');
+          expect(sessionA?.openTopicNames, ['orders', 'legacy-events']);
+          expect(controller.unrestoredTopics, isEmpty);
+
+          // Now connect with only 'orders' present
+          controller.disconnect();
+          mockTopicController.topics = [makeTopic('orders')];
+          await controller.connect(profileA);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(controller.openTopics.map((t) => t.topic.name), ['orders']);
+          expect(controller.unrestoredTopics, ['legacy-events']);
+
+          sessionA = await sessionRestoreService.getSession('Cluster A');
+          expect(sessionA?.openTopicNames, ['orders']);
         },
       );
     });

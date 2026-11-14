@@ -1,0 +1,23 @@
+# Hard-coded user-facing string allowlist
+# Format: <path relative to repo>\t<literal source text>\t<reason>
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart	"PLAINTEXT"	technical: Kafka security protocol identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart	"SASL_PLAINTEXT"	technical: Kafka security protocol identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart	"SASL_SSL"	technical: Kafka security protocol identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart	"SSL"	technical: Kafka security protocol identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart	"PLAIN"	technical: SASL mechanism identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart	"SCRAM-SHA-256"	technical: SASL mechanism identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart	"SCRAM-SHA-512"	technical: SASL mechanism identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart	"GSSAPI (Kerberos)"	technical: SASL mechanism identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart	"OAUTHBEARER"	technical: SASL mechanism identifier
+lib/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart	"AWS_MSK_IAM"	technical: SASL mechanism identifier
+lib/src/features/explorer/presentation/widgets/cluster_overview_view.dart	'PLAINTEXT'	technical: Kafka protocol
+lib/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart	'PLAINTEXT'	technical: Kafka protocol
+lib/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart	"${widget.topicName}-key / ${widget.topicName}-value"	technical: Schema Registry subject naming pattern
+lib/src/features/search/presentation/widgets/search_stream_configuration.dart	"YYYY-MM-DDTHH:mm:ss"	technical: ISO-8601 date format pattern
+lib/src/features/settings/presentation/settings_view.dart	'Kafkalyzer v${AppVersionHelper.version}'	technical: product name
+lib/src/features/settings/presentation/settings_view.dart	'PLAINTEXT'	technical: Kafka protocol
+lib/src/services/appearance_settings.dart	locale?.languageCode == 'en'	technical: locale preference parser
+lib/src/services/appearance_settings.dart	locale?.languageCode == 'de'	technical: locale preference parser
+lib/src/ui/messages/widgets/message_inspector_panel.dart	'<null>'	technical: null key literal
+lib/src/ui/smart_tree/smart_composite_badge.dart	'null'	technical JSON literal
+lib/src/ui/startup_error_app.dart	'Kafkalyzer'	technical: product name

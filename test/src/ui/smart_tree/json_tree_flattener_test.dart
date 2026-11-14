@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/json_tree_flattener.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/virtual_json_node.dart';
+import 'package:kafkalyzer/src/utils/nested_value_decoder.dart';
 
 void main() {
   group('JsonTreeFlattener', () {
@@ -399,6 +400,80 @@ void main() {
 
         expect(result.nodes.any((n) => n.key == 'kundenauftragsIds'), isTrue);
         expect(result.nodes.any((n) => n.key == '[0]'), isFalse);
+      },
+    );
+
+    test(
+      'decoded children appear only when expanded and carry insideDecoded',
+      () {
+        final json = {'payload': '{"inner": 42}', 'other': 'ok'};
+        final decodedValues = <String, DecodedTreeEntry>{
+          'root.payload': (
+            kind: DecodeKind.json,
+            result: const DecodedJson({'inner': 42}),
+          ),
+        };
+
+        // Collapsed: payload has hasChildren & decodedKind, but child is not emitted
+        final collapsed = JsonTreeFlattener.flatten(
+          json,
+          decodedValues: decodedValues,
+        );
+        final payloadCollapsed = collapsed.nodes.firstWhere(
+          (n) => n.path == 'root.payload',
+        );
+        expect(payloadCollapsed.hasChildren, isTrue);
+        expect(payloadCollapsed.isExpanded, isFalse);
+        expect(payloadCollapsed.decodedKind, DecodeKind.json);
+        expect(payloadCollapsed.insideDecoded, isFalse);
+        expect(collapsed.nodes.any((n) => n.key == 'inner'), isFalse);
+
+        // Expanded: child is emitted with insideDecoded = true
+        final expanded = JsonTreeFlattener.flatten(
+          json,
+          expandedPaths: {'root', 'root.payload'},
+          decodedValues: decodedValues,
+        );
+        final innerNode = expanded.nodes.firstWhere((n) => n.key == 'inner');
+        expect(innerNode.value, 42);
+        expect(innerNode.depth, 1);
+        expect(innerNode.insideDecoded, isTrue);
+        expect(
+          expanded.nodes
+              .firstWhere((n) => n.path == 'root.other')
+              .insideDecoded,
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'decoded text can chain further decodings and search expands into decoded content',
+      () {
+        final json = {'blob': 'eyJpbm5lciI6InNlY3JldCJ9'};
+        const decodedTextPath = 'root.blob\u{1F}d';
+        final decodedValues = <String, DecodedTreeEntry>{
+          'root.blob': (
+            kind: DecodeKind.base64,
+            result: const DecodedText('{"inner":"secret"}'),
+          ),
+          decodedTextPath: (
+            kind: DecodeKind.json,
+            result: const DecodedJson({'inner': 'secret'}),
+          ),
+        };
+
+        final searched = JsonTreeFlattener.flatten(
+          json,
+          searchQuery: 'secret',
+          decodedValues: decodedValues,
+        );
+        expect(searched.expandedPaths, contains('root.blob'));
+        expect(searched.expandedPaths, contains(decodedTextPath));
+        final match = searched.nodes.firstWhere((n) => n.key == 'inner');
+        expect(match.isMatch, isTrue);
+        expect(match.insideDecoded, isTrue);
+        expect(searched.matchNodeIndices, [1, 2]);
       },
     );
   });

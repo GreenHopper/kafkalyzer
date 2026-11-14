@@ -10,6 +10,9 @@ enum _UpdateDialogStatus {
   checking,
   upToDate,
   available,
+  manualAvailable,
+  manualUpToDate,
+  latestKnown,
   downloading,
   readyToRestart,
   unsupportedEnvironment,
@@ -34,20 +37,51 @@ class UpdateDialog extends StatefulWidget {
 class _UpdateDialogState extends State<UpdateDialog> {
   _UpdateDialogStatus _status = _UpdateDialogStatus.checking;
   UpdateInfo? _updateInfo;
+  String? _latestVersion;
+  String? _releaseUrl;
+  String? _releaseNotes;
   String? _errorMessage;
   int _downloadProgress = 0;
-  StreamSubscription<int>? _downloadSubscription;
 
   @override
   void initState() {
     super.initState();
-    _checkForUpdates();
+    final updateService = getIt<UpdateService>();
+    updateService.downloadState.addListener(_onDownloadStateChanged);
+    final dl = updateService.downloadState.value;
+    if (dl.phase == DownloadPhase.running && !dl.cancelled) {
+      _status = _UpdateDialogStatus.downloading;
+      _downloadProgress = dl.progress;
+    } else if (dl.canApply) {
+      _status = _UpdateDialogStatus.readyToRestart;
+      _downloadProgress = 100;
+    } else {
+      _checkForUpdates();
+    }
   }
 
   @override
   void dispose() {
-    _downloadSubscription?.cancel();
+    getIt<UpdateService>().downloadState.removeListener(
+      _onDownloadStateChanged,
+    );
     super.dispose();
+  }
+
+  void _onDownloadStateChanged() {
+    if (!mounted) return;
+    final dl = getIt<UpdateService>().downloadState.value;
+    setState(() {
+      _downloadProgress = dl.progress;
+      if (dl.phase == DownloadPhase.running && !dl.cancelled) {
+        _status = _UpdateDialogStatus.downloading;
+      } else if (dl.canApply) {
+        _status = _UpdateDialogStatus.readyToRestart;
+      } else if (dl.phase == DownloadPhase.failed) {
+        _errorMessage = dl.errorMessage;
+        _status = _UpdateDialogStatus.error;
+      }
+    });
   }
 
   Future<void> _checkForUpdates() async {
@@ -72,6 +106,25 @@ class _UpdateDialogState extends State<UpdateDialog> {
           setState(() {
             _status = _UpdateDialogStatus.upToDate;
           });
+        case UpdateCheckStatus.manualUpdateAvailable:
+          setState(() {
+            _latestVersion = result.latestVersion;
+            _releaseUrl = result.releaseUrl;
+            _releaseNotes = result.releaseNotes;
+            _status = _UpdateDialogStatus.manualAvailable;
+          });
+        case UpdateCheckStatus.manualUpToDate:
+          setState(() {
+            _latestVersion = result.latestVersion;
+            _releaseUrl = result.releaseUrl;
+            _status = _UpdateDialogStatus.manualUpToDate;
+          });
+        case UpdateCheckStatus.latestKnown:
+          setState(() {
+            _latestVersion = result.latestVersion;
+            _releaseUrl = result.releaseUrl;
+            _status = _UpdateDialogStatus.latestKnown;
+          });
         case UpdateCheckStatus.unsupportedEnvironment:
           setState(() {
             _errorMessage = result.errorMessage;
@@ -79,7 +132,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           });
         case UpdateCheckStatus.failed:
           setState(() {
-            _errorMessage = result.errorMessage ?? 'Unknown error';
+            _errorMessage = result.errorMessage;
             _status = _UpdateDialogStatus.error;
           });
       }
@@ -93,30 +146,15 @@ class _UpdateDialogState extends State<UpdateDialog> {
   }
 
   void _startDownload() {
-    final updateService = getIt<UpdateService>();
+    getIt<UpdateService>().startDownload();
+  }
 
-    setState(() {
-      _status = _UpdateDialogStatus.downloading;
-      _downloadProgress = 0;
-    });
-
-    _downloadSubscription = updateService.downloadWithProgress().listen(
-      (progress) {
-        if (!mounted) return;
-        setState(() {
-          _downloadProgress = progress;
-          if (progress >= 100) {
-            _status = _UpdateDialogStatus.readyToRestart;
-          }
-        });
-      },
-      onError: (error) {
-        if (!mounted) return;
-        setState(() {
-          _errorMessage = error.toString();
-          _status = _UpdateDialogStatus.error;
-        });
-      },
+  void _cancelDownload(AppLocalizations l10n) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    getIt<UpdateService>().cancelDownload();
+    Navigator.of(context).pop();
+    messenger?.showSnackBar(
+      SnackBar(content: Text(l10n.downloadCancelledSnackbar)),
     );
   }
 
@@ -134,7 +172,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
   }
 
   Future<void> _openGitHubReleases() async {
-    final uri = Uri.parse(UpdateService.releasesUrl);
+    final uri = Uri.parse(_releaseUrl ?? UpdateService.releasesUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -282,6 +320,104 @@ class _UpdateDialogState extends State<UpdateDialog> {
           ],
         );
 
+      case _UpdateDialogStatus.manualAvailable:
+        final version = _latestVersion ?? '';
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.new_releases_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.manualUpdateAvailableTitle(version),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.manualUpdateAvailableBody(version),
+              style: theme.textTheme.bodyMedium,
+            ),
+            if (_releaseNotes != null && _releaseNotes!.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 140),
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(_releaseNotes!, style: theme.textTheme.bodySmall),
+                ),
+              ),
+            ],
+          ],
+        );
+
+      case _UpdateDialogStatus.manualUpToDate:
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                size: 48,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.appUpToDate,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.manualUpToDateHint,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case _UpdateDialogStatus.latestKnown:
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 48,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.latestReleaseKnownBody(_latestVersion ?? ''),
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        );
+
       case _UpdateDialogStatus.downloading:
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -313,7 +449,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               Icon(
                 Icons.published_with_changes,
                 size: 48,
-                color: Colors.green.shade600,
+                color: theme.colorScheme.primary,
               ),
               const SizedBox(height: 16),
               Text(
@@ -371,7 +507,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
               const SizedBox(height: 16),
               Text(
-                l10n.updateError(_errorMessage ?? 'Unknown error'),
+                l10n.updateError(_errorMessage ?? l10n.unknownError),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.error,
@@ -449,8 +585,40 @@ class _UpdateDialogState extends State<UpdateDialog> {
           ),
         ];
 
+      case _UpdateDialogStatus.manualAvailable:
+      case _UpdateDialogStatus.latestKnown:
+        return [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.close),
+          ),
+          FilledButton.icon(
+            onPressed: _openGitHubReleases,
+            icon: const Icon(Icons.open_in_new),
+            label: Text(l10n.openReleasePage),
+          ),
+        ];
+
+      case _UpdateDialogStatus.manualUpToDate:
+        return [
+          TextButton.icon(
+            onPressed: _openGitHubReleases,
+            icon: const Icon(Icons.open_in_new),
+            label: Text(l10n.openReleasePage),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.close),
+          ),
+        ];
+
       case _UpdateDialogStatus.downloading:
-        return const [];
+        return [
+          TextButton(
+            onPressed: () => _cancelDownload(l10n),
+            child: Text(l10n.cancel),
+          ),
+        ];
 
       case _UpdateDialogStatus.readyToRestart:
         return [

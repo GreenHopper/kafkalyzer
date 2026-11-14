@@ -5,6 +5,8 @@ import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
+import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
 
 /// Builds a filtered Kafka message stream for [MessageStreamController].
 typedef MessageConsumeStreamFactory =
@@ -30,11 +32,30 @@ class MessageStreamController extends ChangeNotifier {
   MessageStreamController({
     Logger? logger,
     MessageConsumeStreamFactory? consumeStreamFactory,
+    int Function()? bufferLimitProvider,
   }) : _logger = logger ?? getIt<Logger>(),
-       _consumeStreamFactory = consumeStreamFactory ?? _defaultConsumeStream;
+       _consumeStreamFactory = consumeStreamFactory ?? _defaultConsumeStream,
+       _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit {
+    final limit = _resolveBufferLimit();
+    _buffer = MessageRingBuffer(limit);
+    _published = _buffer.snapshot();
+  }
 
   final Logger _logger;
   final MessageConsumeStreamFactory _consumeStreamFactory;
+  final int Function() _bufferLimitProvider;
+
+  static int _defaultBufferLimit() {
+    if (getIt.isRegistered<SettingsService>()) {
+      return getIt<SettingsService>().messageBufferLimit.value;
+    }
+    return SettingsService.defaultMessageBufferLimit;
+  }
+
+  int _resolveBufferLimit() {
+    final limit = _bufferLimitProvider();
+    return limit > 0 ? limit : SettingsService.defaultMessageBufferLimit;
+  }
 
   static Stream<KafkaMessage> _defaultConsumeStream({
     required ClusterProfile profile,
@@ -71,16 +92,21 @@ class MessageStreamController extends ChangeNotifier {
   );
 
   StreamSubscription<KafkaMessage>? _subscription;
-  final List<KafkaMessage> _messages = [];
-  List<KafkaMessage>? _cachedUnmodifiableMessages;
+  late MessageRingBuffer _buffer;
+  late MessageSnapshot _published;
   Timer? _throttleTimer;
   bool _hasPendingUiUpdate = false;
   bool _isStreaming = false;
+  bool _isPaused = false;
   String? _error;
 
-  List<KafkaMessage> get messages =>
-      _cachedUnmodifiableMessages ??= List.unmodifiable(_messages);
+  List<KafkaMessage> get messages => _published;
   bool get isStreaming => _isStreaming;
+  bool get isPaused => _isPaused;
+  int get pendingCount => _buffer.receivedTotal - _published.endSeq;
+  int get receivedCount => _buffer.receivedTotal;
+  int get droppedCount => _buffer.droppedTotal;
+  int get bufferLimit => _buffer.capacity;
   String? get error => _error;
   int _totalConsumed = 0;
   int get totalConsumed => _totalConsumed;
@@ -118,8 +144,9 @@ class MessageStreamController extends ChangeNotifier {
   }) async {
     await stopStreaming();
 
-    _messages.clear();
-    _cachedUnmodifiableMessages = null;
+    _buffer = MessageRingBuffer(_resolveBufferLimit());
+    _published = _buffer.snapshot();
+    _isPaused = false;
     _totalConsumed = 0;
     _totalToScan = 0;
     _startTime = DateTime.now();
@@ -156,6 +183,7 @@ class MessageStreamController extends ChangeNotifier {
           notifyListeners();
         },
         onDone: () {
+          _flushPendingUiUpdate();
           _isStreaming = false;
           notifyListeners();
         },
@@ -189,17 +217,29 @@ class MessageStreamController extends ChangeNotifier {
       return;
     }
 
-    _messages.add(message);
-    _cachedUnmodifiableMessages = null;
-    if (_totalConsumed < _messages.length) {
-      _totalConsumed = _messages.length;
+    _buffer.add(message);
+    if (_totalConsumed < _buffer.receivedTotal) {
+      _totalConsumed = _buffer.receivedTotal;
     }
     _scheduleUiUpdate();
 
-    if (_maxResults != null && _messages.length >= _maxResults!) {
+    if (_maxResults != null && _buffer.receivedTotal >= _maxResults!) {
       _logger.i("Max results $_maxResults reached, stopping stream.");
       stopStreaming();
     }
+  }
+
+  void pause() {
+    if (_isPaused) return;
+    _isPaused = true;
+    notifyListeners();
+  }
+
+  void resume() {
+    if (!_isPaused) return;
+    _isPaused = false;
+    _published = _buffer.snapshot();
+    notifyListeners();
   }
 
   void _scheduleUiUpdate() {
@@ -208,6 +248,9 @@ class MessageStreamController extends ChangeNotifier {
       _throttleTimer = Timer(const Duration(milliseconds: 60), () {
         if (_hasPendingUiUpdate) {
           _hasPendingUiUpdate = false;
+          if (!_isPaused) {
+            _published = _buffer.snapshot();
+          }
           notifyListeners();
         }
       });
@@ -217,6 +260,9 @@ class MessageStreamController extends ChangeNotifier {
   void _flushPendingUiUpdate() {
     _throttleTimer?.cancel();
     _throttleTimer = null;
+    if (_hasPendingUiUpdate && !_isPaused) {
+      _published = _buffer.snapshot();
+    }
     _hasPendingUiUpdate = false;
   }
 
@@ -226,9 +272,9 @@ class MessageStreamController extends ChangeNotifier {
     if (parts.length > 1) {
       final parsedScanned = int.tryParse(parts[1]);
       if (parsedScanned != null) {
-        _totalConsumed = parsedScanned > _messages.length
+        _totalConsumed = parsedScanned > _buffer.receivedTotal
             ? parsedScanned
-            : _messages.length;
+            : _buffer.receivedTotal;
       }
       if (parts.length > 2) {
         _totalToScan =
@@ -252,8 +298,10 @@ class MessageStreamController extends ChangeNotifier {
 
   void clearMessages() {
     _flushPendingUiUpdate();
-    _messages.clear();
-    _cachedUnmodifiableMessages = null;
+    _buffer = MessageRingBuffer(_resolveBufferLimit());
+    _published = _buffer.snapshot();
+    _isPaused = false;
+    _totalConsumed = 0;
     notifyListeners();
   }
 

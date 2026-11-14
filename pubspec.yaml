@@ -58,7 +58,6 @@ dependencies:
   json_explorer: ^0.1.2
   provider: ^6.1.5+1
   archive: ^4.0.7
-  csv: ^6.0.0
   flutter_secure_storage: ^9.2.4
   path_provider: ^2.1.2
   url_launcher: ^6.3.2
@@ -73,6 +72,9 @@ dependencies:
   material_ui: ^1.0.0
   velopack_flutter: ^0.3.2
   icons_launcher: ^3.1.0
+  window_manager: ^0.5.2
+  screen_retriever: ^0.2.2
+  cupertino_ui: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -91,10 +93,12 @@ dev_dependencies:
   mockito: ^5.6.3
   path_provider_platform_interface: ^2.1.2
   plugin_platform_interface: ^2.1.8
+  analyzer: ^13.3.0
 
 # Patched fork of velopack_flutter 0.3.2:
 # - Flutter 3.44+ code-assets hook guard (skillsgo/87f1585)
 # - AutoSource for GitHub Releases API feed discovery
+  listen: any
 dependency_overrides:
   velopack_flutter:
     path: packages/velopack_flutter

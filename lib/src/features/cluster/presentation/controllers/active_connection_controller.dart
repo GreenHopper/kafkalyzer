@@ -1,14 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 
 class OpenTopicRecord {
@@ -47,7 +50,7 @@ class ActiveConnectionController extends ChangeNotifier {
   bool _isConnecting = false;
   bool _showInternalTopics = false;
   bool _showStreamTopics = false;
-  String? _error;
+  ConnectionError? _error;
   String _topicFilter = "";
 
   bool get showInternalTopics => _showInternalTopics;
@@ -111,15 +114,34 @@ class ActiveConnectionController extends ChangeNotifier {
   bool get isConnecting =>
       _isConnecting ||
       (_activeProfile != null && _topicController.isLoading(_activeProfile!));
-  String? get error => _error;
+  ConnectionError? get error => _error;
 
   OpenTopicRecord? _activeTopic;
   final List<OpenTopicRecord> _openTopics = [];
   final Map<String, MessageStreamController> _streamControllers = {};
   final Map<String, TopicAnalysisController> _analysisControllers = {};
+  final Map<String, String?> _lastActiveTopicByCluster = {};
+  bool _restoring = false;
+  List<String> _unrestoredTopics = const [];
 
   OpenTopicRecord? get activeTopic => _activeTopic;
   List<OpenTopicRecord> get openTopics => List.unmodifiable(_openTopics);
+  List<String> get unrestoredTopics => _unrestoredTopics;
+
+  void acknowledgeUnrestoredTopics() {
+    if (_unrestoredTopics.isEmpty) return;
+    _unrestoredTopics = const [];
+    notifyListeners();
+  }
+
+  bool hasRunningOperations(ClusterProfile profile) {
+    for (final record in _openTopics) {
+      if (record.profile.name != profile.name) continue;
+      if (_streamControllers[record.id]?.isStreaming == true) return true;
+      if (_analysisControllers[record.id]?.isAnalyzing == true) return true;
+    }
+    return false;
+  }
 
   OpenTopicRecord? openTopic({
     required TopicMetadata topic,
@@ -143,8 +165,9 @@ class ActiveConnectionController extends ChangeNotifier {
       );
       if (existing != null) {
         _activeTopic = existing;
+        _lastActiveTopicByCluster[p.name] = existing.topic.name;
         notifyListeners();
-        _saveSessionTabs();
+        _saveSessionTabs(p.name);
         return existing;
       }
     }
@@ -152,8 +175,9 @@ class ActiveConnectionController extends ChangeNotifier {
     final newRecord = OpenTopicRecord(topic, p);
     _openTopics.add(newRecord);
     _activeTopic = newRecord;
+    _lastActiveTopicByCluster[p.name] = newRecord.topic.name;
     notifyListeners();
-    _saveSessionTabs();
+    _saveSessionTabs(p.name);
     return newRecord;
   }
 
@@ -164,13 +188,16 @@ class ActiveConnectionController extends ChangeNotifier {
     final record = openTopic(topic: topic, profile: profile, forceNew: false);
     if (record == null) return null;
 
+    final defaultLimit = getIt.isRegistered<SettingsService>()
+        ? getIt<SettingsService>().defaultResultLimit.value
+        : SettingsService.defaultResultLimitSetting.defaultValue;
     final controller = getStreamController(record.id);
     controller.startStreaming(
       record.profile,
       record.topic.name,
       filterType: FilterType.contains,
       searchScope: SearchScope.both,
-      maxResults: 200,
+      maxResults: defaultLimit,
       startFromTail: true,
       runForever: false,
     );
@@ -193,28 +220,31 @@ class ActiveConnectionController extends ChangeNotifier {
     );
     if (record != null) {
       _activeTopic = record;
+      _lastActiveTopicByCluster[record.profile.name] = record.topic.name;
       notifyListeners();
-      _saveSessionTabs();
+      _saveSessionTabs(record.profile.name);
     }
   }
 
   void setActiveTopicRecord(OpenTopicRecord? record) {
     if (record == null) {
       _activeTopic = null;
-    } else {
-      final existing = _openTopics.cast<OpenTopicRecord?>().firstWhere(
-        (t) => t?.id == record.id,
-        orElse: () => null,
-      );
-      if (existing != null) {
-        _activeTopic = existing;
-      } else {
-        _openTopics.add(record);
-        _activeTopic = record;
-      }
+      notifyListeners();
+      return;
     }
+    final existing = _openTopics.cast<OpenTopicRecord?>().firstWhere(
+      (t) => t?.id == record.id,
+      orElse: () => null,
+    );
+    if (existing != null) {
+      _activeTopic = existing;
+    } else {
+      _openTopics.add(record);
+      _activeTopic = record;
+    }
+    _lastActiveTopicByCluster[record.profile.name] = record.topic.name;
     notifyListeners();
-    _saveSessionTabs();
+    _saveSessionTabs(record.profile.name);
   }
 
   String _getTopicKey(String topicName, String clusterName) {
@@ -248,6 +278,10 @@ class ActiveConnectionController extends ChangeNotifier {
   }
 
   void closeTopicTab(String tabId) {
+    final removed = _openTopics.cast<OpenTopicRecord?>().firstWhere(
+      (t) => t?.id == tabId,
+      orElse: () => null,
+    );
     _openTopics.removeWhere((t) => t.id == tabId);
 
     _streamControllers[tabId]?.dispose();
@@ -259,8 +293,21 @@ class ActiveConnectionController extends ChangeNotifier {
     if (_activeTopic?.id == tabId) {
       _activeTopic = _openTopics.isNotEmpty ? _openTopics.last : null;
     }
+    if (removed != null) {
+      final clusterName = removed.profile.name;
+      final remainingForCluster = _openTopics
+          .where((t) => t.profile.name == clusterName)
+          .toList();
+      if (_lastActiveTopicByCluster[clusterName] == removed.topic.name) {
+        _lastActiveTopicByCluster[clusterName] = remainingForCluster.isNotEmpty
+            ? remainingForCluster.last.topic.name
+            : null;
+      }
+      notifyListeners();
+      _saveSessionTabs(clusterName);
+      return;
+    }
     notifyListeners();
-    _saveSessionTabs();
   }
 
   void closeTopic(TopicMetadata topic, String clusterName) {
@@ -282,6 +329,7 @@ class ActiveConnectionController extends ChangeNotifier {
   }
 
   void clearOpenTopics() {
+    final clusterNames = _openTopics.map((t) => t.profile.name).toSet();
     _openTopics.clear();
     for (final controller in _streamControllers.values) {
       controller.dispose();
@@ -292,18 +340,29 @@ class ActiveConnectionController extends ChangeNotifier {
     }
     _analysisControllers.clear();
     _activeTopic = null;
+    _lastActiveTopicByCluster.clear();
     notifyListeners();
-    _saveSessionTabs();
+    for (final name in clusterNames) {
+      _saveSessionTabs(name);
+    }
   }
 
-  void _saveSessionTabs() {
-    final p = _activeProfile;
-    if (p == null) return;
+  void _saveSessionTabs(String clusterName) {
+    if (_restoring) return;
     try {
-      final topicNames = _openTopics.map((t) => t.topic.name).toList();
-      final activeName = _activeTopic?.topic.name;
+      final topicNames = _openTopics
+          .where((t) => t.profile.name == clusterName)
+          .map((t) => t.topic.name)
+          .toList();
+      final candidateActive = _activeTopic?.profile.name == clusterName
+          ? _activeTopic?.topic.name
+          : _lastActiveTopicByCluster[clusterName];
+      final activeName =
+          (candidateActive != null && topicNames.contains(candidateActive))
+          ? candidateActive
+          : (topicNames.isNotEmpty ? topicNames.last : null);
       getIt<SessionRestoreService>().saveSession(
-        p.name,
+        clusterName,
         openTopicNames: topicNames,
         activeTopicName: activeName,
       );
@@ -318,31 +377,60 @@ class ActiveConnectionController extends ChangeNotifier {
       final session = await restoreService.getSession(profile.name);
       if (session == null || session.openTopicNames.isEmpty) return;
 
-      final topics = _topicController.getTopics(profile) ?? [];
+      final topics = _topicController.getTopics(profile);
+      if (topics == null) return;
       final topicMap = {for (final t in topics) t.name: t};
 
-      for (final name in session.openTopicNames) {
-        final topic = topicMap[name];
-        if (topic != null) {
-          openTopic(topic: topic, profile: profile, forceNew: false);
+      final missing = <String>[];
+      _restoring = true;
+      try {
+        for (final name in session.openTopicNames) {
+          final topic = topicMap[name];
+          if (topic != null) {
+            openTopic(topic: topic, profile: profile, forceNew: false);
+          } else {
+            missing.add(name);
+          }
         }
-      }
 
-      if (session.activeTopicName != null) {
-        final activeRecord = _openTopics.cast<OpenTopicRecord?>().firstWhere(
-          (t) => t?.topic.name == session.activeTopicName,
-          orElse: () => null,
-        );
-        if (activeRecord != null) {
-          _activeTopic = activeRecord;
-          notifyListeners();
+        if (session.activeTopicName != null) {
+          final activeRecord = _openTopics.cast<OpenTopicRecord?>().firstWhere(
+            (t) =>
+                t?.profile.name == profile.name &&
+                t?.topic.name == session.activeTopicName,
+            orElse: () => null,
+          );
+          if (activeRecord != null) {
+            _activeTopic = activeRecord;
+            _lastActiveTopicByCluster[profile.name] = activeRecord.topic.name;
+          }
         }
+        _unrestoredTopics = List.unmodifiable(missing);
+        notifyListeners();
+      } finally {
+        _restoring = false;
       }
+      _saveSessionTabs(profile.name);
     } catch (_) {}
   }
 
   Future<void> connect(ClusterProfile profile) async {
     if (_connectingProfile?.name == profile.name) {
+      return;
+    }
+
+    final tools = getIt.isRegistered<ClusterProfileTools>()
+        ? getIt<ClusterProfileTools>()
+        : const ClusterProfileTools();
+    final bootstrapIssues = tools.validateBootstrapServers(
+      profile.bootstrapServers,
+    );
+    if (bootstrapIssues.isNotEmpty) {
+      _error = ConnectionError(
+        kind: ConnectionErrorKind.invalidBootstrapServers,
+        detail: bootstrapIssues.first.entry,
+      );
+      notifyListeners();
       return;
     }
 
@@ -359,9 +447,10 @@ class ActiveConnectionController extends ChangeNotifier {
             .resolveBeforeConnect(effectiveProfile);
         effectiveProfile = resolution.profile;
         if (resolution.blockedByCertificateRejection) {
-          _error = resolution.errorMessage?.isNotEmpty == true
-              ? 'TLS certificate verification failed: ${resolution.errorMessage}'
-              : 'TLS certificate verification failed.';
+          _error = ConnectionError(
+            kind: ConnectionErrorKind.tlsVerificationFailed,
+            detail: resolution.errorMessage ?? '',
+          );
           return;
         }
       }
@@ -399,28 +488,13 @@ class ActiveConnectionController extends ChangeNotifier {
         await _topicController.fetchTopics(effectiveProfile);
         await _restoreSessionTabs(effectiveProfile);
       } else {
-        _error = "Connection failed validation";
+        _error = const ConnectionError(
+          kind: ConnectionErrorKind.validationFailed,
+        );
       }
     } catch (e) {
       _logger.w("Failed to connect: $e");
-      // Simplify error message for UI
-      final errorString = e.toString();
-      if (errorString.contains("BrokerTransportFailure")) {
-        _error =
-            "Connection Failed: Broker Transport Failure. Check your address and network.";
-      } else if (errorString.contains("Connection refused")) {
-        _error = "Connection Failed: Connection Refused.";
-      } else if (errorString.contains("AnyhowException")) {
-        // Extract the main message from AnyhowException
-        final match = RegExp(
-          r"AnyhowException\((.*?)\)",
-        ).firstMatch(errorString);
-        _error =
-            match?.group(1) ??
-            "Connection Error: ${errorString.split('\n').first}";
-      } else {
-        _error = "Connection Failed: ${errorString.split('\n').first}";
-      }
+      _error = classifyConnectionError(e);
     } finally {
       _connectingProfile = null;
       _isConnecting = false;
@@ -429,20 +503,32 @@ class ActiveConnectionController extends ChangeNotifier {
   }
 
   void disconnect() {
+    final active = _activeProfile;
     _connectingProfile = null;
     _activeProfile = null;
-    _activeTopic = null;
-    _openTopics.clear();
-    for (final controller in _streamControllers.values) {
-      controller.dispose();
-    }
-    _streamControllers.clear();
-    for (final controller in _analysisControllers.values) {
-      controller.dispose();
-    }
-    _analysisControllers.clear();
-    // _topics = []; // managed by controller
     _topicFilter = "";
+
+    if (active == null) {
+      notifyListeners();
+      return;
+    }
+
+    final toClose = _openTopics
+        .where((t) => t.profile.name == active.name)
+        .toList();
+    for (final record in toClose) {
+      _openTopics.removeWhere((t) => t.id == record.id);
+      _streamControllers[record.id]?.dispose();
+      _streamControllers.remove(record.id);
+      _analysisControllers[record.id]?.dispose();
+      _analysisControllers.remove(record.id);
+    }
+
+    if (_activeTopic?.profile.name == active.name) {
+      _activeTopic = _openTopics.isNotEmpty ? _openTopics.last : null;
+    }
+
+    _topicController.clearCache(active);
     notifyListeners();
   }
 }

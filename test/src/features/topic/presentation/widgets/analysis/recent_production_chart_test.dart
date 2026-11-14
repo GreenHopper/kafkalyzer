@@ -138,4 +138,40 @@ void main() {
       expect(find.textContaining('Scan covers the last'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'RecentProductionChart renders star marker on unusual bar and exposes it in semantics tree',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      final refDt = DateTime.utc(2026, 10, 30, 12);
+      final refMs = refDt.millisecondsSinceEpoch;
+      final refHour = (refMs / 3600000).floor();
+
+      final timeline = <HourBucket>[];
+      for (var d = 1; d <= 7; d++) {
+        timeline.add(HourBucket(epochHour: refHour - (24 * d), count: 300));
+      }
+      timeline.add(HourBucket(epochHour: refHour, count: 900));
+
+      final report = _testReport(timeline: timeline, scanRefMs: refMs);
+      final domain = ProductionTimeline(
+        report: report,
+        toLocal: (ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: RecentProductionChart(timeline: domain)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('★'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('★')), findsOneWidget);
+      semantics.dispose();
+    },
+  );
 }

@@ -1,3 +1,4 @@
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
@@ -8,6 +9,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_hi
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_schemas_view.dart';
+import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -152,17 +154,23 @@ class _ScriptRunDetailsViewState extends State<ScriptRunDetailsView> {
   }
 
   Widget _buildErrorView() {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text("Failed to load details"),
-          ElevatedButton(
-            onPressed: _loadRunDetails,
-            child: const Text("Retry"),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: ErrorBanner(
+              title: l10n?.failedToLoadDetails ?? "Failed to load details",
+              onRetry: _loadRunDetails,
+            ),
           ),
           const SizedBox(height: 8),
-          TextButton(onPressed: widget.onBack, child: const Text("Back")),
+          TextButton(
+            onPressed: widget.onBack,
+            child: Text(l10n?.backTooltip ?? "Back"),
+          ),
         ],
       ),
     );

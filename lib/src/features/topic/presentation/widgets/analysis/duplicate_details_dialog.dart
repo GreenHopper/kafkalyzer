@@ -107,6 +107,10 @@ class DuplicateDetailsDialog extends StatelessWidget {
                   _InfoChip(
                     icon: Icons.tag,
                     label:
+                        l10n?.partitionOffsetSummary(
+                          duplicate.samplePartition,
+                          duplicate.sampleOffset,
+                        ) ??
                         'Partition ${duplicate.samplePartition} • Offset ${duplicate.sampleOffset}',
                   ),
                   if (duplicate.sampleTimestampMs > 0)

@@ -123,11 +123,9 @@ class TopicSelectionTree extends StatelessWidget {
       childrenPadding: EdgeInsets.zero,
       leading: IconButton(
         icon: Icon(icon, size: 22, color: iconColor),
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        style: IconButton.styleFrom(
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
+        tooltip: isAllSelected
+            ? (l10n?.deselectStepTooltip ?? 'Deselect all topics in step')
+            : (l10n?.selectStepTooltip ?? 'Select all topics in step'),
         onPressed: () => onStepToggle(step.id, !isAllSelected),
       ),
       title: Text(
@@ -172,9 +170,7 @@ class TopicSelectionTree extends StatelessWidget {
           ),
           subtitle: node.examined > 0
               ? Text(
-                  l10n != null
-                      ? l10n.scanned(node.examined)
-                      : "${node.examined} scanned",
+                  l10n?.scanned(node.examined) ?? "${node.examined} scanned",
                   style: TextStyle(
                     fontSize: 11,
                     color: isSelected

@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:group_button/group_button.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/search/domain/filter_terms.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/end_condition_configuration.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condition_configuration.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_utils.dart';
 import 'package:kafkalyzer/src/ui/timestamp_picker_field.dart';
 
 /// Simplified topic search and consumption control bar.
@@ -32,6 +36,7 @@ class TopicSearchBar extends StatefulWidget {
   final TextEditingController partitionController;
   final bool fastTraceEnabled;
   final ValueChanged<bool> onFastTraceEnabledChanged;
+  final int? partitionCount;
 
   final MultiSearchStartStrategy startStrategy;
   final ValueChanged<MultiSearchStartStrategy> onStartStrategyChanged;
@@ -63,6 +68,7 @@ class TopicSearchBar extends StatefulWidget {
     required this.partitionController,
     required this.fastTraceEnabled,
     required this.onFastTraceEnabledChanged,
+    this.partitionCount,
     required this.startStrategy,
     required this.onStartStrategyChanged,
     required this.startOffsetController,
@@ -88,25 +94,106 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
   // engine that will run the scan, so a term cannot silently degrade matching.
   String? _invalidPattern;
   Timer? _validationDebounce;
+  Timer? _previewDebounce;
+  int _previewRequestId = 0;
+  int? _predictedPartition;
+  bool _previewFailed = false;
 
   @override
   void initState() {
     super.initState();
+    widget.quickFilterController.addListener(_onQuickFilterChanged);
     _validatePatterns();
+    _updatePartitionPreview();
   }
 
   @override
   void didUpdateWidget(covariant TopicSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.quickFilterController != oldWidget.quickFilterController) {
+      oldWidget.quickFilterController.removeListener(_onQuickFilterChanged);
+      widget.quickFilterController.addListener(_onQuickFilterChanged);
+    }
     if (widget.filterType != oldWidget.filterType) {
       _validatePatterns();
+    }
+    if (widget.fastTraceEnabled != oldWidget.fastTraceEnabled ||
+        widget.partitionCount != oldWidget.partitionCount ||
+        widget.quickFilterController != oldWidget.quickFilterController) {
+      _updatePartitionPreview();
     }
   }
 
   @override
   void dispose() {
+    widget.quickFilterController.removeListener(_onQuickFilterChanged);
     _validationDebounce?.cancel();
+    _previewDebounce?.cancel();
     super.dispose();
+  }
+
+  void _onQuickFilterChanged() {
+    if (widget.fastTraceEnabled) {
+      _schedulePartitionPreview();
+    }
+  }
+
+  void _schedulePartitionPreview() {
+    _previewDebounce?.cancel();
+    _previewDebounce = Timer(
+      const Duration(milliseconds: 300),
+      _updatePartitionPreview,
+    );
+  }
+
+  Future<void> _updatePartitionPreview() async {
+    final requestId = ++_previewRequestId;
+    final count = widget.partitionCount;
+    if (!widget.fastTraceEnabled || count == null || count <= 0) {
+      if ((_predictedPartition != null || _previewFailed) && mounted) {
+        setState(() {
+          _predictedPartition = null;
+          _previewFailed = false;
+        });
+      }
+      return;
+    }
+
+    final terms = splitFilterTerms(widget.quickFilterController.text);
+    if (terms.isEmpty) {
+      if ((_predictedPartition != null || _previewFailed) && mounted) {
+        setState(() {
+          _predictedPartition = null;
+          _previewFailed = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final partition = await predictDefaultPartition(
+        key: terms.first,
+        partitionCount: count,
+      );
+      if (!mounted || requestId != _previewRequestId) return;
+      setState(() {
+        _predictedPartition = partition;
+        _previewFailed = partition == null;
+      });
+    } catch (e, stack) {
+      if (GetIt.instance.isRegistered<Logger>()) {
+        GetIt.instance<Logger>().w(
+          'Fast Trace partition preview failed (partitionCount=$count)',
+          error: e,
+          stackTrace: stack,
+        );
+      }
+      if (!mounted || requestId != _previewRequestId) return;
+      setState(() {
+        _predictedPartition = null;
+        _previewFailed = true;
+      });
+    }
   }
 
   void _schedulePatternValidation() {
@@ -422,6 +509,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
         suffixIcon: widget.quickFilterController.text.isNotEmpty
             ? IconButton(
                 icon: const Icon(Icons.clear, size: 16),
+                tooltip: AppLocalizations.of(context)?.clear ?? 'Clear',
                 splashRadius: 16,
                 onPressed: () {
                   widget.quickFilterController.clear();
@@ -580,10 +668,13 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
     }
 
     if (widget.fastTraceEnabled) {
+      final chipLabel = _predictedPartition != null
+          ? l10n.chipFastTracePartition(_predictedPartition!)
+          : l10n.chipFastTrace;
       chips.add(
         InputChip(
           visualDensity: VisualDensity.compact,
-          label: Text(l10n.chipFastTrace, style: const TextStyle(fontSize: 11)),
+          label: Text(chipLabel, style: const TextStyle(fontSize: 11)),
           deleteIcon: const Icon(Icons.clear, size: 14),
           onDeleted: () {
             widget.onFastTraceEnabledChanged(false);
@@ -615,7 +706,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
           Expanded(
             child: TimestampPickerField(
               controller: widget.startTimestampController,
-              label: "Start Time",
+              label: AppLocalizations.of(context)?.startTime ?? 'Start Time',
               showInlineChips: true,
             ),
           ),
@@ -623,7 +714,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
           Expanded(
             child: TimestampPickerField(
               controller: widget.endTimestampController,
-              label: "End Time",
+              label: AppLocalizations.of(context)?.endTime ?? 'End Time',
               showInlineChips: true,
             ),
           ),
@@ -698,8 +789,10 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
                 child: TextField(
                   controller: widget.partitionController,
                   enabled: !widget.fastTraceEnabled,
-                  decoration: const InputDecoration(
-                    labelText: "Partition (Opt.)",
+                  decoration: InputDecoration(
+                    labelText:
+                        AppLocalizations.of(context)?.partitionOptional ??
+                        'Partition (Opt.)',
                     isDense: true,
                   ),
                   onChanged: (_) => setState(() {}),
@@ -723,7 +816,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                     title: Text(
-                      "Fast Trace (Hash Key)",
+                      l10n.fastTrace,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -741,6 +834,90 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
                 ),
               ),
             ],
+          ),
+          if (widget.fastTraceEnabled) ...[
+            const SizedBox(height: 8),
+            _buildFastTracePreview(context, l10n, colorScheme),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFastTracePreview(
+    BuildContext context,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    final terms = splitFilterTerms(widget.quickFilterController.text);
+    final count = widget.partitionCount;
+
+    final IconData statusIcon;
+    final String statusText;
+    if (terms.isEmpty) {
+      statusIcon = Icons.info_outline;
+      statusText = l10n.fastTraceEnterKeyHint;
+    } else if (count == null || count <= 0 || _previewFailed) {
+      statusIcon = Icons.help_outline;
+      statusText = l10n.fastTracePartitionCountUnknown;
+    } else if (_predictedPartition != null) {
+      statusIcon = Icons.alt_route;
+      statusText = l10n.fastTracePartitionPreview(_predictedPartition!, count);
+    } else {
+      statusIcon = Icons.hourglass_empty;
+      statusText = l10n.fastTraceAssumptionSummary;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(statusIcon, size: 16, color: colorScheme.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  statusText,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Tooltip(
+                message: l10n.fastTraceAssumptionCaveat,
+                child: Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: colorScheme.onSurfaceVariant,
+                  semanticLabel: l10n.fastTraceAssumptionInfoLabel,
+                ),
+              ),
+            ],
+          ),
+          if (terms.length > 1) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.fastTraceFirstTermOnlyNote,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            l10n.fastTraceAssumptionSummary,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -768,10 +945,11 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
         return TextField(
           controller: textController,
           focusNode: focusNode,
-          decoration: const InputDecoration(
-            labelText: 'Field (Opt.)',
+          decoration: InputDecoration(
+            labelText:
+                AppLocalizations.of(context)?.fieldOptional ?? 'Field (Opt.)',
             isDense: true,
-            prefixIcon: Icon(Icons.data_object, size: 18),
+            prefixIcon: const Icon(Icons.data_object, size: 18),
           ),
           onChanged: (val) {
             widget.fieldController.text = val;
@@ -787,7 +965,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          "Type:",
+          '${AppLocalizations.of(context)?.type ?? 'Type'}:',
           style: Theme.of(
             context,
           ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
@@ -833,7 +1011,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          "Scope:",
+          '${AppLocalizations.of(context)?.scope ?? 'Scope'}:',
           style: Theme.of(
             context,
           ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),

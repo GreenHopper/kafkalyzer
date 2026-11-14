@@ -25,7 +25,7 @@ static VELOPACK_CONFIG: OnceLock<VelopackConfig> = OnceLock::new();
 #[frb(init)]
 pub fn init_app() {
     flutter_rust_bridge::setup_default_user_utils();
-    VelopackApp::build().run();
+    VelopackApp::build().set_auto_apply_on_startup(false).run();
 }
 
 pub fn init_velopack(url: String, channel: Option<String>, allow_downgrade: bool) -> Result<()> {
@@ -107,13 +107,15 @@ pub fn check_and_download_updates_with_progress(
         // Create a channel for progress messages
         let (sx, rx) = mpsc::channel();
 
-        um.download_updates(&updates, Some(sx))?;
-
-        std::thread::spawn(move || {
+        let forwarder = std::thread::spawn(move || {
             while let Ok(progress) = rx.recv() {
                 let _ = progress_sink.add(progress);
             }
         });
+
+        let res = um.download_updates(&updates, Some(sx));
+        let _ = forwarder.join();
+        res?;
 
         Ok(Some(*updates))
     } else {

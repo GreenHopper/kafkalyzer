@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/entity_formatter_registry.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_composite_badge.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 void main() {
   group('SmartCompositeBadge', () {
@@ -15,6 +16,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Center(
               child: SmartCompositeBadge(
@@ -44,6 +47,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Center(
                 child: SmartCompositeBadge(
@@ -97,6 +102,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SizedBox(
               width: 180,
@@ -129,6 +136,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Center(
               child: SmartCompositeBadge(
@@ -145,6 +154,41 @@ void main() {
 
       expect(find.byIcon(Icons.lock), findsOneWidget);
       expect(find.text('2026-09-01'), findsOneWidget);
+    });
+
+    testWidgets('renders German title, tooltips, and copied snackbar', (
+      tester,
+    ) async {
+      final badgeData = FormattedBadgeData(
+        icon: Icons.lock,
+        label: 'Locked',
+        color: Colors.teal,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Center(
+              child: SmartCompositeBadge(
+                keyName: '',
+                data: const {'a': 1},
+                badgeInfo: badgeData,
+                initiallyPinned: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Entitätsdetails'), findsOneWidget);
+      expect(find.byTooltip('Gesamtes Objekt kopieren'), findsOneWidget);
+      expect(find.byTooltip('Schließen'), findsOneWidget);
     });
   });
 }

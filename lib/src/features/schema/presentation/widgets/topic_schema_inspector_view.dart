@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_diff_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/utils/schema_simplifier.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
+import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 
 /// A reusable, non-blocking Avro schema inspector for displaying Key and Value schemas
 /// of a Kafka topic with real-time in-schema search, match stepper navigation, and
@@ -441,6 +442,7 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
                 if (_searchQuery.isNotEmpty)
                   IconButton(
                     icon: const Icon(Icons.clear, size: 16),
+                    tooltip: AppLocalizations.of(context)?.clear ?? 'Clear',
                     visualDensity: VisualDensity.compact,
                     onPressed: () {
                       _searchController.clear();
@@ -458,16 +460,24 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
                   IconButton(
                     icon: const Icon(Icons.keyboard_arrow_up, size: 18),
                     onPressed: _jumpToPreviousMatch,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    visualDensity: VisualDensity.compact,
                     tooltip: l10n?.previousMatchTooltip ?? "Previous match",
                   ),
                   const SizedBox(width: 2),
                   IconButton(
                     icon: const Icon(Icons.keyboard_arrow_down, size: 18),
                     onPressed: _jumpToNextMatch,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    visualDensity: VisualDensity.compact,
                     tooltip: l10n?.nextMatchTooltip ?? "Next match",
                   ),
                   const SizedBox(width: 8),
@@ -687,25 +697,15 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: colorScheme.error),
-            const SizedBox(height: 16),
-            Text(
-              l10n != null
-                  ? l10n.errorLoadingSchema(_error!)
-                  : "Error loading schema: $_error",
-              style: TextStyle(color: colorScheme.error),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _loadSchemas,
-              icon: const Icon(Icons.refresh, size: 16),
-              label: Text(l10n?.schemaRetry ?? "Retry"),
-            ),
-          ],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: ErrorBanner(
+            title:
+                l10n?.errorLoadingSchema(_error!) ??
+                "Error loading schema: $_error",
+            onRetry: _loadSchemas,
+            retryLabel: l10n?.schemaRetry ?? "Retry",
+          ),
         ),
       ),
     );

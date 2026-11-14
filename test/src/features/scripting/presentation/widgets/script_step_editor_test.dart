@@ -508,4 +508,42 @@ void main() {
       expect(find.text('VALUE'), findsOneWidget);
     },
   );
+
+  testWidgets('ScriptStepEditor renders German localization', (
+    WidgetTester tester,
+  ) async {
+    final step = ScriptStep(
+      id: '1',
+      name: 'Test Step',
+      clusterName: 'Cluster A',
+      topicNames: [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: const [Locale('en'), Locale('de')],
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ScriptStepEditor(step: step, variables: [], onSave: (_) {}),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Schrittname'), findsOneWidget);
+    expect(find.text('Wertextraktionen'), findsOneWidget);
+    expect(find.text('Keine Extraktionen definiert'), findsOneWidget);
+    expect(find.text('Extraktion hinzufügen'), findsOneWidget);
+  });
 }

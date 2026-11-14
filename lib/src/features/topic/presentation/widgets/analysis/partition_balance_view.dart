@@ -53,23 +53,29 @@ class PartitionBalanceView extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.pie_chart_outline_rounded,
-                      size: 20,
-                      color: colorScheme.secondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n?.partitionUtilization ??
-                          'Partition Utilization & Balance',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.pie_chart_outline_rounded,
+                        size: 20,
+                        color: colorScheme.secondary,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          l10n?.partitionUtilization ??
+                              'Partition Utilization & Balance',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -77,11 +83,13 @@ class PartitionBalanceView extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: hasSkew
-                        ? Colors.amber.withValues(alpha: 0.2)
-                        : Colors.green.withValues(alpha: 0.2),
+                        ? colorScheme.tertiaryContainer
+                        : colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: hasSkew ? Colors.amber : Colors.green,
+                      color: hasSkew
+                          ? colorScheme.tertiary
+                          : colorScheme.primary,
                       width: 1,
                     ),
                   ),
@@ -94,8 +102,8 @@ class PartitionBalanceView extends StatelessWidget {
                             : Icons.check_circle_outline_rounded,
                         size: 14,
                         color: hasSkew
-                            ? Colors.amber.shade900
-                            : Colors.green.shade800,
+                            ? colorScheme.onTertiaryContainer
+                            : colorScheme.onPrimaryContainer,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -104,8 +112,8 @@ class PartitionBalanceView extends StatelessWidget {
                             : (l10n?.balancedPartitions ?? 'Balanced'),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: hasSkew
-                              ? Colors.amber.shade900
-                              : Colors.green.shade800,
+                              ? colorScheme.onTertiaryContainer
+                              : colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -147,11 +155,41 @@ class PartitionBalanceView extends StatelessWidget {
                       children: [
                         SizedBox(
                           width: 100,
-                          child: Text(
-                            'Partition ${p.partition}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n?.partitionLabel(p.partition) ??
+                                    'Partition ${p.partition}',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (isSkewed) ...[
+                                const SizedBox(height: 2),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      size: 14,
+                                      color: colorScheme.tertiary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        l10n?.skewedLabel ?? 'Skewed',
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: colorScheme.tertiary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -164,18 +202,31 @@ class PartitionBalanceView extends StatelessWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    '${numberFormat.format(p.messageCount)} msgs '
-                                    '(${p.percentage.toStringAsFixed(1)}%) • '
-                                    '${_formatBytes(p.byteSize)}',
+                                    l10n?.partitionStatsLine(
+                                          numberFormat.format(p.messageCount),
+                                          p.percentage.toStringAsFixed(1),
+                                          _formatBytes(p.byteSize),
+                                        ) ??
+                                        '${numberFormat.format(p.messageCount)} msgs '
+                                            '(${p.percentage.toStringAsFixed(1)}%) • '
+                                            '${_formatBytes(p.byteSize)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   Text(
                                     p.messageCount > 0
-                                        ? 'Offsets: ${numberFormat.format(p.earliestOffset)} '
-                                              '.. ${numberFormat.format(p.latestOffset)}'
-                                        : 'Offsets: -',
+                                        ? (l10n?.offsetsRange(
+                                                numberFormat.format(
+                                                  p.earliestOffset,
+                                                ),
+                                                numberFormat.format(
+                                                  p.latestOffset,
+                                                ),
+                                              ) ??
+                                              'Offsets: ${numberFormat.format(p.earliestOffset)} '
+                                                  '.. ${numberFormat.format(p.latestOffset)}')
+                                        : (l10n?.offsetsEmpty ?? 'Offsets: -'),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       fontFamily: 'monospace',
                                       color: colorScheme.onSurfaceVariant,
@@ -197,7 +248,7 @@ class PartitionBalanceView extends StatelessWidget {
                                   backgroundColor:
                                       colorScheme.surfaceContainerHighest,
                                   color: isSkewed
-                                      ? Colors.orange
+                                      ? colorScheme.tertiary
                                       : colorScheme.primary,
                                 ),
                               ),

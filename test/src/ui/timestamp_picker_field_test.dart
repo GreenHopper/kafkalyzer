@@ -1,6 +1,7 @@
 import 'package:kafkalyzer/src/ui/timestamp_picker_field.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 void main() {
   group('TimestampPickerField', () {
@@ -9,6 +10,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -36,6 +39,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -66,6 +71,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -88,6 +95,43 @@ void main() {
       expect(find.text('Quick Time Selection'), findsOneWidget);
       expect(find.text('Now'), findsOneWidget);
       expect(find.text('5 min ago'), findsOneWidget);
+    });
+
+    testWidgets('renders German tooltips and quick time dialog texts', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: TimestampPickerField(
+              controller: controller,
+              label: 'Zeitstempel',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Schnellauswahl Zeit'), findsOneWidget);
+      expect(find.byTooltip('Datum & Uhrzeit auswählen'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.history));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Schnellauswahl Zeit'), findsOneWidget);
+      expect(find.text('Jetzt'), findsOneWidget);
+      expect(find.text('Vorgaben (relativ zu Jetzt)'), findsOneWidget);
+      expect(find.text('Benutzerdefiniert'), findsOneWidget);
+      expect(find.text('Abbrechen'), findsOneWidget);
+      expect(find.text('Anwenden'), findsOneWidget);
     });
   });
 }

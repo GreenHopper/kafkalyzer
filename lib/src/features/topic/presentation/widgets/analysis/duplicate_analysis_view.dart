@@ -151,9 +151,9 @@ class DuplicateAnalysisView extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.check_circle_outline,
-                        color: Colors.green,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -343,7 +343,7 @@ class DuplicateAnalysisView extends StatelessWidget {
                                   ),
                                   child: Text(
                                     item.payloadPreview.isEmpty
-                                        ? '<empty>'
+                                        ? (l10n?.emptyAngleBracket ?? '<empty>')
                                         : item.payloadPreview,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       fontFamily: 'monospace',
@@ -386,7 +386,6 @@ class DuplicateAnalysisView extends StatelessWidget {
                                             ?.copyWith(
                                               color:
                                                   colorScheme.onSurfaceVariant,
-                                              fontSize: 10,
                                             ),
                                       ),
                                   ],

@@ -239,7 +239,8 @@ class _UnreadableNoticeRow extends StatelessWidget {
                 Icons.error_outline,
                 size: 18,
                 color: fgColor,
-                semanticLabel: 'Unreadable stored data',
+                semanticLabel:
+                    l10n?.unreadableStoredData ?? 'Unreadable stored data',
               ),
               const SizedBox(width: 12),
               Expanded(

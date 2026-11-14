@@ -78,6 +78,15 @@ class MockTopicController extends TopicController {
 class MockMultiSearchController extends MultiSearchController {
   final List<SearchTarget> addedTargets = [];
   final Map<SearchTarget, List<KafkaMessage>> _messages = {};
+  final Map<SearchTarget, int> _receivedCounts = {};
+  final Map<SearchTarget, int> _droppedCounts = {};
+
+  @override
+  int receivedCountFor(SearchTarget target) =>
+      _receivedCounts[target] ?? _messages[target]?.length ?? 0;
+
+  @override
+  int droppedCountFor(SearchTarget target) => _droppedCounts[target] ?? 0;
 
   // Callback to allow tests to control when a target finishes
   Future<void> Function(SearchTarget)? onTargetAdded;
@@ -689,6 +698,122 @@ void main() {
           scriptRunner.stepErrorMessages['s1'],
           contains('Broker auth failed'),
         );
+      },
+    );
+
+    test(
+      'loadRunResults restores metadata from new files, loads legacy files, and skips malformed files',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'kafkalyzer_load_run_',
+        );
+        try {
+          File(
+            p.join(tempDir.path, 'search_results_new.json'),
+          ).writeAsStringSync(
+            jsonEncode({
+              'messages': [
+                {
+                  'topic': 'orders',
+                  'partition': 0,
+                  'offset': 10,
+                  'key': 'k1',
+                  'payload': '{"id":1}',
+                  'timestamp': 1700000000000,
+                  'timestampIso': '2023-11-14T22:13:20.000Z',
+                  'headers': [
+                    {'key': 'traceId', 'value': 'abc'},
+                  ],
+                  'keySchema': null,
+                  'valueSchema': {
+                    'schemaId': 128,
+                    'subject': 'orders-value',
+                    'version': 4,
+                  },
+                },
+              ],
+            }),
+          );
+          File(
+            p.join(tempDir.path, 'search_results_old.json'),
+          ).writeAsStringSync(
+            jsonEncode({
+              'messages': [
+                {
+                  'topic': 'orders',
+                  'partition': 0,
+                  'offset': 11,
+                  'key': 'k2',
+                  'payload': '{"id":2}',
+                  'timestamp': 1700000000001,
+                },
+              ],
+            }),
+          );
+          File(
+            p.join(tempDir.path, 'search_results_bad.json'),
+          ).writeAsStringSync('{not valid json');
+
+          final run = ScriptRun(
+            id: 'run-1',
+            scriptName: 'Test',
+            timestamp: 1700000000000,
+            parameters: const {},
+            path: tempDir.path,
+            status: ScriptRunStatus.completed,
+            totalMessages: 2,
+          );
+
+          final loaded = await scriptRunner.loadRunResults(run);
+          expect(loaded, hasLength(2));
+          final newMsg = loaded.firstWhere((m) => m.offset == 10);
+          expect(newMsg.headers, [
+            const KafkaHeader(key: 'traceId', value: 'abc'),
+          ]);
+          expect(
+            newMsg.valueSchema,
+            const MessageSchema(
+              schemaId: 128,
+              subject: 'orders-value',
+              version: 4,
+            ),
+          );
+
+          final oldMsg = loaded.firstWhere((m) => m.offset == 11);
+          expect(oldMsg.headers, isNull);
+          expect(oldMsg.valueSchema, isNull);
+        } finally {
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
+
+    test(
+      'getMatchCount and getDroppedCount report received counts above 2,000',
+      () async {
+        mockMultiSearchController.onTargetAdded = (target) async {
+          mockMultiSearchController._receivedCounts[target] = 3500;
+          mockMultiSearchController._droppedCounts[target] = 1500;
+          mockMultiSearchController.status[target] = SearchStatus.stopped;
+          mockMultiSearchController._notifyListeners();
+        };
+
+        const script = Script(
+          id: 'high-count-script',
+          name: 'High Count Script',
+          steps: [
+            ScriptStep(
+              id: 's1',
+              name: 'Step 1',
+              clusterName: 'TestCluster',
+              topicNames: ['test-topic'],
+            ),
+          ],
+        );
+
+        await scriptRunner.runScript(script, {});
+        expect(scriptRunner.getMatchCount('s1', 'test-topic'), 3500);
+        expect(scriptRunner.getDroppedCount('s1', 'test-topic'), 1500);
       },
     );
   });

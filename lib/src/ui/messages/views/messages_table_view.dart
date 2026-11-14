@@ -1,8 +1,12 @@
+import 'dart:collection';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/navigation/models/message_reference.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/ui/messages/incremental_sorted_merge.dart';
 import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
@@ -24,6 +28,8 @@ class _TableRowData {
   final String contentPreview;
   final String keyString;
   final Map<String, String> projectedValues;
+  int filterRevision = -1;
+  bool filterPassed = true;
 
   _TableRowData({
     required this.message,
@@ -68,6 +74,14 @@ class MessagesTableView extends StatefulWidget {
   final void Function(String columnId)? onToggleColumnVisibility;
   final ValueChanged<List<KafkaMessage>>? onVisualOrderChanged;
   final ClusterProfile? clusterProfile;
+  final bool showFollowControl;
+  final Object? followResetToken;
+  final String inputSortField;
+  final bool inputSortAscending;
+  @visibleForTesting
+  final void Function(KafkaMessage message)? onRowBuilt;
+  @visibleForTesting
+  final void Function(KafkaMessage message)? onColumnFilterEvaluated;
 
   const MessagesTableView({
     super.key,
@@ -85,6 +99,12 @@ class MessagesTableView extends StatefulWidget {
     this.onToggleColumnVisibility,
     this.onVisualOrderChanged,
     this.clusterProfile,
+    this.showFollowControl = false,
+    this.followResetToken,
+    this.inputSortField = 'timestamp',
+    this.inputSortAscending = false,
+    this.onRowBuilt,
+    this.onColumnFilterEvaluated,
   });
 
   @override
@@ -100,9 +120,14 @@ class _MessagesTableViewState extends State<MessagesTableView> {
   // Cache the generated rows to avoid quadratic rebuilding
   List<_TableRowData> _cachedData = [];
   bool _needsRebuildRows = true;
+  Expando<_TableRowData> _rowCache = Expando<_TableRowData>('tableRowData');
+  int _filterRevision = 0;
+  bool _forceFullSort = false;
+  Locale? _lastLocale;
 
   // Projected values come from one batched resolver call per message batch.
-  final Map<KafkaMessage, Map<String, String>> _projectedValues = {};
+  final Map<KafkaMessage, Map<String, String>> _projectedValues =
+      Map<KafkaMessage, Map<String, String>>.identity();
   bool _projectionDirty = false;
   bool _projectionInFlight = false;
 
@@ -116,12 +141,65 @@ class _MessagesTableViewState extends State<MessagesTableView> {
 
   final ScrollController _verticalScrollController = ScrollController();
 
+  late bool _followNewest;
+  bool _programmaticScroll = false;
+  KafkaMessage? _pendingAnchorMessage;
+  int _pendingAnchorOldIndex = -1;
+
+  bool get _isTimestampOrder =>
+      (_sortColumnIndex == null && widget.inputSortField == 'timestamp') ||
+      _sortColumnIndex == 0;
+
+  bool get _effectiveSortAscending =>
+      _sortColumnIndex == 0 ? _sortAscending : widget.inputSortAscending;
+
+  void _runProgrammaticScroll(VoidCallback action) {
+    _programmaticScroll = true;
+    try {
+      action();
+    } finally {
+      _programmaticScroll = false;
+    }
+  }
+
+  void _scheduleJumpToNewest() {
+    if (!_followNewest || !_isTimestampOrder) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_verticalScrollController.hasClients) return;
+      if (!_followNewest || !_isTimestampOrder) return;
+      final target = _effectiveSortAscending
+          ? _verticalScrollController.position.maxScrollExtent
+          : 0.0;
+      if ((_verticalScrollController.offset - target).abs() > 0.5) {
+        _runProgrammaticScroll(() {
+          _verticalScrollController.jumpTo(target);
+        });
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _followNewest = widget.showFollowControl;
     _projectionDirty = _activeProjected.isNotEmpty;
     _syncLiveWidths();
     _scrollToSelectedMessage(animate: false);
+    if (_followNewest && _isTimestampOrder && _effectiveSortAscending) {
+      _scheduleJumpToNewest();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.maybeLocaleOf(context);
+    if (locale != _lastLocale) {
+      _lastLocale = locale;
+      _rowCache = Expando<_TableRowData>('tableRowData');
+      _forceFullSort = true;
+      _needsRebuildRows = true;
+    }
   }
 
   @override
@@ -137,22 +215,93 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     }
   }
 
+  bool _projectedColumnsEqual(
+    List<ProjectedColumn> a,
+    List<ProjectedColumn> b,
+  ) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].path != b[i].path || a[i].label != b[i].label) return false;
+    }
+    return true;
+  }
+
+  void _pruneProjectedValues(List<KafkaMessage> messages) {
+    if (_projectedValues.isEmpty) return;
+    final currentSet = HashSet<KafkaMessage>.identity()..addAll(messages);
+    _projectedValues.removeWhere((msg, _) => !currentSet.contains(msg));
+  }
+
+  bool _hasUnresolvedProjected(List<KafkaMessage> messages) {
+    for (final msg in messages) {
+      if (!_projectedValues.containsKey(msg)) return true;
+    }
+    return false;
+  }
+
   @override
   void didUpdateWidget(covariant MessagesTableView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final oldProjected = oldWidget.projectedColumns.isNotEmpty
+        ? oldWidget.projectedColumns
+        : oldWidget.columnConfig.projectedColumns;
+    final projectedChanged = !_projectedColumnsEqual(
+      oldProjected,
+      _activeProjected,
+    );
+    final rowFormatChanged =
+        widget.showTopic != oldWidget.showTopic ||
+        widget.showStep != oldWidget.showStep ||
+        projectedChanged;
+
+    if (projectedChanged) {
+      _projectedValues.clear();
+    } else if (widget.messages != oldWidget.messages) {
+      _pruneProjectedValues(widget.messages);
+    }
+
+    if (rowFormatChanged) {
+      _rowCache = Expando<_TableRowData>('tableRowData');
+      _forceFullSort = true;
+    }
+
+    if (widget.followResetToken != oldWidget.followResetToken) {
+      _followNewest = true;
+      _scheduleJumpToNewest();
+    }
+
+    if (widget.messages != oldWidget.messages &&
+        widget.showFollowControl &&
+        !(_followNewest && _isTimestampOrder) &&
+        _verticalScrollController.hasClients &&
+        _cachedData.isNotEmpty &&
+        _verticalScrollController.offset > 0) {
+      final firstVisible = ((_verticalScrollController.offset - 40.0) / 44.0)
+          .floor()
+          .clamp(0, _cachedData.length - 1);
+      _pendingAnchorMessage = _cachedData[firstVisible].message;
+      _pendingAnchorOldIndex = firstVisible;
+    }
+
     if (widget.messages != oldWidget.messages ||
         widget.searchPhrase != oldWidget.searchPhrase ||
         widget.showTopic != oldWidget.showTopic ||
         widget.showStep != oldWidget.showStep ||
         widget.showNonMatches != oldWidget.showNonMatches ||
-        widget.projectedColumns != oldWidget.projectedColumns) {
+        projectedChanged) {
       _needsRebuildRows = true;
-      _projectionDirty = _activeProjected.isNotEmpty;
-      // shortcut: the cache only matters while messages grow; clear it when the
-      // list shrinks instead of pruning per message.
-      if (widget.messages.length < _projectedValues.length) {
-        _projectedValues.clear();
-      }
+      _projectionDirty =
+          _activeProjected.isNotEmpty &&
+          _hasUnresolvedProjected(widget.messages);
+    }
+
+    if (_followNewest &&
+        _isTimestampOrder &&
+        (widget.messages != oldWidget.messages ||
+            widget.inputSortAscending != oldWidget.inputSortAscending ||
+            widget.inputSortField != oldWidget.inputSortField)) {
+      _scheduleJumpToNewest();
     }
 
     if (widget.columnConfig.columnWidths !=
@@ -202,13 +351,20 @@ class _MessagesTableViewState extends State<MessagesTableView> {
 
       if (targetOffset != null && (targetOffset - currentOffset).abs() > 1.0) {
         if (animate) {
-          _verticalScrollController.animateTo(
-            targetOffset,
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeOutCubic,
-          );
+          _programmaticScroll = true;
+          _verticalScrollController
+              .animateTo(
+                targetOffset,
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOutCubic,
+              )
+              .whenComplete(() {
+                if (mounted) _programmaticScroll = false;
+              });
         } else {
-          _verticalScrollController.jumpTo(targetOffset);
+          _runProgrammaticScroll(() {
+            _verticalScrollController.jumpTo(targetOffset!);
+          });
         }
       }
     });
@@ -216,6 +372,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
 
   /// Calculates the active visible column list in current display order.
   List<_ActiveColumnInfo> _buildActiveColumns() {
+    final l10n = AppLocalizations.of(context);
     final List<_ActiveColumnInfo> list = [];
     final hidden = widget.columnConfig.hiddenColumns;
 
@@ -224,7 +381,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       list.add(
         _ActiveColumnInfo(
           id: StandardTableColumns.timestamp,
-          title: 'Timestamp',
+          title: l10n?.timestamp ?? 'Timestamp',
           isProjected: false,
           logicalIndex: 0,
         ),
@@ -236,7 +393,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       list.add(
         _ActiveColumnInfo(
           id: StandardTableColumns.step,
-          title: 'Step',
+          title: l10n?.step ?? 'Step',
           isProjected: false,
           logicalIndex: 6,
         ),
@@ -248,7 +405,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       list.add(
         _ActiveColumnInfo(
           id: StandardTableColumns.topic,
-          title: 'Topic',
+          title: l10n?.topic ?? 'Topic',
           isProjected: false,
           logicalIndex: 5,
         ),
@@ -260,7 +417,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       list.add(
         _ActiveColumnInfo(
           id: StandardTableColumns.partition,
-          title: 'Partition',
+          title: l10n?.partitionCol ?? 'Partition',
           isProjected: false,
           logicalIndex: 1,
         ),
@@ -272,7 +429,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       list.add(
         _ActiveColumnInfo(
           id: StandardTableColumns.offset,
-          title: 'Offset',
+          title: l10n?.offset ?? 'Offset',
           isProjected: false,
           logicalIndex: 2,
         ),
@@ -284,7 +441,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       list.add(
         _ActiveColumnInfo(
           id: StandardTableColumns.key,
-          title: 'Key',
+          title: l10n?.key ?? 'Key',
           isProjected: false,
           logicalIndex: 3,
         ),
@@ -314,7 +471,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       list.add(
         _ActiveColumnInfo(
           id: StandardTableColumns.content,
-          title: 'Content',
+          title: l10n?.content ?? 'Content',
           isProjected: false,
           logicalIndex: 4,
         ),
@@ -326,7 +483,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       list.add(
         _ActiveColumnInfo(
           id: StandardTableColumns.content,
-          title: 'Content',
+          title: l10n?.content ?? 'Content',
           isProjected: false,
           logicalIndex: 4,
         ),
@@ -346,7 +503,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     return widget.columnConfig.getWidth(columnId, fallback: fallback);
   }
 
-  /// Resolve every projected path for every message in a single bridge call.
+  /// Resolve every unresolved projected path in a single bridge call.
   Future<void> _resolveProjectedValues() async {
     final columns = _activeProjected;
     final messages = widget.messages;
@@ -355,26 +512,61 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       return;
     }
 
-    final paths = columns.map((column) => column.path).toList();
-    final payloads = messages.map((message) => message.payload ?? '').toList();
-    final values = await resolveJsonPathBatch(payloads: payloads, paths: paths);
-    if (!mounted) return;
+    final unresolved = <KafkaMessage>[
+      for (final message in messages)
+        if (!_projectedValues.containsKey(message)) message,
+    ];
 
-    for (var i = 0; i < messages.length; i++) {
-      final perMessage = <String, String>{};
-      for (var p = 0; p < paths.length; p++) {
-        perMessage[paths[p]] = values[i * paths.length + p] ?? '';
+    if (unresolved.isNotEmpty) {
+      final paths = columns.map((column) => column.path).toList();
+      final payloads = unresolved
+          .map((message) => message.payload ?? '')
+          .toList();
+      final values = await resolveJsonPathBatch(
+        payloads: payloads,
+        paths: paths,
+      );
+      if (!mounted) return;
+
+      for (var i = 0; i < unresolved.length; i++) {
+        final msg = unresolved[i];
+        final perMessage = <String, String>{};
+        for (var p = 0; p < paths.length; p++) {
+          perMessage[paths[p]] = values[i * paths.length + p] ?? '';
+        }
+        _projectedValues[msg] = perMessage;
+        _rowCache[msg] = null;
       }
-      _projectedValues[messages[i]] = perMessage;
     }
 
-    _projectionDirty = false;
+    _pruneProjectedValues(widget.messages);
+    _projectionDirty =
+        _activeProjected.isNotEmpty && _hasUnresolvedProjected(widget.messages);
     setState(_rebuildRows);
   }
 
   void _rebuildRows() {
     _cachedData = _filterAndSortMessages(widget.messages);
     _needsRebuildRows = false;
+    if (_pendingAnchorMessage != null) {
+      final anchor = _pendingAnchorMessage!;
+      final oldIdx = _pendingAnchorOldIndex;
+      _pendingAnchorMessage = null;
+      _pendingAnchorOldIndex = -1;
+      if (_verticalScrollController.hasClients) {
+        final newIdx = _cachedData.indexWhere(
+          (d) => identical(d.message, anchor),
+        );
+        if (newIdx >= 0 && newIdx != oldIdx) {
+          final delta = (newIdx - oldIdx) * 44.0;
+          final pos = _verticalScrollController.position;
+          final target = (pos.pixels + delta).clamp(0.0, double.infinity);
+          _runProgrammaticScroll(() {
+            pos.correctBy(target - pos.pixels);
+          });
+        }
+      }
+    }
     final visualOrder = _cachedData.map((e) => e.message).toList();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -383,164 +575,220 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     });
   }
 
-  List<_TableRowData> _filterAndSortMessages(List<KafkaMessage> messages) {
-    final activeProjected = _activeProjected;
-
-    // 1. Map to wrapper class to evaluate strings exactly once
-    final mappedData = messages.map((msg) {
-      final date = DateTime.fromMillisecondsSinceEpoch(msg.timestamp.toInt());
-      final dateStr = DateFormatUtils.formatDateTime(
-        context,
-        date,
-        withMilliseconds: true,
-      );
-      final stepStr = msg is ScriptResultMessage ? msg.stepName : 'Global';
-      final contentPreview = TextPreviewUtils.getPayloadPreview(msg.payload);
-      final keyString = msg.key ?? "";
-      final cachedValues = _projectedValues[msg];
-      final projectedValues = <String, String>{
-        for (final col in activeProjected)
-          col.path: cachedValues?[col.path] ?? '',
-      };
-
-      return _TableRowData(
-        message: msg,
-        dateStr: dateStr,
-        stepStr: stepStr,
-        contentPreview: contentPreview,
-        keyString: keyString,
-        projectedValues: projectedValues,
-      );
-    }).toList();
-
-    // 2. Filter
-    var filtered = mappedData.where((data) {
-      for (var entry in _columnFilters.entries) {
-        final filter = entry.value.toLowerCase();
-        if (filter.isEmpty) continue;
-        String val = "";
-        switch (entry.key) {
-          case 0: // Timestamp
-            val = data.dateStr;
-            break;
-          case 1: // Partition
-            val = data.message.partition.toString();
-            break;
-          case 2: // Offset
-            val = data.message.offset.toString();
-            break;
-          case 3: // Key
-            val = data.keyString;
-            break;
-          case 4: // Content
-            val = data.message.payload ?? '';
-            break;
-          case 5: // Topic
-            val = data.message.topic;
-            break;
-          case 6: // Step
-            val = data.stepStr;
-            break;
-          default:
-            // Dynamic projected columns
-            if (entry.key >= 100) {
-              final projIndex = entry.key - 100;
-              if (projIndex >= 0 && projIndex < activeProjected.length) {
-                final col = activeProjected[projIndex];
-                val = data.projectedValues[col.path] ?? "";
-              }
+  bool _matchesColumnFilters(
+    _TableRowData data,
+    List<ProjectedColumn> activeProjected,
+  ) {
+    final hasAnyFilter = _columnFilters.values.any((v) => v.isNotEmpty);
+    if (!hasAnyFilter) return true;
+    widget.onColumnFilterEvaluated?.call(data.message);
+    for (var entry in _columnFilters.entries) {
+      final filter = entry.value.toLowerCase();
+      if (filter.isEmpty) continue;
+      String val = "";
+      switch (entry.key) {
+        case 0: // Timestamp
+          val = data.dateStr;
+          break;
+        case 1: // Partition
+          val = data.message.partition.toString();
+          break;
+        case 2: // Offset
+          val = data.message.offset.toString();
+          break;
+        case 3: // Key
+          val = data.keyString;
+          break;
+        case 4: // Content
+          val = data.message.payload ?? '';
+          break;
+        case 5: // Topic
+          val = data.message.topic;
+          break;
+        case 6: // Step
+          val = data.stepStr;
+          break;
+        default:
+          if (entry.key >= 100) {
+            final projIndex = entry.key - 100;
+            if (projIndex >= 0 && projIndex < activeProjected.length) {
+              final col = activeProjected[projIndex];
+              val = data.projectedValues[col.path] ?? "";
             }
-            break;
-        }
-        if (!val.toLowerCase().contains(filter)) return false;
-      }
-      return true;
-    }).toList();
-
-    // 3. Sort
-    if (_sortColumnIndex != null) {
-      filtered.sort((a, b) {
-        dynamic valA;
-        dynamic valB;
-
-        switch (_sortColumnIndex) {
-          case 0: // Timestamp
-            valA = a.message.timestamp;
-            valB = b.message.timestamp;
-            break;
-          case 1: // Partition
-            valA = a.message.partition;
-            valB = b.message.partition;
-            break;
-          case 2: // Offset
-            valA = a.message.offset;
-            valB = b.message.offset;
-            break;
-          case 3: // Key
-            valA = a.keyString;
-            valB = b.keyString;
-            break;
-          case 4: // Content
-            valA = a.contentPreview;
-            valB = b.contentPreview;
-            break;
-          case 5: // Topic
-            valA = a.message.topic;
-            valB = b.message.topic;
-            break;
-          case 6: // Step
-            valA = a.stepStr;
-            valB = b.stepStr;
-            break;
-          default:
-            if (_sortColumnIndex! >= 100) {
-              final projIndex = _sortColumnIndex! - 100;
-              if (projIndex >= 0 && projIndex < activeProjected.length) {
-                final col = activeProjected[projIndex];
-                valA = a.projectedValues[col.path] ?? "";
-                valB = b.projectedValues[col.path] ?? "";
-              }
-            }
-            break;
-        }
-
-        int cmp = 0;
-        if (valA is Comparable && valB is Comparable) {
-          try {
-            cmp = valA.compareTo(valB);
-          } catch (e) {
-            cmp = valA.toString().compareTo(valB.toString());
           }
-        } else {
-          cmp = valA.toString().compareTo(valB.toString());
-        }
+          break;
+      }
+      if (!val.toLowerCase().contains(filter)) return false;
+    }
+    return true;
+  }
 
-        if (cmp == 0) {
-          return compareMessageIdentity(a.message, b.message);
+  int _compareRows(
+    _TableRowData a,
+    _TableRowData b,
+    List<ProjectedColumn> activeProjected,
+  ) {
+    dynamic valA;
+    dynamic valB;
+
+    switch (_sortColumnIndex) {
+      case 0: // Timestamp
+        valA = a.message.timestamp;
+        valB = b.message.timestamp;
+        break;
+      case 1: // Partition
+        valA = a.message.partition;
+        valB = b.message.partition;
+        break;
+      case 2: // Offset
+        valA = a.message.offset;
+        valB = b.message.offset;
+        break;
+      case 3: // Key
+        valA = a.keyString;
+        valB = b.keyString;
+        break;
+      case 4: // Content
+        valA = a.contentPreview;
+        valB = b.contentPreview;
+        break;
+      case 5: // Topic
+        valA = a.message.topic;
+        valB = b.message.topic;
+        break;
+      case 6: // Step
+        valA = a.stepStr;
+        valB = b.stepStr;
+        break;
+      default:
+        if (_sortColumnIndex! >= 100) {
+          final projIndex = _sortColumnIndex! - 100;
+          if (projIndex >= 0 && projIndex < activeProjected.length) {
+            final col = activeProjected[projIndex];
+            valA = a.projectedValues[col.path] ?? "";
+            valB = b.projectedValues[col.path] ?? "";
+          }
         }
-        return _sortAscending ? cmp : -cmp;
-      });
+        break;
     }
 
-    return filtered;
+    int cmp = 0;
+    if (valA is Comparable && valB is Comparable) {
+      try {
+        cmp = valA.compareTo(valB);
+      } catch (e) {
+        cmp = valA.toString().compareTo(valB.toString());
+      }
+    } else {
+      cmp = valA.toString().compareTo(valB.toString());
+    }
+
+    if (cmp == 0) {
+      return compareMessageIdentity(a.message, b.message);
+    }
+    return _sortAscending ? cmp : -cmp;
+  }
+
+  List<_TableRowData> _filterAndSortMessages(List<KafkaMessage> messages) {
+    final activeProjected = _activeProjected;
+    final rows = <_TableRowData>[];
+
+    // 1. Lookup or build cached row data + evaluate column filters only when needed
+    for (final msg in messages) {
+      var row = _rowCache[msg];
+      if (row == null) {
+        final date = DateTime.fromMillisecondsSinceEpoch(msg.timestamp.toInt());
+        final dateStr = DateFormatUtils.formatDateTime(
+          context,
+          date,
+          withMilliseconds: true,
+        );
+        final stepStr = msg is ScriptResultMessage ? msg.stepName : 'Global';
+        final contentPreview = TextPreviewUtils.getPayloadPreview(msg.payload);
+        final keyString = msg.key ?? "";
+        final cachedValues = _projectedValues[msg];
+        final projectedValues = <String, String>{
+          for (final col in activeProjected)
+            col.path: cachedValues?[col.path] ?? '',
+        };
+
+        row = _TableRowData(
+          message: msg,
+          dateStr: dateStr,
+          stepStr: stepStr,
+          contentPreview: contentPreview,
+          keyString: keyString,
+          projectedValues: projectedValues,
+        );
+        _rowCache[msg] = row;
+        widget.onRowBuilt?.call(msg);
+      }
+
+      if (row.filterRevision != _filterRevision) {
+        row.filterPassed = _matchesColumnFilters(row, activeProjected);
+        row.filterRevision = _filterRevision;
+      }
+
+      if (row.filterPassed) {
+        rows.add(row);
+      }
+    }
+
+    // 2. Sort (incremental merge when column sort is active and cache is valid)
+    if (_sortColumnIndex == null) {
+      _forceFullSort = false;
+      return rows;
+    }
+
+    int compare(_TableRowData a, _TableRowData b) =>
+        _compareRows(a, b, activeProjected);
+
+    if (_forceFullSort || _cachedData.isEmpty) {
+      _forceFullSort = false;
+      rows.sort(compare);
+      return rows;
+    }
+
+    final inputSet = HashSet<KafkaMessage>.identity()..addAll(messages);
+    final previousSet = HashSet<_TableRowData>.identity()..addAll(_cachedData);
+    final added = <_TableRowData>[
+      for (final row in rows)
+        if (!previousSet.contains(row)) row,
+    ];
+
+    return mergeIncremental<_TableRowData>(
+      _cachedData,
+      retain: (row) =>
+          inputSet.contains(row.message) &&
+          identical(_rowCache[row.message], row) &&
+          row.filterPassed,
+      added: added,
+      compare: compare,
+    );
   }
 
   void _showFilterDialog(String title, int index) {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: _columnFilters[index] ?? "");
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Filter $title", style: const TextStyle(fontSize: 16)),
+        title: Text(
+          l10n?.filterColumnTitle(title) ?? "Filter $title",
+          style: const TextStyle(fontSize: 16),
+        ),
         contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: TextField(
           controller: controller,
           decoration: InputDecoration(
-            hintText: "Enter substring to filter...",
+            hintText:
+                l10n?.filterSubstringHint ?? "Enter substring to filter...",
             isDense: true,
             suffixIcon: controller.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.clear, size: 18),
+                    tooltip: l10n?.clear ?? 'Clear',
                     onPressed: () {
                       controller.clear();
                     },
@@ -555,6 +803,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
               } else {
                 _columnFilters[index] = val;
               }
+              _filterRevision++;
               _needsRebuildRows = true;
             });
             Navigator.pop(ctx);
@@ -565,11 +814,12 @@ class _MessagesTableViewState extends State<MessagesTableView> {
             onPressed: () {
               setState(() {
                 _columnFilters.remove(index);
+                _filterRevision++;
                 _needsRebuildRows = true;
               });
               Navigator.pop(ctx);
             },
-            child: const Text("Clear"),
+            child: Text(l10n?.clear ?? "Clear"),
           ),
           FilledButton(
             style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
@@ -580,11 +830,12 @@ class _MessagesTableViewState extends State<MessagesTableView> {
                 } else {
                   _columnFilters[index] = controller.text;
                 }
+                _filterRevision++;
                 _needsRebuildRows = true;
               });
               Navigator.pop(ctx);
             },
-            child: const Text("Apply"),
+            child: Text(l10n?.apply ?? "Apply"),
           ),
         ],
       ),
@@ -608,8 +859,8 @@ class _MessagesTableViewState extends State<MessagesTableView> {
     );
     final monoStyle = AppFonts.robotoMono(fontSize: 12);
 
-    // 1. Measure header (label + padding + sort/filter/close icons ~ 64px)
-    double maxWidth = _measureTextWidth(colInfo.title, headerStyle) + 68.0;
+    // 1. Measure header (label + padding + sort + 24x24 filter/close icons)
+    double maxWidth = _measureTextWidth(colInfo.title, headerStyle) + 104.0;
 
     // 2. Measure sample row cell values (sample first 100 rows for high performance)
     final sampleCount = _cachedData.length > 100 ? 100 : _cachedData.length;
@@ -692,12 +943,13 @@ class _MessagesTableViewState extends State<MessagesTableView> {
                     _sortColumnIndex = index;
                     _sortAscending = true;
                   }
+                  _forceFullSort = true;
                   _needsRebuildRows = true;
                 });
               },
               child: Container(
                 alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -718,19 +970,28 @@ class _MessagesTableViewState extends State<MessagesTableView> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    InkWell(
-                      onTap: () => _showFilterDialog(title, index),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Icon(
-                          isFiltered ? Icons.filter_alt : Icons.filter_list,
-                          size: 14,
-                          color: isFiltered
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    IconButton(
+                      icon: Icon(
+                        isFiltered ? Icons.filter_alt : Icons.filter_list,
+                        size: 14,
+                        color: isFiltered
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
+                      tooltip:
+                          AppLocalizations.of(
+                            context,
+                          )?.filterColumnTooltip(title) ??
+                          'Filter $title',
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(
+                        minWidth: 24,
+                        minHeight: 24,
+                      ),
+                      style: IconButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () => _showFilterDialog(title, index),
                     ),
                     if (isSorted)
                       Icon(
@@ -744,40 +1005,49 @@ class _MessagesTableViewState extends State<MessagesTableView> {
                         widget.onRemoveProjectedColumn != null &&
                         projectedColumn != null) ...[
                       const SizedBox(width: 4),
-                      InkWell(
-                        onTap: () =>
-                            widget.onRemoveProjectedColumn!(projectedColumn),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: Icon(
-                            Icons.close,
-                            size: 14,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
+                        tooltip:
+                            AppLocalizations.of(context)?.removeColumnTooltip ??
+                            'Remove column',
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(
+                          minWidth: 24,
+                          minHeight: 24,
+                        ),
+                        style: IconButton.styleFrom(
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () =>
+                            widget.onRemoveProjectedColumn!(projectedColumn),
                       ),
                     ] else if (!colInfo.isProjected &&
                         widget.onToggleColumnVisibility != null &&
                         visibleColCount > 1) ...[
                       const SizedBox(width: 4),
-                      InkWell(
-                        onTap: () =>
-                            widget.onToggleColumnVisibility!(colInfo.id),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Tooltip(
-                          message: 'Hide column',
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: Icon(
-                              Icons.visibility_off_outlined,
-                              size: 14,
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                          ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.visibility_off_outlined,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.outline,
                         ),
+                        tooltip:
+                            AppLocalizations.of(context)?.hideColumn ??
+                            'Hide column',
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(
+                          minWidth: 24,
+                          minHeight: 24,
+                        ),
+                        style: IconButton.styleFrom(
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () =>
+                            widget.onToggleColumnVisibility!(colInfo.id),
                       ),
                     ],
                   ],
@@ -1114,12 +1384,74 @@ class _MessagesTableViewState extends State<MessagesTableView> {
         child: InkWell(
           key: ValueKey('message_cell_${dataIndex}_$colIdx'),
           onTap: () {
+            if (widget.showFollowControl && _followNewest) {
+              setState(() => _followNewest = false);
+            }
             widget.onMessageTap?.call(msg);
           },
           onSecondaryTapDown: (details) {
             _showRowContextMenu(context, details.globalPosition, msg);
           },
           child: decoratedCell,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFollowNewestToggle(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final enabled = _isTimestampOrder;
+    final isFollowing = enabled && _followNewest;
+    final tooltip = !enabled
+        ? (l10n?.followNewestDisabledTooltip ??
+              'Follow newest requires timestamp order')
+        : (isFollowing
+              ? (l10n?.followNewestOnTooltip ??
+                    'Following newest messages (click to pause following)')
+              : (l10n?.followNewestOffTooltip ??
+                    'Follow newest is off (click to jump to newest)'));
+    final label = l10n?.followNewest ?? 'Follow newest';
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        key: const ValueKey('follow_newest_toggle'),
+        toggled: isFollowing,
+        enabled: enabled,
+        child: OutlinedButton.icon(
+          onPressed: enabled
+              ? () {
+                  setState(() {
+                    _followNewest = !_followNewest;
+                  });
+                  if (_followNewest) {
+                    _scheduleJumpToNewest();
+                  }
+                }
+              : null,
+          style: OutlinedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            backgroundColor: isFollowing
+                ? colorScheme.primaryContainer
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.92),
+            foregroundColor: isFollowing
+                ? colorScheme.onPrimaryContainer
+                : colorScheme.onSurfaceVariant,
+            side: BorderSide(
+              color: isFollowing
+                  ? colorScheme.primary.withValues(alpha: 0.5)
+                  : colorScheme.outlineVariant,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          ),
+          icon: Icon(
+            isFollowing
+                ? Icons.vertical_align_bottom
+                : Icons.pause_circle_outline,
+            size: 16,
+          ),
+          label: Text(label, style: const TextStyle(fontSize: 12)),
         ),
       ),
     );
@@ -1170,14 +1502,52 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       diagonalDragBehavior: DiagonalDragBehavior.free,
     );
 
+    final Widget wrappedTable = Listener(
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent &&
+            widget.showFollowControl &&
+            _followNewest &&
+            !_programmaticScroll) {
+          setState(() => _followNewest = false);
+        }
+      },
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (!widget.showFollowControl ||
+              !_followNewest ||
+              _programmaticScroll) {
+            return false;
+          }
+          if (notification.metrics.axis != Axis.vertical) return false;
+          final isUserScroll =
+              notification is UserScrollNotification &&
+              notification.direction != ScrollDirection.idle;
+          final isDragStart =
+              notification is ScrollStartNotification &&
+              notification.dragDetails != null;
+          if (isUserScroll || isDragStart) {
+            setState(() => _followNewest = false);
+          }
+          return false;
+        },
+        child: table,
+      ),
+    );
+
     final hasActiveColumnFilters = _columnFilters.values.any(
       (v) => v.isNotEmpty,
     );
-    if (_cachedData.isEmpty && hasActiveColumnFilters) {
-      final l10n = AppLocalizations.of(context);
-      return Stack(
-        children: [
-          table,
+    final showEmptyFilterOverlay =
+        _cachedData.isEmpty && hasActiveColumnFilters;
+    if (!showEmptyFilterOverlay && !widget.showFollowControl) {
+      return wrappedTable;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    return Stack(
+      children: [
+        wrappedTable,
+        if (showEmptyFilterOverlay)
           Positioned(
             top: 48,
             left: 0,
@@ -1205,6 +1575,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
                     onPressed: () {
                       setState(() {
                         _columnFilters.clear();
+                        _filterRevision++;
                         _needsRebuildRows = true;
                       });
                     },
@@ -1215,10 +1586,13 @@ class _MessagesTableViewState extends State<MessagesTableView> {
               ),
             ),
           ),
-        ],
-      );
-    }
-
-    return table;
+        if (widget.showFollowControl)
+          Positioned(
+            top: 48,
+            right: 12,
+            child: _buildFollowNewestToggle(context),
+          ),
+      ],
+    );
   }
 }

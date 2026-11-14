@@ -213,7 +213,9 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      when(mockController.fetchSchemas(any)).thenAnswer((_) async {});
+      when(mockController.fetchSchemas(any)).thenAnswer((_) async {
+        return;
+      });
       when(mockController.getSchemas(any)).thenReturn(['my-topic-value']);
       when(
         mockController.fetchSchemaContent(any, 'my-topic-value'),
@@ -237,10 +239,47 @@ void main() {
 
       expect(find.byKey(const Key('schema_compare_button')), findsOneWidget);
     });
+
+    testWidgets('renders German empty-selection prompt in SchemaDiffDialog', (
+      tester,
+    ) async {
+      final mockController = _TestMockSchemaController();
+      when(
+        mockController.fetchSchemaVersions(any, any),
+      ).thenAnswer((_) async => <int>[1, 2]);
+      when(
+        mockController.fetchSchemaContent(
+          any,
+          any,
+          version: anyNamed('version'),
+        ),
+      ).thenThrow(Exception('not loaded'));
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SchemaDiffDialog(
+              profile: testProfile,
+              subject: 'test-topic-value',
+              controller: mockController,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Versionen zum Vergleichen auswählen'), findsOneWidget);
+    });
   });
 }
 
 class _TestMockSchemaController extends MockSchemaController {
   @override
-  String? errorFor(ClusterProfile cluster) => null;
+  String? errorFor(ClusterProfile? cluster) => null;
 }

@@ -12,6 +12,8 @@ import 'api/kafka_consumer.dart';
 import 'api/kafka_metadata.dart';
 import 'api/kafka_types.dart';
 import 'api/kafka_utils.dart';
+import 'api/profile_crypto.dart';
+import 'api/profile_tools.dart';
 import 'api/report_compare.dart';
 import 'api/schema_registry.dart';
 import 'dart:async';
@@ -66,10 +68,24 @@ abstract class KafkalyzerRustLibApiImplPlatform
   String dco_decode_String(dynamic raw);
 
   @protected
+  AllowedExtraProperty dco_decode_allowed_extra_property(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  BootstrapServerIssue dco_decode_bootstrap_server_issue(dynamic raw);
+
+  @protected
+  BootstrapServerIssueKind dco_decode_bootstrap_server_issue_kind(dynamic raw);
+
+  @protected
   bool dco_decode_box_autoadd_bool(dynamic raw);
+
+  @protected
+  BundleCryptoErrorKind dco_decode_box_autoadd_bundle_crypto_error_kind(
+    dynamic raw,
+  );
 
   @protected
   ClusterProfile dco_decode_box_autoadd_cluster_profile(dynamic raw);
@@ -126,6 +142,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   BrokerEndpoint dco_decode_broker_endpoint(dynamic raw);
 
   @protected
+  BundleCryptoErrorKind dco_decode_bundle_crypto_error_kind(dynamic raw);
+
+  @protected
+  BundleCryptoResult dco_decode_bundle_crypto_result(dynamic raw);
+
+  @protected
+  ClientPropertiesPreview dco_decode_client_properties_preview(dynamic raw);
+
+  @protected
+  ClientPropertySkipReason dco_decode_client_property_skip_reason(dynamic raw);
+
+  @protected
   ClusterProfile dco_decode_cluster_profile(dynamic raw);
 
   @protected
@@ -151,6 +179,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   DuplicateDetectionScope dco_decode_duplicate_detection_scope(dynamic raw);
+
+  @protected
+  ExtraPropertyIssue dco_decode_extra_property_issue(dynamic raw);
+
+  @protected
+  ExtraPropertyIssueKind dco_decode_extra_property_issue_kind(dynamic raw);
 
   @protected
   double dco_decode_f_64(dynamic raw);
@@ -195,6 +229,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<AllowedExtraProperty> dco_decode_list_allowed_extra_property(
+    dynamic raw,
+  );
+
+  @protected
+  List<BootstrapServerIssue> dco_decode_list_bootstrap_server_issue(
+    dynamic raw,
+  );
+
+  @protected
   List<BrokerEndpoint> dco_decode_list_broker_endpoint(dynamic raw);
 
   @protected
@@ -202,6 +246,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   List<ConsumerGroupMember> dco_decode_list_consumer_group_member(dynamic raw);
+
+  @protected
+  List<ExtraPropertyIssue> dco_decode_list_extra_property_issue(dynamic raw);
 
   @protected
   List<FieldDelta> dco_decode_list_field_delta(dynamic raw);
@@ -251,6 +298,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<ServerCheck> dco_decode_list_server_check(dynamic raw);
 
   @protected
+  List<SkippedClientProperty> dco_decode_list_skipped_client_property(
+    dynamic raw,
+  );
+
+  @protected
   List<StageResult> dco_decode_list_stage_result(dynamic raw);
 
   @protected
@@ -284,6 +336,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
+
+  @protected
+  BundleCryptoErrorKind? dco_decode_opt_box_autoadd_bundle_crypto_error_kind(
+    dynamic raw,
+  );
 
   @protected
   DiagnosisHint? dco_decode_opt_box_autoadd_diagnosis_hint(dynamic raw);
@@ -339,6 +396,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<KafkaHeader>? dco_decode_opt_list_kafka_header(dynamic raw);
 
   @protected
+  Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw);
+
+  @protected
   PartitionAnalysis dco_decode_partition_analysis(dynamic raw);
 
   @protected
@@ -367,6 +427,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   SizePercentiles dco_decode_size_percentiles(dynamic raw);
+
+  @protected
+  SkippedClientProperty dco_decode_skipped_client_property(dynamic raw);
 
   @protected
   StageResult dco_decode_stage_result(dynamic raw);
@@ -469,10 +532,30 @@ abstract class KafkalyzerRustLibApiImplPlatform
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  AllowedExtraProperty sse_decode_allowed_extra_property(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
+  BootstrapServerIssue sse_decode_bootstrap_server_issue(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  BootstrapServerIssueKind sse_decode_bootstrap_server_issue_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   bool sse_decode_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
+  BundleCryptoErrorKind sse_decode_box_autoadd_bundle_crypto_error_kind(
+    SseDeserializer deserializer,
+  );
 
   @protected
   ClusterProfile sse_decode_box_autoadd_cluster_profile(
@@ -545,6 +628,26 @@ abstract class KafkalyzerRustLibApiImplPlatform
   BrokerEndpoint sse_decode_broker_endpoint(SseDeserializer deserializer);
 
   @protected
+  BundleCryptoErrorKind sse_decode_bundle_crypto_error_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  BundleCryptoResult sse_decode_bundle_crypto_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ClientPropertiesPreview sse_decode_client_properties_preview(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ClientPropertySkipReason sse_decode_client_property_skip_reason(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   ClusterProfile sse_decode_cluster_profile(SseDeserializer deserializer);
 
   @protected
@@ -576,6 +679,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   DuplicateDetectionScope sse_decode_duplicate_detection_scope(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ExtraPropertyIssue sse_decode_extra_property_issue(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ExtraPropertyIssueKind sse_decode_extra_property_issue_kind(
     SseDeserializer deserializer,
   );
 
@@ -624,6 +737,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<AllowedExtraProperty> sse_decode_list_allowed_extra_property(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<BootstrapServerIssue> sse_decode_list_bootstrap_server_issue(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<BrokerEndpoint> sse_decode_list_broker_endpoint(
     SseDeserializer deserializer,
   );
@@ -635,6 +758,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   List<ConsumerGroupMember> sse_decode_list_consumer_group_member(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<ExtraPropertyIssue> sse_decode_list_extra_property_issue(
     SseDeserializer deserializer,
   );
 
@@ -694,6 +822,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<ServerCheck> sse_decode_list_server_check(SseDeserializer deserializer);
 
   @protected
+  List<SkippedClientProperty> sse_decode_list_skipped_client_property(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<StageResult> sse_decode_list_stage_result(SseDeserializer deserializer);
 
   @protected
@@ -735,6 +868,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
+  BundleCryptoErrorKind? sse_decode_opt_box_autoadd_bundle_crypto_error_kind(
+    SseDeserializer deserializer,
+  );
 
   @protected
   DiagnosisHint? sse_decode_opt_box_autoadd_diagnosis_hint(
@@ -802,6 +940,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  Uint8List? sse_decode_opt_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
   PartitionAnalysis sse_decode_partition_analysis(SseDeserializer deserializer);
 
   @protected
@@ -834,6 +975,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   SizePercentiles sse_decode_size_percentiles(SseDeserializer deserializer);
+
+  @protected
+  SkippedClientProperty sse_decode_skipped_client_property(
+    SseDeserializer deserializer,
+  );
 
   @protected
   StageResult sse_decode_stage_result(SseDeserializer deserializer);
@@ -957,10 +1103,34 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
+  void sse_encode_allowed_extra_property(
+    AllowedExtraProperty self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
+  void sse_encode_bootstrap_server_issue(
+    BootstrapServerIssue self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_bootstrap_server_issue_kind(
+    BootstrapServerIssueKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_bundle_crypto_error_kind(
+    BundleCryptoErrorKind self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_box_autoadd_cluster_profile(
@@ -1050,6 +1220,30 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_bundle_crypto_error_kind(
+    BundleCryptoErrorKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_bundle_crypto_result(
+    BundleCryptoResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_client_properties_preview(
+    ClientPropertiesPreview self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_client_property_skip_reason(
+    ClientPropertySkipReason self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_cluster_profile(
     ClusterProfile self,
     SseSerializer serializer,
@@ -1097,6 +1291,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_duplicate_detection_scope(
     DuplicateDetectionScope self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_extra_property_issue(
+    ExtraPropertyIssue self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_extra_property_issue_kind(
+    ExtraPropertyIssueKind self,
     SseSerializer serializer,
   );
 
@@ -1152,6 +1358,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_allowed_extra_property(
+    List<AllowedExtraProperty> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_bootstrap_server_issue(
+    List<BootstrapServerIssue> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_broker_endpoint(
     List<BrokerEndpoint> self,
     SseSerializer serializer,
@@ -1166,6 +1384,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_list_consumer_group_member(
     List<ConsumerGroupMember> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_extra_property_issue(
+    List<ExtraPropertyIssue> self,
     SseSerializer serializer,
   );
 
@@ -1254,6 +1478,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_skipped_client_property(
+    List<SkippedClientProperty> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_stage_result(
     List<StageResult> self,
     SseSerializer serializer,
@@ -1306,6 +1536,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_bundle_crypto_error_kind(
+    BundleCryptoErrorKind? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_diagnosis_hint(
@@ -1386,6 +1622,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_opt_list_prim_u_8_strict(
+    Uint8List? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_partition_analysis(
     PartitionAnalysis self,
     SseSerializer serializer,
@@ -1427,6 +1669,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_size_percentiles(
     SizePercentiles self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_skipped_client_property(
+    SkippedClientProperty self,
     SseSerializer serializer,
   );
 

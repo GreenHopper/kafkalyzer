@@ -187,5 +187,34 @@ void main() {
         expect(submitButton.onPressed, isNotNull);
       },
     );
+
+    testWidgets('renders German topic preview and no-cluster error', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          locale: Locale('de'),
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: QuickJumpDialog(
+              availableClusters: [],
+              initialInput:
+                  'kafkalyzer://open?cluster=missing&topic=orders&partition=2',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Schließen'), findsOneWidget);
+      expect(find.text('Topic: orders • Partition: 2'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('quick_jump_submit_button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Kein Cluster ausgewählt'), findsOneWidget);
+    });
   });
 }

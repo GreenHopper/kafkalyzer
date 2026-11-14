@@ -17,6 +17,8 @@ import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/ui/messages/incremental_sorted_merge.dart';
+import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
 import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/actionable_topic_empty_state.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
@@ -89,6 +91,16 @@ class MessagesView extends StatefulWidget {
   /// Optional error message from the active stream/fetch.
   final String? errorMessage;
 
+  /// Whether to show the Follow newest toggle overlay in table view.
+  final bool showFollowControl;
+
+  /// Token that resets follow-newest to enabled when changed (e.g. stream start).
+  final Object? followResetToken;
+
+  /// Test hook invoked whenever the quick-filter predicate is evaluated.
+  @visibleForTesting
+  final void Function(KafkaMessage)? onFilterEvaluated;
+
   const MessagesView({
     super.key,
     required this.messages,
@@ -105,6 +117,9 @@ class MessagesView extends StatefulWidget {
     this.isStreaming = false,
     this.profile,
     this.errorMessage,
+    this.showFollowControl = false,
+    this.followResetToken,
+    this.onFilterEvaluated,
   });
 
   @override
@@ -138,6 +153,11 @@ class MessagesViewState extends State<MessagesView> {
 
   // Cached lists to prevent re-filtering and re-sorting when just switching views
   List<KafkaMessage> _cachedFilteredMessages = [];
+  final Set<KafkaMessage> _cachedMatchedMessages = Set<KafkaMessage>.identity();
+  final Set<KafkaMessage> _cachedNonMatches = Set<KafkaMessage>.identity();
+  bool _exportSelectedOnly = false;
+  bool _exportIncludeNonMatches = false;
+  bool _exportIncludeHeadersColumn = false;
   List<KafkaMessage> _cachedSortedMessages = [];
   int _cachedMatchCount = 0;
 
@@ -173,7 +193,18 @@ class MessagesViewState extends State<MessagesView> {
     super.didUpdateWidget(oldWidget);
     if (widget.messages != oldWidget.messages ||
         widget.sortComparator != oldWidget.sortComparator) {
-      _updateFilters();
+      final oldMsgs = oldWidget.messages;
+      final newMsgs = widget.messages;
+      if (widget.sortComparator == oldWidget.sortComparator &&
+          oldMsgs is MessageSnapshot &&
+          newMsgs is MessageSnapshot &&
+          newMsgs.epoch == oldMsgs.epoch &&
+          newMsgs.firstSeq >= oldMsgs.firstSeq &&
+          newMsgs.endSeq >= oldMsgs.endSeq) {
+        _applyIncrementalUpdate(oldMsgs, newMsgs);
+      } else {
+        _updateFilters();
+      }
       if (_primaryTopic(widget.messages) != _primaryTopic(oldWidget.messages)) {
         _loadProjectedColumnsPreference();
       }
@@ -372,26 +403,94 @@ class MessagesViewState extends State<MessagesView> {
     _onViewModeChanged(newView);
   }
 
+  bool _matchesQuickFilter(KafkaMessage msg, String query) {
+    widget.onFilterEvaluated?.call(msg);
+    if ((msg.key?.toLowerCase().contains(query) ?? false) ||
+        (msg.payload?.toLowerCase().contains(query) ?? false) ||
+        msg.topic.toLowerCase().contains(query)) {
+      return true;
+    }
+    if (msg is ScriptResultMessage &&
+        msg.stepName.toLowerCase().contains(query)) {
+      return true;
+    }
+    return false;
+  }
+
+  void _applyIncrementalUpdate(
+    MessageSnapshot oldSnap,
+    MessageSnapshot newSnap,
+  ) {
+    final evictedCount = (newSnap.firstSeq - oldSnap.firstSeq).clamp(
+      0,
+      oldSnap.length,
+    );
+    final evicted = Set<KafkaMessage>.identity()
+      ..addAll(oldSnap.take(evictedCount));
+
+    for (final msg in evicted) {
+      if (_cachedMatchedMessages.remove(msg)) {
+        _cachedMatchCount--;
+      }
+      _cachedNonMatches.remove(msg);
+    }
+
+    final addedStart = (oldSnap.endSeq - newSnap.firstSeq).clamp(
+      0,
+      newSnap.length,
+    );
+    final added = newSnap.sublist(addedStart);
+
+    final List<KafkaMessage> addedKept;
+    if (_searchPhrase.isEmpty) {
+      addedKept = added;
+    } else {
+      final query = _searchPhrase.toLowerCase();
+      addedKept = <KafkaMessage>[];
+      for (final msg in added) {
+        if (_matchesQuickFilter(msg, query)) {
+          _cachedMatchedMessages.add(msg);
+          _cachedMatchCount++;
+          addedKept.add(msg);
+        } else if (_showNonMatches) {
+          _cachedNonMatches.add(msg);
+          addedKept.add(msg);
+        }
+      }
+    }
+
+    _cachedFilteredMessages = [
+      for (final msg in _cachedFilteredMessages)
+        if (!evicted.contains(msg)) msg,
+      ...addedKept,
+    ];
+    _cachedSortedMessages = mergeIncremental<KafkaMessage>(
+      _cachedSortedMessages,
+      retain: (msg) => !evicted.contains(msg),
+      added: addedKept,
+      compare: _compareMessages,
+    );
+  }
+
   void _updateFilters() {
     // 1. Filter
+    _cachedMatchedMessages.clear();
+    _cachedNonMatches.clear();
     if (_searchPhrase.isEmpty) {
       _cachedFilteredMessages = widget.messages;
       _cachedMatchCount = 0;
+      _exportIncludeNonMatches = false;
     } else {
       final query = _searchPhrase.toLowerCase();
       _cachedMatchCount = 0;
       _cachedFilteredMessages = widget.messages.where((msg) {
-        var isMatch =
-            (msg.key?.toLowerCase().contains(query) ?? false) ||
-            (msg.payload?.toLowerCase().contains(query) ?? false) ||
-            msg.topic.toLowerCase().contains(query);
-        if (!isMatch &&
-            msg is ScriptResultMessage &&
-            msg.stepName.toLowerCase().contains(query)) {
-          isMatch = true;
+        final isMatch = _matchesQuickFilter(msg, query);
+        if (isMatch) {
+          _cachedMatchedMessages.add(msg);
+          _cachedMatchCount++;
+        } else if (_showNonMatches) {
+          _cachedNonMatches.add(msg);
         }
-
-        if (isMatch) _cachedMatchCount++;
         return isMatch || _showNonMatches;
       }).toList();
     }
@@ -489,6 +588,54 @@ class MessagesViewState extends State<MessagesView> {
       (_activeView == 'table' && _tableVisualOrder != null)
       ? _tableVisualOrder!
       : _cachedSortedMessages;
+
+  List<KafkaMessage> get _selectedMessagesForExport =>
+      _selectedMessage == null ? const [] : [_selectedMessage!];
+
+  List<KafkaMessage> get _exportScope {
+    var list = List<KafkaMessage>.from(_activeOrderedMessages);
+    if (!_exportIncludeNonMatches && _cachedNonMatches.isNotEmpty) {
+      list = list.where((m) => !_cachedNonMatches.contains(m)).toList();
+    }
+    if (_exportSelectedOnly && _selectedMessagesForExport.isNotEmpty) {
+      final selected = Set<KafkaMessage>.identity()
+        ..addAll(_selectedMessagesForExport);
+      list = list.where(selected.contains).toList();
+    }
+    return list;
+  }
+
+  Future<void> _exportMessages(ExportFormat format) async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final outputFile = await getIt<MessageExportService>().exportMessages(
+        _exportScope,
+        dialogTitle: format == ExportFormat.csv
+            ? l10n.exportMessagesCsv
+            : l10n.exportMessages,
+        format: format,
+        columnConfig: _tableColumnConfig,
+        isScriptingView: widget.showTopic || widget.showStep,
+        includeHeadersColumn: _exportIncludeHeadersColumn,
+      );
+      if (mounted && outputFile != null) {
+        showExportSuccessSnackBar(
+          context,
+          message: l10n.messagesExportedSuccessfully,
+          filePath: outputFile,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.messagesExportFailed(e.toString())),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
 
   int get _selectedIndex {
     if (_selectedMessage == null) return -1;
@@ -788,6 +935,9 @@ class MessagesViewState extends State<MessagesView> {
                     onShowNonMatchesChanged: (val) {
                       setState(() {
                         _showNonMatches = val;
+                        if (!val) {
+                          _exportIncludeNonMatches = false;
+                        }
                         _updateFilters();
                       });
                     },
@@ -892,71 +1042,94 @@ class MessagesViewState extends State<MessagesView> {
                     ),
                   ],
                   const SizedBox(width: 8),
-                  PopupMenuButton<ExportFormat>(
-                    enabled: _cachedFilteredMessages.isNotEmpty,
-                    tooltip: l10n.exportMessages,
-                    icon: const Icon(Icons.download),
-                    onSelected: (ExportFormat format) async {
-                      try {
-                        final outputFile = await getIt<MessageExportService>()
-                            .exportMessages(
-                              _cachedFilteredMessages,
-                              format: format,
-                              columnConfig: _tableColumnConfig,
-                              isScriptingView:
-                                  widget.showTopic || widget.showStep,
-                            );
-                        if (context.mounted && outputFile != null) {
-                          showExportSuccessSnackBar(
-                            context,
-                            message: l10n.messagesExportedSuccessfully,
-                            filePath: outputFile,
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                l10n.messagesExportFailed(e.toString()),
-                              ),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.error,
-                            ),
-                          );
-                        }
-                      }
+                  MenuAnchor(
+                    builder: (context, controller, child) {
+                      return Semantics(
+                        label: l10n.exportMessages,
+                        button: true,
+                        child: Tooltip(
+                          message: l10n.exportMessages,
+                          child: IconButton(
+                            icon: const Icon(Icons.download),
+                            onPressed: _cachedFilteredMessages.isEmpty
+                                ? null
+                                : () {
+                                    if (controller.isOpen) {
+                                      controller.close();
+                                    } else {
+                                      controller.open();
+                                    }
+                                  },
+                          ),
+                        ),
+                      );
                     },
-                    itemBuilder: (BuildContext context) => [
-                      PopupMenuItem<ExportFormat>(
-                        value: ExportFormat.json,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.data_object, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                l10n.exportAsJson,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                    menuChildren: [
+                      if (_selectedMessagesForExport.isNotEmpty)
+                        CheckboxMenuButton(
+                          value: _exportSelectedOnly,
+                          closeOnActivate: false,
+                          onChanged: (val) {
+                            setState(() {
+                              _exportSelectedOnly = val ?? false;
+                            });
+                          },
+                          child: Text(
+                            l10n.exportSelectedOnly(
+                              _selectedMessagesForExport.length,
                             ),
-                          ],
+                          ),
+                        ),
+                      if (_searchPhrase.isNotEmpty && _showNonMatches)
+                        CheckboxMenuButton(
+                          value: _exportIncludeNonMatches,
+                          closeOnActivate: false,
+                          onChanged: (val) {
+                            setState(() {
+                              _exportIncludeNonMatches = val ?? false;
+                            });
+                          },
+                          child: Text(l10n.exportIncludeDimmedNonMatches),
+                        ),
+                      CheckboxMenuButton(
+                        value: _exportIncludeHeadersColumn,
+                        closeOnActivate: false,
+                        onChanged: (val) {
+                          setState(() {
+                            _exportIncludeHeadersColumn = val ?? false;
+                          });
+                        },
+                        child: Text(l10n.exportAddHeadersColumn),
+                      ),
+                      const Divider(height: 1),
+                      MenuItemButton(
+                        leadingIcon: const Icon(Icons.data_object, size: 18),
+                        onPressed: () => _exportMessages(ExportFormat.json),
+                        child: Text(
+                          l10n.exportAsJson,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      PopupMenuItem<ExportFormat>(
-                        value: ExportFormat.csv,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.table_chart_outlined, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                l10n.exportAsCsv,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                      MenuItemButton(
+                        leadingIcon: const Icon(
+                          Icons.view_stream_outlined,
+                          size: 18,
+                        ),
+                        onPressed: () => _exportMessages(ExportFormat.ndjson),
+                        child: Text(
+                          l10n.exportAsNdjson,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      MenuItemButton(
+                        leadingIcon: const Icon(
+                          Icons.table_chart_outlined,
+                          size: 18,
+                        ),
+                        onPressed: () => _exportMessages(ExportFormat.csv),
+                        child: Text(
+                          l10n.exportAsCsv,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -974,7 +1147,13 @@ class MessagesViewState extends State<MessagesView> {
 
   Widget _buildContent() {
     if (_cachedFilteredMessages.isEmpty) {
-      return Center(child: Text("No results found matching '$_searchPhrase'"));
+      final l10n = AppLocalizations.of(context);
+      return Center(
+        child: Text(
+          l10n?.noResultsMatchingPhrase(_searchPhrase) ??
+              "No results found matching '$_searchPhrase'",
+        ),
+      );
     }
 
     final masterView = _buildMasterView();
@@ -1057,6 +1236,10 @@ class MessagesViewState extends State<MessagesView> {
             _tableVisualOrder = order;
           },
           clusterProfile: widget.profile,
+          showFollowControl: widget.showFollowControl,
+          followResetToken: widget.followResetToken,
+          inputSortField: _sortField,
+          inputSortAscending: _sortAscending,
         );
       case 'diff':
         return Padding(

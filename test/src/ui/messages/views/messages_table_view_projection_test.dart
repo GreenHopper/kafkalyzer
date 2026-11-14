@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
 import 'package:mockito/mockito.dart';
 
 import '../../../rust/api/rust_mocks.mocks.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 void main() {
   // Projected values come from the Rust resolver, whose grammar is tested in
@@ -26,6 +27,7 @@ void main() {
     '{"customer": null, "status": "INACTIVE"}': {'status': 'INACTIVE'},
   };
   final resolverCalls = <List<String>>[];
+  final resolverPayloads = <List<String>>[];
   final mockApi = MockKafkalyzerRustLibApi();
 
   setUpAll(() => KafkalyzerRustLib.initMock(api: mockApi));
@@ -33,6 +35,7 @@ void main() {
 
   setUp(() {
     resolverCalls.clear();
+    resolverPayloads.clear();
     reset(mockApi);
     when(
       mockApi.crateApiJsonPathResolveJsonPathBatch(
@@ -43,6 +46,7 @@ void main() {
       final payloads = invocation.namedArguments[#payloads] as List<String>;
       final paths = invocation.namedArguments[#paths] as List<String>;
       resolverCalls.add(paths);
+      resolverPayloads.add(payloads);
       return [
         for (final payload in payloads)
           for (final path in paths) resolved[payload]?[path],
@@ -96,6 +100,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: MessagesTableView(
             messages: messages,
@@ -158,6 +164,10 @@ void main() {
   testWidgets(
     'triggers onRemoveProjectedColumn callback when close icon tapped',
     (tester) async {
+      tester.view.physicalSize = const Size(1200, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       ProjectedColumn? removedColumn;
       final projectedColumns = [
         const ProjectedColumn(path: 'customer.name', label: 'Customer'),
@@ -165,6 +175,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MessagesTableView(
               messages: messages,
@@ -197,6 +209,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: MessagesTableView(
             messages: messages,
@@ -240,6 +254,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: MessagesTableView(
             messages: manyMessages,
@@ -264,4 +280,68 @@ void main() {
       findsWidgets,
     );
   });
+
+  testWidgets(
+    'incremental live tick resolves only new payloads and prunes dropped entries',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final msg4 = createMessage(
+        offset: 4,
+        payload:
+            '{"customer": {"name": "Alice", "id": 101}, "status": "ACTIVE"}',
+      );
+      var currentMessages = [messages[0], messages[1], messages[2]];
+      late StateSetter setHostState;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                setHostState = setState;
+                return MessagesTableView(
+                  messages: currentMessages,
+                  projectedColumns: const [
+                    ProjectedColumn(path: 'customer.name', label: 'Customer'),
+                    ProjectedColumn(path: 'status', label: 'Status'),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(resolverPayloads, hasLength(1));
+      expect(resolverPayloads.single, hasLength(3));
+      resolverPayloads.clear();
+
+      // Drop messages[0], keep messages[1] & messages[2], add msg4
+      setHostState(() {
+        currentMessages = [messages[1], messages[2], msg4];
+      });
+      await tester.pumpAndSettle();
+
+      expect(resolverPayloads, hasLength(1));
+      expect(resolverPayloads.single, [msg4.payload]);
+      resolverPayloads.clear();
+
+      // Re-adding the exact dropped instance messages[0] must resolve it again
+      // because its cache entry was pruned when it left the input.
+      setHostState(() {
+        currentMessages = [messages[2], msg4, messages[0]];
+      });
+      await tester.pumpAndSettle();
+
+      expect(resolverPayloads, hasLength(1));
+      expect(resolverPayloads.single, [messages[0].payload]);
+    },
+  );
 }

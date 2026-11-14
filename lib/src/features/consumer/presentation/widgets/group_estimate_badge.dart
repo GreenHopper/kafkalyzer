@@ -43,14 +43,15 @@ class GroupEstimateBadge extends StatelessWidget {
     final Color color;
     final String displayText;
 
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case LagProcessingStatus.caughtUp:
-        color = Colors.green;
+        color = colorScheme.primary;
         displayText = l10n.lagEstimateCaughtUp;
         break;
 
       case LagProcessingStatus.draining:
-        color = Colors.green;
+        color = colorScheme.primary;
         final eta = ConsumerLagEstimate.formatEta(
           estimate?.estimatedTimeToClear,
         );
@@ -62,27 +63,27 @@ class GroupEstimateBadge extends StatelessWidget {
         break;
 
       case LagProcessingStatus.accumulating:
-        color = Colors.orange;
+        color = colorScheme.tertiary;
         displayText = l10n.lagEstimateGrowing;
         break;
 
       case LagProcessingStatus.stalled:
-        color = Theme.of(context).colorScheme.outline;
+        color = colorScheme.outline;
         displayText = l10n.lagEstimateStalled;
         break;
 
       case LagProcessingStatus.pending:
         if (delta != null && formattedDelta.isNotEmpty) {
           if (delta! > 0) {
-            color = Colors.red;
+            color = colorScheme.error;
           } else if (delta! < 0) {
-            color = Colors.green;
+            color = colorScheme.primary;
           } else {
-            color = Theme.of(context).colorScheme.outline;
+            color = colorScheme.outline;
           }
           displayText = formattedDelta;
         } else {
-          color = Theme.of(context).colorScheme.outline;
+          color = colorScheme.outline;
           displayText = "-";
         }
         break;

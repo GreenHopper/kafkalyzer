@@ -95,13 +95,12 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
             ),
           );
         } else {
-          final isGerman = Localizations.localeOf(context).languageCode == 'de';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                isGerman
-                    ? "Keine Nachricht am oder nach Offset ${part.currentOffset} gefunden"
-                    : "No message found at or after offset ${part.currentOffset}",
+                widget.l10n.noMessageAtOrAfterOffset(
+                  part.currentOffset.toString(),
+                ),
                 style: TextStyle(color: Theme.of(context).colorScheme.onError),
               ),
               backgroundColor: Theme.of(context).colorScheme.error,
@@ -114,7 +113,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "Error: ${e.toString()}",
+              widget.l10n.errorWithMessage(e.toString()),
               style: TextStyle(color: Theme.of(context).colorScheme.onError),
             ),
             backgroundColor: Theme.of(context).colorScheme.error,
@@ -142,14 +141,14 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     if (delta > 0) {
       return _buildTableCell(
         "+${_formatNum(delta)}",
-        textColor: Colors.red,
+        textColor: Theme.of(context).colorScheme.error,
         isBold: true,
         flex: flex,
       );
     } else if (delta < 0) {
       return _buildTableCell(
         _formatNum(delta),
-        textColor: Colors.green,
+        textColor: Theme.of(context).colorScheme.primary,
         isBold: true,
         flex: flex,
       );
@@ -284,7 +283,6 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
 
   @override
   Widget build(BuildContext context) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
     final sortedParts = List<TopicPartitionLag>.from(widget.partitionLags);
     sortedParts.sort((a, b) {
       int cmp;
@@ -340,11 +338,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                 _buildHeaderCell(1, widget.l10n.logEndOffsetCol, flex: 4),
                 _buildHeaderCell(2, widget.l10n.committedOffsetCol, flex: 4),
                 _buildHeaderCell(3, widget.l10n.lagCol, flex: 2),
-                _buildHeaderCell(
-                  4,
-                  isGerman ? 'Abarbeitung' : 'Processed',
-                  flex: 2,
-                ),
+                _buildHeaderCell(4, widget.l10n.processedCol, flex: 2),
                 const SizedBox(width: 48), // Space for action
               ],
             ),
@@ -436,9 +430,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                           : IconButton(
                               icon: const Icon(Icons.visibility_outlined),
                               iconSize: 20,
-                              tooltip: isGerman
-                                  ? 'Message am Offset anzeigen'
-                                  : 'View message at offset',
+                              tooltip: widget.l10n.viewMessageAtOffset,
                               onPressed: canViewMessage
                                   ? () => _viewLaggingMessage(part)
                                   : null,

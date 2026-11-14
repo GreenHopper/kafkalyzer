@@ -10,6 +10,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
+import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
 import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
 
 class SearchTarget {
@@ -137,13 +139,31 @@ class SearchProgress {
 class MultiSearchController extends ChangeNotifier {
   final Logger _logger = getIt<Logger>();
   final MessageConsumeStreamFactory _consumeStreamFactory;
+  final int Function() _bufferLimitProvider;
 
   String? _outputDirectory;
   String? get outputDirectory => _outputDirectory;
 
-  MultiSearchController({MessageConsumeStreamFactory? consumeStreamFactory})
-    : _consumeStreamFactory = consumeStreamFactory ?? consumeWithFilter {
+  MultiSearchController({
+    MessageConsumeStreamFactory? consumeStreamFactory,
+    int Function()? bufferLimitProvider,
+  }) : _consumeStreamFactory = consumeStreamFactory ?? consumeWithFilter,
+       _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit {
     loadDirectory();
+  }
+
+  static int _defaultBufferLimit() {
+    if (getIt.isRegistered<SettingsService>()) {
+      return getIt<SettingsService>().messageBufferLimit.value;
+    }
+    return SettingsService.defaultMessageBufferLimit;
+  }
+
+  int get bufferLimit => _resolveBufferLimit();
+
+  int _resolveBufferLimit() {
+    final limit = _bufferLimitProvider();
+    return limit > 0 ? limit : SettingsService.defaultMessageBufferLimit;
   }
 
   Future<void> loadDirectory() async {
@@ -168,21 +188,27 @@ class MultiSearchController extends ChangeNotifier {
   final Map<SearchTarget, String> _errors = {};
   Map<SearchTarget, String> get errors => Map.unmodifiable(_errors);
 
-  final Map<SearchTarget, List<KafkaMessage>> _results = {};
-  final Map<SearchTarget, List<KafkaMessage>> _cachedUnmodifiableResults = {};
+  final Map<SearchTarget, MessageRingBuffer> _results = {};
+  final Map<SearchTarget, MessageSnapshot> _cachedUnmodifiableResults = {};
 
   final Map<SearchTarget, SearchProgress> _progress = {};
   Map<SearchTarget, SearchProgress> get progress => Map.unmodifiable(_progress);
+
+  int receivedCountFor(SearchTarget target) =>
+      _results[target]?.receivedTotal ?? 0;
+
+  int droppedCountFor(SearchTarget target) =>
+      _results[target]?.droppedTotal ?? 0;
 
   List<KafkaMessage> getMessagesFor(SearchTarget? target) {
     if (target != null) {
       return _cachedUnmodifiableResults.putIfAbsent(
         target,
-        () => List.unmodifiable(_results[target] ?? []),
+        () => _results[target]?.snapshot() ?? MessageSnapshot.empty(),
       );
     }
     // Aggregate for "All" view
-    final all = _results.values.expand((element) => element).toList();
+    final all = _results.keys.expand((t) => getMessagesFor(t)).toList();
     all.sort((a, b) {
       final tsCmp = b.timestamp.compareTo(a.timestamp);
       return tsCmp != 0 ? tsCmp : compareMessageIdentity(a, b);
@@ -235,6 +261,7 @@ class MultiSearchController extends ChangeNotifier {
   void _stopSubscription(SearchTarget target) {
     _subscriptions[target]?.cancel();
     _subscriptions.remove(target);
+    _trailingNotifyTimers.remove(target)?.cancel();
     _closeFileSink(target);
   }
 
@@ -243,7 +270,8 @@ class MultiSearchController extends ChangeNotifier {
   void _startSubscription(SearchTarget target) {
     try {
       _stopSubscription(target);
-      _results.remove(target);
+      _results[target] = MessageRingBuffer(_resolveBufferLimit());
+      _cachedUnmodifiableResults.remove(target);
       _progress.remove(target);
       _errors.remove(target);
       _status[target] = SearchStatus.running;
@@ -375,7 +403,7 @@ class MultiSearchController extends ChangeNotifier {
           // Write to file if enabled
           if (_fileSinks.containsKey(target)) {
             final sink = _fileSinks[target]!;
-            final isFirst = _results[target]?.length == 1;
+            final isFirst = _results[target]?.receivedTotal == 1;
             if (!isFirst) {
               sink.write(',\n');
             }
@@ -421,30 +449,34 @@ class MultiSearchController extends ChangeNotifier {
   }
 
   final Map<SearchTarget, int> _lastNotify = {};
+  final Map<SearchTarget, Timer> _trailingNotifyTimers = {};
 
   void _throttleNotify(SearchTarget target) {
     final now = DateTime.now().millisecondsSinceEpoch;
     final last = _lastNotify[target] ?? 0;
     if (now - last > 100) {
       // Max 10 updates per second
+      _trailingNotifyTimers.remove(target)?.cancel();
       _lastNotify[target] = now;
       notifyListeners();
+    } else if (!(_trailingNotifyTimers[target]?.isActive ?? false)) {
+      _trailingNotifyTimers[target] = Timer(
+        const Duration(milliseconds: 100),
+        () {
+          _trailingNotifyTimers.remove(target);
+          _lastNotify[target] = DateTime.now().millisecondsSinceEpoch;
+          notifyListeners();
+        },
+      );
     }
   }
 
   void _insertMessage(SearchTarget target, KafkaMessage message) {
-    if (!_results.containsKey(target)) {
-      _results[target] = [];
-    }
-    final list = _results[target]!;
-    list.add(message);
-
-    if (list.length > 2000) {
-      list.removeRange(
-        0,
-        list.length - 2000,
-      ); // Remove oldest (assuming append order)
-    }
+    final buffer = _results.putIfAbsent(
+      target,
+      () => MessageRingBuffer(_resolveBufferLimit()),
+    );
+    buffer.add(message);
     _cachedUnmodifiableResults.remove(target);
     _throttleNotify(target);
   }
@@ -454,6 +486,10 @@ class MultiSearchController extends ChangeNotifier {
       sub.cancel();
     }
     _subscriptions.clear();
+    for (final timer in _trailingNotifyTimers.values) {
+      timer.cancel();
+    }
+    _trailingNotifyTimers.clear();
     _targets.clear();
     _cachedUnmodifiableTargets = null;
     _status.clear(); // Clear statuses too

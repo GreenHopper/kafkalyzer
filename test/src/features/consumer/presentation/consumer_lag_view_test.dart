@@ -228,13 +228,14 @@ void main() {
     );
   });
 
-  Widget createWidgetUnderTest() {
+  Widget createWidgetUnderTest({Locale? locale}) {
     return MaterialApp(
+      locale: locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         ...GlobalMaterialLocalizations.delegates,
       ],
-      supportedLocales: const [Locale('en')],
+      supportedLocales: const [Locale('en'), Locale('de')],
       home: const ConsumerLagView(),
     );
   }
@@ -1536,4 +1537,70 @@ void main() {
       expect(find.text('Lag: 10'), findsWidgets);
     },
   );
+
+  testWidgets('renders German headers and KPIs when locale is de', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    fakeMetadataService.lags = [
+      const ConsumerGroupLag(
+        groupId: 'test-group',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [],
+        membersCount: 1,
+        topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
+        ownershipKnown: true,
+      ),
+    ];
+
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpWidget(createWidgetUnderTest(locale: const Locale('de')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Consumer-Gruppen'), findsOneWidget);
+    expect(find.text('Aktiv / Stabil'), findsOneWidget);
+    expect(find.text('Gesamt-Lag'), findsNWidgets(2));
+    expect(find.text('Aktive Abfragen'), findsOneWidget);
+    expect(find.text('Gruppen-ID'), findsOneWidget);
+    expect(find.text('Protokoll'), findsOneWidget);
+    expect(find.text('Abarbeitung'), findsOneWidget);
+  });
+
+  testWidgets('falls back to English headers and KPIs when locale is fr', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    fakeMetadataService.lags = [
+      const ConsumerGroupLag(
+        groupId: 'test-group',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [],
+        membersCount: 1,
+        topicsCount: 1,
+        members: [],
+        unassignedPartitions: [],
+        ownershipKnown: true,
+      ),
+    ];
+
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpWidget(createWidgetUnderTest(locale: const Locale('fr')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Consumer Groups'), findsOneWidget);
+    expect(find.text('Active / Stable'), findsOneWidget);
+    expect(find.text('Total Lag'), findsNWidgets(2));
+    expect(find.text('Active Queries'), findsOneWidget);
+    expect(find.text('Group ID'), findsOneWidget);
+  });
 }

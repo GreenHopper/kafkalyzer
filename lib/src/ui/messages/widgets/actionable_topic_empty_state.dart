@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 
 class ActionableTopicEmptyState extends StatelessWidget {
   final VoidCallback? onFetch;
@@ -106,6 +107,15 @@ class ActionableTopicEmptyState extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
+                  if (hasError) ...[
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: () =>
+                          ErrorBanner.copyText(context, errorMessage!),
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: Text(l10n?.copy ?? 'Copy'),
+                    ),
+                  ],
                   if (onFetch != null) ...[
                     const SizedBox(height: 24),
                     FilledButton.icon(

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
@@ -216,11 +217,14 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
     });
 
     if (filteredFields.isEmpty) {
+      final l10n = AppLocalizations.of(context);
       return Center(
         child: Text(
           query.isNotEmpty
-              ? "No schema fields found matching '$query'"
-              : "No schemas found for the current script's topics.",
+              ? (l10n?.noSchemaFieldsMatching(query) ??
+                    "No schema fields found matching '$query'")
+              : (l10n?.noSchemasForScriptTopics ??
+                    "No schemas found for the current script's topics."),
         ),
       );
     }
@@ -327,30 +331,38 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
   ) {
     final uniqueTopics = occurrences.map((o) => o.topic).toSet();
 
+    final l10n = AppLocalizations.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
         title: Text(
-          "Field: $fieldName",
+          l10n?.fieldLabel(fieldName) ?? "Field: $fieldName",
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         subtitle: Text(
-          "Found ${occurrences.length} time(s) across ${uniqueTopics.length} topic(s)",
+          l10n?.foundTimesAcrossTopics(
+                occurrences.length,
+                uniqueTopics.length,
+              ) ??
+              "Found ${occurrences.length} time(s) across ${uniqueTopics.length} topic(s)",
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               icon: const Icon(Icons.copy, size: 20),
-              tooltip: "Copy Markdown",
+              tooltip: l10n?.copyMarkdown ?? "Copy Markdown",
               onPressed: () async {
                 final md = _generateMarkdown(fieldName, occurrences);
                 await Clipboard.setData(ClipboardData(text: md));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Copied $fieldName schema to clipboard.'),
+                      content: Text(
+                        l10n?.copiedSchemaToClipboard(fieldName) ??
+                            'Copied $fieldName schema to clipboard.',
+                      ),
                     ),
                   );
                 }
@@ -358,11 +370,11 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
             ),
             IconButton(
               icon: const Icon(Icons.download, size: 20),
-              tooltip: "Download Markdown",
+              tooltip: l10n?.downloadMarkdown ?? "Download Markdown",
               onPressed: () async {
                 final md = _generateMarkdown(fieldName, occurrences);
                 final outputFile = await FilePicker.saveFile(
-                  dialogTitle: 'Save Schema Markdown',
+                  dialogTitle: AppLocalizations.of(context)!.saveSchemaMarkdown,
                   fileName: 'schema_$fieldName.md',
                   type: FileType.custom,
                   allowedExtensions: ['md'],
@@ -374,7 +386,8 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
                   if (context.mounted) {
                     showExportSuccessSnackBar(
                       context,
-                      message: 'Saved schema to file',
+                      message:
+                          l10n?.savedSchemaToFile ?? 'Saved schema to file',
                       filePath: outputFile,
                     );
                   }
@@ -398,6 +411,7 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
 
   Widget _buildTopicDifferences(List<FieldOccurrence> occurrences) {
     if (occurrences.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
 
     // Sort occurrences by topic, then by path
     final sortedOccurrences = List<FieldOccurrence>.from(occurrences)
@@ -414,11 +428,11 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Found in topic: ${occ.topic}",
+            l10n?.foundInTopic(occ.topic) ?? "Found in topic: ${occ.topic}",
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           Text(
-            "Path: ${occ.fullPath}",
+            l10n?.pathLabel(occ.fullPath) ?? "Path: ${occ.fullPath}",
             style: const TextStyle(color: Colors.grey, fontSize: 12),
           ),
           const SizedBox(height: 8),
@@ -438,9 +452,10 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Found in multiple locations (differences highlighted):",
-          style: TextStyle(fontWeight: FontWeight.w500),
+        Text(
+          l10n?.foundInMultipleLocations ??
+              "Found in multiple locations (differences highlighted):",
+          style: const TextStyle(fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
         ...List.generate(sortedOccurrences.length, (i) {
@@ -454,11 +469,12 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Baseline Topic: ${occ.topic}",
+                    l10n?.baselineTopic(occ.topic) ??
+                        "Baseline Topic: ${occ.topic}",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    "Path: ${occ.fullPath}",
+                    l10n?.pathLabel(occ.fullPath) ?? "Path: ${occ.fullPath}",
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   const SizedBox(height: 8),
@@ -489,11 +505,12 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Compared to Topic: ${occ.topic}",
+                    l10n?.comparedToTopic(occ.topic) ??
+                        "Compared to Topic: ${occ.topic}",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    "Path: ${occ.fullPath}",
+                    l10n?.pathLabel(occ.fullPath) ?? "Path: ${occ.fullPath}",
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   const SizedBox(height: 8),
@@ -510,11 +527,12 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
                       child: JsonDiffWidget(diffNode: diffNode),
                     )
                   else
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
-                        "No differences from baseline.",
-                        style: TextStyle(
+                        l10n?.noDifferencesFromBaseline ??
+                            "No differences from baseline.",
+                        style: const TextStyle(
                           color: Colors.grey,
                           fontStyle: FontStyle.italic,
                         ),

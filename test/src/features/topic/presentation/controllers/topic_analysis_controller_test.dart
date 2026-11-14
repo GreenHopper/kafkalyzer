@@ -15,13 +15,18 @@ class FakeExportService extends TopicAnalysisExportService {
   bool importCalled = false;
 
   @override
-  Future<String?> export(TopicAnalysisReportFile file) async {
+  Future<String?> export(
+    TopicAnalysisReportFile file, {
+    required String dialogTitle,
+  }) async {
     exportCalled = true;
     return exportResult;
   }
 
   @override
-  Future<TopicAnalysisReportFile?> importFile() async {
+  Future<TopicAnalysisReportFile?> importFile({
+    required String dialogTitle,
+  }) async {
     importCalled = true;
     if (importError != null) throw importError!;
     return importResult;
@@ -85,7 +90,9 @@ void main() {
         final file = _sampleFile();
         fake.importResult = file;
 
-        final ok = await controller.importReport();
+        final ok = await controller.importReport(
+          dialogTitle: 'Import Topic Analysis',
+        );
 
         expect(ok, isTrue);
         expect(fake.importCalled, isTrue);
@@ -103,7 +110,9 @@ void main() {
         foundVersion: 99,
       );
 
-      final ok = await controller.importReport();
+      final ok = await controller.importReport(
+        dialogTitle: 'Import Topic Analysis',
+      );
 
       expect(ok, isFalse);
       expect(controller.isImported, isFalse);
@@ -117,7 +126,9 @@ void main() {
     test('importReport cancel returns false with no error', () async {
       fake.importResult = null;
 
-      final ok = await controller.importReport();
+      final ok = await controller.importReport(
+        dialogTitle: 'Import Topic Analysis',
+      );
 
       expect(ok, isFalse);
       expect(controller.importErrorKind, isNull);
@@ -128,10 +139,13 @@ void main() {
       'exportReport returns the written path when a report exists',
       () async {
         fake.importResult = _sampleFile();
-        await controller.importReport();
+        await controller.importReport(dialogTitle: 'Import Topic Analysis');
 
         fake.exportResult = '/tmp/orders_analysis.json';
-        final path = await controller.exportReport(clusterName: 'prod-eu-1');
+        final path = await controller.exportReport(
+          dialogTitle: 'Export Topic Analysis',
+          clusterName: 'prod-eu-1',
+        );
 
         expect(fake.exportCalled, isTrue);
         expect(path, '/tmp/orders_analysis.json');
@@ -142,7 +156,9 @@ void main() {
       'exportReport returns null and skips the service when no report',
       () async {
         expect(controller.report, isNull);
-        final path = await controller.exportReport();
+        final path = await controller.exportReport(
+          dialogTitle: 'Export Topic Analysis',
+        );
         expect(path, isNull);
         expect(fake.exportCalled, isFalse);
       },
@@ -150,7 +166,7 @@ void main() {
 
     test('clear() resets imported source and provenance to defaults', () async {
       fake.importResult = _sampleFile();
-      await controller.importReport();
+      await controller.importReport(dialogTitle: 'Import Topic Analysis');
       expect(controller.isImported, isTrue);
 
       controller.clear();
@@ -163,7 +179,7 @@ void main() {
 
     test('startAnalysis resets the source to live', () async {
       fake.importResult = _sampleFile();
-      await controller.importReport();
+      await controller.importReport(dialogTitle: 'Import Topic Analysis');
       expect(controller.isImported, isTrue);
 
       await controller.startAnalysis(
@@ -212,7 +228,7 @@ void main() {
         );
 
         expect(controller.isAnalyzing, isFalse);
-        expect(controller.error, contains('empty'));
+        expect(controller.errorKind, TopicAnalysisErrorKind.emptyFieldPath);
       },
     );
 
@@ -222,7 +238,7 @@ void main() {
       await controller.rescanWithFilter(invalidFilter);
 
       expect(controller.isAnalyzing, isFalse);
-      expect(controller.error, contains('empty'));
+      expect(controller.errorKind, TopicAnalysisErrorKind.emptyFieldPath);
     });
 
     test('rescanWithFilter rejects if no previous scope exists', () async {
@@ -231,7 +247,7 @@ void main() {
       await controller.rescanWithFilter(filter);
 
       expect(controller.isAnalyzing, isFalse);
-      expect(controller.error, contains('No previous'));
+      expect(controller.errorKind, TopicAnalysisErrorKind.noPreviousScope);
     });
 
     test('rescanWithFilter uses the last analysis scope', () async {

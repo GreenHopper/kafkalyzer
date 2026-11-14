@@ -1,7 +1,33 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/password_form_field.dart';
+import 'package:kafkalyzer/src/rust/api/profile_tools.dart';
+import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
+
+/// Formats a [BootstrapServerIssue] into a localized user-facing message.
+String formatBootstrapIssue(
+  AppLocalizations? l10n,
+  BootstrapServerIssue issue,
+) {
+  switch (issue.kind) {
+    case BootstrapServerIssueKind.noEntries:
+      return l10n?.bootstrapNoEntries ?? 'Enter at least one host:port entry';
+    case BootstrapServerIssueKind.missingPort:
+      return l10n?.bootstrapMissingPort(issue.entry) ??
+          'Entry "${issue.entry}" requires a port (:port)';
+    case BootstrapServerIssueKind.invalidPort:
+      return l10n?.bootstrapInvalidPort(issue.entry) ??
+          'Entry "${issue.entry}" has an invalid port (1–65535)';
+    case BootstrapServerIssueKind.invalidHost:
+      return l10n?.bootstrapInvalidHost(issue.entry) ??
+          'Entry "${issue.entry}" has an invalid host';
+    case BootstrapServerIssueKind.schemeNotAllowed:
+      return l10n?.bootstrapSchemeNotAllowed(issue.entry) ??
+          'Entry "${issue.entry}" must not include a URL scheme';
+  }
+}
 
 class ClusterBasicInfoForm extends StatefulWidget {
   final TextEditingController nameController;
@@ -92,9 +118,16 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
                   l10n?.bootstrapServersLabel ??
                   'Bootstrap Servers (e.g. localhost:9092)',
             ),
-            validator: (value) => value!.isEmpty
-                ? (l10n?.requiredValidation ?? 'Required')
-                : null,
+            validator: (value) {
+              final tools = getIt.isRegistered<ClusterProfileTools>()
+                  ? getIt<ClusterProfileTools>()
+                  : const ClusterProfileTools();
+              final issues = tools.validateBootstrapServers(value ?? '');
+              if (issues.isNotEmpty) {
+                return formatBootstrapIssue(l10n, issues.first);
+              }
+              return null;
+            },
           ),
         ),
         Padding(
@@ -105,7 +138,9 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
               labelText:
                   l10n?.schemaRegistryUrlLabel ??
                   'Schema Registry URL (Optional)',
-              hintText: 'e.g. http://localhost:8081',
+              hintText:
+                  l10n?.schemaRegistryUrlHint('http://localhost:8081') ??
+                  'e.g. http://localhost:8081',
             ),
             validator: (value) {
               if (value == null || value.isEmpty) return null;

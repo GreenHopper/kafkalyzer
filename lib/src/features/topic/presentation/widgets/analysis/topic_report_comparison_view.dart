@@ -222,7 +222,7 @@ class _MetricRow extends StatelessWidget {
               style: TextStyle(
                 color: metric.comparable
                     ? (delta != null && delta > 0
-                          ? Colors.green
+                          ? scheme.primary
                           : delta != null && delta < 0
                           ? scheme.error
                           : null)

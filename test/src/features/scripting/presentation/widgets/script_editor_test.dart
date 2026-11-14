@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_editor.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('ScriptEditor adds new variable with selected type', (
@@ -17,6 +18,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(
           useMaterial3: true,
           splashFactory: InkRipple.splashFactory,
@@ -99,6 +102,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(
           useMaterial3: true,
           splashFactory: InkRipple.splashFactory,
@@ -176,6 +181,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -235,6 +242,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(
           useMaterial3: true,
           splashFactory: InkRipple.splashFactory,
@@ -297,5 +306,44 @@ void main() {
     expect(savedScript, isNotNull);
     expect(savedScript!.steps.length, 1);
     expect(savedScript!.steps.first.name, 'Fetch Order Event');
+  });
+
+  testWidgets('ScriptEditor renders German localization', (
+    WidgetTester tester,
+  ) async {
+    final script = Script(
+      id: '1',
+      name: 'Test Script',
+      variables: [],
+      steps: [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: const [Locale('en'), Locale('de')],
+        theme: ThemeData(
+          useMaterial3: true,
+          splashFactory: InkRipple.splashFactory,
+        ),
+        home: Scaffold(
+          body: ScriptEditor(script: script, onSave: (_) {}),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Skriptname'), findsOneWidget);
+    expect(find.text('Variablen'), findsOneWidget);
+    expect(find.text('Quelle'), findsOneWidget);
+    expect(find.text('Verwendet in'), findsOneWidget);
+    expect(find.text('Schritte'), findsOneWidget);
+    expect(find.text('Schritt hinzufügen'), findsOneWidget);
+    expect(find.byTooltip('Variable hinzufügen'), findsOneWidget);
   });
 }

@@ -131,4 +131,57 @@ void main() {
     );
     expect(remaining, isEmpty);
   });
+
+  testWidgets('Fast Trace switch exposes partitioning assumption tooltip', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SearchStreamConfiguration(
+              clusterName: 'local-cluster',
+              topicName: 'test-topic',
+              scanMode: TopicScanMode.latestN,
+              onScanModeChanged: (_) {},
+              filterTermController: TextEditingController(),
+              filterType: FilterType.contains,
+              onFilterTypeChanged: (_) {},
+              searchScope: SearchScope.both,
+              onSearchScopeChanged: (_) {},
+              limitResults: true,
+              onLimitResultsChanged: (_) {},
+              maxResultsController: TextEditingController(text: '200'),
+              partitionController: TextEditingController(),
+              fastTraceEnabled: false,
+              onFastTraceChanged: (_) {},
+              startStrategy: MultiSearchStartStrategy.latest,
+              onStartStrategyChanged: (_) {},
+              startOffsetController: TextEditingController(),
+              startTimestampController: TextEditingController(),
+              endStrategy: MultiSearchEndStrategy.latest,
+              onEndStrategyChanged: (_) {},
+              endOffsetController: TextEditingController(),
+              endTimestampController: TextEditingController(),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Advanced Filters'));
+    await tester.pumpAndSettle();
+
+    final infoIcon = find.byIcon(Icons.info_outline);
+    expect(infoIcon, findsOneWidget);
+    final tooltip = tester.widget<Tooltip>(
+      find.ancestor(of: infoIcon, matching: find.byType(Tooltip)),
+    );
+    expect(tooltip.message, contains('Java default partitioner'));
+    expect(tooltip.message, contains('librdkafka'));
+  });
 }

@@ -14,10 +14,13 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_s
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_view.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
 import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
+import 'package:kafkalyzer/src/ui/widgets/dropped_messages_indicator.dart';
+import 'package:kafkalyzer/src/features/search/domain/filter_terms.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search_bar.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
@@ -60,6 +63,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
   TopicViewMode _viewMode = TopicViewMode.messages;
   final GlobalKey<MessagesViewState> _messagesViewKey =
       GlobalKey<MessagesViewState>();
+  int _followResetToken = 0;
 
   MultiSearchStartStrategy _startStrategy = MultiSearchStartStrategy.latest;
   TopicScanMode _scanMode = TopicScanMode.latestN;
@@ -100,8 +104,13 @@ class _TopicDetailViewState extends State<TopicDetailView>
         _offsetController.text = '0';
 
         // Ensure sufficient result limit
-        final currentMax = int.tryParse(_maxResultsController.text) ?? 200;
-        final targetMax = math.max(currentMax, math.max(200, target.count));
+        final defaultLimit = _defaultResultLimit();
+        final currentMax =
+            int.tryParse(_maxResultsController.text) ?? defaultLimit;
+        final targetMax = math.max(
+          currentMax,
+          math.max(defaultLimit, target.count),
+        );
         _limitResults = true;
         _maxResultsController.text = targetMax.toString();
       } else {
@@ -127,9 +136,14 @@ class _TopicDetailViewState extends State<TopicDetailView>
     startStreaming();
   }
 
+  int _defaultResultLimit() => getIt.isRegistered<SettingsService>()
+      ? getIt<SettingsService>().defaultResultLimit.value
+      : SettingsService.defaultResultLimitSetting.defaultValue;
+
   @override
   void initState() {
     super.initState();
+    _maxResultsController.text = _defaultResultLimit().toString();
     activeController = getIt<ActiveConnectionController>();
     final key = widget.tabId ?? '${widget.profile.name}:${widget.topic.name}';
     streamController = activeController.getStreamController(key);
@@ -220,6 +234,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
                 fastTraceEnabled: _fastTraceEnabled,
                 onFastTraceEnabledChanged: (val) =>
                     setState(() => _fastTraceEnabled = val),
+                partitionCount: widget.topic.partitionCount,
                 startStrategy: _startStrategy,
                 onStartStrategyChanged: (strategy) =>
                     setState(() => _startStrategy = strategy),
@@ -245,6 +260,8 @@ class _TopicDetailViewState extends State<TopicDetailView>
                   isStreaming: streamController.isStreaming,
                   errorMessage: streamController.error,
                   profile: widget.profile,
+                  showFollowControl: true,
+                  followResetToken: _followResetToken,
                   schemaViewBuilderWithPin:
                       (context, searchPhrase, onPinToColumn) {
                         return TopicSchemaInspectorView(
@@ -515,33 +532,86 @@ class _TopicDetailViewState extends State<TopicDetailView>
 
   Widget _buildProgressTile(BuildContext context, ColorScheme colorScheme) {
     final l10n = AppLocalizations.of(context);
+    final droppedCount = streamController.droppedCount;
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 600),
-      child: TopicProgressTile(
-        topic: l10n?.scanProgressTitle ?? "Scan Progress",
-        status: streamController.isStreaming
-            ? StepStatus.running
-            : (streamController.totalConsumed > 0
-                  ? StepStatus.completed
-                  : StepStatus.pending),
-        progress: SearchProgress(
-          streamController.totalConsumed,
-          streamController.totalToScan,
-          startTime: streamController.startTime,
-        ),
-        matchCount: streamController.messages.length,
-        contentPadding: EdgeInsets.zero,
-        dense: true,
-        trailing: _buildProgressActions(context, colorScheme),
+      constraints: const BoxConstraints(maxWidth: 700),
+      child: Row(
+        children: [
+          Expanded(
+            child: TopicProgressTile(
+              topic: l10n?.scanProgressTitle ?? "Scan Progress",
+              status: streamController.isStreaming
+                  ? StepStatus.running
+                  : (streamController.totalConsumed > 0
+                        ? StepStatus.completed
+                        : StepStatus.pending),
+              progress: SearchProgress(
+                streamController.totalConsumed,
+                streamController.totalToScan,
+                startTime: streamController.startTime,
+              ),
+              matchCount: streamController.receivedCount,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              extraSubtitle: droppedCount > 0
+                  ? DroppedMessagesIndicator(
+                      droppedCount: droppedCount,
+                      bufferLimit: streamController.bufferLimit,
+                    )
+                  : null,
+              trailing: const SizedBox.shrink(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(child: _buildProgressActions(context, colorScheme)),
+        ],
       ),
     );
   }
 
   Widget _buildProgressActions(BuildContext context, ColorScheme colorScheme) {
     final l10n = AppLocalizations.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final showPauseResume =
+        streamController.isStreaming || streamController.isPaused;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        if (showPauseResume)
+          if (streamController.isPaused)
+            Tooltip(
+              message:
+                  l10n?.resumeViewTooltip ?? 'Resume updating the message view',
+              child: OutlinedButton.icon(
+                onPressed: streamController.resume,
+                icon: const Icon(Icons.play_arrow, size: 16),
+                label: Text(
+                  l10n?.resumeViewWithNew(streamController.pendingCount) ??
+                      'Resume · ${streamController.pendingCount} new',
+                ),
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                ),
+              ),
+            )
+          else
+            Tooltip(
+              message:
+                  l10n?.pauseViewTooltip ??
+                  'Pause view updates while keeping the stream active',
+              child: OutlinedButton.icon(
+                onPressed: streamController.pause,
+                icon: const Icon(Icons.pause, size: 16),
+                label: Text(l10n?.pauseView ?? 'Pause view'),
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                ),
+              ),
+            ),
         if (streamController.isStreaming)
           FilledButton.icon(
             onPressed: () => streamController.stopStreaming(),
@@ -559,12 +629,12 @@ class _TopicDetailViewState extends State<TopicDetailView>
             icon: const Icon(Icons.play_arrow, size: 16),
             label: Text(l10n?.stream ?? 'Stream'),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.green.shade700,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 12),
             ),
           ),
-        const SizedBox(width: 8),
         IconButton.filledTonal(
           onPressed: streamController.clearMessages,
           icon: const Icon(Icons.delete_sweep, size: 16),
@@ -576,6 +646,9 @@ class _TopicDetailViewState extends State<TopicDetailView>
   }
 
   void startStreaming() {
+    setState(() {
+      _followResetToken++;
+    });
     int? startOffset;
     int? startTimestamp;
 
@@ -604,16 +677,11 @@ class _TopicDetailViewState extends State<TopicDetailView>
       endTimestamp = _convertToTimestamp(_endTimestampController.text);
     }
 
+    final parsedTerms = splitFilterTerms(_filterController.text);
     streamController.startStreaming(
       widget.profile,
       widget.topic.name,
-      filterTerms: _filterController.text.isNotEmpty
-          ? _filterController.text
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList()
-          : null,
+      filterTerms: parsedTerms.isNotEmpty ? parsedTerms : null,
       filterField: _filterFieldController.text.isNotEmpty
           ? _filterFieldController.text
           : null,

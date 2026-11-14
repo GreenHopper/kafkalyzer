@@ -38,10 +38,31 @@ pub struct ClusterProfile {
     pub ssl_pem_key_location: Option<String>,
     pub ssl_pem_key_password: Option<String>,
     pub tls_verification: TlsVerification,
+    pub environment_label: Option<String>,
+    pub environment_color: Option<String>,
+    pub extra_properties: Option<String>,
 }
 
 impl ClusterProfile {
     pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::ClusterProfile {
+        let extra_properties = self
+            .extra_properties
+            .as_deref()
+            .map(|text| {
+                kafkalyzer_core::client_properties::parse_lines(text)
+                    .into_iter()
+                    .filter_map(|line| match line {
+                        kafkalyzer_core::client_properties::ParsedLine::Entry {
+                            key,
+                            value,
+                            ..
+                        } => Some((key, value)),
+                        kafkalyzer_core::client_properties::ParsedLine::Syntax { .. } => None,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
         kafkalyzer_core::kafka_types::ClusterProfile {
             name: self.name.clone(),
             bootstrap_servers: self.bootstrap_servers.clone(),
@@ -65,6 +86,7 @@ impl ClusterProfile {
             ssl_pem_key_location: self.ssl_pem_key_location.clone(),
             ssl_pem_key_password: self.ssl_pem_key_password.clone(),
             ssl_verification_disabled: matches!(self.tls_verification, TlsVerification::Disabled),
+            extra_properties,
         }
     }
 }

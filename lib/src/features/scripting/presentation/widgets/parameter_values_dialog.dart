@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 class ParameterValuesDialog extends StatefulWidget {
   final String parameterName;
@@ -47,6 +48,7 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
@@ -56,17 +58,18 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Filter by ${widget.parameterName}",
+                l10n?.filterByParameter(widget.parameterName) ??
+                    "Filter by ${widget.parameterName}",
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _searchController,
-                decoration: const InputDecoration(
-                  labelText: "Search values",
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
+                decoration: InputDecoration(
+                  labelText: l10n?.searchValues ?? "Search values",
+                  prefixIcon: const Icon(Icons.search),
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
                   ),
@@ -79,11 +82,11 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
                   TextButton(
                     onPressed: () =>
                         setState(() => _selected.addAll(_filteredValues)),
-                    child: const Text("Select All Matches"),
+                    child: Text(l10n?.selectAllMatches ?? "Select All Matches"),
                   ),
                   TextButton(
                     onPressed: () => setState(() => _selected.clear()),
-                    child: const Text("Clear Selection"),
+                    child: Text(l10n?.clearSelection ?? "Clear Selection"),
                   ),
                 ],
               ),
@@ -109,13 +112,16 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
                       controlAffinity: ListTileControlAffinity.leading,
                       secondary: IconButton(
                         icon: const Icon(Icons.copy, size: 20),
-                        tooltip: "Copy value",
+                        tooltip: l10n?.copyValue ?? "Copy value",
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: value));
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text("Copied '$value' to clipboard"),
+                                content: Text(
+                                  l10n?.copiedValueToClipboard(value) ??
+                                      "Copied '$value' to clipboard",
+                                ),
                                 duration: const Duration(seconds: 1),
                               ),
                             );
@@ -132,12 +138,15 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text("Cancel"),
+                    child: Text(l10n?.cancel ?? "Cancel"),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
                     onPressed: () => Navigator.of(context).pop(_selected),
-                    child: Text("Apply (${_selected.length})"),
+                    child: Text(
+                      l10n?.applyWithCount(_selected.length) ??
+                          "Apply (${_selected.length})",
+                    ),
                   ),
                 ],
               ),

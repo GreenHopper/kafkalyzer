@@ -6,7 +6,6 @@
   "startAnalysis": "Start Analysis",
   "stopAnalysis": "Stop Analysis",
   "analyzingTopic": "Analyzing topic...",
-  "analysisComplete": "Analysis Complete",
   "scanScope": "Scan Scope",
   "fullTopicScan": "Full Scan (All Messages)",
   "sampleLast10k": "Sample Last 10,000 Messages",
@@ -15,9 +14,7 @@
   "totalMessages": "Total Messages",
   "totalPayloadSize": "Total Payload Size",
   "avgMessageSize": "Avg Message Size",
-  "minMaxSize": "Min / Max Size",
   "tombstones": "Tombstones",
-  "tombstoneRatio": "Tombstone Ratio",
   "compactedTopic": "Compacted Topic",
   "nonCompactedTopic": "Delete Retention Topic",
   "nullKeys": "Null Keys",
@@ -27,15 +24,18 @@
   "topKeys": "Top Message Keys",
   "contentTypeBreakdown": "Content Types",
   "fieldFrequencies": "Structured Field Frequencies",
-  "fieldValuesDistribution": "Top Values",
   "noAnalysisYet": "No analysis data yet. Click Start Analysis to profile this topic.",
   "exportAnalysisReport": "Export Analysis Report",
   "importAnalysisReport": "Import Analysis Report",
   "importedFromTime": "Imported from {cluster} at {time}",
   "@importedFromTime": {
     "placeholders": {
-      "cluster": { "type": "String" },
-      "time": { "type": "String" }
+      "cluster": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "unknownCluster": "unknown cluster",
@@ -45,23 +45,13 @@
   "importUnsupportedVersion": "This analysis file uses an unsupported version ({version}).",
   "@importUnsupportedVersion": {
     "placeholders": {
-      "version": { "type": "String" }
+      "version": {
+        "type": "String"
+      }
     }
   },
   "importMalformed": "This analysis file could not be read.",
   "exportFailed": "Failed to export the analysis report.",
-  "scanSpeed": "{speed} msgs/sec",
-  "@scanSpeed": {
-    "placeholders": {
-      "speed": { "type": "String" }
-    }
-  },
-  "scanDuration": "Scan duration: {duration}",
-  "@scanDuration": {
-    "placeholders": {
-      "duration": { "type": "String" }
-    }
-  },
   "hotPartition": "High Load / Skew",
   "balancedPartitions": "Balanced",
   "emptyTopicMessage": "This topic is empty (0 messages).",
@@ -71,145 +61,75 @@
   "top10ValuesForField": "Top 10 Values for {field}",
   "@top10ValuesForField": {
     "placeholders": {
-      "field": { "type": "String" }
+      "field": {
+        "type": "String"
+      }
     }
   },
   "valueCopied": "Value copied to clipboard",
-  "distinctValues": "{count} distinct values tracked",
-  "@distinctValues": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
   "fieldOccurrences": "Appears in {count} msgs ({pct}%)",
   "@fieldOccurrences": {
     "placeholders": {
-      "count": { "type": "String" },
-      "pct": { "type": "String" }
+      "count": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
     }
   },
   "noMatchingFields": "No fields matching '{query}'",
   "@noMatchingFields": {
     "placeholders": {
-      "query": { "type": "String" }
-    }
-  },
-  "topValuesForField": "Top values for {field}",
-  "@topValuesForField": {
-    "placeholders": {
-      "field": { "type": "String" }
+      "query": {
+        "type": "String"
+      }
     }
   },
   "allMessages": "All Messages",
   "byTopic": "By Topic",
   "byStep": "By Step",
-  "filterByMessageId": "Filter by Message ID, CORID or PMXCOR ID",
-  "enterMessageIdToFilter": "Enter message ID, CORID or PMXCOR ID...",
-  "statusOpen": "OPEN",
-  "statusAnalyzing": "AI ANALYSIS STARTED",
-  "statusCompleted": "AI ANALYSIS DONE",
-  "statusFailed": "FAILED",
-  "showingOrders": "Showing {filtered} of {total} orders",
-  "@showingOrders": {
-    "placeholders": {
-      "filtered": { "type": "int" },
-      "total": { "type": "int" }
-    }
-  },
-  "loadOrders": "Load Orders",
-  "searchingForOrders": "Searching for orders...",
-  "noOrdersFound": "No orders found. Click Load to search.",
-  "noOrdersMatchFilter": "No orders match the filter.",
-  "failedToLoadOrders": "Failed to load orders: {error}",
-  "@failedToLoadOrders": {
-    "placeholders": {
-      "error": { "type": "String" }
-    }
-  },
-  "orders": "Orders",
-  "rerunNotIntegrated": "Rerun from history is not fully integrated in Orders View yet.",
-  "simulateOrder": "Simulate Order",
-  "limitOrders": "Enable order limit",
-  "maxOrders": "Max Orders",
-  "totalOrders": "{total} Orders",
-  "@totalOrders": {
-    "placeholders": {
-      "total": { "type": "int", "format": "decimalPattern" }
-    }
-  },
-  "aiAnalysisDataAvailable": "AI Analysis Data Available",
-  "kiError": "AI Error",
   "active": "Active",
-  "firstAppearanceForKey": "First appearance for Key: {key}",
-  "@firstAppearanceForKey": {
-    "placeholders": {
-      "key": { "type": "String" }
-    }
-  },
   "stepMatches": "{count} matches",
   "@stepMatches": {
     "placeholders": {
-      "count": { "type": "int", "format": "decimalPattern" }
-    }
-  },
-  "searchingInTopic": "Searching in: {topic}",
-  "@searchingInTopic": {
-    "placeholders": {
-      "topic": { "type": "String" }
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
     }
   },
   "examinedMessages": "Examined: {count} messages",
   "@examinedMessages": {
     "placeholders": {
-      "count": { "type": "int", "format": "decimalPattern" }
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
     }
   },
   "searchResults": "Search results...",
   "matchesCount": "{current} / {total} matches",
   "@matchesCount": {
     "placeholders": {
-      "current": { "type": "int", "format": "decimalPattern" },
-      "total": { "type": "int", "format": "decimalPattern" }
+      "current": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
     }
   },
   "otherResults": "Other Results",
-  "noResultsFound": "No results found matching '{phrase}'",
-  "@noResultsFound": {
-    "placeholders": {
-      "phrase": { "type": "String" }
-    }
-  },
-  "noActiveStreams": "No active streams",
-  "noProgressInfo": "No progress info",
   "scanned": "{count} scanned",
   "@scanned": {
     "placeholders": {
-      "count": { "type": "int", "format": "decimalPattern" }
-    }
-  },
-  "scannedCount": "Scanned: {count}",
-  "@scannedCount": {
-    "placeholders": {
-      "count": { "type": "int", "format": "decimalPattern" }
-    }
-  },
-  "topicsProgress": "Completed {completed} of {total} topics",
-  "@topicsProgress": {
-    "placeholders": {
-      "completed": { "type": "int" },
-      "total": { "type": "int" }
-    }
-  },
-  "pmxcorStatus": "{status}",
-  "@pmxcorStatus": {
-    "placeholders": {
-      "status": { "type": "String" }
-    }
-  },
-  "clusterLabel": "Cluster: {name}",
-  "@clusterLabel": {
-    "placeholders": {
-      "name": { "type": "String" }
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
     }
   },
   "close": "Close",
@@ -224,16 +144,13 @@
   "settings": "Settings",
   "clusters": "CLUSTERS",
   "addCluster": "Add Cluster",
-  "reloadTopicsAndSchemas": "Reload Topics & Schemas",
   "selectClusterToViewTopics": "Select a cluster to view topics",
   "topics": "Topics",
   "filterTopics": "Filter topics...",
-  "showInternal": "Show internal",
   "consumerGroups": "Consumer Groups",
   "searchGroups": "Search consumer groups...",
   "noConsumerGroupsFound": "No consumer groups found.",
   "consumerLag": "Consumer Lag",
-  "autoRefresh": "Auto-Refresh (15s)",
   "topicCol": "Topic",
   "partitionCol": "Partition",
   "logEndOffsetCol": "Log End Offset",
@@ -241,7 +158,6 @@
   "lagCol": "Lag",
   "totalLag": "Total Lag",
   "stream": "Stream",
-  "cards": "Cards",
   "tree": "Tree",
   "raw": "Raw",
   "clear": "Clear",
@@ -292,7 +208,6 @@
   "exact": "Exact",
   "run": "Run",
   "stop": "Stop",
-  "clearAll": "Clear All",
   "apply": "Apply",
   "cancel": "Cancel",
   "save": "Save",
@@ -321,25 +236,17 @@
   "deleteClusterConfirmation": "Are you sure you want to delete {clusterName}?",
   "@deleteClusterConfirmation": {
     "placeholders": {
-      "clusterName": { "type": "String" }
+      "clusterName": {
+        "type": "String"
+      }
     }
   },
   "useSidebarToSelectScript": "Use the sidebar to select or create a script.",
   "createNewScript": "Create New Script",
   "editDefinition": "Edit Definition",
-  "selectValidScript": "Please select a valid script first.",
-  "scriptExecution": "Script Execution: {name}",
-  "@scriptExecution": {
-    "placeholders": {
-      "name": { "type": "String" }
-    }
-  },
   "newRun": "New Run",
   "history": "History",
-  "reviewPreviousRuns": "Review Previous Runs",
   "noPastRunsFound": "No past runs found.",
-  "deleteRunResult": "Delete Run Result",
-  "deleteRunResultConfirmation": "Are you sure you want to delete this run result?",
   "runResultDeleted": "Run result deleted",
   "runDetails": "Run Details",
   "runSummary": "Run Summary",
@@ -348,7 +255,6 @@
   "switchLightMode": "Switch to Light Mode",
   "switchDarkMode": "Switch to Dark Mode",
   "defaultScriptOutputDir": "Default Script Output Directory",
-  "selectOutputDirectory": "Select Output Directory",
   "maxScriptRunHistory": "Max Script Runs to keep",
   "exportConfiguration": "Export Configuration",
   "export": "Export",
@@ -359,19 +265,15 @@
   "pleaseSelectCluster": "Please select a cluster",
   "selectAll": "Select All",
   "deselectAll": "Deselect All",
-  "viewAll": "View All",
-  "messageDetails": "Message Details",
   "copyMessage": "Copy message",
   "contentCopied": "Content copied to clipboard",
   "metadataCopied": "Metadata copied to clipboard",
   "fullMessageCopied": "Full message copied to clipboard",
   "copiedToClipboard": "Copied to clipboard",
   "noDifferencesFound": "No differences found.",
-  "unknownView": "Unknown View",
   "configurationExportedSuccessfully": "Configuration exported successfully",
   "configurationImportedSuccessfully": "Configuration imported successfully",
   "clustersExportedSuccessfully": "Clusters exported successfully",
-  "clustersImportedSuccessfully": "Clusters imported successfully",
   "scriptExportedSuccessfully": "Script exported successfully",
   "scriptsImportedSuccessfully": "Scripts imported successfully",
   "runArchiveExported": "Run archive exported",
@@ -380,25 +282,33 @@
   "failedToExport": "Failed to export: {error}",
   "@failedToExport": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "failedToImport": "Failed to import: {error}",
   "@failedToImport": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "failedToImportRun": "Failed to import run: {error}",
   "@failedToImportRun": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "messagesExportFailed": "Failed to export messages: {error}",
   "@messagesExportFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "checkForUpdates": "Check for Updates",
@@ -413,7 +323,9 @@
   "updateError": "Error checking or applying update: {error}",
   "@updateError": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "releaseNotes": "Release Notes",
@@ -421,7 +333,9 @@
   "backgroundUpdateAvailable": "A new version of Kafkalyzer (v{version}) is available.",
   "@backgroundUpdateAvailable": {
     "placeholders": {
-      "version": { "type": "String" }
+      "version": {
+        "type": "String"
+      }
     }
   },
   "updateAction": "Update",
@@ -435,25 +349,21 @@
   "tabPayload": "Payload",
   "tabKeyAndHeaders": "Key & Headers",
   "tabRawJson": "Raw JSON",
-  "inspectorTitle": "Message Inspector",
   "copyHeaders": "Copy all headers",
   "copyMetadata": "Copy metadata",
   "copiedHeaders": "All headers copied to clipboard",
-  "copiedHeaderValue": "Copied value of '{key}'",
-  "@copiedHeaderValue": {
-    "placeholders": {
-      "key": { "type": "String" }
-    }
-  },
   "noHeaders": "No headers present on this message",
-  "copyRawJson": "Copy JSON",
   "previousMessageTooltip": "Previous message (K)",
   "nextMessageTooltip": "Next message (J)",
   "messagePosition": "{current} of {total}",
   "@messagePosition": {
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "focusMode": "Maximize (Focus Mode)",
@@ -461,11 +371,15 @@
   "searchInMessage": "Search in message...",
   "nextMatchTooltip": "Next match (Enter)",
   "previousMatchTooltip": "Previous match (Shift+Enter)",
-  "matchesCount": "{current} of {total}",
-  "@matchesCount": {
+  "scriptRunMatchedOfExamined": "{matched} of {examined}",
+  "@scriptRunMatchedOfExamined": {
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "matched": {
+        "type": "int"
+      },
+      "examined": {
+        "type": "int"
+      }
     }
   },
   "noMatches": "No matches",
@@ -473,63 +387,60 @@
   "collapsedRangeLabel": "… {count} hidden items (Index {start} to {end})",
   "@collapsedRangeLabel": {
     "placeholders": {
-      "count": { "type": "int" },
-      "start": { "type": "int" },
-      "end": { "type": "int" }
+      "count": {
+        "type": "int"
+      },
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      }
     }
   },
   "showAllArrayItems": "Show all {count}",
   "@showAllArrayItems": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "reduceToMatchContext": "Focus matches (±1)",
   "matchesContextBadge": "{matches} matches (Focus: ±1)",
   "@matchesContextBadge": {
     "placeholders": {
-      "matches": { "type": "int" }
+      "matches": {
+        "type": "int"
+      }
     }
   },
-  "recollapseRange": "Re-collapse range",
   "pinAsColumn": "Pin as Column",
   "columnPinned": "Column '{path}' pinned to table",
   "@columnPinned": {
     "placeholders": {
-      "path": { "type": "String" }
+      "path": {
+        "type": "String"
+      }
     }
   },
   "columnAlreadyPinned": "Column '{path}' is already pinned",
   "@columnAlreadyPinned": {
     "placeholders": {
-      "path": { "type": "String" }
+      "path": {
+        "type": "String"
+      }
     }
   },
-  "removeColumn": "Remove column",
   "resetColumns": "Reset columns",
   "columnsReset": "Table columns reset to default",
   "columnsMenu": "Columns",
   "hideColumn": "Hide column",
-  "showColumn": "Show column",
-  "autoFitColumn": "Auto-fit width",
   "hideEmptyFields": "Hide empty fields",
   "showEmptyFields": "Show empty fields",
-  "hiddenEmptyFieldsCount": "{count, plural, =1{1 hidden empty field} other{{count} hidden empty fields}}",
-  "@hiddenEmptyFieldsCount": {
-    "description": "Indicates number of hidden null/empty fields",
-    "placeholders": {
-      "count": {
-        "type": "num",
-        "format": "compact"
-      }
-    }
-  },
   "rawTimestampLabel": "Raw",
   "utcTimestampLabel": "UTC",
   "localTimestampLabel": "Local",
-  "searchConfigurationTitle": "Search Configuration",
-  "collapseSearchConfiguration": "Collapse search configuration",
-  "expandSearchConfiguration": "Expand search configuration",
   "collapseSidebar": "Collapse sidebar",
   "expandSidebar": "Expand sidebar (Ctrl+B)",
   "collapseScriptCatalog": "Collapse script catalog",
@@ -543,44 +454,45 @@
   "quickFilterPlaceholder": "Filter on fetch (key or value)...",
   "invalidFilterPattern": "Invalid regular expression: {term}",
   "@invalidFilterPattern": {
-    "placeholders": { "term": {} }
+    "placeholders": {
+      "term": {}
+    }
   },
   "limitLabel": "Limit",
   "limitAll": "All",
   "advancedFiltersToggle": "Advanced",
   "collapseAdvancedFilters": "Collapse advanced filters",
   "expandAdvancedFilters": "Expand advanced filters",
-  "fetchMessagesCount": "Fetch {count} Messages",
-  "@fetchMessagesCount": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "fetchMessages": "Fetch Messages",
-  "startLiveStream": "Start Live Stream",
-  "filterChangedTooltip": "Parameters changed – Click to fetch new results",
   "chipPartition": "Partition: {partition}",
   "@chipPartition": {
     "placeholders": {
-      "partition": { "type": "String" }
+      "partition": {
+        "type": "String"
+      }
     }
   },
   "chipField": "Field: {field}",
   "@chipField": {
     "placeholders": {
-      "field": { "type": "String" }
+      "field": {
+        "type": "String"
+      }
     }
   },
   "chipFilterType": "Type: {type}",
   "@chipFilterType": {
     "placeholders": {
-      "type": { "type": "String" }
+      "type": {
+        "type": "String"
+      }
     }
   },
   "chipScope": "Scope: {scope}",
   "@chipScope": {
     "placeholders": {
-      "scope": { "type": "String" }
+      "scope": {
+        "type": "String"
+      }
     }
   },
   "chipFastTrace": "Fast Trace",
@@ -591,29 +503,24 @@
   "addClusterAction": "Add Cluster",
   "connectCluster": "Connect",
   "recentTopics": "Recently Viewed Topics",
-  "noRecentTopics": "No recently viewed topics yet.",
   "clearRecentTopics": "Clear History",
-  "clusterOverviewTitle": "Cluster Overview",
-  "clusterOverviewSubtitle": "Explore topics from the sidebar or open a recently examined topic.",
   "clusterTopicsCount": "{count} Topics",
   "@clusterTopicsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "schemaRegistryActive": "Schema Registry Connected",
   "schemaRegistryNotConfigured": "No Schema Registry",
-  "securityProtocolLabel": "Protocol: {protocol}",
-  "@securityProtocolLabel": {
-    "placeholders": {
-      "protocol": { "type": "String" }
-    }
-  },
   "selectTopicPrompt": "Select a topic from the sidebar to inspect messages and analyze partitions.",
   "recentTopicsForCluster": "Recent Topics in {cluster}",
   "@recentTopicsForCluster": {
     "placeholders": {
-      "cluster": { "type": "String" }
+      "cluster": {
+        "type": "String"
+      }
     }
   },
   "noMessagesLoadedTitle": "No messages loaded yet",
@@ -623,64 +530,85 @@
   "loadingMessages": "Loading messages from Kafka...",
   "internalTopicsFilter": "Internal Topics",
   "streamTopicsFilter": "Stream Topics",
-  "partitionBadge": "{count}P",
-  "@partitionBadge": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
   "topicTooltip": "Partitions: {partitions} • RF: {rf} • Retention: {retention} • Cleanup: {policy}",
   "@topicTooltip": {
     "placeholders": {
-      "partitions": { "type": "int" },
-      "rf": { "type": "int" },
-      "retention": { "type": "String" },
-      "policy": { "type": "String" }
+      "partitions": {
+        "type": "int"
+      },
+      "rf": {
+        "type": "int"
+      },
+      "retention": {
+        "type": "String"
+      },
+      "policy": {
+        "type": "String"
+      }
     }
   },
   "topicTooltipSimple": "Partitions: {partitions} • RF: {rf}",
   "@topicTooltipSimple": {
     "placeholders": {
-      "partitions": { "type": "int" },
-      "rf": { "type": "int" }
+      "partitions": {
+        "type": "int"
+      },
+      "rf": {
+        "type": "int"
+      }
     }
   },
   "messageSchemaResolved": "Schema: {subject} v{version} (#{id})",
   "@messageSchemaResolved": {
     "placeholders": {
-      "subject": { "type": "String" },
-      "version": { "type": "int" },
-      "id": { "type": "int" }
+      "subject": {
+        "type": "String"
+      },
+      "version": {
+        "type": "int"
+      },
+      "id": {
+        "type": "int"
+      }
     }
   },
   "messageSchemaUnresolved": "Schema #{id} (unresolved)",
   "@messageSchemaUnresolved": {
     "placeholders": {
-      "id": { "type": "int" }
+      "id": {
+        "type": "int"
+      }
     }
   },
-  "messageSchemaUnresolvedTooltip":
-    "The Schema Registry could not be reached. The id comes from the message itself.",
+  "messageSchemaUnresolvedTooltip": "The Schema Registry could not be reached. The id comes from the message itself.",
   "groupMembersTitle": "Members",
   "groupMemberEmpty": "This group currently has no members.",
   "groupMemberPartitions": "{count} partitions",
   "@groupMemberPartitions": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "groupUnassignedPartitions": "{count} partitions have no owner",
   "@groupUnassignedPartitions": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "groupAssignmentNotDecodable": "Assignment could not be decoded",
   "topicHealthWarning": "{underReplicated} under-replicated, {leaderless} leaderless",
   "@topicHealthWarning": {
     "placeholders": {
-      "underReplicated": { "type": "int" },
-      "leaderless": { "type": "int" }
+      "underReplicated": {
+        "type": "int"
+      },
+      "leaderless": {
+        "type": "int"
+      }
     }
   },
   "partitionHealthTitle": "Partition health",
@@ -694,7 +622,9 @@
   "schemaTooltipSuffix": " • Schema: {schema}",
   "@schemaTooltipSuffix": {
     "placeholders": {
-      "schema": { "type": "String" }
+      "schema": {
+        "type": "String"
+      }
     }
   },
   "viewModeTable": "Table",
@@ -708,20 +638,28 @@
   "filterInLoadedMessages": "Filter in {count} loaded messages...",
   "@filterInLoadedMessages": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchesOfTotal": "{matchCount} of {totalCount} matches",
   "@matchesOfTotal": {
     "placeholders": {
-      "matchCount": { "type": "int" },
-      "totalCount": { "type": "int" }
+      "matchCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
     }
   },
   "loadedMessagesCount": "{count} loaded messages",
   "@loadedMessagesCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sslClientAuthMode": "Client Authentication (mTLS)",
@@ -733,25 +671,18 @@
   "hidePassword": "Hide password",
   "testConnection": "Test Connection",
   "testingConnection": "Testing Connection...",
-  "connectionSuccessful": "Connection successful!",
-  "connectionFailed": "Connection failed: {error}",
-  "@connectionFailed": {
-    "placeholders": {
-      "error": { "type": "String" }
-    }
-  },
   "schemaRegistryCredentialsOptional": "Schema Registry Credentials (Optional)",
   "globalConfigDescription": "Backup or restore the entire application state including all cluster configurations and preferences.",
   "clusterExportDescription": "Export or import selected cluster profiles and their certificates as a portable ZIP archive.",
   "schemaRegistryConfiguredBadge": "Schema Registry",
-  "maxScriptRuns": "Maximum Script Runs",
   "maxConcurrentLagQueries": "Maximum Concurrent Lag Queries",
-  "maxConcurrentLagQueriesHelper": "Default: 5 (Higher values can impact performance)",
   "deleteStepConfirmationTitle": "Delete Step?",
   "deleteStepConfirmationMessage": "Are you sure you want to delete step \"{name}\"? This action cannot be undone.",
   "@deleteStepConfirmationMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "addTopicManually": "Add Topic Manually",
@@ -761,21 +692,24 @@
   "selectTopicsCount": "Select Topics ({count} selected)",
   "@selectTopicsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "extractionSource": "Source",
   "extractionTopic": "Topic",
   "extractionVariableName": "Variable Name",
   "extractionJsonPath": "Field path (e.g. order.id, items[0].sku, /order/status)",
-  "scriptProperties": "Script Properties",
   "concurrencyLimit": "Concurrency Limit",
   "advancedFiltersSection": "Advanced Filters",
   "deleteScriptConfirmationTitle": "Delete Script?",
   "deleteScriptConfirmationMessage": "Are you sure you want to delete script \"{name}\"? This action cannot be undone.",
   "@deleteScriptConfirmationMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "searchScripts": "Search scripts...",
@@ -783,7 +717,9 @@
   "pipelineStepsCount": "{count, plural, =1{1 Step} other{{count} Steps}}",
   "@pipelineStepsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "noStepsInPipeline": "No execution steps configured. Use the Edit tab to add steps.",
@@ -791,21 +727,23 @@
   "runScriptWithSteps": "Run Script ({count, plural, =1{1 step} other{{count} steps}})",
   "@runScriptWithSteps": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "variableTypeText": "Text",
-  "variableTypeTimestamp": "Timestamp",
   "variableTypeNumeric": "Numeric",
   "stepNumber": "Step {number}",
   "@stepNumber": {
     "placeholders": {
-      "number": { "type": "int" }
+      "number": {
+        "type": "int"
+      }
     }
   },
   "targetCluster": "Target Cluster",
   "extractedVariables": "Extracted",
-  "noVariablesRequired": "No variables required.",
   "filter": "Filter",
   "schemaAction": "Schema",
   "scanProgressTitle": "Scan Progress",
@@ -838,7 +776,9 @@
   "errorLoadingSchema": "Error loading schema: {error}",
   "@errorLoadingSchema": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "noMessagesToDisplay": "No messages to display",
@@ -855,14 +795,14 @@
   "keySchemaTitle": "Key Schema",
   "valueSchemaTitle": "Value Schema",
   "schemaTabTitle": "Schema",
-  "schemaPinAsColumn": "Pin as table column",
   "schemaPinAsColumnTooltip": "Pin this schema field as a projected table column",
-  "schemaFilterByField": "Filter by this field",
   "schemaFilterByFieldTooltip": "Filter topic messages by this schema field",
   "schemaFieldFilterApplied": "Filter field set to '{field}'",
   "@schemaFieldFilterApplied": {
     "placeholders": {
-      "field": { "type": "String" }
+      "field": {
+        "type": "String"
+      }
     }
   },
   "schemaNoRegistryConfigured": "No Schema Registry configured for this cluster.",
@@ -875,14 +815,19 @@
   "schemaNone": "no registry schema",
   "lagTrendTooltip": "Readings: {readings} - highest {high}, lowest {low}",
   "@lagTrendTooltip": {
-    "placeholders": { "readings": {}, "high": {}, "low": {} }
+    "placeholders": {
+      "readings": {},
+      "high": {},
+      "low": {}
+    }
   },
   "lagOverThreshold": "Above the warning threshold of {threshold} messages",
   "@lagOverThreshold": {
-    "placeholders": { "threshold": {} }
+    "placeholders": {
+      "threshold": {}
+    }
   },
   "lagWarnThresholdLabel": "Consumer lag warning threshold (messages)",
-  "lagWarnThresholdHelp": "0 disables the warning in the lag view.",
   "comparisonAction": "Compare",
   "comparisonTitle": "Report comparison",
   "comparisonSourceLive": "Live",
@@ -896,16 +841,59 @@
   "comparisonAwaitingSecond": "Select the second report to compare.",
   "comparisonTopicMismatch": "Cannot compare reports of different topics: {topicA} and {topicB}.",
   "@comparisonTopicMismatch": {
-    "placeholders": { "topicA": {}, "topicB": {} }
+    "placeholders": {
+      "topicA": {},
+      "topicB": {}
+    }
   },
   "sizePercentiles": "p50/p95/p99",
   "estimatedIndicator": "estimated",
   "distinctKeys": "Distinct keys",
   "cappedIndicator": "capped",
   "exportAsJson": "JSON (Full Payload)",
+  "exportAsNdjson": "NDJSON (One Message per Line)",
   "exportAsCsv": "CSV (Visible Columns)",
-  "exportFormat": "Export Format",
   "exportMessagesCsv": "Export Messages as CSV",
+  "exportSelectedOnly": "Only selected messages ({count})",
+  "@exportSelectedOnly": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exportIncludeDimmedNonMatches": "Include dimmed non-matches",
+  "exportAddHeadersColumn": "Add Headers column (CSV)",
+  "pauseView": "Pause",
+  "pauseViewTooltip": "Freeze the result view while consumption continues in the background",
+  "resumeViewWithNew": "{count, plural, =0{Resume} one{Resume · 1 new} other{Resume · {count} new}}",
+  "@resumeViewWithNew": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "resumeViewTooltip": "Resume live updates and merge buffered messages",
+  "followNewest": "Follow newest",
+  "followNewestOnTooltip": "Following newest messages; click or scroll to pause following",
+  "followNewestOffTooltip": "Jump to newest messages and keep following",
+  "followNewestDisabledTooltip": "Follow newest requires sorting by Timestamp",
+  "droppedMessagesIndicator": "{dropped} oldest messages dropped (limit {limit})",
+  "@droppedMessagesIndicator": {
+    "placeholders": {
+      "dropped": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "droppedMessagesTooltip": "Oldest messages were dropped when the buffer reached its limit. Adjust in Settings → General.",
+  "messageBufferLimitLabel": "Message buffer limit",
+  "messageBufferLimitHelper": "Maximum retained messages per topic tab or search target (1,000–1,000,000)",
+  "messageBufferLimitError": "Enter a whole number between 1,000 and 1,000,000",
   "searchPresets": "Search Presets",
   "defaultPreset": "Default",
   "saveSearchPreset": "Save Current Search...",
@@ -914,14 +902,13 @@
   "presetSaved": "Preset saved",
   "presetDeleted": "Preset deleted",
   "deletePreset": "Delete preset",
-  "updateCurrentPreset": "Update current preset",
   "restoreOpenTabsOnStartup": "Restore open tabs on startup",
   "restoreOpenTabsOnStartupDescription": "Automatically reopen previously opened topic tabs when reconnecting to a cluster",
   "copyCliCommand": "Copy Headless CLI Command",
   "cliCommandCopied": "CLI command copied to clipboard",
   "protectedByOsKeyring": "Protected by OS Keyring",
   "includeCredentialsInExport": "Include passwords and tokens in export",
-  "includeCredentialsWarning": "Warning: Exporting credentials will store unencrypted passwords in the exported archive file.",
+  "includeCredentialsWarning": "Credentials will be encrypted with your passphrase in an age archive (.zip.age).",
   "readOnlyBadgeLabel": "Read-Only",
   "readOnlyBadgeTooltip": "kafkalyzer is strictly read-only by design. No write, publish, or offset commit operations are performed.",
   "readOnlySecurityTitle": "Read-Only Architecture & Security",
@@ -937,21 +924,21 @@
   "baseVersionLabel": "Base Version",
   "compareVersionLabel": "Compare Version",
   "checkCompatibility": "Check Compatibility",
-  "compatibilityCheckTitle": "Schema Compatibility Check",
   "schemaCompatible": "Compatible",
   "schemaIncompatible": "Incompatible",
   "compatibilityCheckSuccess": "Schema is compatible with the selected subject version.",
   "associatedTopicsTitle": "Associated Topics",
   "noAssociatedTopicsFound": "No associated topics found for this subject.",
-  "noDifferencesFound": "No differences found between the selected versions.",
+  "schemaNoDifferencesFound": "No differences found between the selected versions.",
   "draftSchemaLabel": "Draft Schema (JSON)",
   "dlqBadgeLabel": "DLQ",
   "retryBadgeLabel": "Retry",
-  "deadLetterQueue": "Dead-Letter Queue",
   "associatedDlqCount": "{count, plural, =1{1 failure topic} other{{count} failure topics}}",
   "@associatedDlqCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "failureDiagnosticsTitle": "Failure Diagnostics (DLQ)",
@@ -959,9 +946,15 @@
   "originalCoordinates": "Origin: {topic} [P: {partition}, O: {offset}]",
   "@originalCoordinates": {
     "placeholders": {
-      "topic": { "type": "String" },
-      "partition": { "type": "int" },
-      "offset": { "type": "int" }
+      "topic": {
+        "type": "String"
+      },
+      "partition": {
+        "type": "int"
+      },
+      "offset": {
+        "type": "int"
+      }
     }
   },
   "jumpToOriginalMessage": "Jump to Original Message",
@@ -975,7 +968,9 @@
   "quickJumpClusterNotFound": "Cluster '{cluster}' not found in configuration. Select a cluster:",
   "@quickJumpClusterNotFound": {
     "placeholders": {
-      "cluster": { "type": "String" }
+      "cluster": {
+        "type": "String"
+      }
     }
   },
   "jump": "Jump",
@@ -984,13 +979,9 @@
   "failedToOpenFile": "Failed to open file: {error}",
   "@failedToOpenFile": {
     "placeholders": {
-      "error": { "type": "String" }
-    }
-  },
-  "failedToOpenFolder": "Failed to open folder: {error}",
-  "@failedToOpenFolder": {
-    "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "lagEstimateCaughtUp": "Caught up",
@@ -1001,20 +992,29 @@
   "lagEstimateEtaPrefix": "ETA: {eta}",
   "@lagEstimateEtaPrefix": {
     "placeholders": {
-      "eta": { "type": "String" }
+      "eta": {
+        "type": "String"
+      }
     }
   },
   "lagEstimateTooltip": "Rate: {rate} | Delta: {delta} over {interval} | Status: {status}",
   "@lagEstimateTooltip": {
     "placeholders": {
-      "rate": { "type": "String" },
-      "delta": { "type": "String" },
-      "interval": { "type": "String" },
-      "status": { "type": "String" }
+      "rate": {
+        "type": "String"
+      },
+      "delta": {
+        "type": "String"
+      },
+      "interval": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
     }
   },
   "recentProductionTitle": "Recent Production",
-  "recentProductionSubtitle": "Message volume over recent hours",
   "window6h": "6h",
   "window12h": "12h",
   "window24h": "24h",
@@ -1024,42 +1024,47 @@
   "timeZoneLabel": "Local time ({timeZone})",
   "@timeZoneLabel": {
     "placeholders": {
-      "timeZone": { "type": "String" }
+      "timeZone": {
+        "type": "String"
+      }
     }
   },
   "unusualIncreaseBadge": "Unusual increase",
   "baselineLabel": "Baseline: {baseline}",
   "@baselineLabel": {
     "placeholders": {
-      "baseline": { "type": "String" }
+      "baseline": {
+        "type": "String"
+      }
     }
   },
   "noComparisonData": "No comparison data",
   "uncoveredHourHint": "Before coverage start ({count} messages)",
   "@uncoveredHourHint": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "currentHourIncomplete": "Incomplete hour",
   "coverageHint": "Scan covers the last {hours} hours of this window.",
   "@coverageHint": {
     "placeholders": {
-      "hours": { "type": "int" }
-    }
-  },
-  "hourlyTooltipDetails": "{count} messages ({delta})",
-  "@hourlyTooltipDetails": {
-    "placeholders": {
-      "count": { "type": "String" },
-      "delta": { "type": "String" }
+      "hours": {
+        "type": "int"
+      }
     }
   },
   "hourlyTooltipMatches": "{matches} matching ({share}%)",
   "@hourlyTooltipMatches": {
     "placeholders": {
-      "matches": { "type": "String" },
-      "share": { "type": "String" }
+      "matches": {
+        "type": "String"
+      },
+      "share": {
+        "type": "String"
+      }
     }
   },
   "dailyProductionTitle": "Daily Production Distribution",
@@ -1068,19 +1073,26 @@
   "dailyMatchesShare": "{matches} ({share}%)",
   "@dailyMatchesShare": {
     "placeholders": {
-      "matches": { "type": "String" },
-      "share": { "type": "String" }
+      "matches": {
+        "type": "String"
+      },
+      "share": {
+        "type": "String"
+      }
     }
   },
   "valueFilterButton": "Filter by Field Value",
   "valueFilterActive": "Filter: {path} = {value}",
   "@valueFilterActive": {
     "placeholders": {
-      "path": { "type": "String" },
-      "value": { "type": "String" }
+      "path": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
     }
   },
-  "valueFilterClear": "Clear filter",
   "valueFilterDialogTitle": "Filter by Field Value",
   "valueFilterDialogFieldPath": "Field path (e.g. attributes.region)",
   "valueFilterDialogValue": "Exact value",
@@ -1090,56 +1102,66 @@
   "valueFilterMatchCount": "{count} matches",
   "@valueFilterMatchCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "valueFilterShareOfTotal": "{percent}% of all scanned messages",
   "@valueFilterShareOfTotal": {
     "placeholders": {
-      "percent": { "type": "String" }
+      "percent": {
+        "type": "String"
+      }
     }
   },
   "valueFilterShareOfField": "{percent}% of messages with this field",
   "@valueFilterShareOfField": {
     "placeholders": {
-      "percent": { "type": "String" }
+      "percent": {
+        "type": "String"
+      }
     }
   },
   "valueFilterRemainder": "{remainder} non-matching messages",
   "@valueFilterRemainder": {
     "placeholders": {
-      "remainder": { "type": "String" }
+      "remainder": {
+        "type": "String"
+      }
     }
   },
   "drillDownDialogTitle": "Field Value Details",
   "drillDownFieldPath": "Field: {path}",
   "@drillDownFieldPath": {
     "placeholders": {
-      "path": { "type": "String" }
-    }
-  },
-  "drillDownValue": "Value: {value}",
-  "@drillDownValue": {
-    "placeholders": {
-      "value": { "type": "String" }
+      "path": {
+        "type": "String"
+      }
     }
   },
   "drillDownCount": "Count: {count}",
   "@drillDownCount": {
     "placeholders": {
-      "count": { "type": "String" }
+      "count": {
+        "type": "String"
+      }
     }
   },
   "drillDownShareOfAll": "Share of all messages: {percent}%",
   "@drillDownShareOfAll": {
     "placeholders": {
-      "percent": { "type": "String" }
+      "percent": {
+        "type": "String"
+      }
     }
   },
   "drillDownShareOfField": "Share of field occurrences: {percent}%",
   "@drillDownShareOfField": {
     "placeholders": {
-      "percent": { "type": "String" }
+      "percent": {
+        "type": "String"
+      }
     }
   },
   "drillDownRescanButton": "Re-scan with this filter",
@@ -1150,17 +1172,15 @@
   "duplicateScopePayloadOnly": "Payload (Value)",
   "duplicateScopeKeyAndPayload": "Key + Payload",
   "duplicateMessagesCardTitle": "Duplicate Messages",
-  "duplicateMessagesRate": "{rate}% of messages",
-  "@duplicateMessagesRate": {
-    "placeholders": {
-      "rate": { "type": "String" }
-    }
-  },
   "duplicateMessagesSubtitle": "{unique} unique • {scope}",
   "@duplicateMessagesSubtitle": {
     "placeholders": {
-      "unique": { "type": "String" },
-      "scope": { "type": "String" }
+      "unique": {
+        "type": "String"
+      },
+      "scope": {
+        "type": "String"
+      }
     }
   },
   "topDuplicatesTitle": "Top Duplicated Messages",
@@ -1170,8 +1190,12 @@
   "sampleLocation": "Partition {partition}, Offset {offset}",
   "@sampleLocation": {
     "placeholders": {
-      "partition": { "type": "int" },
-      "offset": { "type": "int" }
+      "partition": {
+        "type": "int"
+      },
+      "offset": {
+        "type": "int"
+      }
     }
   },
   "copyPayload": "Copy payload",
@@ -1180,7 +1204,6 @@
   "copiedKey": "Key copied to clipboard",
   "duplicateRankHeader": "#",
   "duplicateCountHeader": "Occurrences",
-  "duplicateShareHeader": "Share",
   "duplicateKeyHeader": "Key",
   "duplicatePayloadPreviewHeader": "Payload Preview",
   "duplicateSampleCoordinatesHeader": "Sample Location",
@@ -1188,23 +1211,29 @@
   "duplicateDetailsSubtitle": "Rank #{rank} • {count} occurrences ({share}%)",
   "@duplicateDetailsSubtitle": {
     "placeholders": {
-      "rank": { "type": "int" },
-      "count": { "type": "String" },
-      "share": { "type": "String" }
+      "rank": {
+        "type": "int"
+      },
+      "count": {
+        "type": "String"
+      },
+      "share": {
+        "type": "String"
+      }
     }
   },
   "openInMessages": "Open in Messages",
   "filterDuplicatesInMessages": "Filter in Messages",
   "jumpToSampleOffset": "Jump to Sample",
-  "duplicateCoordinates": "Coordinates",
-  "duplicateTimestamp": "Timestamp",
   "duplicateKey": "Key",
   "duplicatePayload": "Decoded Payload",
   "inspectDuplicateTooltip": "View duplicate details",
   "importRejectedUnsafeEntry": "Import rejected: archive contains an unsafe entry ({entry}).",
   "@importRejectedUnsafeEntry": {
     "placeholders": {
-      "entry": { "type": "String" }
+      "entry": {
+        "type": "String"
+      }
     }
   },
   "clusterNameAlreadyUsed": "A cluster profile with this name already exists.",
@@ -1212,7 +1241,9 @@
   "importConflictMessage": "A cluster profile named \"{name}\" already exists.",
   "@importConflictMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "importConflictReplace": "Replace existing",
@@ -1221,10 +1252,18 @@
   "importSummary": "Imported {added} added, {replaced} replaced, {renamed} renamed, {skipped} skipped.",
   "@importSummary": {
     "placeholders": {
-      "added": { "type": "int" },
-      "replaced": { "type": "int" },
-      "renamed": { "type": "int" },
-      "skipped": { "type": "int" }
+      "added": {
+        "type": "int"
+      },
+      "replaced": {
+        "type": "int"
+      },
+      "renamed": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
     }
   },
   "keyringUnavailableNotice": "System keyring is unavailable. Credentials are kept in memory for this session only and will not be persisted securely.",
@@ -1233,21 +1272,29 @@
   "storeBackupLocation": "Backup saved at: {path}",
   "@storeBackupLocation": {
     "placeholders": {
-      "path": { "type": "String" }
+      "path": {
+        "type": "String"
+      }
     }
   },
   "storeBackupFailed": "No backup file could be written.",
   "storePartiallyUnreadable": "{count} unreadable saved {store} {count, plural, =1{entry was} other{entries were}} skipped and preserved.",
   "@storePartiallyUnreadable": {
     "placeholders": {
-      "count": { "type": "int" },
-      "store": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "store": {
+        "type": "String"
+      }
     }
   },
   "duplicateProfileNamesNotice": "Duplicate cluster profile names detected: {names}. Please rename duplicates so each profile has a unique name.",
   "@duplicateProfileNamesNotice": {
     "placeholders": {
-      "names": { "type": "String" }
+      "names": {
+        "type": "String"
+      }
     }
   },
   "discardUnreadableData": "Discard unreadable data",
@@ -1263,24 +1310,24 @@
   "tlsTransitionDialogBody": "Certificate verification failed when checking cluster \"{clusterName}\". Choose whether to keep TLS verification enabled (recommended) or disable it for this profile.\n\nDetails: {error}",
   "@tlsTransitionDialogBody": {
     "placeholders": {
-      "clusterName": { "type": "String" },
-      "error": { "type": "String" }
+      "clusterName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
     }
   },
   "tlsTransitionKeepEnabled": "Keep verification on",
   "tlsTransitionDisable": "Disable verification (insecure)",
-  "tlsVerificationFailedConnectError": "TLS certificate verification failed: {error}",
-  "@tlsVerificationFailedConnectError": {
-    "placeholders": {
-      "error": { "type": "String" }
-    }
-  },
   "messageFetchFailedTitle": "Failed to fetch messages",
   "topicsLoadFailedTitle": "Failed to load topics",
   "subjectsLoadFailed": "Failed to load schemas: {error}",
   "@subjectsLoadFailed": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "columnFiltersNoMatch": "No rows match the active column filters.",
@@ -1291,8 +1338,12 @@
   "lagGroupsLoadedProgress": "{loaded} of {total} loaded",
   "@lagGroupsLoadedProgress": {
     "placeholders": {
-      "loaded": { "type": "int" },
-      "total": { "type": "int" }
+      "loaded": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "lagTotalIncomplete": "Total incomplete",
@@ -1300,13 +1351,14 @@
   "lagErrorTooltip": "Lag error: {error}",
   "@lagErrorTooltip": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "lagRetryAction": "Retry",
   "lagRefreshInProgress": "Refresh in progress",
   "partitionOwnershipUnknown": "Partition ownership unknown",
-  "topicNotReadable": "Topic not readable",
   "diagStageNetwork": "Network",
   "diagStageTls": "TLS",
   "diagStageAuthentication": "Authentication",
@@ -1320,7 +1372,9 @@
   "diagNotCheckedPreviousFailed": "Skipped because {stage} failed",
   "@diagNotCheckedPreviousFailed": {
     "placeholders": {
-      "stage": { "type": "String" }
+      "stage": {
+        "type": "String"
+      }
     }
   },
   "diagNotCheckedBudgetExhausted": "Skipped because the diagnosis time budget ran out",
@@ -1328,7 +1382,9 @@
   "diagOverallFailedAtStage": "Connection failed at stage: {stage}",
   "@diagOverallFailedAtStage": {
     "placeholders": {
-      "stage": { "type": "String" }
+      "stage": {
+        "type": "String"
+      }
     }
   },
   "diagOverallStageUnknown": "Connection failed, stage unknown",
@@ -1348,7 +1404,9 @@
   "diagHintRegistryHttpError": "Schema Registry returned HTTP {status}",
   "@diagHintRegistryHttpError": {
     "placeholders": {
-      "status": { "type": "int" }
+      "status": {
+        "type": "int"
+      }
     }
   },
   "diagHintGeneric": "Connection check failed",
@@ -1358,7 +1416,9 @@
   "diagServerConnectedTo": "Connected to {address}",
   "@diagServerConnectedTo": {
     "placeholders": {
-      "address": { "type": "String" }
+      "address": {
+        "type": "String"
+      }
     }
   },
   "diagRawErrorLabel": "Raw error",
@@ -1381,7 +1441,9 @@
   "settingsOpenLogFolderFailed": "Could not open log folder at {path}",
   "@settingsOpenLogFolderFailed": {
     "placeholders": {
-      "path": { "type": "String" }
+      "path": {
+        "type": "String"
+      }
     }
   },
   "settingsFileLoggingUnavailable": "File logging is unavailable",
@@ -1416,7 +1478,6 @@
   "shortcutKeyArrowUp": "Up Arrow",
   "shortcutKeyShift": "Shift",
   "shortcutCommandPalette": "Command palette",
-  "commandPaletteTitle": "Command Palette",
   "commandPaletteHint": "Search clusters, topics, groups, scripts…",
   "commandPaletteKindDestination": "Destination",
   "commandPaletteKindCluster": "Cluster",
@@ -1430,8 +1491,12 @@
   "commandPaletteResultsCap": "{shown} of {total} matches, keep typing",
   "@commandPaletteResultsCap": {
     "placeholders": {
-      "shown": { "type": "int" },
-      "total": { "type": "int" }
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "commandPaletteGroupsNotLoadedNote": "Consumer groups appear after Consumer Lag has loaded them.",
@@ -1439,20 +1504,991 @@
   "commandPalettePartitionsCount": "{count, plural, =1{1 partition} other{{count} partitions}}",
   "@commandPalettePartitionsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "commandPaletteStepsCount": "{count, plural, =1{1 step} other{{count} steps}}",
   "@commandPaletteStepsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "consumerGroupNotFound": "Consumer group {id} not found",
   "@consumerGroupNotFound": {
     "placeholders": {
-      "id": { "type": "String" }
+      "id": {
+        "type": "String"
+      }
     }
   },
-  "scriptNotFound": "Script not found"
+  "scriptNotFound": "Script not found",
+  "fastTracePartitionPreview": "Partition {partition} of {partitionCount}",
+  "@fastTracePartitionPreview": {
+    "placeholders": {
+      "partition": {
+        "type": "int"
+      },
+      "partitionCount": {
+        "type": "int"
+      }
+    }
+  },
+  "fastTracePartitionCountUnknown": "Partition count unknown",
+  "fastTraceEnterKeyHint": "Enter a key to preview target partition",
+  "fastTraceFirstTermOnlyNote": "Only the first term selects the scanned partition",
+  "fastTraceAssumptionSummary": "Assumes Java default partitioner (murmur2), UTF-8 text key",
+  "fastTraceAssumptionCaveat": "Assumes the Java default partitioner hashing the key as UTF-8 text. The actual partition can differ if the producer uses another partitioner (e.g. librdkafka consistent/CRC32 or custom), binary or serialized keys (e.g. Avro keys with Confluent wire prefix), or if partitions were added after the message was produced.",
+  "fastTraceAssumptionInfoLabel": "Fast Trace partitioning assumptions",
+  "chipFastTracePartition": "Fast Trace → P{partition}",
+  "@chipFastTracePartition": {
+    "placeholders": {
+      "partition": {
+        "type": "int"
+      }
+    }
+  },
+  "exportPassphraseLabel": "Passphrase",
+  "exportPassphraseConfirmLabel": "Confirm passphrase",
+  "exportPassphraseTooShort": "Passphrase must be at least {min} characters",
+  "@exportPassphraseTooShort": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "exportPassphraseMismatch": "Passphrases do not match",
+  "exportPassphraseNotRecoverable": "A lost passphrase cannot be recovered. Without it, this bundle cannot be opened.",
+  "showPassphrase": "Show passphrase",
+  "hidePassphrase": "Hide passphrase",
+  "encryptingBundle": "Encrypting bundle...",
+  "importPassphraseTitle": "Enter bundle passphrase",
+  "importPassphraseLabel": "Passphrase",
+  "importPassphraseWrong": "Wrong passphrase. Please try again.",
+  "importEncryptedCorrupt": "The encrypted bundle is damaged or corrupt.",
+  "importEncryptedUnsupported": "This encrypted file is not passphrase-encrypted and cannot be imported.",
+  "importEncryptedTooExpensive": "This encrypted bundle requires too much work to decrypt on this device.",
+  "searchRunning": "Searching...",
+  "searchFailed": "Search failed",
+  "matchesCountCapped": "{current} / {total}+",
+  "@matchesCountCapped": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "environmentTagSectionTitle": "Environment Tag (optional)",
+  "environmentLabelField": "Environment Label",
+  "environmentLabelHint": "e.g. DEV, TEST, STAGE, PROD",
+  "environmentLabelTooLong": "Environment label must be at most {max} characters",
+  "@environmentLabelTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "environmentSemanticsLabel": "Environment: {label}",
+  "@environmentSemanticsLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "environmentColorRed": "Red",
+  "environmentColorOrange": "Orange",
+  "environmentColorYellow": "Yellow",
+  "environmentColorGreen": "Green",
+  "environmentColorBlue": "Blue",
+  "environmentColorPurple": "Purple",
+  "environmentColorGrey": "Grey",
+  "bootstrapNoEntries": "Enter at least one host:port entry",
+  "bootstrapMissingPort": "Entry \"{entry}\" requires a port (:port)",
+  "@bootstrapMissingPort": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "bootstrapInvalidPort": "Entry \"{entry}\" has an invalid port (1–65535)",
+  "@bootstrapInvalidPort": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "bootstrapInvalidHost": "Entry \"{entry}\" has an invalid host",
+  "@bootstrapInvalidHost": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "bootstrapSchemeNotAllowed": "Entry \"{entry}\" must not include a URL scheme",
+  "@bootstrapSchemeNotAllowed": {
+    "placeholders": {
+      "entry": {
+        "type": "String"
+      }
+    }
+  },
+  "extraPropertiesTitle": "Additional client properties",
+  "extraPropertiesHint": "One key=value per line",
+  "extraPropertiesAllowedKeysTitle": "Allowed keys",
+  "extraPropertiesSyntaxError": "Line {line}: invalid syntax (expected key=value)",
+  "@extraPropertiesSyntaxError": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "extraPropertiesNotAllowed": "Line {line}: \"{key}\" is not allowed",
+  "@extraPropertiesNotAllowed": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "extraPropertiesInvalidValue": "Line {line}: invalid value for \"{key}\" (allowed: {allowed})",
+  "@extraPropertiesInvalidValue": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "key": {
+        "type": "String"
+      },
+      "allowed": {
+        "type": "String"
+      }
+    }
+  },
+  "extraPropertiesDuplicate": "Line {line}: duplicate key \"{key}\"",
+  "@extraPropertiesDuplicate": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "key": {
+        "type": "String"
+      }
+    }
+  },
+  "importClientPropertiesAction": "Import client.properties",
+  "importClientPropertiesPreviewTitle": "Import client.properties Preview",
+  "importClientPropertiesMappedSection": "Profile fields to apply",
+  "importClientPropertiesExtrasSection": "Additional properties",
+  "importClientPropertiesSkippedSection": "Not applied",
+  "importClientPropertiesApplyAction": "Apply",
+  "importClientPropertiesTooLarge": "File is larger than 1 MiB and cannot be imported.",
+  "importClientPropertiesInvalidUtf8": "File is not valid UTF-8 and cannot be read.",
+  "importClientPropertiesReadError": "Could not read file: {error}",
+  "@importClientPropertiesReadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importClientPropertiesNothingToApply": "No supported properties were found in this file.",
+  "skipReasonNotAllowed": "Unknown or not allowed",
+  "skipReasonUnsupported": "Unsupported type or format",
+  "skipReasonPlaceholder": "Placeholder cannot be resolved",
+  "skipReasonVerificationOverride": "TLS verification can only be disabled in the dialog",
+  "skipReasonInvalidValue": "Invalid value",
+  "duplicateClusterAction": "Duplicate",
+  "duplicateClusterTitle": "Duplicate Cluster",
+  "clusterFilterHint": "Filter clusters (name, environment, bootstrap)",
+  "clusterFilterNoMatch": "No cluster matches the filter",
+  "clusterFilterClear": "Clear filter",
+  "disconnectClusterTooltip": "Disconnect",
+  "disconnectConfirmTitle": "Disconnect from {cluster}?",
+  "@disconnectConfirmTitle": {
+    "placeholders": {
+      "cluster": {
+        "type": "String"
+      }
+    }
+  },
+  "disconnectConfirmBody": "A search or analysis is still running for this cluster. Disconnecting will stop it and close its tabs.",
+  "disconnectConfirmAction": "Disconnect",
+  "unrestoredTabsMessage": "{count, plural, =1{1 tab could not be restored ({topics})} other{{count} tabs could not be restored ({topics})}}",
+  "@unrestoredTabsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "topics": {
+        "type": "String"
+      }
+    }
+  },
+  "decodeAs": "Decode as…",
+  "decodeAsJson": "JSON",
+  "decodeAsBase64": "Base64",
+  "decodeAsGzip": "gzip",
+  "showOriginalOnly": "Show original only",
+  "showOriginal": "Show original",
+  "copyDecoded": "Copy decoded",
+  "copyAsHex": "Copy as hex",
+  "binaryBytesSummary": "{count} bytes",
+  "@binaryBytesSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "decodeErrorInvalidJson": "Not valid JSON",
+  "decodeErrorInvalidBase64": "Not valid Base64",
+  "decodeErrorNotGzip": "Not a gzip stream",
+  "decodeErrorCorruptGzip": "Corrupt gzip data",
+  "decodeErrorInputTooLarge": "Input exceeds {limitMib} MiB limit",
+  "@decodeErrorInputTooLarge": {
+    "placeholders": {
+      "limitMib": {
+        "type": "int"
+      }
+    }
+  },
+  "decodeErrorOutputTooLarge": "Decoded output exceeds {limitMib} MiB limit",
+  "@decodeErrorOutputTooLarge": {
+    "placeholders": {
+      "limitMib": {
+        "type": "int"
+      }
+    }
+  },
+  "epochUnitSeconds": "seconds",
+  "epochUnitMilliseconds": "milliseconds",
+  "epochUnitMicroseconds": "microseconds",
+  "epochUnitNanoseconds": "nanoseconds",
+  "epochTooltip": "{primary}\n{secondary}\nAssumed unit: {unit}",
+  "@epochTooltip": {
+    "placeholders": {
+      "primary": {
+        "type": "String"
+      },
+      "secondary": {
+        "type": "String"
+      },
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyValueMarker": "Empty value",
+  "inspectorKeySection": "Key",
+  "inspectorHeadersSection": "Headers ({count})",
+  "@inspectorHeadersSection": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "appearanceSectionTitle": "Appearance",
+  "themeLabel": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "languageLabel": "Language",
+  "languageSystem": "System",
+  "languageEnglish": "English",
+  "languageGerman": "Deutsch",
+  "textSizeLabel": "Text size",
+  "textSizeCustom": "Custom ({percent}%)",
+  "@textSizeCustom": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDisplayLabel": "Timestamps",
+  "timeDisplayLocal": "Local",
+  "timeDisplayUtc": "UTC",
+  "defaultResultLimitLabel": "Default result limit",
+  "intSettingRangeHelper": "Range: {min}–{max} (Default: {defaultValue})",
+  "@intSettingRangeHelper": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      },
+      "defaultValue": {
+        "type": "int"
+      }
+    }
+  },
+  "intSettingRangeError": "Enter a whole number from {min} to {max}",
+  "@intSettingRangeError": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "resetToDefaults": "Reset to defaults",
+  "resetSectionConfirmTitle": "Reset {section} settings?",
+  "@resetSectionConfirmTitle": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
+  "resetSectionConfirmBody": "This restores {section} preferences to their defaults. Cluster profiles, secrets, scripts, and saved searches will not be touched.",
+  "@resetSectionConfirmBody": {
+    "placeholders": {
+      "section": {
+        "type": "String"
+      }
+    }
+  },
+  "resetConfirmAction": "Reset",
+  "manualUpdateAvailableTitle": "Version {version} available",
+  "@manualUpdateAvailableTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "manualUpdateAvailableBody": "A newer release ({version}) is available on GitHub. This installation cannot update automatically.",
+  "@manualUpdateAvailableBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "manualUpToDateHint": "You are on the latest version. Automatic updates are not available for this installation.",
+  "latestReleaseKnownBody": "Latest release on GitHub: {version}. Running version could not be compared.",
+  "@latestReleaseKnownBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "openReleasePage": "Open release page",
+  "downloadCancelledSnackbar": "Download cancelled. The update will not be installed.",
+  "connectionErrorInvalidBootstrapServers": "Invalid bootstrap server",
+  "connectionErrorTlsVerificationFailed": "TLS certificate verification failed",
+  "connectionErrorValidationFailed": "Connection failed validation",
+  "connectionErrorBrokerTransport": "Broker transport failure. Check your address and network.",
+  "connectionErrorConnectionRefused": "Connection refused",
+  "connectionErrorOther": "Connection failed",
+  "topicAnalysisEmptyFieldPath": "Field path cannot be empty",
+  "topicAnalysisNoPreviousScope": "No previous analysis scope to rescan",
+  "exportTopicAnalysis": "Export Topic Analysis",
+  "importTopicAnalysis": "Import Topic Analysis",
+  "saveRunArchive": "Save Run Archive - {name}",
+  "@saveRunArchive": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "saveSchemaMarkdown": "Save Schema Markdown",
+  "step": "Step",
+  "content": "Content",
+  "filterColumnTitle": "Filter {column}",
+  "@filterColumnTitle": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "filterSubstringHint": "Enter substring to filter...",
+  "copyContent": "Copy content",
+  "emptyBinaryData": "Empty binary data",
+  "preparingHexDump": "Preparing hex dump for clipboard...",
+  "hexDumpCopied": "Hex dump copied to clipboard",
+  "copyFullHexDump": "Copy Full Hex Dump",
+  "objectCopiedToClipboard": "Object copied to clipboard",
+  "entityDetails": "Entity Details",
+  "copyWholeObject": "Copy whole object",
+  "errorComputingDiff": "Error computing diff",
+  "globalNoStep": "Global (No Step)",
+  "stacktrace": "Stacktrace",
+  "noResultsMatchingPhrase": "No results found matching '{phrase}'",
+  "@noResultsMatchingPhrase": {
+    "placeholders": {
+      "phrase": {
+        "type": "String"
+      }
+    }
+  },
+  "hideNonMatchingMessages": "Hide non-matching messages",
+  "showNonMatchesAsDimmed": "Show non-matches as dimmed",
+  "availableTopics": "Available Topics",
+  "optionalMetadataRegistry": "Optional metadata registry",
+  "noClusterSelected": "No cluster selected",
+  "quickJumpTopicLabel": "Topic: {topic}",
+  "@quickJumpTopicLabel": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "quickJumpPartitionLabel": "Partition: {partition}",
+  "@quickJumpPartitionLabel": {
+    "placeholders": {
+      "partition": {
+        "type": "int"
+      }
+    }
+  },
+  "quickJumpOffsetLabel": "Offset: {offset}",
+  "@quickJumpOffsetLabel": {
+    "placeholders": {
+      "offset": {
+        "type": "int"
+      }
+    }
+  },
+  "quickJumpFilterLabel": "Filter: {filter}",
+  "@quickJumpFilterLabel": {
+    "placeholders": {
+      "filter": {
+        "type": "String"
+      }
+    }
+  },
+  "schemaRegistryUrlHint": "e.g. {url}",
+  "@schemaRegistryUrlHint": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "startTime": "Start Time",
+  "endTime": "End Time",
+  "fieldOptional": "Field (Opt.)",
+  "selectTopicsDialogTitle": "{count, plural, =1{Select Topic ({filtered}/{total})} other{Select Topics ({filtered}/{total})}}",
+  "@selectTopicsDialogTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "kafkaStreamTopics": "Kafka Stream Topics",
+  "searchLabel": "Search",
+  "selectCount": "Select ({count})",
+  "@selectCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectDateTime": "Select Date & Time",
+  "presetsRelativeToNow": "Presets (Relative to Now)",
+  "selectVersionsToCompare": "Select versions to compare",
+  "unknownError": "Unknown error",
+  "unreadableStoredData": "Unreadable stored data",
+  "tombstoneValueNull": "TOMBSTONE (Value is NULL)",
+  "lagChangeDelta": "Change: {delta}",
+  "@lagChangeDelta": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "ofTotal": "of {total}",
+  "@ofTotal": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "activeStable": "Active / Stable",
+  "idleEmptyCount": "{count} Idle/Empty",
+  "@idleEmptyCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "activeQueries": "Active Queries",
+  "queueCount": "Queue: {count}",
+  "@queueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "connectingToCluster": "Connecting to cluster...",
+  "establishingConnectionOffsets": "Establishing connection and calculating consumer group offsets...",
+  "selectClusterForConsumerLag": "Select a cluster above to view consumer lag details.",
+  "loadedConsumerGroupsSummary": "Successfully loaded {count} consumer groups in {seconds}s.",
+  "@loadedConsumerGroupsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "groupIdCol": "Group ID",
+  "stateCol": "State",
+  "protocolCol": "Protocol",
+  "consumersCol": "Consumers",
+  "processedCol": "Processed",
+  "noActivePartitionAssignments": "No active partition assignments.",
+  "noMessageAtOrAfterOffset": "No message found at or after offset {offset}",
+  "@noMessageAtOrAfterOffset": {
+    "placeholders": {
+      "offset": {
+        "type": "String"
+      }
+    }
+  },
+  "viewMessageAtOffset": "View message at offset",
+  "errorWithMessage": "Error: {error}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "stateAll": "All",
+  "stateStable": "Stable",
+  "stateEmpty": "Empty",
+  "stateDead": "Dead",
+  "refreshIntervalLabel": "Refresh",
+  "refreshOff": "Off",
+  "scriptName": "Script Name",
+  "sourceCol": "Source",
+  "newVariableName": "New Variable Name",
+  "extractedVars": "Extracted: {vars}",
+  "@extractedVars": {
+    "placeholders": {
+      "vars": {
+        "type": "String"
+      }
+    }
+  },
+  "usedVars": "Used: {vars}",
+  "@usedVars": {
+    "placeholders": {
+      "vars": {
+        "type": "String"
+      }
+    }
+  },
+  "stepNameLabel": "Step Name",
+  "valueExtractions": "Value Extractions",
+  "noExtractionsDefined": "No extractions defined",
+  "insertVariable": "Insert Variable",
+  "deleteExtraction": "Delete extraction",
+  "filterByParameter": "Filter by {parameter}",
+  "@filterByParameter": {
+    "placeholders": {
+      "parameter": {
+        "type": "String"
+      }
+    }
+  },
+  "searchValues": "Search values",
+  "selectAllMatches": "Select All Matches",
+  "clearSelection": "Clear Selection",
+  "copyValue": "Copy value",
+  "copiedValueToClipboard": "Copied '{value}' to clipboard",
+  "@copiedValueToClipboard": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "applyWithCount": "Apply ({count})",
+  "@applyWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noScriptsAvailable": "No scripts available",
+  "executionProgress": "Execution Progress",
+  "runningEllipsis": "Running...",
+  "backTooltip": "Back",
+  "failedToLoadDetails": "Failed to load details",
+  "defaultLabel": "Default",
+  "clusterLabelValue": "Cluster: {cluster}",
+  "@clusterLabelValue": {
+    "placeholders": {
+      "cluster": {
+        "type": "String"
+      }
+    }
+  },
+  "clusterRuntimeLabel": "Cluster: {cluster} • {runtime}",
+  "@clusterRuntimeLabel": {
+    "placeholders": {
+      "cluster": {
+        "type": "String"
+      },
+      "runtime": {
+        "type": "String"
+      }
+    }
+  },
+  "startedAt": "Started: {time}",
+  "@startedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "finishedAt": "Finished: {time}",
+  "@finishedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "totalRuntime": "Total Runtime: {duration}",
+  "@totalRuntime": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "runHistory": "Run History",
+  "importRunArchive": "Import Run Archive",
+  "matchedAnalyzed": "{matched} matched / {analyzed} analyzed",
+  "@matchedAnalyzed": {
+    "placeholders": {
+      "matched": {
+        "type": "int"
+      },
+      "analyzed": {
+        "type": "int"
+      }
+    }
+  },
+  "loadResults": "Load Results",
+  "runAgain": "Run Again",
+  "exportRunArchive": "Export Run Archive",
+  "deleteRun": "Delete Run",
+  "deleteRunResultTitle": "Delete Run Result",
+  "deleteRunResultConfirm": "Are you sure you want to delete this run result? This cannot be undone.",
+  "failedToDeleteRun": "Failed to delete run: {error}",
+  "@failedToDeleteRun": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noSchemaFieldsMatching": "No schema fields found matching '{query}'",
+  "@noSchemaFieldsMatching": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "noSchemasForScriptTopics": "No schemas found for the current script's topics.",
+  "fieldLabel": "Field: {field}",
+  "@fieldLabel": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "foundTimesAcrossTopics": "{count, plural, =1{Found 1 time} other{Found {count} times}} across {topics, plural, =1{1 topic} other{{topics} topics}}",
+  "@foundTimesAcrossTopics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "topics": {
+        "type": "int"
+      }
+    }
+  },
+  "copyMarkdown": "Copy Markdown",
+  "copiedSchemaToClipboard": "Copied {field} schema to clipboard.",
+  "@copiedSchemaToClipboard": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadMarkdown": "Download Markdown",
+  "savedSchemaToFile": "Saved schema to file",
+  "foundInTopic": "Found in topic: {topic}",
+  "@foundInTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "pathLabel": "Path: {path}",
+  "@pathLabel": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "foundInMultipleLocations": "Found in multiple locations (differences highlighted):",
+  "baselineTopic": "Baseline Topic: {topic}",
+  "@baselineTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "comparedToTopic": "Compared to Topic: {topic}",
+  "@comparedToTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "noDifferencesFromBaseline": "No differences from baseline.",
+  "stepStatusPending": "PENDING",
+  "stepStatusRunning": "RUNNING",
+  "stepStatusCompleted": "COMPLETED",
+  "stepStatusFailed": "FAILED",
+  "remainingCount": "{count, plural, =1{{formatted} remaining} other{{formatted} remaining}}",
+  "@remainingCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "formatted": {
+        "type": "String"
+      }
+    }
+  },
+  "matchesFoundScanned": "{matches, plural, =1{{formattedMatches} match found ({formattedScanned} scanned)} other{{formattedMatches} matches found ({formattedScanned} scanned)}}",
+  "@matchesFoundScanned": {
+    "placeholders": {
+      "matches": {
+        "type": "int"
+      },
+      "formattedMatches": {
+        "type": "String"
+      },
+      "formattedScanned": {
+        "type": "String"
+      }
+    }
+  },
+  "matchesFoundInTopics": "{matches, plural, =1{1 match} other{{matches} matches}} found in {topics, plural, =1{1 topic} other{{topics} topics}}",
+  "@matchesFoundInTopics": {
+    "placeholders": {
+      "matches": {
+        "type": "int"
+      },
+      "topics": {
+        "type": "int"
+      }
+    }
+  },
+  "msgsCount": "{count, plural, =1{{formatted} msg} other{{formatted} msgs}}",
+  "@msgsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "formatted": {
+        "type": "String"
+      }
+    }
+  },
+  "msgsPerSecCount": "{count, plural, =1{{formatted} msg/sec} other{{formatted} msgs/sec}}",
+  "@msgsPerSecCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "formatted": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyAngleBracket": "<empty>",
+  "partitionOffsetSummary": "Partition {partition} • Offset {offset}",
+  "@partitionOffsetSummary": {
+    "placeholders": {
+      "partition": {
+        "type": "int"
+      },
+      "offset": {
+        "type": "int"
+      }
+    }
+  },
+  "noStructuredFieldsDetected": "No structured fields detected",
+  "noScalarValuesForField": "No scalar values recorded for this field",
+  "peakHourSummary": "Peak: {hour}:00 UTC ({count} msgs • {percentage}%)",
+  "@peakHourSummary": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      },
+      "percentage": {
+        "type": "String"
+      }
+    }
+  },
+  "hourlyTooltipSummary": "{hour}:00 - {hour}:59 UTC\n{count} msgs ({percentage}%)",
+  "@hourlyTooltipSummary": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      },
+      "percentage": {
+        "type": "String"
+      }
+    }
+  },
+  "noKeyedMessagesFound": "No keyed messages found",
+  "noContentTypesRecorded": "No content types recorded",
+  "partitionLabel": "Partition {partition}",
+  "@partitionLabel": {
+    "placeholders": {
+      "partition": {
+        "type": "int"
+      }
+    }
+  },
+  "partitionStatsLine": "{count} msgs ({percentage}%) • {size}",
+  "@partitionStatsLine": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "percentage": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "offsetsRange": "Offsets: {from} .. {to}",
+  "@offsetsRange": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "offsetsEmpty": "Offsets: -",
+  "durationPartitionsSummary": "{partitions, plural, =1{{duration} • 1 partition} other{{duration} • {partitions} partitions}}",
+  "@durationPartitionsSummary": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      },
+      "partitions": {
+        "type": "int"
+      }
+    }
+  },
+  "analyzingTopicProgress": "Analyzing topic... ({scanned} / {total} messages • {percentage}%)",
+  "@analyzingTopicProgress": {
+    "placeholders": {
+      "scanned": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      },
+      "percentage": {
+        "type": "String"
+      }
+    }
+  },
+  "keyLabelWithColon": "Key: ",
+  "refreshTooltip": "Refresh",
+  "editVariableTooltip": "Edit variable",
+  "deleteVariableTooltip": "Delete variable",
+  "addVariableTooltip": "Add variable",
+  "editStepTooltip": "Edit step",
+  "deleteStepTooltip": "Delete step",
+  "browseDirectoryTooltip": "Choose folder",
+  "expandTooltip": "Expand",
+  "collapseTooltip": "Collapse",
+  "selectStepTooltip": "Select all topics in step",
+  "deselectStepTooltip": "Deselect all topics in step",
+  "filterColumnTooltip": "Filter {column}",
+  "@filterColumnTooltip": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "removeColumnTooltip": "Remove column",
+  "compositeBadgeTooltip": "Show nested fields",
+  "skewedLabel": "Skewed",
+  "copy": "Copy",
+  "copyFailed": "Failed to copy to clipboard"
 }

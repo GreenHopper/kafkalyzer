@@ -16,6 +16,7 @@ void main() {
   late Logger logger;
   late StreamController<KafkaMessage> streamController;
   late MessageStreamController controller;
+  late int configuredLimit;
 
   KafkaMessage messageAt(int index) => KafkaMessage(
     topic: 'topic',
@@ -29,8 +30,10 @@ void main() {
   setUp(() {
     logger = Logger(level: Level.off);
     streamController = StreamController<KafkaMessage>();
+    configuredLimit = 50000;
     controller = MessageStreamController(
       logger: logger,
+      bufferLimitProvider: () => configuredLimit,
       consumeStreamFactory:
           ({
             required profile,
@@ -81,7 +84,7 @@ void main() {
     await startUnlimited();
 
     streamController.add(messageAt(0));
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(const Duration(milliseconds: 80));
 
     expect(controller.messages, hasLength(1));
     expect(controller.messages.first.payload, 'payload-0');
@@ -93,7 +96,7 @@ void main() {
     for (var i = 0; i < 1500; i++) {
       streamController.add(messageAt(i));
     }
-    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(const Duration(milliseconds: 80));
 
     expect(controller.messages, hasLength(1500));
     expect(controller.messages.first.offset, 0);
@@ -175,5 +178,116 @@ void main() {
     expect(throwingController.isStreaming, isFalse);
     expect(throwingController.error, contains('Factory boom'));
     throwingController.dispose();
+  });
+
+  test(
+    'buffer limit 1,000 with 1,250 messages retains 1,000 and tracks drops',
+    () async {
+      configuredLimit = 1000;
+      await startUnlimited();
+
+      for (var i = 0; i < 1250; i++) {
+        streamController.add(messageAt(i));
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      expect(controller.bufferLimit, 1000);
+      expect(controller.messages, hasLength(1000));
+      expect(controller.messages.first.offset, 250);
+      expect(controller.messages.last.offset, 1249);
+      expect(controller.droppedCount, 250);
+      expect(controller.receivedCount, 1250);
+    },
+  );
+
+  test('result limit above buffer limit stops on receivedCount', () async {
+    configuredLimit = 1000;
+    await startWithLimit(1500);
+
+    for (var i = 0; i < 1600; i++) {
+      streamController.add(messageAt(i));
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+
+    expect(controller.isStreaming, isFalse);
+    expect(controller.receivedCount, 1500);
+    expect(controller.messages, hasLength(1000));
+    expect(controller.droppedCount, 500);
+  });
+
+  test(
+    'pause freezes messages identity while pendingCount grows and resume publishes',
+    () async {
+      await startUnlimited();
+
+      for (var i = 0; i < 10; i++) {
+        streamController.add(messageAt(i));
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      final frozen = controller.messages;
+      expect(frozen, hasLength(10));
+
+      controller.pause();
+      expect(controller.isPaused, isTrue);
+
+      for (var i = 10; i < 25; i++) {
+        streamController.add(messageAt(i));
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      expect(identical(controller.messages, frozen), isTrue);
+      expect(controller.pendingCount, 15);
+      expect(controller.receivedCount, 25);
+
+      controller.resume();
+      expect(controller.isPaused, isFalse);
+      expect(controller.pendingCount, 0);
+      expect(controller.messages, hasLength(25));
+      expect(identical(controller.messages, frozen), isFalse);
+    },
+  );
+
+  test(
+    'EOF and error keep pause and buffer; start/clear reset pause and counts',
+    () async {
+      await startUnlimited();
+      streamController.add(messageAt(0));
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      controller.pause();
+      streamController.add(messageAt(1));
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(controller.pendingCount, 1);
+
+      streamController.addError(Exception('boom'));
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.isStreaming, isFalse);
+      expect(controller.isPaused, isTrue);
+      expect(controller.error, contains('boom'));
+      expect(controller.messages, hasLength(1));
+      expect(controller.pendingCount, 1);
+
+      controller.clearMessages();
+      expect(controller.isPaused, isFalse);
+      expect(controller.pendingCount, 0);
+      expect(controller.droppedCount, 0);
+      expect(controller.receivedCount, 0);
+      expect(controller.messages, isEmpty);
+    },
+  );
+
+  test('throttles notifications to at most one per 60ms interval', () async {
+    await startUnlimited();
+    var notifications = 0;
+    controller.addListener(() => notifications++);
+
+    for (var i = 0; i < 50; i++) {
+      streamController.add(messageAt(i));
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 15));
+    expect(notifications, 0);
+
+    await Future<void>.delayed(const Duration(milliseconds: 70));
+    expect(notifications, 1);
   });
 }

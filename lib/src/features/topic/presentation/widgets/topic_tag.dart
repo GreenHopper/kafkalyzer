@@ -19,16 +19,26 @@ class TopicTag extends StatelessWidget {
     final colors = _getColors(context);
 
     final widget = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      constraints: onTap != null
+          ? const BoxConstraints(minWidth: 24, minHeight: 24)
+          : null,
+      padding: EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: onTap != null ? 4 : 2,
+      ),
       decoration: BoxDecoration(
         color: colors.backgroundColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: colors.textColor,
-          fontWeight: FontWeight.w500,
+      child: Center(
+        widthFactor: 1.0,
+        heightFactor: 1.0,
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: colors.textColor,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -62,17 +72,8 @@ class TopicTag extends StatelessWidget {
     } else if (isConfig) {
       // Differentiate cleanup policies
       if (text.contains("delete") && text.contains("compact")) {
-        // Combined policy
-        if (Theme.of(context).brightness == Brightness.dark) {
-          // Use Orange to differentiate from Compact (Tertiary) and Avro (Primary)
-          // Secondary/Tertiary seem close in this theme, so we step outside the scheme for distinctiveness.
-          bgColor = Colors.orange.withValues(alpha: 0.2);
-          textColor = Colors.orange.shade200;
-        } else {
-          // Light mode: Primary (Blue) - user liked this.
-          bgColor = colorScheme.primaryContainer;
-          textColor = colorScheme.onPrimaryContainer;
-        }
+        bgColor = colorScheme.primaryContainer;
+        textColor = colorScheme.onPrimaryContainer;
       } else if (text == "delete") {
         bgColor = colorScheme.errorContainer;
         textColor = colorScheme.onErrorContainer;

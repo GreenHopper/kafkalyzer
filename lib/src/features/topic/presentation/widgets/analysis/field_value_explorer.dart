@@ -80,7 +80,8 @@ class _FieldValueExplorerState extends State<FieldValueExplorer> {
           padding: const EdgeInsets.all(24.0),
           child: Center(
             child: Text(
-              'No structured fields detected',
+              l10n?.noStructuredFieldsDetected ??
+                  'No structured fields detected',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -317,7 +318,6 @@ class _FieldValueExplorerState extends State<FieldValueExplorer> {
                                   Text(
                                     '${numberFormat.format(field.count)} (${field.percentage.toStringAsFixed(0)}%)',
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      fontSize: 10,
                                       color: isSelected
                                           ? colorScheme.onPrimaryContainer
                                           : colorScheme.onSurfaceVariant,
@@ -413,7 +413,8 @@ class _FieldValueExplorerState extends State<FieldValueExplorer> {
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Center(
                       child: Text(
-                        'No scalar values recorded for this field',
+                        l10n?.noScalarValuesForField ??
+                            'No scalar values recorded for this field',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -446,7 +447,6 @@ class _FieldValueExplorerState extends State<FieldValueExplorer> {
                                 '#$rank',
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 10,
                                   color: rank <= 3
                                       ? colorScheme.onPrimaryContainer
                                       : colorScheme.onSurfaceVariant,
@@ -639,7 +639,6 @@ class FieldValueDrillDownDialog extends StatelessWidget {
                     child: Text(
                       l10n.drillDownApproximateBadge,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        fontSize: 9,
                         color: colorScheme.onTertiaryContainer,
                         fontWeight: FontWeight.bold,
                       ),

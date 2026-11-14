@@ -27,9 +27,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get analyzingTopic => 'Topic wird analysiert...';
 
   @override
-  String get analysisComplete => 'Analyse abgeschlossen';
-
-  @override
   String get scanScope => 'Scan-Umfang';
 
   @override
@@ -54,13 +51,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get avgMessageSize => 'Durchschnittl. Nachrichtengröße';
 
   @override
-  String get minMaxSize => 'Min / Max Größe';
-
-  @override
   String get tombstones => 'Tombstones';
-
-  @override
-  String get tombstoneRatio => 'Tombstone-Anteil';
 
   @override
   String get compactedTopic => 'Kompaktiertes Topic';
@@ -88,9 +79,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get fieldFrequencies => 'Strukturierte Feld-Häufigkeiten';
-
-  @override
-  String get fieldValuesDistribution => 'Häufigste Werte';
 
   @override
   String get noAnalysisYet =>
@@ -135,16 +123,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exportFailed => 'Fehler beim Exportieren des Analyseberichts.';
 
   @override
-  String scanSpeed(String speed) {
-    return '$speed Nachr./Sek.';
-  }
-
-  @override
-  String scanDuration(String duration) {
-    return 'Scan-Dauer: $duration';
-  }
-
-  @override
   String get hotPartition => 'Hohe Last / Ungleichgewicht';
 
   @override
@@ -172,11 +150,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get valueCopied => 'Wert in die Zwischenablage kopiert';
 
   @override
-  String distinctValues(int count) {
-    return '$count verschiedene Werte erfasst';
-  }
-
-  @override
   String fieldOccurrences(String count, String pct) {
     return 'Erscheint in $count Nachr. ($pct%)';
   }
@@ -184,11 +157,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String noMatchingFields(String query) {
     return 'Keine Felder für \'$query\' gefunden';
-  }
-
-  @override
-  String topValuesForField(String field) {
-    return 'Häufigste Werte für $field';
   }
 
   @override
@@ -201,86 +169,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get byStep => 'Nach Schritt';
 
   @override
-  String get filterByMessageId =>
-      'Nachrichten-ID, CORID oder PMXCOR-ID filtern';
-
-  @override
-  String get enterMessageIdToFilter =>
-      'Nachrichten-ID, CORID oder PMXCOR-ID eingeben...';
-
-  @override
-  String get statusOpen => 'OFFEN';
-
-  @override
-  String get statusAnalyzing => 'KI-ANALYSE GESTARTET';
-
-  @override
-  String get statusCompleted => 'KI-ANALYSE ABGESCHLOSSEN';
-
-  @override
-  String get statusFailed => 'FEHLGESCHLAGEN';
-
-  @override
-  String showingOrders(int filtered, int total) {
-    return 'Zeige $filtered von $total Aufträgen';
-  }
-
-  @override
-  String get loadOrders => 'Aufträge laden';
-
-  @override
-  String get searchingForOrders => 'Suche nach Aufträgen...';
-
-  @override
-  String get noOrdersFound =>
-      'Keine Aufträge gefunden. Klicken Sie auf Laden, um zu suchen.';
-
-  @override
-  String get noOrdersMatchFilter => 'Keine Aufträge entsprechen dem Filter.';
-
-  @override
-  String failedToLoadOrders(String error) {
-    return 'Fehler beim Laden der Aufträge: $error';
-  }
-
-  @override
-  String get orders => 'Aufträge';
-
-  @override
-  String get rerunNotIntegrated =>
-      'Erneute Ausführung aus dem Verlauf ist in der Auftragsansicht noch nicht integriert.';
-
-  @override
-  String get simulateOrder => 'Auftrag simulieren';
-
-  @override
-  String get limitOrders => 'Auftragslimit aktivieren';
-
-  @override
-  String get maxOrders => 'Max. Aufträge';
-
-  @override
-  String totalOrders(int total) {
-    final intl.NumberFormat totalNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String totalString = totalNumberFormat.format(total);
-
-    return '$totalString Aufträge';
-  }
-
-  @override
-  String get aiAnalysisDataAvailable => 'KI-Analysedaten verfügbar';
-
-  @override
-  String get kiError => 'KI Fehler';
-
-  @override
   String get active => 'Aktiv';
-
-  @override
-  String firstAppearanceForKey(String key) {
-    return 'Erstes Auftreten für Schlüssel: $key';
-  }
 
   @override
   String stepMatches(int count) {
@@ -289,11 +178,6 @@ class AppLocalizationsDe extends AppLocalizations {
     final String countString = countNumberFormat.format(count);
 
     return '$countString Treffer';
-  }
-
-  @override
-  String searchingInTopic(String topic) {
-    return 'Suche in: $topic';
   }
 
   @override
@@ -310,22 +194,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String matchesCount(int current, int total) {
-    return '$current von $total';
+    final intl.NumberFormat currentNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String currentString = currentNumberFormat.format(current);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$currentString / $totalString Treffer';
   }
 
   @override
   String get otherResults => 'Andere Ergebnisse';
-
-  @override
-  String noResultsFound(String phrase) {
-    return 'Keine Ergebnisse für \'$phrase\' gefunden';
-  }
-
-  @override
-  String get noActiveStreams => 'Keine aktiven Streams';
-
-  @override
-  String get noProgressInfo => 'Keine Fortschrittsinfos';
 
   @override
   String scanned(int count) {
@@ -334,30 +214,6 @@ class AppLocalizationsDe extends AppLocalizations {
     final String countString = countNumberFormat.format(count);
 
     return '$countString gescannt';
-  }
-
-  @override
-  String scannedCount(int count) {
-    final intl.NumberFormat countNumberFormat =
-        intl.NumberFormat.decimalPattern(localeName);
-    final String countString = countNumberFormat.format(count);
-
-    return 'Gescannt: $countString';
-  }
-
-  @override
-  String topicsProgress(int completed, int total) {
-    return '$completed von $total Topics abgeschlossen';
-  }
-
-  @override
-  String pmxcorStatus(String status) {
-    return '$status';
-  }
-
-  @override
-  String clusterLabel(String name) {
-    return 'Cluster: $name';
   }
 
   @override
@@ -398,9 +254,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addCluster => 'Cluster hinzufügen';
 
   @override
-  String get reloadTopicsAndSchemas => 'Topics & Schemas neu laden';
-
-  @override
   String get selectClusterToViewTopics =>
       'Wählen Sie einen Cluster aus, um Topics anzuzeigen';
 
@@ -409,9 +262,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get filterTopics => 'Topics filtern...';
-
-  @override
-  String get showInternal => 'Interne anzeigen';
 
   @override
   String get consumerGroups => 'Consumer-Gruppen';
@@ -424,9 +274,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get consumerLag => 'Consumer-Lag';
-
-  @override
-  String get autoRefresh => 'Auto-Aktualisierung (15s)';
 
   @override
   String get topicCol => 'Topic';
@@ -448,9 +295,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get stream => 'Stream';
-
-  @override
-  String get cards => 'Karten';
 
   @override
   String get tree => 'Baum';
@@ -610,9 +454,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get stop => 'Stopp';
 
   @override
-  String get clearAll => 'Alle leeren';
-
-  @override
   String get apply => 'Anwenden';
 
   @override
@@ -664,7 +505,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get usedIn => 'Verwendet in';
 
   @override
-  String get noVariablesRequired => 'Keine Parameter erforderlich.';
+  String get noVariablesRequired => 'Keine Variablen erforderlich.';
 
   @override
   String get addExtraction => 'Extraktion hinzufügen';
@@ -703,32 +544,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editDefinition => 'Definition bearbeiten';
 
   @override
-  String get selectValidScript =>
-      'Bitte wählen Sie zuerst ein gültiges Skript aus.';
-
-  @override
-  String scriptExecution(String name) {
-    return 'Skriptausführung: $name';
-  }
-
-  @override
   String get newRun => 'Neuer Durchlauf';
 
   @override
   String get history => 'Verlauf';
 
   @override
-  String get reviewPreviousRuns => 'Vergangene Durchläufe ansehen';
-
-  @override
   String get noPastRunsFound => 'Keine vergangenen Durchläufe gefunden.';
-
-  @override
-  String get deleteRunResult => 'Durchlaufergebnis löschen';
-
-  @override
-  String get deleteRunResultConfirmation =>
-      'Sind Sie sicher, dass Sie dieses Durchlaufergebnis löschen möchten?';
 
   @override
   String get runResultDeleted => 'Durchlaufergebnis gelöscht';
@@ -753,9 +575,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get defaultScriptOutputDir => 'Standard-Skript-Ausgabeverzeichnis';
-
-  @override
-  String get selectOutputDirectory => 'Ausgabeverzeichnis wählen';
 
   @override
   String get maxScriptRunHistory => 'Max. Anzahl an Skript-Durchläufen';
@@ -788,12 +607,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deselectAll => 'Alle abwählen';
 
   @override
-  String get viewAll => 'Alle anzeigen';
-
-  @override
-  String get messageDetails => 'Nachrichtendetails';
-
-  @override
   String get copyMessage => 'Nachricht kopieren';
 
   @override
@@ -810,11 +623,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get copiedToClipboard => 'In die Zwischenablage kopiert';
 
   @override
-  String get noDifferencesFound =>
-      'Keine Unterschiede zwischen den ausgewählten Versionen gefunden.';
-
-  @override
-  String get unknownView => 'Unbekannte Ansicht';
+  String get noDifferencesFound => 'Keine Unterschiede gefunden.';
 
   @override
   String get configurationExportedSuccessfully =>
@@ -826,9 +635,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get clustersExportedSuccessfully => 'Cluster erfolgreich exportiert';
-
-  @override
-  String get clustersImportedSuccessfully => 'Cluster erfolgreich importiert';
 
   @override
   String get scriptExportedSuccessfully => 'Skript erfolgreich exportiert';
@@ -947,9 +753,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tabRawJson => 'Rohes JSON';
 
   @override
-  String get inspectorTitle => 'Nachrichten-Inspector';
-
-  @override
   String get copyHeaders => 'Alle Header kopieren';
 
   @override
@@ -959,15 +762,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get copiedHeaders => 'Alle Header in die Zwischenablage kopiert';
 
   @override
-  String copiedHeaderValue(String key) {
-    return 'Wert von \'$key\' kopiert';
-  }
-
-  @override
   String get noHeaders => 'Keine Header in dieser Nachricht vorhanden';
-
-  @override
-  String get copyRawJson => 'JSON kopieren';
 
   @override
   String get previousMessageTooltip => 'Vorherige Nachricht (K)';
@@ -996,6 +791,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get previousMatchTooltip => 'Vorheriger Treffer (Shift+Enter)';
 
   @override
+  String scriptRunMatchedOfExamined(int matched, int examined) {
+    return '$matched von $examined';
+  }
+
+  @override
   String get noMatches => 'Keine Treffer';
 
   @override
@@ -1020,9 +820,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get recollapseRange => 'Wieder einklappen';
-
-  @override
   String get pinAsColumn => 'Als Spalte anheften';
 
   @override
@@ -1034,9 +831,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String columnAlreadyPinned(String path) {
     return 'Spalte \'$path\' ist bereits angeheftet';
   }
-
-  @override
-  String get removeColumn => 'Spalte entfernen';
 
   @override
   String get resetColumns => 'Spalten zurücksetzen';
@@ -1051,32 +845,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hideColumn => 'Spalte ausblenden';
 
   @override
-  String get showColumn => 'Spalte einblenden';
-
-  @override
-  String get autoFitColumn => 'Breite automatisch anpassen';
-
-  @override
   String get hideEmptyFields => 'Leere Felder ausblenden';
 
   @override
   String get showEmptyFields => 'Leere Felder einblenden';
-
-  @override
-  String hiddenEmptyFieldsCount(num count) {
-    final intl.NumberFormat countNumberFormat = intl.NumberFormat.compact(
-      locale: localeName,
-    );
-    final String countString = countNumberFormat.format(count);
-
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$countString leere Felder ausgeblendet',
-      one: '1 leeres Feld ausgeblendet',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get rawTimestampLabel => 'Rohwert';
@@ -1086,15 +858,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get localTimestampLabel => 'Lokal';
-
-  @override
-  String get searchConfigurationTitle => 'Suchkonfiguration';
-
-  @override
-  String get collapseSearchConfiguration => 'Suchkonfiguration einklappen';
-
-  @override
-  String get expandSearchConfiguration => 'Suchkonfiguration ausklappen';
 
   @override
   String get collapseSidebar => 'Seitenleiste einklappen';
@@ -1150,21 +913,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get expandAdvancedFilters => 'Erweiterte Filter ausklappen';
 
   @override
-  String fetchMessagesCount(int count) {
-    return '$count Nachrichten abrufen';
-  }
-
-  @override
-  String get fetchMessages => 'Nachrichten abrufen';
-
-  @override
-  String get startLiveStream => 'Live-Stream starten';
-
-  @override
-  String get filterChangedTooltip =>
-      'Filter geändert – Klicken zum erneuten Abrufen';
-
-  @override
   String chipPartition(String partition) {
     return 'Partition: $partition';
   }
@@ -1210,17 +958,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get recentTopics => 'Zuletzt untersuchte Topics';
 
   @override
-  String get noRecentTopics => 'Noch keine kürzlich untersuchten Topics.';
-
-  @override
   String get clearRecentTopics => 'Verlauf leeren';
-
-  @override
-  String get clusterOverviewTitle => 'Cluster-Übersicht';
-
-  @override
-  String get clusterOverviewSubtitle =>
-      'Wähle ein Topic aus der Seitenleiste oder öffne ein kürzlich untersuchtes Topic.';
 
   @override
   String clusterTopicsCount(int count) {
@@ -1232,11 +970,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get schemaRegistryNotConfigured => 'Keine Schema Registry';
-
-  @override
-  String securityProtocolLabel(String protocol) {
-    return 'Protokoll: $protocol';
-  }
 
   @override
   String get selectTopicPrompt =>
@@ -1270,11 +1003,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get streamTopicsFilter => 'Stream-Topics';
-
-  @override
-  String partitionBadge(int count) {
-    return '${count}P';
-  }
 
   @override
   String topicTooltip(int partitions, int rf, String retention, String policy) {
@@ -1423,14 +1151,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get testingConnection => 'Verbindung wird getestet...';
 
   @override
-  String get connectionSuccessful => 'Verbindung erfolgreich!';
-
-  @override
-  String connectionFailed(String error) {
-    return 'Verbindung fehlgeschlagen: $error';
-  }
-
-  @override
   String get schemaRegistryCredentialsOptional =>
       'Zugangsdaten für Schema Registry (optional)';
 
@@ -1446,14 +1166,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get schemaRegistryConfiguredBadge => 'Schema Registry';
 
   @override
-  String get maxScriptRuns => 'Max. Anzahl an Skript-Durchläufen';
-
-  @override
   String get maxConcurrentLagQueries => 'Maximale gleichzeitige Lag-Abfragen';
-
-  @override
-  String get maxConcurrentLagQueriesHelper =>
-      'Standard: 5 (Höhere Werte können zu Lasten der Performance gehen)';
 
   @override
   String get deleteStepConfirmationTitle => 'Schritt löschen?';
@@ -1492,9 +1205,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get extractionJsonPath =>
       'Feldpfad (z. B. order.id, items[0].sku, /order/status)';
-
-  @override
-  String get scriptProperties => 'Skript-Eigenschaften';
 
   @override
   String get concurrencyLimit => 'Gleichzeitige Durchläufe';
@@ -1547,9 +1257,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get variableTypeText => 'Text';
-
-  @override
-  String get variableTypeTimestamp => 'Zeitstempel';
 
   @override
   String get variableTypeNumeric => 'Zahl';
@@ -1705,14 +1412,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get schemaTabTitle => 'Schema';
 
   @override
-  String get schemaPinAsColumn => 'Als Tabellenspalte anheften';
-
-  @override
   String get schemaPinAsColumnTooltip =>
       'Dieses Schema-Feld als Tabellenspalte anheften';
-
-  @override
-  String get schemaFilterByField => 'Nach diesem Feld filtern';
 
   @override
   String get schemaFilterByFieldTooltip =>
@@ -1760,10 +1461,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get lagWarnThresholdLabel => 'Consumer-Lag-Warnschwelle (Nachrichten)';
-
-  @override
-  String get lagWarnThresholdHelp =>
-      '0 deaktiviert die Warnung in der Lag-Ansicht.';
 
   @override
   String get comparisonAction => 'Vergleichen';
@@ -1820,13 +1517,83 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exportAsJson => 'JSON (Vollständige Nachricht)';
 
   @override
+  String get exportAsNdjson => 'NDJSON (eine Nachricht pro Zeile)';
+
+  @override
   String get exportAsCsv => 'CSV (Sichtbare Spalten)';
 
   @override
-  String get exportFormat => 'Export-Format';
+  String get exportMessagesCsv => 'Nachrichten als CSV exportieren';
 
   @override
-  String get exportMessagesCsv => 'Nachrichten als CSV exportieren';
+  String exportSelectedOnly(int count) {
+    return 'Nur ausgewählte Nachrichten ($count)';
+  }
+
+  @override
+  String get exportIncludeDimmedNonMatches =>
+      'Abgeblendete Nicht-Treffer einschließen';
+
+  @override
+  String get exportAddHeadersColumn => 'Headers-Spalte hinzufügen (CSV)';
+
+  @override
+  String get pauseView => 'Pausieren';
+
+  @override
+  String get pauseViewTooltip =>
+      'Ergebnisansicht einfrieren, während der Stream im Hintergrund weiterläuft';
+
+  @override
+  String resumeViewWithNew(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Fortsetzen · $count neu',
+      one: 'Fortsetzen · 1 neu',
+      zero: 'Fortsetzen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get resumeViewTooltip =>
+      'Live-Aktualisierung fortsetzen und gepufferte Nachrichten übernehmen';
+
+  @override
+  String get followNewest => 'Neueste verfolgen';
+
+  @override
+  String get followNewestOnTooltip =>
+      'Folgt den neuesten Nachrichten; klicken oder scrollen zum Anhalten';
+
+  @override
+  String get followNewestOffTooltip =>
+      'Zu den neuesten Nachrichten springen und weiter verfolgen';
+
+  @override
+  String get followNewestDisabledTooltip =>
+      '„Neueste verfolgen“ erfordert Sortierung nach Zeitstempel';
+
+  @override
+  String droppedMessagesIndicator(String dropped, String limit) {
+    return '$dropped älteste Nachrichten verworfen (Limit $limit)';
+  }
+
+  @override
+  String get droppedMessagesTooltip =>
+      'Älteste Nachrichten wurden beim Erreichen des Pufferlimits verworfen. Anpassbar unter Einstellungen → Allgemein.';
+
+  @override
+  String get messageBufferLimitLabel => 'Nachrichten-Pufferlimit';
+
+  @override
+  String get messageBufferLimitHelper =>
+      'Maximale Anzahl gepufferter Nachrichten pro Topic-Tab oder Suchziel (1.000–1.000.000)';
+
+  @override
+  String get messageBufferLimitError =>
+      'Bitte eine ganze Zahl zwischen 1.000 und 1.000.000 eingeben';
 
   @override
   String get searchPresets => 'Gespeicherte Suchen';
@@ -1853,9 +1620,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deletePreset => 'Preset löschen';
 
   @override
-  String get updateCurrentPreset => 'Aktuelles Preset aktualisieren';
-
-  @override
   String get restoreOpenTabsOnStartup =>
       'Offene Tabs beim Start wiederherstellen';
 
@@ -1878,7 +1642,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get includeCredentialsWarning =>
-      'Warnung: Das Einschließen von Anmeldedaten speichert unverschlüsselte Passwörter im exportierten Archiv.';
+      'Anmeldedaten werden mit Ihrer Passphrase in einem age-Archiv (.zip.age) verschlüsselt.';
 
   @override
   String get readOnlyBadgeLabel => 'Schreibgeschützt';
@@ -1932,9 +1696,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checkCompatibility => 'Kompatibilität prüfen';
 
   @override
-  String get compatibilityCheckTitle => 'Schema-Kompatibilitätsprüfung';
-
-  @override
   String get schemaCompatible => 'Kompatibel';
 
   @override
@@ -1952,6 +1713,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine zugehörigen Topics für dieses Subject gefunden.';
 
   @override
+  String get schemaNoDifferencesFound =>
+      'Keine Unterschiede zwischen den ausgewählten Versionen gefunden.';
+
+  @override
   String get draftSchemaLabel => 'Entwurf-Schema (JSON)';
 
   @override
@@ -1959,9 +1724,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get retryBadgeLabel => 'Retry';
-
-  @override
-  String get deadLetterQueue => 'Dead-Letter-Queue';
 
   @override
   String associatedDlqCount(int count) {
@@ -2031,11 +1793,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String failedToOpenFolder(String error) {
-    return 'Fehler beim Öffnen des Ordners: $error';
-  }
-
-  @override
   String get lagEstimateCaughtUp => 'Aufgeholt';
 
   @override
@@ -2067,10 +1824,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get recentProductionTitle => 'Kürzliche Produktion';
-
-  @override
-  String get recentProductionSubtitle =>
-      'Nachrichtenvolumen der letzten Stunden';
 
   @override
   String get window6h => '6 Std.';
@@ -2121,11 +1874,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String hourlyTooltipDetails(String count, String delta) {
-    return '$count Nachrichten ($delta)';
-  }
-
-  @override
   String hourlyTooltipMatches(String matches, String share) {
     return '$matches Treffer ($share%)';
   }
@@ -2151,9 +1899,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String valueFilterActive(String path, String value) {
     return 'Filter: $path = $value';
   }
-
-  @override
-  String get valueFilterClear => 'Filter entfernen';
 
   @override
   String get valueFilterDialogTitle => 'Nach Feldwert filtern';
@@ -2202,11 +1947,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String drillDownValue(String value) {
-    return 'Wert: $value';
-  }
-
-  @override
   String drillDownCount(String count) {
     return 'Anzahl: $count';
   }
@@ -2246,11 +1986,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get duplicateMessagesCardTitle => 'Mehrfach publizierte Nachrichten';
-
-  @override
-  String duplicateMessagesRate(String rate) {
-    return '$rate% der Nachrichten';
-  }
 
   @override
   String duplicateMessagesSubtitle(String unique, String scope) {
@@ -2295,9 +2030,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get duplicateCountHeader => 'Vorkommen';
 
   @override
-  String get duplicateShareHeader => 'Anteil';
-
-  @override
   String get duplicateKeyHeader => 'Key';
 
   @override
@@ -2322,12 +2054,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get jumpToSampleOffset => 'Zum Beispiel springen';
-
-  @override
-  String get duplicateCoordinates => 'Koordinaten';
-
-  @override
-  String get duplicateTimestamp => 'Zeitstempel';
 
   @override
   String get duplicateKey => 'Key';
@@ -2454,11 +2180,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tlsTransitionDisable => 'Prüfung deaktivieren (unsicher)';
 
   @override
-  String tlsVerificationFailedConnectError(String error) {
-    return 'TLS-Zertifikatsprüfung fehlgeschlagen: $error';
-  }
-
-  @override
   String get messageFetchFailedTitle =>
       'Nachrichten konnten nicht geladen werden';
 
@@ -2510,9 +2231,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get partitionOwnershipUnknown => 'Partitionszuordnung unbekannt';
-
-  @override
-  String get topicNotReadable => 'Topic nicht lesbar';
 
   @override
   String get diagStageNetwork => 'Netzwerk';
@@ -2799,9 +2517,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shortcutCommandPalette => 'Befehlspalette';
 
   @override
-  String get commandPaletteTitle => 'Befehlspalette';
-
-  @override
   String get commandPaletteHint => 'Cluster, Topics, Gruppen, Skripte suchen…';
 
   @override
@@ -2872,4 +2587,1156 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get scriptNotFound => 'Skript nicht gefunden';
+
+  @override
+  String fastTracePartitionPreview(int partition, int partitionCount) {
+    return 'Partition $partition von $partitionCount';
+  }
+
+  @override
+  String get fastTracePartitionCountUnknown => 'Partitionsanzahl unbekannt';
+
+  @override
+  String get fastTraceEnterKeyHint =>
+      'Schlüssel eingeben, um Zielpartition anzuzeigen';
+
+  @override
+  String get fastTraceFirstTermOnlyNote =>
+      'Nur der erste Begriff wählt die gescannte Partition';
+
+  @override
+  String get fastTraceAssumptionSummary =>
+      'Nimmt Java-Standard-Partitionierer (murmur2) und UTF-8-Textschlüssel an';
+
+  @override
+  String get fastTraceAssumptionCaveat =>
+      'Nimmt den Java-Standard-Partitionierer über die UTF-8-Bytes des Textschlüssels an. Die tatsächliche Partition kann abweichen bei anderen Partitionierern (z. B. librdkafka consistent/CRC32 oder benutzerdefiniert), binären oder serialisierten Schlüsseln (z. B. Avro mit Confluent-Wire-Präfix) oder später hinzugefügten Partitionen.';
+
+  @override
+  String get fastTraceAssumptionInfoLabel =>
+      'Annahmen zur Fast-Trace-Partitionierung';
+
+  @override
+  String chipFastTracePartition(int partition) {
+    return 'Fast Trace → P$partition';
+  }
+
+  @override
+  String get exportPassphraseLabel => 'Passphrase';
+
+  @override
+  String get exportPassphraseConfirmLabel => 'Passphrase bestätigen';
+
+  @override
+  String exportPassphraseTooShort(int min) {
+    return 'Die Passphrase muss mindestens $min Zeichen lang sein';
+  }
+
+  @override
+  String get exportPassphraseMismatch =>
+      'Die Passphrasen stimmen nicht überein';
+
+  @override
+  String get exportPassphraseNotRecoverable =>
+      'Eine verlorene Passphrase kann nicht wiederhergestellt werden. Ohne sie lässt sich dieses Archiv nicht öffnen.';
+
+  @override
+  String get showPassphrase => 'Passphrase anzeigen';
+
+  @override
+  String get hidePassphrase => 'Passphrase verbergen';
+
+  @override
+  String get encryptingBundle => 'Archiv wird verschlüsselt...';
+
+  @override
+  String get importPassphraseTitle => 'Archiv-Passphrase eingeben';
+
+  @override
+  String get importPassphraseLabel => 'Passphrase';
+
+  @override
+  String get importPassphraseWrong =>
+      'Falsche Passphrase. Bitte versuchen Sie es erneut.';
+
+  @override
+  String get importEncryptedCorrupt =>
+      'Das verschlüsselte Archiv ist beschädigt oder fehlerhaft.';
+
+  @override
+  String get importEncryptedUnsupported =>
+      'Diese verschlüsselte Datei ist nicht mit einer Passphrase verschlüsselt und kann nicht importiert werden.';
+
+  @override
+  String get importEncryptedTooExpensive =>
+      'Dieses verschlüsselte Archiv erfordert auf diesem Gerät zu viel Rechenaufwand zum Entschlüsseln.';
+
+  @override
+  String get searchRunning => 'Suche läuft...';
+
+  @override
+  String get searchFailed => 'Suche fehlgeschlagen';
+
+  @override
+  String matchesCountCapped(int current, int total) {
+    return '$current / $total+';
+  }
+
+  @override
+  String get environmentTagSectionTitle => 'Umgebungs-Tag (optional)';
+
+  @override
+  String get environmentLabelField => 'Umgebungs-Label';
+
+  @override
+  String get environmentLabelHint => 'z. B. DEV, TEST, STAGE, PROD';
+
+  @override
+  String environmentLabelTooLong(int max) {
+    return 'Das Umgebungs-Label darf höchstens $max Zeichen lang sein';
+  }
+
+  @override
+  String environmentSemanticsLabel(String label) {
+    return 'Umgebung: $label';
+  }
+
+  @override
+  String get environmentColorRed => 'Rot';
+
+  @override
+  String get environmentColorOrange => 'Orange';
+
+  @override
+  String get environmentColorYellow => 'Gelb';
+
+  @override
+  String get environmentColorGreen => 'Grün';
+
+  @override
+  String get environmentColorBlue => 'Blau';
+
+  @override
+  String get environmentColorPurple => 'Lila';
+
+  @override
+  String get environmentColorGrey => 'Grau';
+
+  @override
+  String get bootstrapNoEntries => 'Mindestens einen host:port-Eintrag angeben';
+
+  @override
+  String bootstrapMissingPort(String entry) {
+    return 'Eintrag „$entry“ benötigt einen Port (:port)';
+  }
+
+  @override
+  String bootstrapInvalidPort(String entry) {
+    return 'Eintrag „$entry“ hat einen ungültigen Port (1–65535)';
+  }
+
+  @override
+  String bootstrapInvalidHost(String entry) {
+    return 'Eintrag „$entry“ hat einen ungültigen Host';
+  }
+
+  @override
+  String bootstrapSchemeNotAllowed(String entry) {
+    return 'Eintrag „$entry“ darf kein URL-Schema enthalten';
+  }
+
+  @override
+  String get extraPropertiesTitle => 'Zusätzliche Client-Eigenschaften';
+
+  @override
+  String get extraPropertiesHint => 'Ein key=value pro Zeile';
+
+  @override
+  String get extraPropertiesAllowedKeysTitle => 'Erlaubte Schlüssel';
+
+  @override
+  String extraPropertiesSyntaxError(int line) {
+    return 'Zeile $line: ungültige Syntax (key=value erwartet)';
+  }
+
+  @override
+  String extraPropertiesNotAllowed(int line, String key) {
+    return 'Zeile $line: „$key“ ist nicht erlaubt';
+  }
+
+  @override
+  String extraPropertiesInvalidValue(int line, String key, String allowed) {
+    return 'Zeile $line: ungültiger Wert für „$key“ (erlaubt: $allowed)';
+  }
+
+  @override
+  String extraPropertiesDuplicate(int line, String key) {
+    return 'Zeile $line: doppelter Schlüssel „$key“';
+  }
+
+  @override
+  String get importClientPropertiesAction => 'client.properties importieren';
+
+  @override
+  String get importClientPropertiesPreviewTitle =>
+      'Vorschau: client.properties-Import';
+
+  @override
+  String get importClientPropertiesMappedSection =>
+      'Zu übernehmende Profilfelder';
+
+  @override
+  String get importClientPropertiesExtrasSection => 'Zusätzliche Eigenschaften';
+
+  @override
+  String get importClientPropertiesSkippedSection => 'Nicht übernommen';
+
+  @override
+  String get importClientPropertiesApplyAction => 'Übernehmen';
+
+  @override
+  String get importClientPropertiesTooLarge =>
+      'Die Datei ist größer als 1 MiB und kann nicht importiert werden.';
+
+  @override
+  String get importClientPropertiesInvalidUtf8 =>
+      'Die Datei ist kein gültiges UTF-8 und kann nicht gelesen werden.';
+
+  @override
+  String importClientPropertiesReadError(String error) {
+    return 'Datei konnte nicht gelesen werden: $error';
+  }
+
+  @override
+  String get importClientPropertiesNothingToApply =>
+      'Keine unterstützten Eigenschaften in dieser Datei gefunden.';
+
+  @override
+  String get skipReasonNotAllowed => 'Unbekannt oder nicht erlaubt';
+
+  @override
+  String get skipReasonUnsupported => 'Nicht unterstützter Typ oder Format';
+
+  @override
+  String get skipReasonPlaceholder => 'Platzhalter kann nicht aufgelöst werden';
+
+  @override
+  String get skipReasonVerificationOverride =>
+      'TLS-Prüfung kann nur ausdrücklich im Dialog deaktiviert werden';
+
+  @override
+  String get skipReasonInvalidValue => 'Ungültiger Wert';
+
+  @override
+  String get duplicateClusterAction => 'Duplizieren';
+
+  @override
+  String get duplicateClusterTitle => 'Cluster duplizieren';
+
+  @override
+  String get clusterFilterHint => 'Cluster filtern (Name, Umgebung, Bootstrap)';
+
+  @override
+  String get clusterFilterNoMatch => 'Kein Cluster entspricht dem Filter';
+
+  @override
+  String get clusterFilterClear => 'Filter zurücksetzen';
+
+  @override
+  String get disconnectClusterTooltip => 'Trennen';
+
+  @override
+  String disconnectConfirmTitle(String cluster) {
+    return 'Verbindung zu $cluster trennen?';
+  }
+
+  @override
+  String get disconnectConfirmBody =>
+      'Für diesen Cluster läuft noch eine Suche oder Analyse. Beim Trennen wird sie gestoppt und seine Tabs werden geschlossen.';
+
+  @override
+  String get disconnectConfirmAction => 'Trennen';
+
+  @override
+  String unrestoredTabsMessage(int count, String topics) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tabs konnten nicht wiederhergestellt werden ($topics)',
+      one: '1 Tab konnte nicht wiederhergestellt werden ($topics)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get decodeAs => 'Dekodieren als…';
+
+  @override
+  String get decodeAsJson => 'JSON';
+
+  @override
+  String get decodeAsBase64 => 'Base64';
+
+  @override
+  String get decodeAsGzip => 'gzip';
+
+  @override
+  String get showOriginalOnly => 'Nur Original anzeigen';
+
+  @override
+  String get showOriginal => 'Original anzeigen';
+
+  @override
+  String get copyDecoded => 'Dekodiert kopieren';
+
+  @override
+  String get copyAsHex => 'Als Hex kopieren';
+
+  @override
+  String binaryBytesSummary(int count) {
+    return '$count Bytes';
+  }
+
+  @override
+  String get decodeErrorInvalidJson => 'Kein gültiges JSON';
+
+  @override
+  String get decodeErrorInvalidBase64 => 'Kein gültiges Base64';
+
+  @override
+  String get decodeErrorNotGzip => 'Kein gzip-Datenstrom';
+
+  @override
+  String get decodeErrorCorruptGzip => 'Beschädigte gzip-Daten';
+
+  @override
+  String decodeErrorInputTooLarge(int limitMib) {
+    return 'Eingabe überschreitet Limit von $limitMib MiB';
+  }
+
+  @override
+  String decodeErrorOutputTooLarge(int limitMib) {
+    return 'Dekodierte Ausgabe überschreitet Limit von $limitMib MiB';
+  }
+
+  @override
+  String get epochUnitSeconds => 'Sekunden';
+
+  @override
+  String get epochUnitMilliseconds => 'Millisekunden';
+
+  @override
+  String get epochUnitMicroseconds => 'Mikrosekunden';
+
+  @override
+  String get epochUnitNanoseconds => 'Nanosekunden';
+
+  @override
+  String epochTooltip(String primary, String secondary, String unit) {
+    return '$primary\n$secondary\nAngenommene Einheit: $unit';
+  }
+
+  @override
+  String get emptyValueMarker => 'Leerer Wert';
+
+  @override
+  String get inspectorKeySection => 'Schlüssel';
+
+  @override
+  String inspectorHeadersSection(int count) {
+    return 'Header ($count)';
+  }
+
+  @override
+  String get appearanceSectionTitle => 'Erscheinungsbild';
+
+  @override
+  String get themeLabel => 'Design';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Hell';
+
+  @override
+  String get themeDark => 'Dunkel';
+
+  @override
+  String get languageLabel => 'Sprache';
+
+  @override
+  String get languageSystem => 'System';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageGerman => 'Deutsch';
+
+  @override
+  String get textSizeLabel => 'Textgröße';
+
+  @override
+  String textSizeCustom(int percent) {
+    return 'Benutzerdefiniert ($percent%)';
+  }
+
+  @override
+  String get timeDisplayLabel => 'Zeitstempel';
+
+  @override
+  String get timeDisplayLocal => 'Lokal';
+
+  @override
+  String get timeDisplayUtc => 'UTC';
+
+  @override
+  String get defaultResultLimitLabel => 'Standard-Ergebnislimit';
+
+  @override
+  String intSettingRangeHelper(int min, int max, int defaultValue) {
+    return 'Bereich: $min–$max (Standard: $defaultValue)';
+  }
+
+  @override
+  String intSettingRangeError(int min, int max) {
+    return 'Geben Sie eine ganze Zahl von $min bis $max ein';
+  }
+
+  @override
+  String get resetToDefaults => 'Auf Standard zurücksetzen';
+
+  @override
+  String resetSectionConfirmTitle(String section) {
+    return 'Einstellungen für „$section“ zurücksetzen?';
+  }
+
+  @override
+  String resetSectionConfirmBody(String section) {
+    return 'Dadurch werden die Einstellungen unter „$section“ auf die Standardwerte zurückgesetzt. Cluster-Profile, Zugangsdaten, Skripte und gespeicherte Suchen bleiben unverändert.';
+  }
+
+  @override
+  String get resetConfirmAction => 'Zurücksetzen';
+
+  @override
+  String manualUpdateAvailableTitle(String version) {
+    return 'Version $version verfügbar';
+  }
+
+  @override
+  String manualUpdateAvailableBody(String version) {
+    return 'Eine neuere Version ($version) ist auf GitHub verfügbar. Diese Installation kann sich nicht automatisch aktualisieren.';
+  }
+
+  @override
+  String get manualUpToDateHint =>
+      'Sie verwenden die neueste Version. Automatische Updates sind für diese Installation nicht verfügbar.';
+
+  @override
+  String latestReleaseKnownBody(String version) {
+    return 'Neueste Version auf GitHub: $version. Die laufende Version konnte nicht verglichen werden.';
+  }
+
+  @override
+  String get openReleasePage => 'Release-Seite öffnen';
+
+  @override
+  String get downloadCancelledSnackbar =>
+      'Download abgebrochen. Das Update wird nicht installiert.';
+
+  @override
+  String get connectionErrorInvalidBootstrapServers =>
+      'Ungültiger Bootstrap-Server';
+
+  @override
+  String get connectionErrorTlsVerificationFailed =>
+      'TLS-Zertifikatsprüfung fehlgeschlagen';
+
+  @override
+  String get connectionErrorValidationFailed =>
+      'Verbindungsprüfung fehlgeschlagen';
+
+  @override
+  String get connectionErrorBrokerTransport =>
+      'Broker-Transportfehler. Adresse und Netzwerk prüfen.';
+
+  @override
+  String get connectionErrorConnectionRefused => 'Verbindung abgelehnt';
+
+  @override
+  String get connectionErrorOther => 'Verbindung fehlgeschlagen';
+
+  @override
+  String get topicAnalysisEmptyFieldPath => 'Feldpfad darf nicht leer sein';
+
+  @override
+  String get topicAnalysisNoPreviousScope =>
+      'Kein vorheriger Analysebereich zum erneuten Scannen vorhanden';
+
+  @override
+  String get exportTopicAnalysis => 'Topic-Analyse exportieren';
+
+  @override
+  String get importTopicAnalysis => 'Topic-Analyse importieren';
+
+  @override
+  String saveRunArchive(String name) {
+    return 'Lauf-Archiv speichern - $name';
+  }
+
+  @override
+  String get saveSchemaMarkdown => 'Schema-Markdown speichern';
+
+  @override
+  String get step => 'Schritt';
+
+  @override
+  String get content => 'Inhalt';
+
+  @override
+  String filterColumnTitle(String column) {
+    return '$column filtern';
+  }
+
+  @override
+  String get filterSubstringHint => 'Suchtext zum Filtern eingeben...';
+
+  @override
+  String get copyContent => 'Inhalt kopieren';
+
+  @override
+  String get emptyBinaryData => 'Leere Binärdaten';
+
+  @override
+  String get preparingHexDump =>
+      'Hex-Dump für Zwischenablage wird vorbereitet...';
+
+  @override
+  String get hexDumpCopied => 'Hex-Dump in die Zwischenablage kopiert';
+
+  @override
+  String get copyFullHexDump => 'Vollständigen Hex-Dump kopieren';
+
+  @override
+  String get objectCopiedToClipboard => 'Objekt in die Zwischenablage kopiert';
+
+  @override
+  String get entityDetails => 'Entitätsdetails';
+
+  @override
+  String get copyWholeObject => 'Gesamtes Objekt kopieren';
+
+  @override
+  String get errorComputingDiff => 'Fehler beim Berechnen des Diffs';
+
+  @override
+  String get globalNoStep => 'Global (Kein Schritt)';
+
+  @override
+  String get stacktrace => 'Stacktrace';
+
+  @override
+  String noResultsMatchingPhrase(String phrase) {
+    return 'Keine Ergebnisse für \'$phrase\' gefunden';
+  }
+
+  @override
+  String get hideNonMatchingMessages => 'Nicht passende Nachrichten ausblenden';
+
+  @override
+  String get showNonMatchesAsDimmed =>
+      'Nicht passende Nachrichten abgeblendet anzeigen';
+
+  @override
+  String get availableTopics => 'Verfügbare Topics';
+
+  @override
+  String get optionalMetadataRegistry => 'Optionale Metadaten-Registry';
+
+  @override
+  String get noClusterSelected => 'Kein Cluster ausgewählt';
+
+  @override
+  String quickJumpTopicLabel(String topic) {
+    return 'Topic: $topic';
+  }
+
+  @override
+  String quickJumpPartitionLabel(int partition) {
+    return 'Partition: $partition';
+  }
+
+  @override
+  String quickJumpOffsetLabel(int offset) {
+    return 'Offset: $offset';
+  }
+
+  @override
+  String quickJumpFilterLabel(String filter) {
+    return 'Filter: $filter';
+  }
+
+  @override
+  String schemaRegistryUrlHint(String url) {
+    return 'z.B. $url';
+  }
+
+  @override
+  String get startTime => 'Startzeit';
+
+  @override
+  String get endTime => 'Endzeit';
+
+  @override
+  String get fieldOptional => 'Feld (Opt.)';
+
+  @override
+  String selectTopicsDialogTitle(int count, int filtered, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Topics auswählen ($filtered/$total)',
+      one: 'Topic auswählen ($filtered/$total)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kafkaStreamTopics => 'Kafka-Stream-Topics';
+
+  @override
+  String get searchLabel => 'Suchen';
+
+  @override
+  String selectCount(int count) {
+    return 'Auswählen ($count)';
+  }
+
+  @override
+  String get selectDateTime => 'Datum & Uhrzeit auswählen';
+
+  @override
+  String get presetsRelativeToNow => 'Vorgaben (relativ zu Jetzt)';
+
+  @override
+  String get selectVersionsToCompare => 'Versionen zum Vergleichen auswählen';
+
+  @override
+  String get unknownError => 'Unbekannter Fehler';
+
+  @override
+  String get unreadableStoredData => 'Nicht lesbare gespeicherte Daten';
+
+  @override
+  String get tombstoneValueNull => 'TOMBSTONE (Wert ist NULL)';
+
+  @override
+  String lagChangeDelta(String delta) {
+    return 'Änderung: $delta';
+  }
+
+  @override
+  String ofTotal(String total) {
+    return 'von $total';
+  }
+
+  @override
+  String get activeStable => 'Aktiv / Stabil';
+
+  @override
+  String idleEmptyCount(String count) {
+    return '$count Inaktiv/Leer';
+  }
+
+  @override
+  String get activeQueries => 'Aktive Abfragen';
+
+  @override
+  String queueCount(int count) {
+    return 'Warteschlange: $count';
+  }
+
+  @override
+  String get connectingToCluster =>
+      'Verbindung zum Cluster wird hergestellt...';
+
+  @override
+  String get establishingConnectionOffsets =>
+      'Verbindung zum Cluster wird hergestellt und Offsets werden berechnet...';
+
+  @override
+  String get selectClusterForConsumerLag =>
+      'Wähle oben ein Cluster aus, um den Consumer-Lag anzuzeigen.';
+
+  @override
+  String loadedConsumerGroupsSummary(String count, String seconds) {
+    return 'Erfolgreich $count Consumer-Gruppen in ${seconds}s geladen.';
+  }
+
+  @override
+  String get groupIdCol => 'Gruppen-ID';
+
+  @override
+  String get stateCol => 'Status';
+
+  @override
+  String get protocolCol => 'Protokoll';
+
+  @override
+  String get consumersCol => 'Consumers';
+
+  @override
+  String get processedCol => 'Abarbeitung';
+
+  @override
+  String get noActivePartitionAssignments =>
+      'Keine aktiven Partitionen gefunden.';
+
+  @override
+  String noMessageAtOrAfterOffset(String offset) {
+    return 'Keine Nachricht am oder nach Offset $offset gefunden';
+  }
+
+  @override
+  String get viewMessageAtOffset => 'Message am Offset anzeigen';
+
+  @override
+  String errorWithMessage(String error) {
+    return 'Fehler: $error';
+  }
+
+  @override
+  String get stateAll => 'Alle';
+
+  @override
+  String get stateStable => 'Stabil';
+
+  @override
+  String get stateEmpty => 'Leer';
+
+  @override
+  String get stateDead => 'Tot';
+
+  @override
+  String get refreshIntervalLabel => 'Intervall';
+
+  @override
+  String get refreshOff => 'Aus';
+
+  @override
+  String get scriptName => 'Skriptname';
+
+  @override
+  String get sourceCol => 'Quelle';
+
+  @override
+  String get newVariableName => 'Neuer Variablenname';
+
+  @override
+  String extractedVars(String vars) {
+    return 'Extrahiert: $vars';
+  }
+
+  @override
+  String usedVars(String vars) {
+    return 'Verwendet: $vars';
+  }
+
+  @override
+  String get stepNameLabel => 'Schrittname';
+
+  @override
+  String get valueExtractions => 'Wertextraktionen';
+
+  @override
+  String get noExtractionsDefined => 'Keine Extraktionen definiert';
+
+  @override
+  String get insertVariable => 'Variable einfügen';
+
+  @override
+  String get deleteExtraction => 'Extraktion löschen';
+
+  @override
+  String filterByParameter(String parameter) {
+    return 'Filtern nach $parameter';
+  }
+
+  @override
+  String get searchValues => 'Werte suchen';
+
+  @override
+  String get selectAllMatches => 'Alle Treffer auswählen';
+
+  @override
+  String get clearSelection => 'Auswahl aufheben';
+
+  @override
+  String get copyValue => 'Wert kopieren';
+
+  @override
+  String copiedValueToClipboard(String value) {
+    return '\'$value\' in die Zwischenablage kopiert';
+  }
+
+  @override
+  String applyWithCount(int count) {
+    return 'Anwenden ($count)';
+  }
+
+  @override
+  String get noScriptsAvailable => 'Keine Skripte verfügbar';
+
+  @override
+  String get executionProgress => 'Ausführungsfortschritt';
+
+  @override
+  String get runningEllipsis => 'Läuft...';
+
+  @override
+  String get backTooltip => 'Zurück';
+
+  @override
+  String get failedToLoadDetails => 'Details konnten nicht geladen werden';
+
+  @override
+  String get defaultLabel => 'Standard';
+
+  @override
+  String clusterLabelValue(String cluster) {
+    return 'Cluster: $cluster';
+  }
+
+  @override
+  String clusterRuntimeLabel(String cluster, String runtime) {
+    return 'Cluster: $cluster • $runtime';
+  }
+
+  @override
+  String startedAt(String time) {
+    return 'Gestartet: $time';
+  }
+
+  @override
+  String finishedAt(String time) {
+    return 'Beendet: $time';
+  }
+
+  @override
+  String totalRuntime(String duration) {
+    return 'Gesamtlaufzeit: $duration';
+  }
+
+  @override
+  String get runHistory => 'Laufverlauf';
+
+  @override
+  String get importRunArchive => 'Laufarchiv importieren';
+
+  @override
+  String matchedAnalyzed(int matched, int analyzed) {
+    return '$matched Treffer / $analyzed analysiert';
+  }
+
+  @override
+  String get loadResults => 'Ergebnisse laden';
+
+  @override
+  String get runAgain => 'Erneut ausführen';
+
+  @override
+  String get exportRunArchive => 'Laufarchiv exportieren';
+
+  @override
+  String get deleteRun => 'Lauf löschen';
+
+  @override
+  String get deleteRunResultTitle => 'Laufergebnis löschen';
+
+  @override
+  String get deleteRunResultConfirm =>
+      'Möchten Sie dieses Laufergebnis wirklich löschen? Dies kann nicht rückgängig gemacht werden.';
+
+  @override
+  String failedToDeleteRun(String error) {
+    return 'Fehler beim Löschen des Laufs: $error';
+  }
+
+  @override
+  String noSchemaFieldsMatching(String query) {
+    return 'Keine Schemafelder passend zu \'$query\' gefunden';
+  }
+
+  @override
+  String get noSchemasForScriptTopics =>
+      'Keine Schemas für die Topics des aktuellen Skripts gefunden.';
+
+  @override
+  String fieldLabel(String field) {
+    return 'Feld: $field';
+  }
+
+  @override
+  String foundTimesAcrossTopics(int count, int topics) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count-mal',
+      one: '1-mal',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      topics,
+      locale: localeName,
+      other: '$topics Topics',
+      one: '1 Topic',
+    );
+    return '$_temp0 in $_temp1 gefunden';
+  }
+
+  @override
+  String get copyMarkdown => 'Markdown kopieren';
+
+  @override
+  String copiedSchemaToClipboard(String field) {
+    return 'Schema für $field in die Zwischenablage kopiert.';
+  }
+
+  @override
+  String get downloadMarkdown => 'Markdown herunterladen';
+
+  @override
+  String get savedSchemaToFile => 'Schema in Datei gespeichert';
+
+  @override
+  String foundInTopic(String topic) {
+    return 'Gefunden in Topic: $topic';
+  }
+
+  @override
+  String pathLabel(String path) {
+    return 'Pfad: $path';
+  }
+
+  @override
+  String get foundInMultipleLocations =>
+      'An mehreren Stellen gefunden (Unterschiede hervorgehoben):';
+
+  @override
+  String baselineTopic(String topic) {
+    return 'Basis-Topic: $topic';
+  }
+
+  @override
+  String comparedToTopic(String topic) {
+    return 'Verglichen mit Topic: $topic';
+  }
+
+  @override
+  String get noDifferencesFromBaseline => 'Keine Unterschiede zur Basis.';
+
+  @override
+  String get stepStatusPending => 'AUSSTEHEND';
+
+  @override
+  String get stepStatusRunning => 'LÄUFT';
+
+  @override
+  String get stepStatusCompleted => 'ABGESCHLOSSEN';
+
+  @override
+  String get stepStatusFailed => 'FEHLGESCHLAGEN';
+
+  @override
+  String remainingCount(int count, String formatted) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$formatted verbleibend',
+      one: '$formatted verbleibend',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String matchesFoundScanned(
+    int matches,
+    String formattedMatches,
+    String formattedScanned,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      matches,
+      locale: localeName,
+      other:
+          '$formattedMatches Treffer gefunden ($formattedScanned durchsucht)',
+      one: '$formattedMatches Treffer gefunden ($formattedScanned durchsucht)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String matchesFoundInTopics(int matches, int topics) {
+    String _temp0 = intl.Intl.pluralLogic(
+      matches,
+      locale: localeName,
+      other: '$matches Treffer',
+      one: '1 Treffer',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      topics,
+      locale: localeName,
+      other: '$topics Topics',
+      one: '1 Topic',
+    );
+    return '$_temp0 in $_temp1 gefunden';
+  }
+
+  @override
+  String msgsCount(int count, String formatted) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$formatted Nachr.',
+      one: '$formatted Nachr.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String msgsPerSecCount(int count, String formatted) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$formatted Nachr./Sek.',
+      one: '$formatted Nachr./Sek.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get emptyAngleBracket => '<leer>';
+
+  @override
+  String partitionOffsetSummary(int partition, int offset) {
+    return 'Partition $partition • Offset $offset';
+  }
+
+  @override
+  String get noStructuredFieldsDetected =>
+      'Keine strukturierten Felder erkannt';
+
+  @override
+  String get noScalarValuesForField =>
+      'Keine skalaren Werte für dieses Feld erfasst';
+
+  @override
+  String peakHourSummary(String hour, String count, String percentage) {
+    return 'Spitze: $hour:00 UTC ($count Nachr. • $percentage %)';
+  }
+
+  @override
+  String hourlyTooltipSummary(String hour, String count, String percentage) {
+    return '$hour:00 - $hour:59 UTC\n$count Nachr. ($percentage %)';
+  }
+
+  @override
+  String get noKeyedMessagesFound => 'Keine Nachrichten mit Key gefunden';
+
+  @override
+  String get noContentTypesRecorded => 'Keine Inhaltstypen erfasst';
+
+  @override
+  String partitionLabel(int partition) {
+    return 'Partition $partition';
+  }
+
+  @override
+  String partitionStatsLine(String count, String percentage, String size) {
+    return '$count Nachr. ($percentage %) • $size';
+  }
+
+  @override
+  String offsetsRange(String from, String to) {
+    return 'Offsets: $from .. $to';
+  }
+
+  @override
+  String get offsetsEmpty => 'Offsets: -';
+
+  @override
+  String durationPartitionsSummary(String duration, int partitions) {
+    String _temp0 = intl.Intl.pluralLogic(
+      partitions,
+      locale: localeName,
+      other: '$duration • $partitions Partitionen',
+      one: '$duration • 1 Partition',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String analyzingTopicProgress(
+    String scanned,
+    String total,
+    String percentage,
+  ) {
+    return 'Topic wird analysiert... ($scanned / $total Nachrichten • $percentage %)';
+  }
+
+  @override
+  String get keyLabelWithColon => 'Key: ';
+
+  @override
+  String get refreshTooltip => 'Aktualisieren';
+
+  @override
+  String get editVariableTooltip => 'Variable bearbeiten';
+
+  @override
+  String get deleteVariableTooltip => 'Variable löschen';
+
+  @override
+  String get addVariableTooltip => 'Variable hinzufügen';
+
+  @override
+  String get editStepTooltip => 'Schritt bearbeiten';
+
+  @override
+  String get deleteStepTooltip => 'Schritt löschen';
+
+  @override
+  String get browseDirectoryTooltip => 'Ordner auswählen';
+
+  @override
+  String get expandTooltip => 'Aufklappen';
+
+  @override
+  String get collapseTooltip => 'Zuklappen';
+
+  @override
+  String get selectStepTooltip => 'Alle Topics im Schritt auswählen';
+
+  @override
+  String get deselectStepTooltip => 'Alle Topics im Schritt abwählen';
+
+  @override
+  String filterColumnTooltip(String column) {
+    return '$column filtern';
+  }
+
+  @override
+  String get removeColumnTooltip => 'Spalte entfernen';
+
+  @override
+  String get compositeBadgeTooltip => 'Verschachtelte Felder anzeigen';
+
+  @override
+  String get skewedLabel => 'Ungleich';
+
+  @override
+  String get copy => 'Kopieren';
+
+  @override
+  String get copyFailed => 'Kopieren fehlgeschlagen';
 }

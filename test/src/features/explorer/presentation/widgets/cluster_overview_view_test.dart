@@ -32,9 +32,14 @@ void main() {
     int topicCount = 42,
     bool isLoading = false,
     ValueChanged<String>? onSelectTopic,
+    Locale? locale,
   }) {
     return MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: ClusterOverviewView(
@@ -92,5 +97,20 @@ void main() {
     await tester.tap(find.text('analytics-events'));
     await tester.pump();
     expect(selectedTopic, 'analytics-events');
+  });
+
+  testWidgets('renders German labels when locale is de', (tester) async {
+    const profileWithoutRegistry = ClusterProfile(
+      name: 'NO-REG',
+      bootstrapServers: 'localhost:9092',
+      tlsVerification: TlsVerification.enabled,
+    );
+    await tester.pumpWidget(
+      buildWidget(profile: profileWithoutRegistry, locale: const Locale('de')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Verfügbare Topics'), findsOneWidget);
+    expect(find.text('Optionale Metadaten-Registry'), findsOneWidget);
   });
 }

@@ -1,6 +1,14 @@
 import 'package:kafkalyzer/src/ui/smart_tree/entity_formatter_registry.dart';
+import 'package:kafkalyzer/src/utils/nested_value_decoder.dart';
 
-enum JsonNodeType { object, array, primitive, compositeBadge, collapsedRange }
+enum JsonNodeType {
+  object,
+  array,
+  primitive,
+  compositeBadge,
+  collapsedRange,
+  binary,
+}
 
 /// A single flattened row item in the virtualized JSON tree.
 class VirtualJsonNode {
@@ -30,6 +38,12 @@ class VirtualJsonNode {
   /// Whether this node is the active target of the search match stepper.
   final bool isFocusedMatch;
 
+  /// Non-null on a row that has an active decoded overlay.
+  final DecodeKind? decodedKind;
+
+  /// True for rows inside a decoded subtree (view-only).
+  final bool insideDecoded;
+
   const VirtualJsonNode({
     required this.path,
     required this.key,
@@ -46,6 +60,8 @@ class VirtualJsonNode {
     this.collapsedCount,
     this.compoundPathKey,
     this.isFocusedMatch = false,
+    this.decodedKind,
+    this.insideDecoded = false,
   });
 
   VirtualJsonNode copyWith({
@@ -64,6 +80,8 @@ class VirtualJsonNode {
     int? collapsedCount,
     String? compoundPathKey,
     bool? isFocusedMatch,
+    DecodeKind? decodedKind,
+    bool? insideDecoded,
   }) {
     return VirtualJsonNode(
       path: path ?? this.path,
@@ -81,6 +99,8 @@ class VirtualJsonNode {
       collapsedCount: collapsedCount ?? this.collapsedCount,
       compoundPathKey: compoundPathKey ?? this.compoundPathKey,
       isFocusedMatch: isFocusedMatch ?? this.isFocusedMatch,
+      decodedKind: decodedKind ?? this.decodedKind,
+      insideDecoded: insideDecoded ?? this.insideDecoded,
     );
   }
 }

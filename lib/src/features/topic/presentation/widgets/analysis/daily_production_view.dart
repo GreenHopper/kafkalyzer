@@ -183,7 +183,6 @@ class DailyProductionView extends StatelessWidget {
                                       l10n.partialCoverageBadge,
                                       style: theme.textTheme.labelSmall
                                           ?.copyWith(
-                                            fontSize: 9,
                                             color:
                                                 colorScheme.onTertiaryContainer,
                                             fontWeight: FontWeight.bold,
@@ -215,7 +214,10 @@ class DailyProductionView extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(
-                                  '${numberFormat.format(point.count)} msgs',
+                                  l10n.msgsCount(
+                                    point.count,
+                                    numberFormat.format(point.count),
+                                  ),
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),

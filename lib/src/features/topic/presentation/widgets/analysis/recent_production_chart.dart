@@ -155,7 +155,10 @@ class _RecentProductionChartState extends State<RecentProductionChart> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${numberFormat.format(totalInWindow)} msgs',
+                        l10n.msgsCount(
+                          totalInWindow,
+                          numberFormat.format(totalInWindow),
+                        ),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
@@ -227,7 +230,7 @@ class _RecentProductionChartState extends State<RecentProductionChart> {
                           alpha: 0.4,
                         );
                       } else if (point.isUnusual) {
-                        barColor = Colors.amber.shade700;
+                        barColor = colorScheme.tertiary;
                       } else if (point.isCurrentHour) {
                         barColor = colorScheme.secondary;
                       } else {
@@ -284,7 +287,8 @@ class _RecentProductionChartState extends State<RecentProductionChart> {
                                             boxShadow: point.isUnusual
                                                 ? [
                                                     BoxShadow(
-                                                      color: Colors.amber
+                                                      color: colorScheme
+                                                          .tertiary
                                                           .withValues(
                                                             alpha: 0.6,
                                                           ),
@@ -325,6 +329,18 @@ class _RecentProductionChartState extends State<RecentProductionChart> {
                                             ),
                                           ),
                                         ],
+                                        if (point.isUnusual && point.isCovered)
+                                          Positioned(
+                                            top: 0,
+                                            child: Text(
+                                              '★',
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    color: colorScheme.tertiary,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -338,7 +354,6 @@ class _RecentProductionChartState extends State<RecentProductionChart> {
                                             ),
                                             style: theme.textTheme.labelSmall
                                                 ?.copyWith(
-                                                  fontSize: 9,
                                                   color: colorScheme.outline,
                                                   fontWeight:
                                                       point.isCurrentHour
@@ -396,11 +411,15 @@ class _RecentProductionChartState extends State<RecentProductionChart> {
     }
 
     if (point.isCurrentHour) {
-      buffer.writeln(
-        '${l10n.currentHourIncomplete} (${numberFormat.format(point.count)} msgs)',
+      final countStr = l10n.msgsCount(
+        point.count,
+        numberFormat.format(point.count),
       );
+      buffer.writeln('${l10n.currentHourIncomplete} ($countStr)');
     } else {
-      buffer.writeln('${numberFormat.format(point.count)} msgs');
+      buffer.writeln(
+        l10n.msgsCount(point.count, numberFormat.format(point.count)),
+      );
     }
 
     if (point.baseline != null) {

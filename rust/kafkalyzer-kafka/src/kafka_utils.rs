@@ -4,57 +4,7 @@ pub use rdkafka::config::ClientConfig;
 use std::fs::File;
 use std::io::Read;
 
-pub fn murmur2(data: &[u8]) -> u32 {
-    let length = data.len();
-    let seed: u32 = 0x9747b28c;
-    let multiplier: u32 = 0x5bd1e995;
-    let rotation: i32 = 24;
-
-    let mut hash_value: u32 = seed ^ (length as u32);
-    let length4 = length / 4;
-
-    for i in 0..length4 {
-        let i4 = i * 4;
-        let mut block_value: u32 = (data[i4] as u32)
-            + ((data[i4 + 1] as u32) << 8)
-            + ((data[i4 + 2] as u32) << 16)
-            + ((data[i4 + 3] as u32) << 24);
-        block_value = block_value.wrapping_mul(multiplier);
-        block_value ^= block_value >> rotation;
-        block_value = block_value.wrapping_mul(multiplier);
-
-        hash_value = hash_value.wrapping_mul(multiplier);
-        hash_value ^= block_value;
-    }
-
-    match length % 4 {
-        3 => {
-            hash_value ^= (data[(length & !3) + 2] as u32) << 16;
-            hash_value ^= (data[(length & !3) + 1] as u32) << 8;
-            hash_value ^= data[length & !3] as u32;
-            hash_value = hash_value.wrapping_mul(multiplier);
-        }
-        2 => {
-            hash_value ^= (data[(length & !3) + 1] as u32) << 8;
-            hash_value ^= data[length & !3] as u32;
-            hash_value = hash_value.wrapping_mul(multiplier);
-        }
-        1 => {
-            hash_value ^= data[length & !3] as u32;
-            hash_value = hash_value.wrapping_mul(multiplier);
-        }
-        _ => {}
-    }
-
-    hash_value ^= hash_value >> 13;
-    hash_value = hash_value.wrapping_mul(multiplier);
-    hash_value ^= hash_value >> 15;
-    hash_value
-}
-
-pub fn to_positive(number: u32) -> u32 {
-    number & 0x7fffffff
-}
+pub use kafkalyzer_core::partitioner::{murmur2, to_positive};
 
 // ... (imports)
 
@@ -152,6 +102,8 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
                 config.set("sasl.kerberos.principal", principal);
             }
             if let Some(krb5_conf) = &profile.sasl_kerberos_conf {
+                // Note: KRB5_CONFIG is process-wide in the OS environment and affects all
+                // concurrent Kerberos connections in this process.
                 std::env::set_var("KRB5_CONFIG", krb5_conf);
             }
         } else if mechanism.eq_ignore_ascii_case("OAUTHBEARER") {
@@ -380,6 +332,10 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
     // If user provided a password but used PEM, it might be for a PEM Key, but that's keystore.
     // So we don't set ssl.truststore.password property on config because it doesn't exist for librdkafka.
 
+    for (k, v) in kafkalyzer_core::client_properties::effective(&profile.extra_properties) {
+        config.set(k, v);
+    }
+
     log::debug!("Kafka config created.");
 
     config
@@ -442,5 +398,160 @@ mod tests {
         };
         let config = create_config(&profile);
         assert_eq!(config.get("ssl.ca.location"), None);
+    }
+
+    #[test]
+    fn allowlist_spike() {
+        use rdkafka::consumer::BaseConsumer;
+
+        let candidates: &[(&str, &[&str])] = &[
+            ("client.id", &["kafkalyzer-test"]),
+            ("client.rack", &["rack-1"]),
+            ("socket.timeout.ms", &["10", "300000"]),
+            ("socket.connection.setup.timeout.ms", &["1000", "3600000"]),
+            ("socket.keepalive.enable", &["true", "false"]),
+            ("socket.nagle.disable", &["true", "false"]),
+            ("socket.send.buffer.bytes", &["0", "100000000"]),
+            ("socket.receive.buffer.bytes", &["0", "100000000"]),
+            ("connections.max.idle.ms", &["0", "2147483647"]),
+            ("broker.address.family", &["any", "v4", "v6"]),
+            ("broker.address.ttl", &["0", "86400000"]),
+            (
+                "client.dns.lookup",
+                &[
+                    "use_all_dns_ips",
+                    "resolve_canonical_bootstrap_servers_only",
+                ],
+            ),
+            ("reconnect.backoff.ms", &["0", "10000"]),
+            ("reconnect.backoff.max.ms", &["100", "3600000"]),
+            ("retry.backoff.ms", &["1", "300000"]),
+            ("retry.backoff.max.ms", &["1", "300000"]),
+            ("metadata.max.age.ms", &["1", "86400000"]),
+            ("topic.metadata.refresh.interval.ms", &["-1", "3600000"]),
+            ("api.version.request.timeout.ms", &["1", "300000"]),
+            ("fetch.min.bytes", &["1", "100000000"]),
+            ("fetch.max.bytes", &["1000000", "2147483135"]),
+            ("fetch.error.backoff.ms", &["0", "300000"]),
+            (
+                "debug",
+                &["generic,broker,topic,metadata,feature,queue,protocol,security,fetch,consumer,cgrp"],
+            ),
+        ];
+
+        let mut failures = Vec::new();
+        for (key, samples) in candidates {
+            for val in *samples {
+                let mut cfg = ClientConfig::new();
+                cfg.set("bootstrap.servers", "127.0.0.1:1");
+                cfg.set(*key, *val);
+                if let Err(err) = cfg.create::<BaseConsumer>() {
+                    failures.push(format!("{key}={val}: {err}"));
+                }
+            }
+        }
+        assert!(
+            failures.is_empty(),
+            "librdkafka rejected candidate(s):\n{}",
+            failures.join("\n")
+        );
+    }
+
+    #[test]
+    fn create_config_applies_allowed_extra_properties_and_ignores_invalid() {
+        let profile = ClusterProfile {
+            name: "extras".to_string(),
+            bootstrap_servers: "broker:9092".to_string(),
+            extra_properties: vec![
+                ("client.id".to_string(), "kafkalyzer-alice".to_string()),
+                ("socket.timeout.ms".to_string(), "-5".to_string()),
+            ],
+            ..Default::default()
+        };
+        let config = create_config(&profile);
+        assert_eq!(config.get("client.id"), Some("kafkalyzer-alice"));
+        assert_eq!(config.get("socket.timeout.ms"), None);
+    }
+
+    #[test]
+    fn create_config_rejects_forbidden_extra_properties() {
+        let forbidden = [
+            "group.id",
+            "group.instance.id",
+            "enable.auto.commit",
+            "transactional.id",
+            "enable.idempotence",
+            "allow.auto.create.topics",
+            "enable.ssl.certificate.verification",
+            "ssl.endpoint.identification.algorithm",
+            "sasl.kerberos.kinit.cmd",
+            "plugin.library.paths",
+        ];
+        let profile = ClusterProfile {
+            name: "forbidden".to_string(),
+            bootstrap_servers: "broker:9093".to_string(),
+            security_protocol: Some("SSL".to_string()),
+            extra_properties: forbidden
+                .iter()
+                .map(|k| ((*k).to_string(), "x".to_string()))
+                .collect(),
+            ..Default::default()
+        };
+        let config = create_config(&profile);
+        assert_eq!(config.get("group.id"), None);
+        assert_eq!(config.get("group.instance.id"), None);
+        assert_eq!(config.get("enable.auto.commit"), None);
+        assert_eq!(config.get("transactional.id"), None);
+        assert_eq!(config.get("enable.idempotence"), None);
+        assert_eq!(config.get("allow.auto.create.topics"), None);
+        assert_eq!(
+            config.get("enable.ssl.certificate.verification"),
+            Some("true")
+        );
+        assert_eq!(
+            config.get("ssl.endpoint.identification.algorithm"),
+            Some("https")
+        );
+        assert_eq!(config.get("sasl.kerberos.kinit.cmd"), None);
+        assert_eq!(config.get("plugin.library.paths"), None);
+    }
+
+    #[test]
+    fn extra_properties_allowlist_is_disjoint_from_caller_and_profile_keys() {
+        let reserved = [
+            "bootstrap.servers",
+            "security.protocol",
+            "sasl.mechanism",
+            "sasl.mechanisms",
+            "sasl.username",
+            "sasl.password",
+            "sasl.kerberos.service.name",
+            "sasl.kerberos.keytab",
+            "sasl.kerberos.principal",
+            "sasl.oauthbearer.config",
+            "ssl.certificate.location",
+            "ssl.key.location",
+            "ssl.key.password",
+            "ssl.key.pem",
+            "ssl.certificate.pem",
+            "ssl.keystore.location",
+            "ssl.keystore.password",
+            "ssl.ca.location",
+            "ssl.ca.pem",
+            "enable.ssl.certificate.verification",
+            "ssl.endpoint.identification.algorithm",
+            "group.id",
+            "enable.auto.commit",
+            "auto.offset.reset",
+            "enable.partition.eof",
+            "isolation.level",
+        ];
+        for allowed in kafkalyzer_core::client_properties::ALLOWED {
+            assert!(
+                !reserved.contains(&allowed.key),
+                "allowlist key {} overlaps reserved key",
+                allowed.key
+            );
+        }
     }
 }

@@ -6,7 +6,6 @@
   "startAnalysis": "Analyse starten",
   "stopAnalysis": "Analyse stoppen",
   "analyzingTopic": "Topic wird analysiert...",
-  "analysisComplete": "Analyse abgeschlossen",
   "scanScope": "Scan-Umfang",
   "fullTopicScan": "Vollständiger Scan (Alle Nachrichten)",
   "sampleLast10k": "Stichprobe letzte 10.000 Nachrichten",
@@ -15,9 +14,7 @@
   "totalMessages": "Gesamtanzahl Nachrichten",
   "totalPayloadSize": "Gesamtgröße Payloads",
   "avgMessageSize": "Durchschnittl. Nachrichtengröße",
-  "minMaxSize": "Min / Max Größe",
   "tombstones": "Tombstones",
-  "tombstoneRatio": "Tombstone-Anteil",
   "compactedTopic": "Kompaktiertes Topic",
   "nonCompactedTopic": "Delete Retention Topic",
   "nullKeys": "Null Keys",
@@ -27,15 +24,18 @@
   "topKeys": "Häufigste Message Keys",
   "contentTypeBreakdown": "Inhaltstypen",
   "fieldFrequencies": "Strukturierte Feld-Häufigkeiten",
-  "fieldValuesDistribution": "Häufigste Werte",
   "noAnalysisYet": "Noch keine Analysedaten vorhanden. Klicken Sie auf Analyse starten, um dieses Topic zu profilieren.",
   "exportAnalysisReport": "Analysebericht exportieren",
   "importAnalysisReport": "Analysebericht importieren",
   "importedFromTime": "Importiert von {cluster} am {time}",
   "@importedFromTime": {
     "placeholders": {
-      "cluster": { "type": "String" },
-      "time": { "type": "String" }
+      "cluster": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "unknownCluster": "unbekannter Cluster",
@@ -45,13 +45,13 @@
   "importUnsupportedVersion": "Diese Analyse-Datei verwendet eine nicht unterstützte Version ({version}).",
   "@importUnsupportedVersion": {
     "placeholders": {
-      "version": { "type": "String" }
+      "version": {
+        "type": "String"
+      }
     }
   },
   "importMalformed": "Diese Analyse-Datei konnte nicht gelesen werden.",
   "exportFailed": "Fehler beim Exportieren des Analyseberichts.",
-  "scanSpeed": "{speed} Nachr./Sek.",
-  "scanDuration": "Scan-Dauer: {duration}",
   "hotPartition": "Hohe Last / Ungleichgewicht",
   "balancedPartitions": "Ausgeglichen",
   "emptyTopicMessage": "Dieses Topic ist leer (0 Nachrichten).",
@@ -60,49 +60,18 @@
   "selectFieldToInspect": "Wählen Sie ein Feld aus, um dessen Top 10 Werte anzuzeigen",
   "top10ValuesForField": "Top 10 Werte für {field}",
   "valueCopied": "Wert in die Zwischenablage kopiert",
-  "distinctValues": "{count} verschiedene Werte erfasst",
   "fieldOccurrences": "Erscheint in {count} Nachr. ({pct}%)",
   "noMatchingFields": "Keine Felder für '{query}' gefunden",
-  "topValuesForField": "Häufigste Werte für {field}",
   "allMessages": "Alle Nachrichten",
   "byTopic": "Nach Topic",
   "byStep": "Nach Schritt",
-  "filterByMessageId": "Nachrichten-ID, CORID oder PMXCOR-ID filtern",
-  "enterMessageIdToFilter": "Nachrichten-ID, CORID oder PMXCOR-ID eingeben...",
-  "statusOpen": "OFFEN",
-  "statusAnalyzing": "KI-ANALYSE GESTARTET",
-  "statusCompleted": "KI-ANALYSE ABGESCHLOSSEN",
-  "statusFailed": "FEHLGESCHLAGEN",
-  "showingOrders": "Zeige {filtered} von {total} Aufträgen",
-  "loadOrders": "Aufträge laden",
-  "searchingForOrders": "Suche nach Aufträgen...",
-  "noOrdersFound": "Keine Aufträge gefunden. Klicken Sie auf Laden, um zu suchen.",
-  "noOrdersMatchFilter": "Keine Aufträge entsprechen dem Filter.",
-  "failedToLoadOrders": "Fehler beim Laden der Aufträge: {error}",
-  "orders": "Aufträge",
-  "rerunNotIntegrated": "Erneute Ausführung aus dem Verlauf ist in der Auftragsansicht noch nicht integriert.",
-  "simulateOrder": "Auftrag simulieren",
-  "limitOrders": "Auftragslimit aktivieren",
-  "maxOrders": "Max. Aufträge",
-  "totalOrders": "{total} Aufträge",
-  "aiAnalysisDataAvailable": "KI-Analysedaten verfügbar",
-  "kiError": "KI Fehler",
   "active": "Aktiv",
-  "firstAppearanceForKey": "Erstes Auftreten für Schlüssel: {key}",
   "stepMatches": "{count} Treffer",
-  "searchingInTopic": "Suche in: {topic}",
   "examinedMessages": "Untersucht: {count} Nachrichten",
   "searchResults": "Suchergebnisse...",
   "matchesCount": "{current} / {total} Treffer",
   "otherResults": "Andere Ergebnisse",
-  "noResultsFound": "Keine Ergebnisse für '{phrase}' gefunden",
-  "noActiveStreams": "Keine aktiven Streams",
-  "noProgressInfo": "Keine Fortschrittsinfos",
   "scanned": "{count} gescannt",
-  "scannedCount": "Gescannt: {count}",
-  "topicsProgress": "{completed} von {total} Topics abgeschlossen",
-  "pmxcorStatus": "{status}",
-  "clusterLabel": "Cluster: {name}",
   "close": "Schließen",
   "closeTab": "Tab schließen",
   "scanning": "Wird gescannt...",
@@ -115,16 +84,13 @@
   "settings": "Einstellungen",
   "clusters": "CLUSTER",
   "addCluster": "Cluster hinzufügen",
-  "reloadTopicsAndSchemas": "Topics & Schemas neu laden",
   "selectClusterToViewTopics": "Wählen Sie einen Cluster aus, um Topics anzuzeigen",
   "topics": "Topics",
   "filterTopics": "Topics filtern...",
-  "showInternal": "Interne anzeigen",
   "consumerGroups": "Consumer-Gruppen",
   "searchGroups": "Consumer-Gruppen suchen...",
   "noConsumerGroupsFound": "Keine Consumer-Gruppen gefunden.",
   "consumerLag": "Consumer-Lag",
-  "autoRefresh": "Auto-Aktualisierung (15s)",
   "topicCol": "Topic",
   "partitionCol": "Partition",
   "logEndOffsetCol": "Log-End-Offset",
@@ -132,7 +98,6 @@
   "lagCol": "Lag",
   "totalLag": "Gesamt-Lag",
   "stream": "Stream",
-  "cards": "Karten",
   "tree": "Baum",
   "raw": "Roh",
   "clear": "Leeren",
@@ -183,7 +148,6 @@
   "exact": "Exakt",
   "run": "Ausführen",
   "stop": "Stopp",
-  "clearAll": "Alle leeren",
   "apply": "Anwenden",
   "cancel": "Abbrechen",
   "save": "Speichern",
@@ -213,14 +177,9 @@
   "useSidebarToSelectScript": "Verwenden Sie die Seitenleiste, um ein Skript auszuwählen oder zu erstellen.",
   "createNewScript": "Neues Skript erstellen",
   "editDefinition": "Definition bearbeiten",
-  "selectValidScript": "Bitte wählen Sie zuerst ein gültiges Skript aus.",
-  "scriptExecution": "Skriptausführung: {name}",
   "newRun": "Neuer Durchlauf",
   "history": "Verlauf",
-  "reviewPreviousRuns": "Vergangene Durchläufe ansehen",
   "noPastRunsFound": "Keine vergangenen Durchläufe gefunden.",
-  "deleteRunResult": "Durchlaufergebnis löschen",
-  "deleteRunResultConfirmation": "Sind Sie sicher, dass Sie dieses Durchlaufergebnis löschen möchten?",
   "runResultDeleted": "Durchlaufergebnis gelöscht",
   "runDetails": "Details",
   "runSummary": "Gesamt",
@@ -229,7 +188,6 @@
   "switchLightMode": "In den hellen Modus wechseln",
   "switchDarkMode": "In den dunklen Modus wechseln",
   "defaultScriptOutputDir": "Standard-Skript-Ausgabeverzeichnis",
-  "selectOutputDirectory": "Ausgabeverzeichnis wählen",
   "maxScriptRunHistory": "Max. Anzahl an Skript-Durchläufen",
   "exportConfiguration": "Konfiguration exportieren",
   "export": "Exportieren",
@@ -240,19 +198,15 @@
   "pleaseSelectCluster": "Bitte wählen Sie einen Cluster aus",
   "selectAll": "Alle auswählen",
   "deselectAll": "Alle abwählen",
-  "viewAll": "Alle anzeigen",
-  "messageDetails": "Nachrichtendetails",
   "copyMessage": "Nachricht kopieren",
   "contentCopied": "Inhalt in die Zwischenablage kopiert",
   "metadataCopied": "Metadaten in die Zwischenablage kopiert",
   "fullMessageCopied": "Vollständige Nachricht in die Zwischenablage kopiert",
   "copiedToClipboard": "In die Zwischenablage kopiert",
   "noDifferencesFound": "Keine Unterschiede gefunden.",
-  "unknownView": "Unbekannte Ansicht",
   "configurationExportedSuccessfully": "Konfiguration erfolgreich exportiert",
   "configurationImportedSuccessfully": "Konfiguration erfolgreich importiert",
   "clustersExportedSuccessfully": "Cluster erfolgreich exportiert",
-  "clustersImportedSuccessfully": "Cluster erfolgreich importiert",
   "scriptExportedSuccessfully": "Skript erfolgreich exportiert",
   "scriptsImportedSuccessfully": "Skripte erfolgreich importiert",
   "runArchiveExported": "Durchlauf-Archiv exportiert",
@@ -277,7 +231,9 @@
   "backgroundUpdateAvailable": "Eine neue Version von Kafkalyzer (v{version}) ist verfügbar.",
   "@backgroundUpdateAvailable": {
     "placeholders": {
-      "version": { "type": "String" }
+      "version": {
+        "type": "String"
+      }
     }
   },
   "updateAction": "Aktualisieren",
@@ -291,13 +247,10 @@
   "tabPayload": "Payload",
   "tabKeyAndHeaders": "Key & Header",
   "tabRawJson": "Rohes JSON",
-  "inspectorTitle": "Nachrichten-Inspector",
   "copyHeaders": "Alle Header kopieren",
   "copyMetadata": "Metadaten kopieren",
   "copiedHeaders": "Alle Header in die Zwischenablage kopiert",
-  "copiedHeaderValue": "Wert von '{key}' kopiert",
   "noHeaders": "Keine Header in dieser Nachricht vorhanden",
-  "copyRawJson": "JSON kopieren",
   "previousMessageTooltip": "Vorherige Nachricht (K)",
   "nextMessageTooltip": "Nächste Nachricht (J)",
   "messagePosition": "{current} von {total}",
@@ -306,33 +259,25 @@
   "searchInMessage": "In Nachricht suchen...",
   "nextMatchTooltip": "Nächster Treffer (Enter)",
   "previousMatchTooltip": "Vorheriger Treffer (Shift+Enter)",
-  "matchesCount": "{current} von {total}",
+  "scriptRunMatchedOfExamined": "{matched} von {examined}",
   "noMatches": "Keine Treffer",
   "closeSearch": "Suche schließen",
   "collapsedRangeLabel": "… {count} verborgene Elemente (Index {start} bis {end}) anzeigen",
   "showAllArrayItems": "Alle {count} zeigen",
   "reduceToMatchContext": "Auf Treffer reduzieren (±1)",
   "matchesContextBadge": "{matches} Treffer (Fokus: Treffer ±1)",
-  "recollapseRange": "Wieder einklappen",
   "pinAsColumn": "Als Spalte anheften",
   "columnPinned": "Spalte '{path}' an Tabelle angeheftet",
   "columnAlreadyPinned": "Spalte '{path}' ist bereits angeheftet",
-  "removeColumn": "Spalte entfernen",
   "resetColumns": "Spalten zurücksetzen",
   "columnsReset": "Tabellenspalten auf Standard zurückgesetzt",
   "columnsMenu": "Spalten",
   "hideColumn": "Spalte ausblenden",
-  "showColumn": "Spalte einblenden",
-  "autoFitColumn": "Breite automatisch anpassen",
   "hideEmptyFields": "Leere Felder ausblenden",
   "showEmptyFields": "Leere Felder einblenden",
-  "hiddenEmptyFieldsCount": "{count, plural, =1{1 leeres Feld ausgeblendet} other{{count} leere Felder ausgeblendet}}",
   "rawTimestampLabel": "Rohwert",
   "utcTimestampLabel": "UTC",
   "localTimestampLabel": "Lokal",
-  "searchConfigurationTitle": "Suchkonfiguration",
-  "collapseSearchConfiguration": "Suchkonfiguration einklappen",
-  "expandSearchConfiguration": "Suchkonfiguration ausklappen",
   "collapseSidebar": "Seitenleiste einklappen",
   "expandSidebar": "Seitenleiste ausklappen (Ctrl+B)",
   "collapseScriptCatalog": "Skriptkatalog einklappen",
@@ -346,44 +291,45 @@
   "quickFilterPlaceholder": "Beim Abruf filtern (Key oder Wert)...",
   "invalidFilterPattern": "Ungültiger regulärer Ausdruck: {term}",
   "@invalidFilterPattern": {
-    "placeholders": { "term": {} }
+    "placeholders": {
+      "term": {}
+    }
   },
   "limitLabel": "Limit",
   "limitAll": "Alle",
   "advancedFiltersToggle": "Erweitert",
   "collapseAdvancedFilters": "Erweiterte Filter einklappen",
   "expandAdvancedFilters": "Erweiterte Filter ausklappen",
-  "fetchMessagesCount": "{count} Nachrichten abrufen",
-  "@fetchMessagesCount": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "fetchMessages": "Nachrichten abrufen",
-  "startLiveStream": "Live-Stream starten",
-  "filterChangedTooltip": "Filter geändert – Klicken zum erneuten Abrufen",
   "chipPartition": "Partition: {partition}",
   "@chipPartition": {
     "placeholders": {
-      "partition": { "type": "String" }
+      "partition": {
+        "type": "String"
+      }
     }
   },
   "chipField": "Feld: {field}",
   "@chipField": {
     "placeholders": {
-      "field": { "type": "String" }
+      "field": {
+        "type": "String"
+      }
     }
   },
   "chipFilterType": "Typ: {type}",
   "@chipFilterType": {
     "placeholders": {
-      "type": { "type": "String" }
+      "type": {
+        "type": "String"
+      }
     }
   },
   "chipScope": "Bereich: {scope}",
   "@chipScope": {
     "placeholders": {
-      "scope": { "type": "String" }
+      "scope": {
+        "type": "String"
+      }
     }
   },
   "chipFastTrace": "Fast Trace",
@@ -394,29 +340,24 @@
   "addClusterAction": "Cluster hinzufügen",
   "connectCluster": "Verbinden",
   "recentTopics": "Zuletzt untersuchte Topics",
-  "noRecentTopics": "Noch keine kürzlich untersuchten Topics.",
   "clearRecentTopics": "Verlauf leeren",
-  "clusterOverviewTitle": "Cluster-Übersicht",
-  "clusterOverviewSubtitle": "Wähle ein Topic aus der Seitenleiste oder öffne ein kürzlich untersuchtes Topic.",
   "clusterTopicsCount": "{count} Topics",
   "@clusterTopicsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "schemaRegistryActive": "Schema Registry verbunden",
   "schemaRegistryNotConfigured": "Keine Schema Registry",
-  "securityProtocolLabel": "Protokoll: {protocol}",
-  "@securityProtocolLabel": {
-    "placeholders": {
-      "protocol": { "type": "String" }
-    }
-  },
   "selectTopicPrompt": "Wähle ein Topic in der Seitenleiste aus, um Nachrichten abzurufen und Partitionen zu analysieren.",
   "recentTopicsForCluster": "Kürzlich geöffnete Topics in {cluster}",
   "@recentTopicsForCluster": {
     "placeholders": {
-      "cluster": { "type": "String" }
+      "cluster": {
+        "type": "String"
+      }
     }
   },
   "noMessagesLoadedTitle": "Noch keine Nachrichten geladen",
@@ -426,64 +367,85 @@
   "loadingMessages": "Nachrichten werden von Kafka geladen...",
   "internalTopicsFilter": "Interne Topics",
   "streamTopicsFilter": "Stream-Topics",
-  "partitionBadge": "{count}P",
-  "@partitionBadge": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
   "topicTooltip": "Partitionen: {partitions} • RF: {rf} • Retention: {retention} • Cleanup: {policy}",
   "@topicTooltip": {
     "placeholders": {
-      "partitions": { "type": "int" },
-      "rf": { "type": "int" },
-      "retention": { "type": "String" },
-      "policy": { "type": "String" }
+      "partitions": {
+        "type": "int"
+      },
+      "rf": {
+        "type": "int"
+      },
+      "retention": {
+        "type": "String"
+      },
+      "policy": {
+        "type": "String"
+      }
     }
   },
   "topicTooltipSimple": "Partitionen: {partitions} • RF: {rf}",
   "@topicTooltipSimple": {
     "placeholders": {
-      "partitions": { "type": "int" },
-      "rf": { "type": "int" }
+      "partitions": {
+        "type": "int"
+      },
+      "rf": {
+        "type": "int"
+      }
     }
   },
   "messageSchemaResolved": "Schema: {subject} v{version} (#{id})",
   "@messageSchemaResolved": {
     "placeholders": {
-      "subject": { "type": "String" },
-      "version": { "type": "int" },
-      "id": { "type": "int" }
+      "subject": {
+        "type": "String"
+      },
+      "version": {
+        "type": "int"
+      },
+      "id": {
+        "type": "int"
+      }
     }
   },
   "messageSchemaUnresolved": "Schema #{id} (nicht aufgelöst)",
   "@messageSchemaUnresolved": {
     "placeholders": {
-      "id": { "type": "int" }
+      "id": {
+        "type": "int"
+      }
     }
   },
-  "messageSchemaUnresolvedTooltip":
-    "Das Schema Registry war nicht erreichbar. Die Id stammt aus der Nachricht selbst.",
+  "messageSchemaUnresolvedTooltip": "Das Schema Registry war nicht erreichbar. Die Id stammt aus der Nachricht selbst.",
   "groupMembersTitle": "Mitglieder",
   "groupMemberEmpty": "Diese Gruppe hat aktuell keine Mitglieder.",
   "groupMemberPartitions": "{count} Partitionen",
   "@groupMemberPartitions": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "groupUnassignedPartitions": "{count} Partitionen haben keinen Eigentümer",
   "@groupUnassignedPartitions": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "groupAssignmentNotDecodable": "Zuweisung konnte nicht gelesen werden",
   "topicHealthWarning": "{underReplicated} unterrepliziert, {leaderless} ohne Leader",
   "@topicHealthWarning": {
     "placeholders": {
-      "underReplicated": { "type": "int" },
-      "leaderless": { "type": "int" }
+      "underReplicated": {
+        "type": "int"
+      },
+      "leaderless": {
+        "type": "int"
+      }
     }
   },
   "partitionHealthTitle": "Replikationsstatus",
@@ -497,7 +459,9 @@
   "schemaTooltipSuffix": " • Schema: {schema}",
   "@schemaTooltipSuffix": {
     "placeholders": {
-      "schema": { "type": "String" }
+      "schema": {
+        "type": "String"
+      }
     }
   },
   "viewModeTable": "Tabelle",
@@ -511,20 +475,28 @@
   "filterInLoadedMessages": "In {count} geladenen Nachrichten filtern...",
   "@filterInLoadedMessages": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "matchesOfTotal": "{matchCount} von {totalCount} Treffern",
   "@matchesOfTotal": {
     "placeholders": {
-      "matchCount": { "type": "int" },
-      "totalCount": { "type": "int" }
+      "matchCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
     }
   },
   "loadedMessagesCount": "{count} geladene Nachrichten",
   "@loadedMessagesCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "sslClientAuthMode": "Client-Authentifizierung (mTLS)",
@@ -536,25 +508,18 @@
   "hidePassword": "Passwort ausblenden",
   "testConnection": "Verbindung testen",
   "testingConnection": "Verbindung wird getestet...",
-  "connectionSuccessful": "Verbindung erfolgreich!",
-  "connectionFailed": "Verbindung fehlgeschlagen: {error}",
-  "@connectionFailed": {
-    "placeholders": {
-      "error": { "type": "String" }
-    }
-  },
   "schemaRegistryCredentialsOptional": "Zugangsdaten für Schema Registry (optional)",
   "globalConfigDescription": "Gesamte App-Konfiguration inklusive aller Cluster-Profile und Einstellungen sichern oder wiederherstellen.",
   "clusterExportDescription": "Ausgewählte Cluster-Profile inklusive Zertifikaten als portable ZIP-Datei exportieren oder importieren.",
   "schemaRegistryConfiguredBadge": "Schema Registry",
-  "maxScriptRuns": "Max. Anzahl an Skript-Durchläufen",
   "maxConcurrentLagQueries": "Maximale gleichzeitige Lag-Abfragen",
-  "maxConcurrentLagQueriesHelper": "Standard: 5 (Höhere Werte können zu Lasten der Performance gehen)",
   "deleteStepConfirmationTitle": "Schritt löschen?",
   "deleteStepConfirmationMessage": "Möchten Sie den Schritt „{name}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
   "@deleteStepConfirmationMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "addTopicManually": "Topic manuell hinzufügen",
@@ -564,21 +529,24 @@
   "selectTopicsCount": "Topics auswählen ({count} ausgewählt)",
   "@selectTopicsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "extractionSource": "Quelle",
   "extractionTopic": "Topic",
   "extractionVariableName": "Variablenname",
   "extractionJsonPath": "Feldpfad (z. B. order.id, items[0].sku, /order/status)",
-  "scriptProperties": "Skript-Eigenschaften",
   "concurrencyLimit": "Gleichzeitige Durchläufe",
   "advancedFiltersSection": "Erweiterte Filter",
   "deleteScriptConfirmationTitle": "Skript löschen?",
   "deleteScriptConfirmationMessage": "Möchten Sie das Skript \"{name}\" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
   "@deleteScriptConfirmationMessage": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "searchScripts": "Skripte durchsuchen...",
@@ -586,7 +554,9 @@
   "pipelineStepsCount": "{count, plural, =1{1 Schritt} other{{count} Schritte}}",
   "@pipelineStepsCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "noStepsInPipeline": "Keine Ablauf-Schritte definiert. Wechseln Sie zum Bearbeiten-Tab, um Schritte hinzuzufügen.",
@@ -594,21 +564,23 @@
   "runScriptWithSteps": "Skript starten ({count, plural, =1{1 Schritt} other{{count} Schritte}})",
   "@runScriptWithSteps": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "variableTypeText": "Text",
-  "variableTypeTimestamp": "Zeitstempel",
   "variableTypeNumeric": "Zahl",
   "stepNumber": "Schritt {number}",
   "@stepNumber": {
     "placeholders": {
-      "number": { "type": "int" }
+      "number": {
+        "type": "int"
+      }
     }
   },
   "targetCluster": "Ziel-Cluster",
   "extractedVariables": "Extrahiert",
-  "noVariablesRequired": "Keine Parameter erforderlich.",
   "filter": "Filter",
   "schemaAction": "Schema",
   "scanProgressTitle": "Scan-Fortschritt",
@@ -641,7 +613,9 @@
   "errorLoadingSchema": "Fehler beim Laden des Schemas: {error}",
   "@errorLoadingSchema": {
     "placeholders": {
-      "error": { "type": "String" }
+      "error": {
+        "type": "String"
+      }
     }
   },
   "noMessagesToDisplay": "Keine Nachrichten zum Anzeigen",
@@ -658,14 +632,14 @@
   "keySchemaTitle": "Key-Schema",
   "valueSchemaTitle": "Value-Schema",
   "schemaTabTitle": "Schema",
-  "schemaPinAsColumn": "Als Tabellenspalte anheften",
   "schemaPinAsColumnTooltip": "Dieses Schema-Feld als Tabellenspalte anheften",
-  "schemaFilterByField": "Nach diesem Feld filtern",
   "schemaFilterByFieldTooltip": "Nachrichten nach diesem Schema-Feld filtern",
   "schemaFieldFilterApplied": "Filterfeld auf '{field}' gesetzt",
   "@schemaFieldFilterApplied": {
     "placeholders": {
-      "field": { "type": "String" }
+      "field": {
+        "type": "String"
+      }
     }
   },
   "schemaNoRegistryConfigured": "Keine Schema Registry für diesen Cluster konfiguriert.",
@@ -678,14 +652,19 @@
   "schemaNone": "kein Registry-Schema",
   "lagTrendTooltip": "Messwerte: {readings} - höchster {high}, niedrigster {low}",
   "@lagTrendTooltip": {
-    "placeholders": { "readings": {}, "high": {}, "low": {} }
+    "placeholders": {
+      "readings": {},
+      "high": {},
+      "low": {}
+    }
   },
   "lagOverThreshold": "Oberhalb der Warnschwelle von {threshold} Nachrichten",
   "@lagOverThreshold": {
-    "placeholders": { "threshold": {} }
+    "placeholders": {
+      "threshold": {}
+    }
   },
   "lagWarnThresholdLabel": "Consumer-Lag-Warnschwelle (Nachrichten)",
-  "lagWarnThresholdHelp": "0 deaktiviert die Warnung in der Lag-Ansicht.",
   "comparisonAction": "Vergleichen",
   "comparisonTitle": "Report-Vergleich",
   "comparisonSourceLive": "Live",
@@ -699,16 +678,35 @@
   "comparisonAwaitingSecond": "Wähle das zweite Report für den Vergleich.",
   "comparisonTopicMismatch": "Cannot compare reports of different topics: {topicA} and {topicB}.",
   "@comparisonTopicMismatch": {
-    "placeholders": { "topicA": {}, "topicB": {} }
+    "placeholders": {
+      "topicA": {},
+      "topicB": {}
+    }
   },
   "sizePercentiles": "p50/p95/p99",
   "estimatedIndicator": "geschätzt",
   "distinctKeys": "Unterschiedliche Keys",
   "cappedIndicator": "begrenzt",
   "exportAsJson": "JSON (Vollständige Nachricht)",
+  "exportAsNdjson": "NDJSON (eine Nachricht pro Zeile)",
   "exportAsCsv": "CSV (Sichtbare Spalten)",
-  "exportFormat": "Export-Format",
   "exportMessagesCsv": "Nachrichten als CSV exportieren",
+  "exportSelectedOnly": "Nur ausgewählte Nachrichten ({count})",
+  "exportIncludeDimmedNonMatches": "Abgeblendete Nicht-Treffer einschließen",
+  "exportAddHeadersColumn": "Headers-Spalte hinzufügen (CSV)",
+  "pauseView": "Pausieren",
+  "pauseViewTooltip": "Ergebnisansicht einfrieren, während der Stream im Hintergrund weiterläuft",
+  "resumeViewWithNew": "{count, plural, =0{Fortsetzen} one{Fortsetzen · 1 neu} other{Fortsetzen · {count} neu}}",
+  "resumeViewTooltip": "Live-Aktualisierung fortsetzen und gepufferte Nachrichten übernehmen",
+  "followNewest": "Neueste verfolgen",
+  "followNewestOnTooltip": "Folgt den neuesten Nachrichten; klicken oder scrollen zum Anhalten",
+  "followNewestOffTooltip": "Zu den neuesten Nachrichten springen und weiter verfolgen",
+  "followNewestDisabledTooltip": "„Neueste verfolgen“ erfordert Sortierung nach Zeitstempel",
+  "droppedMessagesIndicator": "{dropped} älteste Nachrichten verworfen (Limit {limit})",
+  "droppedMessagesTooltip": "Älteste Nachrichten wurden beim Erreichen des Pufferlimits verworfen. Anpassbar unter Einstellungen → Allgemein.",
+  "messageBufferLimitLabel": "Nachrichten-Pufferlimit",
+  "messageBufferLimitHelper": "Maximale Anzahl gepufferter Nachrichten pro Topic-Tab oder Suchziel (1.000–1.000.000)",
+  "messageBufferLimitError": "Bitte eine ganze Zahl zwischen 1.000 und 1.000.000 eingeben",
   "searchPresets": "Gespeicherte Suchen",
   "defaultPreset": "Standard",
   "saveSearchPreset": "Aktuelle Suche speichern...",
@@ -717,14 +715,13 @@
   "presetSaved": "Preset gespeichert",
   "presetDeleted": "Preset gelöscht",
   "deletePreset": "Preset löschen",
-  "updateCurrentPreset": "Aktuelles Preset aktualisieren",
   "restoreOpenTabsOnStartup": "Offene Tabs beim Start wiederherstellen",
   "restoreOpenTabsOnStartupDescription": "Zuvor geöffnete Topic-Tabs bei Verbindung mit einem Cluster automatisch wiederherstellen",
   "copyCliCommand": "Headless-CLI-Befehl kopieren",
   "cliCommandCopied": "CLI-Befehl in Zwischenablage kopiert",
   "protectedByOsKeyring": "Durch OS-Keyring geschützt",
   "includeCredentialsInExport": "Passwörter und Token in den Export einschließen",
-  "includeCredentialsWarning": "Warnung: Das Einschließen von Anmeldedaten speichert unverschlüsselte Passwörter im exportierten Archiv.",
+  "includeCredentialsWarning": "Anmeldedaten werden mit Ihrer Passphrase in einem age-Archiv (.zip.age) verschlüsselt.",
   "readOnlyBadgeLabel": "Schreibgeschützt",
   "readOnlyBadgeTooltip": "kafkalyzer ist per Design rein lesend. Es werden keine Schreib-, Veröffentlichungs- oder Offset-Commit-Operationen ausgeführt.",
   "readOnlySecurityTitle": "Read-Only-Architektur & Sicherheit",
@@ -740,17 +737,15 @@
   "baseVersionLabel": "Basisversion",
   "compareVersionLabel": "Vergleichsversion",
   "checkCompatibility": "Kompatibilität prüfen",
-  "compatibilityCheckTitle": "Schema-Kompatibilitätsprüfung",
   "schemaCompatible": "Kompatibel",
   "schemaIncompatible": "Inkompatibel",
   "compatibilityCheckSuccess": "Das Schema ist mit der ausgewählten Version kompatibel.",
   "associatedTopicsTitle": "Zugehörige Topics",
   "noAssociatedTopicsFound": "Keine zugehörigen Topics für dieses Subject gefunden.",
-  "noDifferencesFound": "Keine Unterschiede zwischen den ausgewählten Versionen gefunden.",
+  "schemaNoDifferencesFound": "Keine Unterschiede zwischen den ausgewählten Versionen gefunden.",
   "draftSchemaLabel": "Entwurf-Schema (JSON)",
   "dlqBadgeLabel": "DLQ",
   "retryBadgeLabel": "Retry",
-  "deadLetterQueue": "Dead-Letter-Queue",
   "associatedDlqCount": "{count, plural, =1{1 Fehler-Topic} other{{count} Fehler-Topics}}",
   "failureDiagnosticsTitle": "Fehlerdiagnose (DLQ)",
   "exceptionMessageLabel": "Ausnahme",
@@ -768,7 +763,6 @@
   "openFile": "Öffnen",
   "showInFolder": "Im Ordner anzeigen",
   "failedToOpenFile": "Fehler beim Öffnen der Datei: {error}",
-  "failedToOpenFolder": "Fehler beim Öffnen des Ordners: {error}",
   "lagEstimateCaughtUp": "Aufgeholt",
   "lagEstimateGrowing": "Rückstau wächst",
   "lagEstimateStalled": "Stagnierend",
@@ -777,7 +771,6 @@
   "lagEstimateEtaPrefix": "Dauer: {eta}",
   "lagEstimateTooltip": "Rate: {rate} | Delta: {delta} über {interval} | Status: {status}",
   "recentProductionTitle": "Kürzliche Produktion",
-  "recentProductionSubtitle": "Nachrichtenvolumen der letzten Stunden",
   "window6h": "6 Std.",
   "window12h": "12 Std.",
   "window24h": "24 Std.",
@@ -791,7 +784,6 @@
   "uncoveredHourHint": "Vor Erfassungsbeginn ({count} Nachrichten)",
   "currentHourIncomplete": "Unvollständige Stunde",
   "coverageHint": "Scan deckt die letzten {hours} Stunden dieses Fensters ab.",
-  "hourlyTooltipDetails": "{count} Nachrichten ({delta})",
   "hourlyTooltipMatches": "{matches} Treffer ({share}%)",
   "dailyProductionTitle": "Tägliche Produktionsverteilung",
   "dailyProductionSubtitle": "Nachrichten pro Kalendertag",
@@ -799,7 +791,6 @@
   "dailyMatchesShare": "{matches} ({share}%)",
   "valueFilterButton": "Nach Feldwert filtern",
   "valueFilterActive": "Filter: {path} = {value}",
-  "valueFilterClear": "Filter entfernen",
   "valueFilterDialogTitle": "Nach Feldwert filtern",
   "valueFilterDialogFieldPath": "Feldpfad (z. B. attributes.region)",
   "valueFilterDialogValue": "Exakter Wert",
@@ -812,7 +803,6 @@
   "valueFilterRemainder": "{remainder} nicht-übereinstimmende Nachrichten",
   "drillDownDialogTitle": "Feldwert-Details",
   "drillDownFieldPath": "Feld: {path}",
-  "drillDownValue": "Wert: {value}",
   "drillDownCount": "Anzahl: {count}",
   "drillDownShareOfAll": "Anteil an allen Nachrichten: {percent}%",
   "drillDownShareOfField": "Anteil am Vorkommen: {percent}%",
@@ -824,7 +814,6 @@
   "duplicateScopePayloadOnly": "Nutzlast (Wert)",
   "duplicateScopeKeyAndPayload": "Key + Nutzlast",
   "duplicateMessagesCardTitle": "Mehrfach publizierte Nachrichten",
-  "duplicateMessagesRate": "{rate}% der Nachrichten",
   "duplicateMessagesSubtitle": "{unique} eindeutig • {scope}",
   "topDuplicatesTitle": "Häufigste Nachrichten-Duplikate",
   "topDuplicatesSubtitle": "Zeigt bis zu 20 der am häufigsten duplizierten Nachrichten",
@@ -837,7 +826,6 @@
   "copiedKey": "Key in Zwischenablage kopiert",
   "duplicateRankHeader": "#",
   "duplicateCountHeader": "Vorkommen",
-  "duplicateShareHeader": "Anteil",
   "duplicateKeyHeader": "Key",
   "duplicatePayloadPreviewHeader": "Nutzlast-Vorschau",
   "duplicateSampleCoordinatesHeader": "Beispiel-Ort",
@@ -846,8 +834,6 @@
   "openInMessages": "In Nachrichten anzeigen",
   "filterDuplicatesInMessages": "In Nachrichten filtern",
   "jumpToSampleOffset": "Zum Beispiel springen",
-  "duplicateCoordinates": "Koordinaten",
-  "duplicateTimestamp": "Zeitstempel",
   "duplicateKey": "Key",
   "duplicatePayload": "Dekodierte Nutzlast",
   "inspectDuplicateTooltip": "Duplikat-Details anzeigen",
@@ -879,7 +865,6 @@
   "tlsTransitionDialogBody": "Die Zertifikatsprüfung für das Cluster \"{clusterName}\" ist fehlgeschlagen. Wählen Sie, ob die TLS-Prüfung aktiviert bleiben soll (empfohlen) oder für dieses Profil deaktiviert werden soll.\n\nDetails: {error}",
   "tlsTransitionKeepEnabled": "Prüfung aktiviert lassen",
   "tlsTransitionDisable": "Prüfung deaktivieren (unsicher)",
-  "tlsVerificationFailedConnectError": "TLS-Zertifikatsprüfung fehlgeschlagen: {error}",
   "messageFetchFailedTitle": "Nachrichten konnten nicht geladen werden",
   "topicsLoadFailedTitle": "Topics konnten nicht geladen werden",
   "subjectsLoadFailed": "Schemas konnten nicht geladen werden: {error}",
@@ -895,7 +880,6 @@
   "lagRetryAction": "Erneut versuchen",
   "lagRefreshInProgress": "Aktualisierung läuft",
   "partitionOwnershipUnknown": "Partitionszuordnung unbekannt",
-  "topicNotReadable": "Topic nicht lesbar",
   "diagStageNetwork": "Netzwerk",
   "diagStageTls": "TLS",
   "diagStageAuthentication": "Authentifizierung",
@@ -980,7 +964,6 @@
   "shortcutKeyArrowUp": "Pfeil nach oben",
   "shortcutKeyShift": "Umschalt",
   "shortcutCommandPalette": "Befehlspalette",
-  "commandPaletteTitle": "Befehlspalette",
   "commandPaletteHint": "Cluster, Topics, Gruppen, Skripte suchen…",
   "commandPaletteKindDestination": "Bereich",
   "commandPaletteKindCluster": "Cluster",
@@ -997,5 +980,298 @@
   "commandPalettePartitionsCount": "{count, plural, =1{1 Partition} other{{count} Partitionen}}",
   "commandPaletteStepsCount": "{count, plural, =1{1 Schritt} other{{count} Schritte}}",
   "consumerGroupNotFound": "Consumer-Gruppe {id} nicht gefunden",
-  "scriptNotFound": "Skript nicht gefunden"
+  "scriptNotFound": "Skript nicht gefunden",
+  "fastTracePartitionPreview": "Partition {partition} von {partitionCount}",
+  "fastTracePartitionCountUnknown": "Partitionsanzahl unbekannt",
+  "fastTraceEnterKeyHint": "Schlüssel eingeben, um Zielpartition anzuzeigen",
+  "fastTraceFirstTermOnlyNote": "Nur der erste Begriff wählt die gescannte Partition",
+  "fastTraceAssumptionSummary": "Nimmt Java-Standard-Partitionierer (murmur2) und UTF-8-Textschlüssel an",
+  "fastTraceAssumptionCaveat": "Nimmt den Java-Standard-Partitionierer über die UTF-8-Bytes des Textschlüssels an. Die tatsächliche Partition kann abweichen bei anderen Partitionierern (z. B. librdkafka consistent/CRC32 oder benutzerdefiniert), binären oder serialisierten Schlüsseln (z. B. Avro mit Confluent-Wire-Präfix) oder später hinzugefügten Partitionen.",
+  "fastTraceAssumptionInfoLabel": "Annahmen zur Fast-Trace-Partitionierung",
+  "chipFastTracePartition": "Fast Trace → P{partition}",
+  "exportPassphraseLabel": "Passphrase",
+  "exportPassphraseConfirmLabel": "Passphrase bestätigen",
+  "exportPassphraseTooShort": "Die Passphrase muss mindestens {min} Zeichen lang sein",
+  "exportPassphraseMismatch": "Die Passphrasen stimmen nicht überein",
+  "exportPassphraseNotRecoverable": "Eine verlorene Passphrase kann nicht wiederhergestellt werden. Ohne sie lässt sich dieses Archiv nicht öffnen.",
+  "showPassphrase": "Passphrase anzeigen",
+  "hidePassphrase": "Passphrase verbergen",
+  "encryptingBundle": "Archiv wird verschlüsselt...",
+  "importPassphraseTitle": "Archiv-Passphrase eingeben",
+  "importPassphraseLabel": "Passphrase",
+  "importPassphraseWrong": "Falsche Passphrase. Bitte versuchen Sie es erneut.",
+  "importEncryptedCorrupt": "Das verschlüsselte Archiv ist beschädigt oder fehlerhaft.",
+  "importEncryptedUnsupported": "Diese verschlüsselte Datei ist nicht mit einer Passphrase verschlüsselt und kann nicht importiert werden.",
+  "importEncryptedTooExpensive": "Dieses verschlüsselte Archiv erfordert auf diesem Gerät zu viel Rechenaufwand zum Entschlüsseln.",
+  "searchRunning": "Suche läuft...",
+  "searchFailed": "Suche fehlgeschlagen",
+  "matchesCountCapped": "{current} / {total}+",
+  "environmentTagSectionTitle": "Umgebungs-Tag (optional)",
+  "environmentLabelField": "Umgebungs-Label",
+  "environmentLabelHint": "z. B. DEV, TEST, STAGE, PROD",
+  "environmentLabelTooLong": "Das Umgebungs-Label darf höchstens {max} Zeichen lang sein",
+  "environmentSemanticsLabel": "Umgebung: {label}",
+  "environmentColorRed": "Rot",
+  "environmentColorOrange": "Orange",
+  "environmentColorYellow": "Gelb",
+  "environmentColorGreen": "Grün",
+  "environmentColorBlue": "Blau",
+  "environmentColorPurple": "Lila",
+  "environmentColorGrey": "Grau",
+  "bootstrapNoEntries": "Mindestens einen host:port-Eintrag angeben",
+  "bootstrapMissingPort": "Eintrag „{entry}“ benötigt einen Port (:port)",
+  "bootstrapInvalidPort": "Eintrag „{entry}“ hat einen ungültigen Port (1–65535)",
+  "bootstrapInvalidHost": "Eintrag „{entry}“ hat einen ungültigen Host",
+  "bootstrapSchemeNotAllowed": "Eintrag „{entry}“ darf kein URL-Schema enthalten",
+  "extraPropertiesTitle": "Zusätzliche Client-Eigenschaften",
+  "extraPropertiesHint": "Ein key=value pro Zeile",
+  "extraPropertiesAllowedKeysTitle": "Erlaubte Schlüssel",
+  "extraPropertiesSyntaxError": "Zeile {line}: ungültige Syntax (key=value erwartet)",
+  "extraPropertiesNotAllowed": "Zeile {line}: „{key}“ ist nicht erlaubt",
+  "extraPropertiesInvalidValue": "Zeile {line}: ungültiger Wert für „{key}“ (erlaubt: {allowed})",
+  "extraPropertiesDuplicate": "Zeile {line}: doppelter Schlüssel „{key}“",
+  "importClientPropertiesAction": "client.properties importieren",
+  "importClientPropertiesPreviewTitle": "Vorschau: client.properties-Import",
+  "importClientPropertiesMappedSection": "Zu übernehmende Profilfelder",
+  "importClientPropertiesExtrasSection": "Zusätzliche Eigenschaften",
+  "importClientPropertiesSkippedSection": "Nicht übernommen",
+  "importClientPropertiesApplyAction": "Übernehmen",
+  "importClientPropertiesTooLarge": "Die Datei ist größer als 1 MiB und kann nicht importiert werden.",
+  "importClientPropertiesInvalidUtf8": "Die Datei ist kein gültiges UTF-8 und kann nicht gelesen werden.",
+  "importClientPropertiesReadError": "Datei konnte nicht gelesen werden: {error}",
+  "importClientPropertiesNothingToApply": "Keine unterstützten Eigenschaften in dieser Datei gefunden.",
+  "skipReasonNotAllowed": "Unbekannt oder nicht erlaubt",
+  "skipReasonUnsupported": "Nicht unterstützter Typ oder Format",
+  "skipReasonPlaceholder": "Platzhalter kann nicht aufgelöst werden",
+  "skipReasonVerificationOverride": "TLS-Prüfung kann nur ausdrücklich im Dialog deaktiviert werden",
+  "skipReasonInvalidValue": "Ungültiger Wert",
+  "duplicateClusterAction": "Duplizieren",
+  "duplicateClusterTitle": "Cluster duplizieren",
+  "clusterFilterHint": "Cluster filtern (Name, Umgebung, Bootstrap)",
+  "clusterFilterNoMatch": "Kein Cluster entspricht dem Filter",
+  "clusterFilterClear": "Filter zurücksetzen",
+  "disconnectClusterTooltip": "Trennen",
+  "disconnectConfirmTitle": "Verbindung zu {cluster} trennen?",
+  "disconnectConfirmBody": "Für diesen Cluster läuft noch eine Suche oder Analyse. Beim Trennen wird sie gestoppt und seine Tabs werden geschlossen.",
+  "disconnectConfirmAction": "Trennen",
+  "unrestoredTabsMessage": "{count, plural, =1{1 Tab konnte nicht wiederhergestellt werden ({topics})} other{{count} Tabs konnten nicht wiederhergestellt werden ({topics})}}",
+  "decodeAs": "Dekodieren als…",
+  "decodeAsJson": "JSON",
+  "decodeAsBase64": "Base64",
+  "decodeAsGzip": "gzip",
+  "showOriginalOnly": "Nur Original anzeigen",
+  "showOriginal": "Original anzeigen",
+  "copyDecoded": "Dekodiert kopieren",
+  "copyAsHex": "Als Hex kopieren",
+  "binaryBytesSummary": "{count} Bytes",
+  "decodeErrorInvalidJson": "Kein gültiges JSON",
+  "decodeErrorInvalidBase64": "Kein gültiges Base64",
+  "decodeErrorNotGzip": "Kein gzip-Datenstrom",
+  "decodeErrorCorruptGzip": "Beschädigte gzip-Daten",
+  "decodeErrorInputTooLarge": "Eingabe überschreitet Limit von {limitMib} MiB",
+  "decodeErrorOutputTooLarge": "Dekodierte Ausgabe überschreitet Limit von {limitMib} MiB",
+  "epochUnitSeconds": "Sekunden",
+  "epochUnitMilliseconds": "Millisekunden",
+  "epochUnitMicroseconds": "Mikrosekunden",
+  "epochUnitNanoseconds": "Nanosekunden",
+  "epochTooltip": "{primary}\n{secondary}\nAngenommene Einheit: {unit}",
+  "emptyValueMarker": "Leerer Wert",
+  "inspectorKeySection": "Schlüssel",
+  "inspectorHeadersSection": "Header ({count})",
+  "appearanceSectionTitle": "Erscheinungsbild",
+  "themeLabel": "Design",
+  "themeSystem": "System",
+  "themeLight": "Hell",
+  "themeDark": "Dunkel",
+  "languageLabel": "Sprache",
+  "languageSystem": "System",
+  "languageEnglish": "English",
+  "languageGerman": "Deutsch",
+  "textSizeLabel": "Textgröße",
+  "textSizeCustom": "Benutzerdefiniert ({percent}%)",
+  "timeDisplayLabel": "Zeitstempel",
+  "timeDisplayLocal": "Lokal",
+  "timeDisplayUtc": "UTC",
+  "defaultResultLimitLabel": "Standard-Ergebnislimit",
+  "intSettingRangeHelper": "Bereich: {min}–{max} (Standard: {defaultValue})",
+  "intSettingRangeError": "Geben Sie eine ganze Zahl von {min} bis {max} ein",
+  "resetToDefaults": "Auf Standard zurücksetzen",
+  "resetSectionConfirmTitle": "Einstellungen für „{section}“ zurücksetzen?",
+  "resetSectionConfirmBody": "Dadurch werden die Einstellungen unter „{section}“ auf die Standardwerte zurückgesetzt. Cluster-Profile, Zugangsdaten, Skripte und gespeicherte Suchen bleiben unverändert.",
+  "resetConfirmAction": "Zurücksetzen",
+  "manualUpdateAvailableTitle": "Version {version} verfügbar",
+  "manualUpdateAvailableBody": "Eine neuere Version ({version}) ist auf GitHub verfügbar. Diese Installation kann sich nicht automatisch aktualisieren.",
+  "manualUpToDateHint": "Sie verwenden die neueste Version. Automatische Updates sind für diese Installation nicht verfügbar.",
+  "latestReleaseKnownBody": "Neueste Version auf GitHub: {version}. Die laufende Version konnte nicht verglichen werden.",
+  "openReleasePage": "Release-Seite öffnen",
+  "downloadCancelledSnackbar": "Download abgebrochen. Das Update wird nicht installiert.",
+  "connectionErrorInvalidBootstrapServers": "Ungültiger Bootstrap-Server",
+  "connectionErrorTlsVerificationFailed": "TLS-Zertifikatsprüfung fehlgeschlagen",
+  "connectionErrorValidationFailed": "Verbindungsprüfung fehlgeschlagen",
+  "connectionErrorBrokerTransport": "Broker-Transportfehler. Adresse und Netzwerk prüfen.",
+  "connectionErrorConnectionRefused": "Verbindung abgelehnt",
+  "connectionErrorOther": "Verbindung fehlgeschlagen",
+  "topicAnalysisEmptyFieldPath": "Feldpfad darf nicht leer sein",
+  "topicAnalysisNoPreviousScope": "Kein vorheriger Analysebereich zum erneuten Scannen vorhanden",
+  "exportTopicAnalysis": "Topic-Analyse exportieren",
+  "importTopicAnalysis": "Topic-Analyse importieren",
+  "saveRunArchive": "Lauf-Archiv speichern - {name}",
+  "saveSchemaMarkdown": "Schema-Markdown speichern",
+  "step": "Schritt",
+  "content": "Inhalt",
+  "filterColumnTitle": "{column} filtern",
+  "filterSubstringHint": "Suchtext zum Filtern eingeben...",
+  "copyContent": "Inhalt kopieren",
+  "emptyBinaryData": "Leere Binärdaten",
+  "preparingHexDump": "Hex-Dump für Zwischenablage wird vorbereitet...",
+  "hexDumpCopied": "Hex-Dump in die Zwischenablage kopiert",
+  "copyFullHexDump": "Vollständigen Hex-Dump kopieren",
+  "objectCopiedToClipboard": "Objekt in die Zwischenablage kopiert",
+  "entityDetails": "Entitätsdetails",
+  "copyWholeObject": "Gesamtes Objekt kopieren",
+  "errorComputingDiff": "Fehler beim Berechnen des Diffs",
+  "globalNoStep": "Global (Kein Schritt)",
+  "stacktrace": "Stacktrace",
+  "noResultsMatchingPhrase": "Keine Ergebnisse für '{phrase}' gefunden",
+  "hideNonMatchingMessages": "Nicht passende Nachrichten ausblenden",
+  "showNonMatchesAsDimmed": "Nicht passende Nachrichten abgeblendet anzeigen",
+  "availableTopics": "Verfügbare Topics",
+  "optionalMetadataRegistry": "Optionale Metadaten-Registry",
+  "noClusterSelected": "Kein Cluster ausgewählt",
+  "quickJumpTopicLabel": "Topic: {topic}",
+  "quickJumpPartitionLabel": "Partition: {partition}",
+  "quickJumpOffsetLabel": "Offset: {offset}",
+  "quickJumpFilterLabel": "Filter: {filter}",
+  "schemaRegistryUrlHint": "z.B. {url}",
+  "startTime": "Startzeit",
+  "endTime": "Endzeit",
+  "fieldOptional": "Feld (Opt.)",
+  "selectTopicsDialogTitle": "{count, plural, =1{Topic auswählen ({filtered}/{total})} other{Topics auswählen ({filtered}/{total})}}",
+  "kafkaStreamTopics": "Kafka-Stream-Topics",
+  "searchLabel": "Suchen",
+  "selectCount": "Auswählen ({count})",
+  "selectDateTime": "Datum & Uhrzeit auswählen",
+  "presetsRelativeToNow": "Vorgaben (relativ zu Jetzt)",
+  "selectVersionsToCompare": "Versionen zum Vergleichen auswählen",
+  "unknownError": "Unbekannter Fehler",
+  "unreadableStoredData": "Nicht lesbare gespeicherte Daten",
+  "tombstoneValueNull": "TOMBSTONE (Wert ist NULL)",
+  "lagChangeDelta": "Änderung: {delta}",
+  "ofTotal": "von {total}",
+  "activeStable": "Aktiv / Stabil",
+  "idleEmptyCount": "{count} Inaktiv/Leer",
+  "activeQueries": "Aktive Abfragen",
+  "queueCount": "Warteschlange: {count}",
+  "connectingToCluster": "Verbindung zum Cluster wird hergestellt...",
+  "establishingConnectionOffsets": "Verbindung zum Cluster wird hergestellt und Offsets werden berechnet...",
+  "selectClusterForConsumerLag": "Wähle oben ein Cluster aus, um den Consumer-Lag anzuzeigen.",
+  "loadedConsumerGroupsSummary": "Erfolgreich {count} Consumer-Gruppen in {seconds}s geladen.",
+  "groupIdCol": "Gruppen-ID",
+  "stateCol": "Status",
+  "protocolCol": "Protokoll",
+  "consumersCol": "Consumers",
+  "processedCol": "Abarbeitung",
+  "noActivePartitionAssignments": "Keine aktiven Partitionen gefunden.",
+  "noMessageAtOrAfterOffset": "Keine Nachricht am oder nach Offset {offset} gefunden",
+  "viewMessageAtOffset": "Message am Offset anzeigen",
+  "errorWithMessage": "Fehler: {error}",
+  "stateAll": "Alle",
+  "stateStable": "Stabil",
+  "stateEmpty": "Leer",
+  "stateDead": "Tot",
+  "refreshIntervalLabel": "Intervall",
+  "refreshOff": "Aus",
+  "scriptName": "Skriptname",
+  "sourceCol": "Quelle",
+  "newVariableName": "Neuer Variablenname",
+  "extractedVars": "Extrahiert: {vars}",
+  "usedVars": "Verwendet: {vars}",
+  "stepNameLabel": "Schrittname",
+  "valueExtractions": "Wertextraktionen",
+  "noExtractionsDefined": "Keine Extraktionen definiert",
+  "insertVariable": "Variable einfügen",
+  "deleteExtraction": "Extraktion löschen",
+  "filterByParameter": "Filtern nach {parameter}",
+  "searchValues": "Werte suchen",
+  "selectAllMatches": "Alle Treffer auswählen",
+  "clearSelection": "Auswahl aufheben",
+  "copyValue": "Wert kopieren",
+  "copiedValueToClipboard": "'{value}' in die Zwischenablage kopiert",
+  "applyWithCount": "Anwenden ({count})",
+  "noScriptsAvailable": "Keine Skripte verfügbar",
+  "executionProgress": "Ausführungsfortschritt",
+  "runningEllipsis": "Läuft...",
+  "backTooltip": "Zurück",
+  "failedToLoadDetails": "Details konnten nicht geladen werden",
+  "defaultLabel": "Standard",
+  "clusterLabelValue": "Cluster: {cluster}",
+  "clusterRuntimeLabel": "Cluster: {cluster} • {runtime}",
+  "startedAt": "Gestartet: {time}",
+  "finishedAt": "Beendet: {time}",
+  "totalRuntime": "Gesamtlaufzeit: {duration}",
+  "runHistory": "Laufverlauf",
+  "importRunArchive": "Laufarchiv importieren",
+  "matchedAnalyzed": "{matched} Treffer / {analyzed} analysiert",
+  "loadResults": "Ergebnisse laden",
+  "runAgain": "Erneut ausführen",
+  "exportRunArchive": "Laufarchiv exportieren",
+  "deleteRun": "Lauf löschen",
+  "deleteRunResultTitle": "Laufergebnis löschen",
+  "deleteRunResultConfirm": "Möchten Sie dieses Laufergebnis wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
+  "failedToDeleteRun": "Fehler beim Löschen des Laufs: {error}",
+  "noSchemaFieldsMatching": "Keine Schemafelder passend zu '{query}' gefunden",
+  "noSchemasForScriptTopics": "Keine Schemas für die Topics des aktuellen Skripts gefunden.",
+  "fieldLabel": "Feld: {field}",
+  "foundTimesAcrossTopics": "{count, plural, =1{1-mal} other{{count}-mal}} in {topics, plural, =1{1 Topic} other{{topics} Topics}} gefunden",
+  "copyMarkdown": "Markdown kopieren",
+  "copiedSchemaToClipboard": "Schema für {field} in die Zwischenablage kopiert.",
+  "downloadMarkdown": "Markdown herunterladen",
+  "savedSchemaToFile": "Schema in Datei gespeichert",
+  "foundInTopic": "Gefunden in Topic: {topic}",
+  "pathLabel": "Pfad: {path}",
+  "foundInMultipleLocations": "An mehreren Stellen gefunden (Unterschiede hervorgehoben):",
+  "baselineTopic": "Basis-Topic: {topic}",
+  "comparedToTopic": "Verglichen mit Topic: {topic}",
+  "noDifferencesFromBaseline": "Keine Unterschiede zur Basis.",
+  "stepStatusPending": "AUSSTEHEND",
+  "stepStatusRunning": "LÄUFT",
+  "stepStatusCompleted": "ABGESCHLOSSEN",
+  "stepStatusFailed": "FEHLGESCHLAGEN",
+  "remainingCount": "{count, plural, =1{{formatted} verbleibend} other{{formatted} verbleibend}}",
+  "matchesFoundScanned": "{matches, plural, =1{{formattedMatches} Treffer gefunden ({formattedScanned} durchsucht)} other{{formattedMatches} Treffer gefunden ({formattedScanned} durchsucht)}}",
+  "matchesFoundInTopics": "{matches, plural, =1{1 Treffer} other{{matches} Treffer}} in {topics, plural, =1{1 Topic} other{{topics} Topics}} gefunden",
+  "msgsCount": "{count, plural, =1{{formatted} Nachr.} other{{formatted} Nachr.}}",
+  "msgsPerSecCount": "{count, plural, =1{{formatted} Nachr./Sek.} other{{formatted} Nachr./Sek.}}",
+  "emptyAngleBracket": "<leer>",
+  "partitionOffsetSummary": "Partition {partition} • Offset {offset}",
+  "noStructuredFieldsDetected": "Keine strukturierten Felder erkannt",
+  "noScalarValuesForField": "Keine skalaren Werte für dieses Feld erfasst",
+  "peakHourSummary": "Spitze: {hour}:00 UTC ({count} Nachr. • {percentage} %)",
+  "hourlyTooltipSummary": "{hour}:00 - {hour}:59 UTC\n{count} Nachr. ({percentage} %)",
+  "noKeyedMessagesFound": "Keine Nachrichten mit Key gefunden",
+  "noContentTypesRecorded": "Keine Inhaltstypen erfasst",
+  "partitionLabel": "Partition {partition}",
+  "partitionStatsLine": "{count} Nachr. ({percentage} %) • {size}",
+  "offsetsRange": "Offsets: {from} .. {to}",
+  "offsetsEmpty": "Offsets: -",
+  "durationPartitionsSummary": "{partitions, plural, =1{{duration} • 1 Partition} other{{duration} • {partitions} Partitionen}}",
+  "analyzingTopicProgress": "Topic wird analysiert... ({scanned} / {total} Nachrichten • {percentage} %)",
+  "keyLabelWithColon": "Key: ",
+  "refreshTooltip": "Aktualisieren",
+  "editVariableTooltip": "Variable bearbeiten",
+  "deleteVariableTooltip": "Variable löschen",
+  "addVariableTooltip": "Variable hinzufügen",
+  "editStepTooltip": "Schritt bearbeiten",
+  "deleteStepTooltip": "Schritt löschen",
+  "browseDirectoryTooltip": "Ordner auswählen",
+  "expandTooltip": "Aufklappen",
+  "collapseTooltip": "Zuklappen",
+  "selectStepTooltip": "Alle Topics im Schritt auswählen",
+  "deselectStepTooltip": "Alle Topics im Schritt abwählen",
+  "filterColumnTooltip": "{column} filtern",
+  "removeColumnTooltip": "Spalte entfernen",
+  "compositeBadgeTooltip": "Verschachtelte Felder anzeigen",
+  "skewedLabel": "Ungleich",
+  "copy": "Kopieren",
+  "copyFailed": "Kopieren fehlgeschlagen"
 }

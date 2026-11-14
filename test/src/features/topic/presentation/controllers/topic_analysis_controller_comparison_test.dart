@@ -16,10 +16,15 @@ class FakeExportService extends TopicAnalysisExportService {
   int importCalls = 0;
 
   @override
-  Future<String?> export(TopicAnalysisReportFile file) async => null;
+  Future<String?> export(
+    TopicAnalysisReportFile file, {
+    required String dialogTitle,
+  }) async => null;
 
   @override
-  Future<TopicAnalysisReportFile?> importFile() async {
+  Future<TopicAnalysisReportFile?> importFile({
+    required String dialogTitle,
+  }) async {
     importCalls++;
     return importResult;
   }
@@ -123,10 +128,15 @@ void main() {
       'two imported reports compare without any cluster connection',
       () async {
         fake.importResult = _file('orders', 1000);
-        expect(await controller.importReport(), isTrue);
+        expect(
+          await controller.importReport(dialogTitle: 'Import Topic Analysis'),
+          isTrue,
+        );
 
         fake.importResult = _file('orders', 1200);
-        await controller.pickComparisonBase();
+        await controller.pickComparisonBase(
+          dialogTitle: 'Import Topic Analysis',
+        );
 
         expect(fake.importCalls, 2);
         expect(controller.comparison, isNotNull);
@@ -139,10 +149,12 @@ void main() {
       'a pair of different topics is rejected and names both topics',
       () async {
         fake.importResult = _file('orders', 1000);
-        await controller.importReport();
+        await controller.importReport(dialogTitle: 'Import Topic Analysis');
 
         fake.importResult = _file('shipments', 1000);
-        await controller.pickComparisonBase();
+        await controller.pickComparisonBase(
+          dialogTitle: 'Import Topic Analysis',
+        );
 
         expect(controller.comparison, isNull);
         expect(controller.mismatchTopicA, 'shipments');
@@ -153,7 +165,9 @@ void main() {
     test(
       'asking for a comparison with a single report prompts for the second',
       () async {
-        await controller.pickComparisonBase();
+        await controller.pickComparisonBase(
+          dialogTitle: 'Import Topic Analysis',
+        );
 
         expect(controller.awaitingSecondReport, isTrue);
         expect(fake.importCalls, 0);
@@ -163,7 +177,7 @@ void main() {
 
     test('a new scan drops a stale comparison', () async {
       fake.importResult = _file('orders', 1000);
-      await controller.importReport();
+      await controller.importReport(dialogTitle: 'Import Topic Analysis');
       await controller.setComparisonBase(_report('orders', 800));
       expect(controller.comparison, isNotNull);
 

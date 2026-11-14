@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_item.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -90,18 +91,25 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
   }
 
   Widget _buildDialogTitle(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Text(
-        widget.multiSelect
-            ? "Select Topics (${_filteredTopics.length}/${widget.topics.length})"
-            : "Select Topic (${_filteredTopics.length}/${widget.topics.length})",
+        l10n?.selectTopicsDialogTitle(
+              widget.multiSelect ? 2 : 1,
+              _filteredTopics.length,
+              widget.topics.length,
+            ) ??
+            (widget.multiSelect
+                ? "Select Topics (${_filteredTopics.length}/${widget.topics.length})"
+                : "Select Topic (${_filteredTopics.length}/${widget.topics.length})"),
         style: Theme.of(context).textTheme.titleLarge,
       ),
     );
   }
 
   Widget _buildSearchAndFilters(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -109,7 +117,7 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
         children: [
           _buildFilterToggle(
             context,
-            label: "Internal Topics",
+            label: l10n?.internalTopicsFilter ?? "Internal Topics",
             value: _showInternalTopics,
             onChanged: (val) {
               setState(() {
@@ -120,7 +128,7 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
           ),
           _buildFilterToggle(
             context,
-            label: "Kafka Stream Topics",
+            label: l10n?.kafkaStreamTopics ?? "Kafka Stream Topics",
             value: _showStreamTopics,
             onChanged: (val) {
               setState(() {
@@ -132,10 +140,10 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
           const SizedBox(height: 8),
           TextField(
             controller: _searchController,
-            decoration: const InputDecoration(
-              labelText: "Search",
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n?.searchLabel ?? "Search",
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
               isDense: true,
             ),
             onChanged: _filter,
@@ -213,6 +221,7 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
   }
 
   Widget _buildDialogActions(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
@@ -220,7 +229,7 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
         children: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            child: Text(l10n?.cancel ?? "Cancel"),
           ),
           if (widget.multiSelect) ...[
             const SizedBox(width: 8),
@@ -232,7 +241,10 @@ class _TopicSelectionDialogState extends State<TopicSelectionDialog> {
                     .toList();
                 Navigator.pop(context, selected);
               },
-              child: Text("Select (${_selectedTopics.length})"),
+              child: Text(
+                l10n?.selectCount(_selectedTopics.length) ??
+                    "Select (${_selectedTopics.length})",
+              ),
             ),
           ],
         ],

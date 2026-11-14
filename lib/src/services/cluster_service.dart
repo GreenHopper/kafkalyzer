@@ -384,6 +384,9 @@ extension ClusterProfileExtension on ClusterProfile {
       sslPemKeyLocation: sslPemKeyLocation,
       sslPemKeyPassword: null,
       tlsVerification: tlsVerification,
+      environmentLabel: environmentLabel,
+      environmentColor: environmentColor,
+      extraProperties: extraProperties,
     );
   }
 
@@ -415,6 +418,9 @@ extension ClusterProfileExtension on ClusterProfile {
       sslPemKeyLocation: sslPemKeyLocation,
       sslPemKeyPassword: secrets['sslPemKeyPassword'] ?? sslPemKeyPassword,
       tlsVerification: tlsVerification,
+      environmentLabel: environmentLabel,
+      environmentColor: environmentColor,
+      extraProperties: extraProperties,
     );
   }
 
@@ -441,6 +447,9 @@ extension ClusterProfileExtension on ClusterProfile {
     String? sslPemKeyLocation,
     String? sslPemKeyPassword,
     TlsVerification? tlsVerification,
+    String? environmentLabel,
+    String? environmentColor,
+    String? extraProperties,
   }) {
     return ClusterProfile(
       name: name ?? this.name,
@@ -472,6 +481,43 @@ extension ClusterProfileExtension on ClusterProfile {
       sslPemKeyLocation: sslPemKeyLocation ?? this.sslPemKeyLocation,
       sslPemKeyPassword: sslPemKeyPassword ?? this.sslPemKeyPassword,
       tlsVerification: tlsVerification ?? this.tlsVerification,
+      environmentLabel: environmentLabel ?? this.environmentLabel,
+      environmentColor: environmentColor ?? this.environmentColor,
+      extraProperties: extraProperties ?? this.extraProperties,
     );
   }
+}
+
+/// Suggests a unique profile copy name for duplicating [sourceName].
+///
+/// Produces `"{sourceName} (copy)"`, then `"{sourceName} (copy 2)"`, `3`, ...
+/// matching case-insensitively against [existingNames] via [normalizeProfileName].
+String suggestCopyName(String sourceName, Iterable<String> existingNames) {
+  final used = existingNames.map(normalizeProfileName).toSet();
+  final base = sourceName.trim();
+  final first = '$base (copy)';
+  if (!used.contains(normalizeProfileName(first))) {
+    return first;
+  }
+  var n = 2;
+  while (true) {
+    final candidate = '$base (copy $n)';
+    if (!used.contains(normalizeProfileName(candidate))) {
+      return candidate;
+    }
+    n++;
+  }
+}
+
+/// Returns true when [profile] matches [query] case-insensitively across
+/// profile name, environment label, or bootstrap servers.
+bool matchesClusterFilter(ClusterProfile profile, String query) {
+  final needle = query.trim().toLowerCase();
+  if (needle.isEmpty) return true;
+  if (profile.name.toLowerCase().contains(needle)) return true;
+  if ((profile.environmentLabel ?? '').toLowerCase().contains(needle)) {
+    return true;
+  }
+  if (profile.bootstrapServers.toLowerCase().contains(needle)) return true;
+  return false;
 }

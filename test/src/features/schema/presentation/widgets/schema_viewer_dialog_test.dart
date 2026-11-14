@@ -249,5 +249,5 @@ void main() {
 
 class _TestMockSchemaController extends MockSchemaController {
   @override
-  String? errorFor(ClusterProfile cluster) => null;
+  String? errorFor(ClusterProfile? cluster) => null;
 }

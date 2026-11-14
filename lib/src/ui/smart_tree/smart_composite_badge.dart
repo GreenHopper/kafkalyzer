@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/copyable_node_text.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/entity_formatter_registry.dart';
 
@@ -56,12 +57,15 @@ class _SmartCompositeBadgeState extends State<SmartCompositeBadge> {
   }
 
   void _copyFullObject(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = copyableNodeText(widget.data);
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Object copied to clipboard'),
-        duration: Duration(seconds: 1),
+      SnackBar(
+        content: Text(
+          l10n?.objectCopiedToClipboard ?? 'Object copied to clipboard',
+        ),
+        duration: const Duration(seconds: 1),
       ),
     );
   }
@@ -79,69 +83,83 @@ class _SmartCompositeBadgeState extends State<SmartCompositeBadge> {
         child: MouseRegion(
           onEnter: (_) => _show(),
           onExit: (_) => _hide(),
-          child: InkWell(
-            onTap: () {
-              setState(() {
-                _isPinnedByClick = !_isPinnedByClick;
-                if (_isPinnedByClick) {
-                  _show();
-                } else {
-                  _hide();
-                }
-              });
-            },
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: badgeColor.withValues(alpha: 0.12),
-                border: Border.all(
-                  color: _isPinnedByClick
-                      ? badgeColor
-                      : badgeColor.withValues(alpha: 0.4),
-                  width: _isPinnedByClick ? 1.5 : 1.0,
-                ),
+          child: Tooltip(
+            message:
+                AppLocalizations.of(context)?.compositeBadgeTooltip ??
+                'Show nested fields',
+            child: Semantics(
+              button: true,
+              label:
+                  AppLocalizations.of(context)?.compositeBadgeTooltip ??
+                  'Show nested fields',
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _isPinnedByClick = !_isPinnedByClick;
+                    if (_isPinnedByClick) {
+                      _show();
+                    } else {
+                      _hide();
+                    }
+                  });
+                },
                 borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(widget.badgeInfo.icon, size: 14, color: badgeColor),
-                  const SizedBox(width: 5),
-                  Flexible(
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          if (widget.keyName.isNotEmpty)
-                            TextSpan(
-                              text: '${widget.keyName}: ',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: badgeColor.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          TextSpan(
-                            text: widget.badgeInfo.label,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: _isPinnedByClick
+                          ? badgeColor
+                          : badgeColor.withValues(alpha: 0.4),
+                      width: _isPinnedByClick ? 1.5 : 1.0,
                     ),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    _isPinnedByClick ? Icons.lock : Icons.unfold_more,
-                    size: 11,
-                    color: _isPinnedByClick ? badgeColor : Colors.grey,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(widget.badgeInfo.icon, size: 14, color: badgeColor),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              if (widget.keyName.isNotEmpty)
+                                TextSpan(
+                                  text: '${widget.keyName}: ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: badgeColor.withValues(alpha: 0.9),
+                                  ),
+                                ),
+                              TextSpan(
+                                text: widget.badgeInfo.label,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _isPinnedByClick ? Icons.lock : Icons.unfold_more,
+                        size: 11,
+                        color: _isPinnedByClick ? badgeColor : Colors.grey,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -189,7 +207,8 @@ class _SmartCompositeBadgeState extends State<SmartCompositeBadge> {
                         child: Text(
                           widget.keyName.isNotEmpty
                               ? widget.keyName
-                              : 'Entity Details',
+                              : (AppLocalizations.of(context)?.entityDetails ??
+                                    'Entity Details'),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -199,14 +218,17 @@ class _SmartCompositeBadgeState extends State<SmartCompositeBadge> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.copy, size: 14),
-                        tooltip: 'Copy whole object',
+                        tooltip:
+                            AppLocalizations.of(context)?.copyWholeObject ??
+                            'Copy whole object',
                         visualDensity: VisualDensity.compact,
                         onPressed: () => _copyFullObject(context),
                       ),
                       if (_isPinnedByClick)
                         IconButton(
                           icon: const Icon(Icons.close, size: 14),
-                          tooltip: 'Close',
+                          tooltip:
+                              AppLocalizations.of(context)?.close ?? 'Close',
                           visualDensity: VisualDensity.compact,
                           onPressed: () {
                             setState(() {

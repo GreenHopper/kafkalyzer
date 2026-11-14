@@ -100,8 +100,8 @@ class _TopicListItemState extends State<TopicListItem> {
     final prefixStyle =
         theme.textTheme.bodyMedium?.copyWith(
           color: isSelected
-              ? colorScheme.onSecondaryContainer.withValues(alpha: 0.7)
-              : colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+              ? colorScheme.onSecondaryContainer
+              : colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.normal,
         ) ??
         const TextStyle();
@@ -128,8 +128,8 @@ class _TopicListItemState extends State<TopicListItem> {
     final ellipsisStyle =
         theme.textTheme.bodyMedium?.copyWith(
           color: isSelected
-              ? colorScheme.onSecondaryContainer.withValues(alpha: 0.5)
-              : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              ? colorScheme.onSecondaryContainer
+              : colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.bold,
         ) ??
         const TextStyle();
@@ -163,14 +163,16 @@ class _TopicListItemState extends State<TopicListItem> {
           _buildBadge(
             key: const Key('topic_dlq_badge'),
             label: l10n?.dlqBadgeLabel ?? 'DLQ',
-            color: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+            foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
           ),
         ] else if (DlqTopicDetector.isRetryTopic(widget.topic.name)) ...[
           const SizedBox(width: 4),
           _buildBadge(
             key: const Key('topic_retry_badge'),
             label: l10n?.retryBadgeLabel ?? 'Retry',
-            color: Colors.orange,
+            backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+            foregroundColor: Theme.of(context).colorScheme.onTertiaryContainer,
           ),
         ],
       ],
@@ -180,22 +182,22 @@ class _TopicListItemState extends State<TopicListItem> {
   Widget _buildBadge({
     required Key key,
     required String label,
-    required MaterialColor color,
+    required Color backgroundColor,
+    required Color foregroundColor,
   }) {
     return Container(
       key: key,
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        color: backgroundColor,
+        border: Border.all(color: foregroundColor.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 10,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.bold,
-          color: color.shade800,
+          color: foregroundColor,
         ),
       ),
     );
@@ -258,8 +260,7 @@ class _TopicListItemState extends State<TopicListItem> {
                 const SizedBox(width: 3),
                 Text(
                   '$count',
-                  style: TextStyle(
-                    fontSize: 10,
+                  style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onErrorContainer,
                   ),
@@ -277,7 +278,10 @@ class _TopicListItemState extends State<TopicListItem> {
             _isExpanded ? Icons.expand_less : Icons.expand_more,
             size: 16,
           ),
-          padding: EdgeInsets.zero,
+          tooltip: _isExpanded
+              ? (AppLocalizations.of(context)?.collapseTooltip ?? 'Collapse')
+              : (AppLocalizations.of(context)?.expandTooltip ?? 'Expand'),
+          padding: const EdgeInsets.all(4),
           constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
           onPressed: () => setState(() => _isExpanded = !_isExpanded),
         ),
@@ -355,13 +359,23 @@ class _TopicListItemState extends State<TopicListItem> {
                       _buildBadge(
                         key: Key('child_dlq_badge_$childTopic'),
                         label: l10n?.dlqBadgeLabel ?? 'DLQ',
-                        color: Colors.red,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.errorContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onErrorContainer,
                       )
                     else if (DlqTopicDetector.isRetryTopic(childTopic))
                       _buildBadge(
                         key: Key('child_retry_badge_$childTopic'),
                         label: l10n?.retryBadgeLabel ?? 'Retry',
-                        color: Colors.orange,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.tertiaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onTertiaryContainer,
                       ),
                   ],
                 ),

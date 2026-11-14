@@ -132,17 +132,29 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
                       if (_controller.text.isNotEmpty)
                         IconButton(
                           icon: const Icon(Icons.clear, size: 14),
+                          tooltip:
+                              AppLocalizations.of(context)?.clear ?? 'Clear',
                           onPressed: () {
                             _controller.clear();
                             _onTextChanged("");
                           },
-                          constraints: const BoxConstraints(),
-                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(
+                            minWidth: 24,
+                            minHeight: 24,
+                          ),
+                          padding: const EdgeInsets.all(4),
+                          visualDensity: VisualDensity.compact,
                         ),
                       IconButton(
                         tooltip: widget.showNonMatches
-                            ? "Hide non-matching messages"
-                            : "Show non-matches as dimmed",
+                            ? (AppLocalizations.of(
+                                    context,
+                                  )?.hideNonMatchingMessages ??
+                                  "Hide non-matching messages")
+                            : (AppLocalizations.of(
+                                    context,
+                                  )?.showNonMatchesAsDimmed ??
+                                  "Show non-matches as dimmed"),
                         icon: Icon(
                           widget.showNonMatches
                               ? Icons.visibility
@@ -155,8 +167,12 @@ class _MessageSearchBarState extends State<MessageSearchBar> {
                         onPressed: () => widget.onShowNonMatchesChanged(
                           !widget.showNonMatches,
                         ),
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(
+                          minWidth: 24,
+                          minHeight: 24,
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        visualDensity: VisualDensity.compact,
                       ),
                     ],
                   ),

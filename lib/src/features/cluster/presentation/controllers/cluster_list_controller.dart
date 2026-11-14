@@ -9,6 +9,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_tra
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/encrypted_bundle.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
 
@@ -209,8 +210,9 @@ class ClusterListController extends ChangeNotifier {
 
   Future<List<int>> exportClustersZip(
     List<ClusterProfile> clustersToExport, {
-    bool includeSecrets = false,
+    String? encryptionPassphrase,
   }) async {
+    final includeSecrets = encryptionPassphrase != null;
     final archive = Archive();
 
     // Create a modified list of clusters for the JSON where paths are relative filenames
@@ -243,17 +245,17 @@ class ClusterListController extends ChangeNotifier {
     final jsonBytes = utf8.encode(jsonString);
     archive.addFile(ArchiveFile('clusters.json', jsonBytes.length, jsonBytes));
 
-    return ZipEncoder().encode(archive);
+    final zipBytes = ZipEncoder().encode(archive);
+    if (encryptionPassphrase != null) {
+      return encryptBundle(zipBytes, encryptionPassphrase);
+    }
+    return zipBytes;
   }
 
-  Future<String> exportClusters(
-    List<ClusterProfile> clustersToExport, {
-    bool includeSecrets = false,
-  }) async {
+  Future<String> exportClusters(List<ClusterProfile> clustersToExport) async {
     final encoded = <String>[];
     for (final cluster in clustersToExport) {
-      final exportCluster = includeSecrets ? cluster : cluster.sanitized();
-      encoded.add(await serializeClusterProfile(profile: exportCluster));
+      encoded.add(await serializeClusterProfile(profile: cluster.sanitized()));
     }
     return '[${encoded.join(',')}]';
   }

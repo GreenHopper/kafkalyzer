@@ -89,4 +89,24 @@ void main() {
 
     expect(find.text('No messages to display'), findsOneWidget);
   });
+
+  testWidgets('renders German empty placeholder when locale is de', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: MessagesDiffView(messages: const [], onMessageTap: (_) {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Keine Nachrichten zum Anzeigen'), findsOneWidget);
+  });
 }

@@ -1,5 +1,6 @@
 pub mod avro_utils;
 pub mod bootstrap;
+pub mod client_properties;
 pub mod connection_diagnostics;
 pub mod consumer_group_protocol;
 pub mod consumer_lag;
@@ -7,6 +8,8 @@ pub mod duplicate_fingerprint;
 pub mod json_path;
 pub mod kafka_types;
 pub mod partition_health;
+pub mod partitioner;
+pub mod profile_crypto;
 pub mod report_compare;
 pub mod schema_wire;
 pub mod size_stats;

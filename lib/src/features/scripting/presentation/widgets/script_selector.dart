@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
@@ -61,14 +62,16 @@ class ScriptSelector extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
+        final l10n = AppLocalizations.of(context);
+
         if (scripts.isEmpty) {
-          return const Text("No scripts available");
+          return Text(l10n?.noScriptsAvailable ?? "No scripts available");
         }
 
         return DropdownButtonFormField<String>(
           initialValue: currentValue,
           decoration: InputDecoration(
-            labelText: "Script Name",
+            labelText: l10n?.scriptName ?? "Script Name",
             border: const OutlineInputBorder(),
             isDense: true,
             errorText: errorText,

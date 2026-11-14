@@ -8,12 +8,14 @@ import 'package:kafkalyzer/src/features/scripting/application/headless_script_ru
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/rust/api/diagnostics.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
+import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/services/diagnostics/app_logging.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_handlers.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/diagnostics/redaction.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:kafkalyzer/src/services/window_state_service.dart';
 import 'package:kafkalyzer/src/ui/startup_error_app.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
 import 'package:logger/logger.dart';
@@ -50,6 +52,11 @@ Future<void> main([List<String> args = const []]) async {
       return;
     }
 
+    final windowState = getIt<WindowStateService>();
+    await windowState.restore();
+    windowState.attachListener();
+
+    await getIt<AppearanceSettings>().load();
     await getIt<SettingsService>().initializeSettings();
     await AppVersionHelper.init();
     await getIt<UpdateService>().initialize();

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 
 class TimestampPickerField extends StatefulWidget {
@@ -179,12 +180,16 @@ class _TimestampPickerFieldState extends State<TimestampPickerField> {
             IconButton(
               icon: const Icon(Icons.history),
               onPressed: widget.enabled ? _showQuickTimePicker : null,
-              tooltip: "Quick Time Selection",
+              tooltip:
+                  AppLocalizations.of(context)?.quickTimeSelection ??
+                  "Quick Time Selection",
             ),
             IconButton(
               icon: const Icon(Icons.calendar_month),
               onPressed: widget.enabled ? _pickDateTime : null,
-              tooltip: "Select Date & Time",
+              tooltip:
+                  AppLocalizations.of(context)?.selectDateTime ??
+                  "Select Date & Time",
             ),
           ],
         ),
@@ -272,8 +277,9 @@ class _QuickTimeDialogState extends State<_QuickTimeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AlertDialog(
-      title: const Text("Quick Time Selection"),
+      title: Text(l10n?.quickTimeSelection ?? "Quick Time Selection"),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -284,7 +290,7 @@ class _QuickTimeDialogState extends State<_QuickTimeDialog> {
               runSpacing: 8,
               children: [
                 ActionChip(
-                  label: const Text("Now"),
+                  label: Text(l10n?.now ?? "Now"),
                   avatar: const Icon(Icons.access_time, size: 16),
                   onPressed: () {
                     widget.onNow();
@@ -294,9 +300,9 @@ class _QuickTimeDialogState extends State<_QuickTimeDialog> {
               ],
             ),
             const Divider(),
-            const Text(
-              "Presets (Relative to Now)",
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              l10n?.presetsRelativeToNow ?? "Presets (Relative to Now)",
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -313,7 +319,10 @@ class _QuickTimeDialogState extends State<_QuickTimeDialog> {
               }).toList(),
             ),
             const SizedBox(height: 16),
-            const Text("Custom", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              l10n?.custom ?? "Custom",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -344,7 +353,7 @@ class _QuickTimeDialogState extends State<_QuickTimeDialog> {
                   },
                 ),
                 const SizedBox(width: 12),
-                const Text("ago"),
+                Text(l10n?.ago ?? "ago"),
               ],
             ),
           ],
@@ -353,7 +362,7 @@ class _QuickTimeDialogState extends State<_QuickTimeDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n?.cancel ?? 'Cancel'),
         ),
         FilledButton(
           onPressed: () {
@@ -373,7 +382,7 @@ class _QuickTimeDialogState extends State<_QuickTimeDialog> {
             widget.onApply(d);
             Navigator.pop(context);
           },
-          child: const Text('Apply'),
+          child: Text(l10n?.apply ?? 'Apply'),
         ),
       ],
     );

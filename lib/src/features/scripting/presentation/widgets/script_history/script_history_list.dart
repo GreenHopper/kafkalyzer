@@ -42,7 +42,12 @@ class ScriptHistoryList extends StatelessWidget {
             child: history == null
                 ? const Center(child: CircularProgressIndicator())
                 : history!.isEmpty
-                ? const Center(child: Text("No past runs found."))
+                ? Center(
+                    child: Text(
+                      AppLocalizations.of(context)?.noPastRunsFound ??
+                          "No past runs found.",
+                    ),
+                  )
                 : _buildHistoryList(context),
           ),
         ],
@@ -51,14 +56,18 @@ class ScriptHistoryList extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text("Run History", style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            l10n?.runHistory ?? "Run History",
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           IconButton(
-            tooltip: "Import Run Archive",
+            tooltip: l10n?.importRunArchive ?? "Import Run Archive",
             icon: const Icon(Icons.upload_file),
             onPressed: () async {
               FilePickerResult? result = await FilePicker.pickFiles(
@@ -75,7 +84,11 @@ class ScriptHistoryList extends StatelessWidget {
                   onRefresh();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Run archive imported')),
+                      SnackBar(
+                        content: Text(
+                          l10n?.runArchiveImported ?? 'Run archive imported',
+                        ),
+                      ),
                     );
                   }
                 } on UnsafeArchiveEntryException catch (e) {
@@ -93,7 +106,12 @@ class ScriptHistoryList extends StatelessWidget {
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to import run: $e')),
+                      SnackBar(
+                        content: Text(
+                          l10n?.failedToImportRun(e.toString()) ??
+                              'Failed to import run: $e',
+                        ),
+                      ),
                     );
                   }
                 }
@@ -142,7 +160,7 @@ class ScriptHistoryList extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           _getRunStatusIcon(run.status),
-          color: _getRunStatusColor(run.status),
+          color: _getRunStatusColor(context, run.status),
         ),
         title: Row(
           children: [
@@ -162,7 +180,11 @@ class ScriptHistoryList extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  "${run.totalMessages} matched / ${run.totalExamined ?? 0} analyzed",
+                  AppLocalizations.of(context)?.matchedAnalyzed(
+                        run.totalMessages!,
+                        run.totalExamined ?? 0,
+                      ) ??
+                      "${run.totalMessages} matched / ${run.totalExamined ?? 0} analyzed",
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSecondaryContainer,
                     fontWeight: FontWeight.bold,
@@ -179,7 +201,20 @@ class ScriptHistoryList extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             Text(
-              "Cluster: ${run.clusterName ?? 'Default'}${run.runtime != null ? ' • ${_formatDuration(run.runtime)}' : ''}",
+              run.runtime != null
+                  ? (AppLocalizations.of(context)?.clusterRuntimeLabel(
+                          run.clusterName ??
+                              AppLocalizations.of(context)?.defaultLabel ??
+                              'Default',
+                          _formatDuration(run.runtime),
+                        ) ??
+                        "Cluster: ${run.clusterName ?? 'Default'} • ${_formatDuration(run.runtime)}")
+                  : (AppLocalizations.of(context)?.clusterLabelValue(
+                          run.clusterName ??
+                              AppLocalizations.of(context)?.defaultLabel ??
+                              'Default',
+                        ) ??
+                        "Cluster: ${run.clusterName ?? 'Default'}"),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (run.parameters.isNotEmpty)
@@ -205,19 +240,24 @@ class ScriptHistoryList extends StatelessWidget {
               if (onLoadRun != null)
                 IconButton(
                   icon: const Icon(Icons.output),
-                  tooltip: "Load Results",
+                  tooltip:
+                      AppLocalizations.of(context)?.loadResults ??
+                      "Load Results",
                   onPressed: () => onLoadRun!(run),
                 ),
             IconButton(
               icon: const Icon(Icons.replay),
-              tooltip: "Run Again",
+              tooltip: AppLocalizations.of(context)?.runAgain ?? "Run Again",
               onPressed: () => onRerun!(run),
             ),
             IconButton(
               key: ValueKey("export_${run.id}"),
               icon: const Icon(Icons.download),
-              tooltip: "Export Run Archive",
+              tooltip:
+                  AppLocalizations.of(context)?.exportRunArchive ??
+                  "Export Run Archive",
               onPressed: () async {
+                final l10n = AppLocalizations.of(context);
                 final path = await getIt<ScriptRunner>().exportRunArchive(run);
                 if (path != null && context.mounted) {
                   final safeName = run.id.replaceAll(
@@ -225,7 +265,9 @@ class ScriptHistoryList extends StatelessWidget {
                     '_',
                   );
                   String? outputFile = await FilePicker.saveFile(
-                    dialogTitle: 'Save Run Archive - ${run.scriptName}',
+                    dialogTitle: AppLocalizations.of(
+                      context,
+                    )!.saveRunArchive(run.scriptName),
                     fileName: '$safeName.zip',
                     type: FileType.custom,
                     allowedExtensions: ['zip'],
@@ -236,7 +278,8 @@ class ScriptHistoryList extends StatelessWidget {
                     if (context.mounted) {
                       showExportSuccessSnackBar(
                         context,
-                        message: 'Run archive exported',
+                        message:
+                            l10n?.runArchiveExported ?? 'Run archive exported',
                         filePath: outputFile,
                       );
                     }
@@ -248,29 +291,38 @@ class ScriptHistoryList extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.delete_outline),
               color: Theme.of(context).colorScheme.error,
-              tooltip: "Delete Run",
+              tooltip: AppLocalizations.of(context)?.deleteRun ?? "Delete Run",
               onPressed: () async {
+                final l10n = AppLocalizations.of(context);
                 final confirm = await showDialog<bool>(
                   context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Delete Run Result'),
-                    content: const Text(
-                      'Are you sure you want to delete this run result? This cannot be undone.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return AlertDialog(
+                      title: Text(
+                        l10n?.deleteRunResultTitle ?? 'Delete Run Result',
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.error,
+                      content: Text(
+                        l10n?.deleteRunResultConfirm ??
+                            'Are you sure you want to delete this run result? This cannot be undone.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text(l10n?.cancel ?? 'Cancel'),
                         ),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                          ),
+                          child: Text(l10n?.delete ?? 'Delete'),
+                        ),
+                      ],
+                    );
+                  },
                 );
 
                 if (confirm == true) {
@@ -279,13 +331,22 @@ class ScriptHistoryList extends StatelessWidget {
                     onRefresh();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Run result deleted')),
+                        SnackBar(
+                          content: Text(
+                            l10n?.runResultDeleted ?? 'Run result deleted',
+                          ),
+                        ),
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to delete run: $e')),
+                        SnackBar(
+                          content: Text(
+                            l10n?.failedToDeleteRun(e.toString()) ??
+                                'Failed to delete run: $e',
+                          ),
+                        ),
                       );
                     }
                   }
@@ -324,18 +385,19 @@ class ScriptHistoryList extends StatelessWidget {
     }
   }
 
-  Color _getRunStatusColor(ScriptRunStatus status) {
+  Color _getRunStatusColor(BuildContext context, ScriptRunStatus status) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case ScriptRunStatus.completed:
-        return Colors.green;
+        return colorScheme.primary;
       case ScriptRunStatus.error:
-        return Colors.red;
+        return colorScheme.error;
       case ScriptRunStatus.cancelled:
-        return Colors.orange;
+        return colorScheme.tertiary;
       case ScriptRunStatus.running:
-        return Colors.blue;
+        return colorScheme.secondary;
       case ScriptRunStatus.pending:
-        return Colors.grey;
+        return colorScheme.outline;
     }
   }
 }

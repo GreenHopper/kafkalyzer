@@ -336,6 +336,7 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 16),
+                      tooltip: l10n.clear,
                       onPressed: () {
                         _searchController.clear();
                         setState(() => _searchQuery = "");

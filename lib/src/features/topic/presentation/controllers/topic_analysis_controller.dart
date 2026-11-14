@@ -12,6 +12,9 @@ import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
 /// imported from a file.
 enum TopicAnalysisSource { live, imported }
 
+/// Validation errors produced by [TopicAnalysisController] before calling Rust.
+enum TopicAnalysisErrorKind { emptyFieldPath, noPreviousScope }
+
 class TopicAnalysisController extends ChangeNotifier {
   final Logger _logger;
   final TopicAnalysisExportService _exportService;
@@ -33,6 +36,7 @@ class TopicAnalysisController extends ChangeNotifier {
   TopicAnalysisProgress? _progress;
   TopicAnalysisReport? _report;
   String? _error;
+  TopicAnalysisErrorKind? _errorKind;
   DateTime? _startTime;
 
   TopicAnalysisSource _reportSource = TopicAnalysisSource.live;
@@ -63,6 +67,7 @@ class TopicAnalysisController extends ChangeNotifier {
   TopicAnalysisProgress? get progress => _progress;
   TopicAnalysisReport? get report => _report;
   String? get error => _error;
+  TopicAnalysisErrorKind? get errorKind => _errorKind;
   DateTime? get startTime => _startTime;
   int? get maxMessages => _maxMessages;
   bool get sampleFromLatest => _sampleFromLatest;
@@ -123,7 +128,10 @@ class TopicAnalysisController extends ChangeNotifier {
   ///
   /// Returns the written path, or `null` if there is no report or the user
   /// cancelled the save dialog.
-  Future<String?> exportReport({String? clusterName}) async {
+  Future<String?> exportReport({
+    required String dialogTitle,
+    String? clusterName,
+  }) async {
     final report = _report;
     if (report == null) return null;
 
@@ -132,7 +140,7 @@ class TopicAnalysisController extends ChangeNotifier {
       clusterName: clusterName ?? _reportClusterName,
       report: report,
     );
-    return _exportService.export(file);
+    return _exportService.export(file, dialogTitle: dialogTitle);
   }
 
   /// Imports an analysis report file and makes it the displayed report.
@@ -140,11 +148,11 @@ class TopicAnalysisController extends ChangeNotifier {
   /// Returns `true` on success. Returns `false` and sets [importErrorKind]
   /// when the file is invalid. Returns `false` (with no error) when the user
   /// cancelled the picker.
-  Future<bool> importReport() async {
+  Future<bool> importReport({required String dialogTitle}) async {
     _importErrorKind = null;
     _importErrorFoundVersion = null;
     try {
-      final file = await _exportService.importFile();
+      final file = await _exportService.importFile(dialogTitle: dialogTitle);
       if (file == null) {
         notifyListeners();
         return false;
@@ -167,7 +175,7 @@ class TopicAnalysisController extends ChangeNotifier {
 
   /// Ask for the second report of a comparison and compare it once it is picked.
   /// A pair of different topics is rejected instead of compared.
-  Future<void> pickComparisonBase() async {
+  Future<void> pickComparisonBase({required String dialogTitle}) async {
     _mismatchTopicA = null;
     _mismatchTopicB = null;
     _baseImportErrorKind = null;
@@ -177,7 +185,7 @@ class TopicAnalysisController extends ChangeNotifier {
       return;
     }
     try {
-      final file = await _exportService.importFile();
+      final file = await _exportService.importFile(dialogTitle: dialogTitle);
       if (file == null) {
         notifyListeners();
         return;
@@ -248,7 +256,8 @@ class TopicAnalysisController extends ChangeNotifier {
     }
     if (valueFilter != null) {
       if (valueFilter.fieldPath.trim().isEmpty) {
-        _error = 'Field path cannot be empty';
+        _errorKind = TopicAnalysisErrorKind.emptyFieldPath;
+        _error = null;
         notifyListeners();
         return;
       }
@@ -264,6 +273,7 @@ class TopicAnalysisController extends ChangeNotifier {
     _isAnalyzing = true;
     _progress = null;
     _error = null;
+    _errorKind = null;
     _startTime = DateTime.now();
     _reportSource = TopicAnalysisSource.live;
     _reportClusterName = null;
@@ -310,12 +320,14 @@ class TopicAnalysisController extends ChangeNotifier {
   /// but using the specified [filter].
   Future<void> rescanWithFilter(FieldValueFilter filter) async {
     if (filter.fieldPath.trim().isEmpty) {
-      _error = 'Field path cannot be empty';
+      _errorKind = TopicAnalysisErrorKind.emptyFieldPath;
+      _error = null;
       notifyListeners();
       return;
     }
     if (_lastProfile == null || _lastTopic == null) {
-      _error = 'No previous analysis scope to rescan';
+      _errorKind = TopicAnalysisErrorKind.noPreviousScope;
+      _error = null;
       notifyListeners();
       return;
     }

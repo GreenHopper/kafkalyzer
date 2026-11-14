@@ -19,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
 
 enum StepStatus { pending, running, completed, error }
@@ -97,7 +98,14 @@ class ScriptRunner extends ChangeNotifier {
     final key = "${stepId}_$topic";
     final target = _activeTargets[key];
     if (target == null) return 0;
-    return _multiSearchController.getMessagesFor(target).length;
+    return _multiSearchController.receivedCountFor(target);
+  }
+
+  int getDroppedCount(String stepId, String topic) {
+    final key = "${stepId}_$topic";
+    final target = _activeTargets[key];
+    if (target == null) return 0;
+    return _multiSearchController.droppedCountFor(target);
   }
 
   bool _isRunning = false;
@@ -305,9 +313,9 @@ class ScriptRunner extends ChangeNotifier {
                     );
                     final target = _activeTargets[key];
                     if (target != null) {
-                      totalFound += _multiSearchController
-                          .getMessagesFor(target)
-                          .length;
+                      totalFound += _multiSearchController.receivedCountFor(
+                        target,
+                      );
                       final prog = _multiSearchController.progress[target];
                       if (prog != null) {
                         topicExamined[key] = prog.scanned;
@@ -589,6 +597,9 @@ class ScriptRunner extends ChangeNotifier {
                     key: kMsg.key,
                     payload: kMsg.payload,
                     timestamp: kMsg.timestamp,
+                    headers: kMsg.headers,
+                    keySchema: kMsg.keySchema,
+                    valueSchema: kMsg.valueSchema,
                     stepId: stepId ?? "global",
                     stepName: stepName,
                   ),
@@ -984,6 +995,13 @@ class ScriptRunner extends ChangeNotifier {
     final extractions = step.extractions;
     if (extractions.isEmpty) return;
 
+    final dropped = _multiSearchController.droppedCountFor(target);
+    if (dropped > 0) {
+      _logger.w(
+        "Step '${step.name}' on '${target.topic.name}' dropped $dropped oldest messages; extractions only see retained messages.",
+      );
+    }
+
     final messages = _multiSearchController.getMessagesFor(target);
     for (final extraction in extractions) {
       // Filter by topic if specified
@@ -1051,8 +1069,10 @@ class ScriptRunner extends ChangeNotifier {
   Future<void> cleanupHistory() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final maxRuns =
-          prefs.getInt('scripting_max_run_history') ?? 30; // Default 30
+      final maxRuns = SettingsService.readInt(
+        prefs,
+        SettingsService.maxRunHistorySetting,
+      );
 
       if (maxRuns <= 0) {
         return; // Disable cleanup if <= 0

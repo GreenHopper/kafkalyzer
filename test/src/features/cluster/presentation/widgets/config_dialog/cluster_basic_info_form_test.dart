@@ -165,7 +165,11 @@ void main() {
       // Trigger empty validation on required fields
       formKey.currentState!.validate();
       await tester.pump();
-      expect(find.text('Erforderlich'), findsNWidgets(2));
+      expect(find.text('Erforderlich'), findsOneWidget);
+      expect(
+        find.text('Mindestens einen host:port-Eintrag angeben'),
+        findsOneWidget,
+      );
 
       // Enter invalid URL missing protocol
       await tester.enterText(

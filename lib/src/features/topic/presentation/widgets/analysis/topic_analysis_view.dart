@@ -70,7 +70,15 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
       builder: (context, _) {
         final isAnalyzing = widget.controller.isAnalyzing;
         final report = widget.controller.report;
-        final error = widget.controller.error;
+        final errorKind = widget.controller.errorKind;
+        final error = switch (errorKind) {
+          TopicAnalysisErrorKind.emptyFieldPath =>
+            l10n?.topicAnalysisEmptyFieldPath ?? 'Field path cannot be empty',
+          TopicAnalysisErrorKind.noPreviousScope =>
+            l10n?.topicAnalysisNoPreviousScope ??
+                'No previous analysis scope to rescan',
+          null => widget.controller.error,
+        };
 
         return Column(
           children: [
@@ -361,10 +369,13 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
 
   Future<void> _onImport() async {
     setState(() => _importing = true);
-    final ok = await widget.controller.importReport();
+    var l10n = AppLocalizations.of(context);
+    final ok = await widget.controller.importReport(
+      dialogTitle: l10n?.importTopicAnalysis ?? 'Import Topic Analysis',
+    );
     if (!mounted) return;
     setState(() => _importing = false);
-    final l10n = AppLocalizations.of(context);
+    l10n = AppLocalizations.of(context);
     if (ok) {
       _showSnackBar(
         l10n?.analysisImportedSuccessfully ?? 'Analysis report imported',
@@ -378,12 +389,14 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
   Future<void> _onExport() async {
     if (widget.controller.report == null) return;
     setState(() => _exporting = true);
+    var l10n = AppLocalizations.of(context);
     try {
       final path = await widget.controller.exportReport(
+        dialogTitle: l10n?.exportTopicAnalysis ?? 'Export Topic Analysis',
         clusterName: widget.profile.name,
       );
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context);
+      l10n = AppLocalizations.of(context);
       if (path != null) {
         showExportSuccessSnackBar(
           context,
@@ -457,9 +470,11 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
   }
 
   Future<void> _onCompare() async {
-    await widget.controller.pickComparisonBase();
-    if (!mounted) return;
     final l10n = AppLocalizations.of(context);
+    await widget.controller.pickComparisonBase(
+      dialogTitle: l10n?.importTopicAnalysis ?? 'Import Topic Analysis',
+    );
+    if (!mounted) return;
     if (widget.controller.baseImportErrorKind != null) {
       _showSnackBar(_importErrorMessage(l10n));
     } else if (widget.controller.awaitingSecondReport) {
@@ -518,8 +533,13 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
               const SizedBox(width: 12),
               Flexible(
                 child: Text(
-                  '${l10n?.analyzingTopic ?? 'Analyzing topic...'} '
-                  '(${numberFormat.format(scanned)} / ${numberFormat.format(total)} messages • ${(progress * 100).toStringAsFixed(1)}%)',
+                  l10n?.analyzingTopicProgress(
+                        numberFormat.format(scanned),
+                        numberFormat.format(total),
+                        (progress * 100).toStringAsFixed(1),
+                      ) ??
+                      '${l10n?.analyzingTopic ?? 'Analyzing topic...'} '
+                          '(${numberFormat.format(scanned)} / ${numberFormat.format(total)} messages • ${(progress * 100).toStringAsFixed(1)}%)',
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
@@ -529,7 +549,11 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
               const Spacer(),
               if (mps > 0)
                 Text(
-                  '${numberFormat.format(mps.round())} msgs/sec',
+                  l10n?.msgsPerSecCount(
+                        mps.round(),
+                        numberFormat.format(mps.round()),
+                      ) ??
+                      '${numberFormat.format(mps.round())} msgs/sec',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),

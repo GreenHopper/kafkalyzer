@@ -47,8 +47,8 @@ class StandardTableColumns {
     timestamp: 180.0,
     step: 120.0,
     topic: 150.0,
-    partition: 100.0,
-    offset: 110.0,
+    partition: 128.0,
+    offset: 128.0,
     key: 240.0,
     content: 360.0,
   };

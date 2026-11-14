@@ -35,7 +35,11 @@ class ScriptRunHeader extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack),
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: l10n.backTooltip,
+                onPressed: onBack,
+              ),
               if (onToggleSidebar != null)
                 IconButton(
                   key: const Key('script_run_toggle_sidebar'),
@@ -63,7 +67,7 @@ class ScriptRunHeader extends StatelessWidget {
                             context,
                             DateTime.fromMillisecondsSinceEpoch(run!.timestamp),
                           )
-                        : "Running...",
+                        : l10n.runningEllipsis,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],

@@ -1,5 +1,7 @@
 import 'package:logger/logger.dart';
+import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
+import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
@@ -125,6 +127,7 @@ void main() {
       ),
     ).thenReturn(null);
     when(mockActiveConnectionController.connectingProfile).thenReturn(null);
+    when(mockActiveConnectionController.unrestoredTopics).thenReturn(const []);
   });
 
   void stubIdleSidebarState() {
@@ -138,13 +141,15 @@ void main() {
     when(mockActiveConnectionController.topicFilter).thenReturn('');
   }
 
-  Widget createWidgetUnderTest() {
+  Widget createWidgetUnderTest({Locale? locale, ThemeData? theme}) {
     return MaterialApp(
+      locale: locale,
+      theme: theme,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         ...GlobalMaterialLocalizations.delegates,
       ],
-      supportedLocales: const [Locale('en')],
+      supportedLocales: const [Locale('en'), Locale('de')],
       home: const Scaffold(body: ExplorerView()),
     );
   }
@@ -1028,6 +1033,171 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'explorer refresh button meets 40x40 hit area under compact density and has German tooltip',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([testProfile]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(false);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(mockActiveConnectionController.error).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+        when(mockActiveConnectionController.topics).thenReturn(const []);
+        when(mockActiveConnectionController.openTopics).thenReturn(const []);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        when(mockTopicController.getTopics(testProfile)).thenReturn(const []);
+        when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            locale: const Locale('de'),
+            theme: ThemeData(visualDensity: VisualDensity.compact),
+          ),
+        );
+        await tester.pump();
+
+        final refreshButton = find.byTooltip('Aktualisieren');
+        expect(refreshButton, findsOneWidget);
+        final size = tester.getSize(refreshButton);
+        expect(size.width, greaterThanOrEqualTo(40.0));
+        expect(size.height, greaterThanOrEqualTo(40.0));
+      },
+    );
+
+    testWidgets(
+      'tab close IconButton has tooltip, >= 24x24 hit area, and receives keyboard focus',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        const topic = TopicMetadata(
+          name: 'orders-topic',
+          partitionCount: 3,
+          replicationFactor: 1,
+        );
+        final tab1 = OpenTopicRecord(topic, testProfile, id: 'tab-1');
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([testProfile]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(false);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(mockActiveConnectionController.error).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+        when(mockActiveConnectionController.topics).thenReturn([topic]);
+        when(mockActiveConnectionController.openTopics).thenReturn([tab1]);
+        when(mockActiveConnectionController.activeTopic).thenReturn(tab1);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        when(mockTopicController.getTopics(testProfile)).thenReturn([topic]);
+        when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(locale: const Locale('de')),
+        );
+        await tester.pump();
+
+        final closeButton = find.byTooltip('Tab schließen').first;
+        expect(closeButton, findsOneWidget);
+        final size = tester.getSize(closeButton);
+        expect(size.width, greaterThanOrEqualTo(24.0));
+        expect(size.height, greaterThanOrEqualTo(24.0));
+
+        final iconButtonFinder = find
+            .ancestor(of: closeButton, matching: find.byType(IconButton))
+            .first;
+        final iconButtonWidget = tester.widget<IconButton>(iconButtonFinder);
+        expect(iconButtonWidget.tooltip, 'Tab schließen');
+        final focusable = tester.element(
+          find
+              .descendant(of: iconButtonFinder, matching: find.byType(Focus))
+              .first,
+        );
+        Focus.of(focusable).requestFocus();
+        await tester.pump();
+        expect(Focus.of(focusable).hasFocus, isTrue);
+      },
+    );
+
+    testWidgets(
+      'connection error shows ErrorBanner in German, dismisses on close, and re-appears on next failure',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        ConnectionError? currentError = const ConnectionError(
+          kind: ConnectionErrorKind.connectionRefused,
+          detail: 'tcp://localhost:9092 refused',
+        );
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([testProfile]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(false);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.error,
+        ).thenAnswer((_) => currentError);
+        when(mockActiveConnectionController.clearError()).thenAnswer((_) {
+          currentError = null;
+        });
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+        when(mockActiveConnectionController.topics).thenReturn(const []);
+        when(mockActiveConnectionController.openTopics).thenReturn(const []);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        when(mockTopicController.getTopics(testProfile)).thenReturn(const []);
+        when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(locale: const Locale('de')),
+        );
+        await tester.pump();
+
+        expect(find.byType(ErrorBanner), findsOneWidget);
+        expect(find.text('Verbindung abgelehnt'), findsOneWidget);
+        expect(find.text('tcp://localhost:9092 refused'), findsOneWidget);
+
+        await tester.tap(find.byTooltip('Schließen'));
+        await tester.pump();
+        verify(mockActiveConnectionController.clearError()).called(1);
+        tester.element(find.byType(ExplorerView)).markNeedsBuild();
+        await tester.pump();
+        expect(find.byType(ErrorBanner), findsNothing);
+
+        currentError = const ConnectionError(
+          kind: ConnectionErrorKind.tlsVerificationFailed,
+          detail: 'self-signed cert',
+        );
+        tester.element(find.byType(ExplorerView)).markNeedsBuild();
+        await tester.pump();
+
+        expect(find.byType(ErrorBanner), findsOneWidget);
+        expect(
+          find.text('TLS-Zertifikatsprüfung fehlgeschlagen'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }
 
@@ -1045,14 +1215,14 @@ class FixedMockTopicController extends MockTopicController {
   }
 
   @override
-  String? errorFor(ClusterProfile cluster) => mockError;
+  String? errorFor(ClusterProfile? cluster) => mockError;
 }
 
 class FixedMockSchemaController extends MockSchemaController {
   String? mockError;
 
   @override
-  String? errorFor(ClusterProfile cluster) => mockError;
+  String? errorFor(ClusterProfile? cluster) => mockError;
 }
 
 class MockLogger extends Logger {
@@ -1078,7 +1248,16 @@ class FakeMessageStreamController extends ChangeNotifier
   bool get isStreaming => streaming;
 
   @override
+  bool get isPaused => false;
+
+  @override
   String? get error => null;
+
+  @override
+  int get droppedCount => 0;
+
+  @override
+  int get receivedCount => 0;
 
   @override
   int get totalConsumed => 0;

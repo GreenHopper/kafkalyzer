@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 
 import 'package:kafkalyzer/src/ui/color_utils.dart';
@@ -160,8 +161,11 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (widget.messages.isEmpty) {
-      return const Center(child: Text("No messages to display"));
+      return Center(
+        child: Text(l10n?.noMessagesToDisplay ?? 'No messages to display'),
+      );
     }
 
     return Timeline.tileBuilder(
@@ -318,9 +322,10 @@ class _LazyDiffViewerState extends State<_LazyDiffViewer> {
           );
         }
         if (snapshot.hasError) {
-          return const Text(
-            "Error computing diff",
-            style: TextStyle(color: Colors.red),
+          return Text(
+            AppLocalizations.of(context)?.errorComputingDiff ??
+                'Error computing diff',
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
           );
         }
         final diff = snapshot.data;

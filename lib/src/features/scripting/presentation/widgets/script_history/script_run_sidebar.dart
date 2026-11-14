@@ -104,7 +104,7 @@ class ScriptRunSidebar extends StatelessWidget {
 
     return ExpansionTile(
       initiallyExpanded: true,
-      title: const Text("Other Results"),
+      title: Text(AppLocalizations.of(context)!.otherResults),
       children: otherSteps.expand((e) {
         return e.value.entries.map((tEntry) {
           final count = tEntry.value.length;
@@ -167,9 +167,10 @@ class ScriptRunSidebar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    AppLocalizations.of(
-                      context,
-                    )!.matchesCount(totalMessages, run.totalExamined ?? 0),
+                    AppLocalizations.of(context)!.scriptRunMatchedOfExamined(
+                      totalMessages,
+                      run.totalExamined ?? 0,
+                    ),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
@@ -188,21 +189,35 @@ class ScriptRunSidebar extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             Text(
-              "Cluster: ${run.clusterName ?? 'Default'}",
+              AppLocalizations.of(context)!.clusterLabelValue(
+                run.clusterName ?? AppLocalizations.of(context)!.defaultLabel,
+              ),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (run.startTime != null && run.endTime != null) ...[
               const SizedBox(height: 4),
               Text(
-                "Started: ${DateFormatUtils.formatDateTime(context, DateTime.fromMillisecondsSinceEpoch(run.startTime!))}",
+                AppLocalizations.of(context)!.startedAt(
+                  DateFormatUtils.formatDateTime(
+                    context,
+                    DateTime.fromMillisecondsSinceEpoch(run.startTime!),
+                  ),
+                ),
                 style: Theme.of(context).textTheme.labelSmall,
               ),
               Text(
-                "Finished: ${DateFormatUtils.formatDateTime(context, DateTime.fromMillisecondsSinceEpoch(run.endTime!))}",
+                AppLocalizations.of(context)!.finishedAt(
+                  DateFormatUtils.formatDateTime(
+                    context,
+                    DateTime.fromMillisecondsSinceEpoch(run.endTime!),
+                  ),
+                ),
                 style: Theme.of(context).textTheme.labelSmall,
               ),
               Text(
-                "Total Runtime: ${_formatDuration(run.runtime)}",
+                AppLocalizations.of(
+                  context,
+                )!.totalRuntime(_formatDuration(run.runtime)),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,

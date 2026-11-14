@@ -2,13 +2,18 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/schema/utils/schema_path_utils.dart';
+import 'package:kafkalyzer/src/services/time_display_settings.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/copyable_node_text.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/json_tree_flattener.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_composite_badge.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/virtual_json_node.dart';
+import 'package:kafkalyzer/src/ui/widgets/decode_l10n_helper.dart';
 import 'package:kafkalyzer/src/utils/app_fonts.dart';
+import 'package:kafkalyzer/src/utils/nested_value_decoder.dart';
+import 'package:kafkalyzer/src/utils/payload_processing_isolate.dart';
 
 /// A flat, virtualized JSON tree widget rendering only visible rows for optimal 60 FPS performance.
 ///
@@ -26,6 +31,7 @@ class SmartVirtualJsonTree extends StatefulWidget {
   final int contextRadius;
   final ValueChanged<String>? onPinToColumn;
   final ValueChanged<String>? onFilterByField;
+  final bool shrinkWrap;
 
   const SmartVirtualJsonTree({
     super.key,
@@ -40,6 +46,7 @@ class SmartVirtualJsonTree extends StatefulWidget {
     this.contextRadius = 1,
     this.onPinToColumn,
     this.onFilterByField,
+    this.shrinkWrap = false,
   });
 
   @override
@@ -58,11 +65,30 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
   late FlattenResult _flattenResult;
   int _lastReportedMatchCount = -1;
   int _activeMatchIndex = -1;
+  final Map<String, _NodeDecodeState> _decodes = {};
+  int _decodeGeneration = 0;
+  late final TimeDisplaySettings _timeDisplaySettings;
 
   @override
   void initState() {
     super.initState();
+    _timeDisplaySettings = getIt.isRegistered<TimeDisplaySettings>()
+        ? getIt<TimeDisplaySettings>()
+        : TimeDisplaySettings.fallback;
+    _timeDisplaySettings.addListener(_onTimeDisplayChanged);
     _recalculateFlattening();
+  }
+
+  @override
+  void dispose() {
+    _timeDisplaySettings.removeListener(_onTimeDisplayChanged);
+    super.dispose();
+  }
+
+  void _onTimeDisplayChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -77,6 +103,10 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
         widget.autoExpandSingleItemCollections !=
             oldWidget.autoExpandSingleItemCollections ||
         widget.contextRadius != oldWidget.contextRadius) {
+      if (widget.json != oldWidget.json) {
+        _decodes.clear();
+        _decodeGeneration++;
+      }
       if (widget.searchQuery != oldWidget.searchQuery) {
         _manuallyExpandedRanges.clear();
         _forcedShowAllArrays.clear();
@@ -84,6 +114,58 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
       }
       _recalculateFlattening();
     }
+  }
+
+  Map<String, DecodedTreeEntry> _decodedValuesForFlattener() {
+    final map = <String, DecodedTreeEntry>{};
+    for (final entry in _decodes.entries) {
+      final result = entry.value.result;
+      if (result == null || result is DecodeFailure) continue;
+      map[entry.key] = (kind: entry.value.kind, result: result);
+    }
+    return map;
+  }
+
+  Future<void> _triggerDecode(
+    String path,
+    Object input,
+    DecodeKind kind,
+  ) async {
+    final generation = _decodeGeneration;
+    setState(() {
+      _decodes[path] = _NodeDecodeState.pending(kind);
+    });
+
+    final result = await decodeValueAsync(input, kind);
+    if (!mounted || generation != _decodeGeneration) return;
+
+    setState(() {
+      if (result is DecodeFailure) {
+        _decodes[path] = _NodeDecodeState.error(kind, result.error);
+      } else {
+        _decodes[path] = _NodeDecodeState.done(kind, result);
+        _expandedPaths.add(path);
+        _manuallyCollapsedPaths.remove(path);
+        _recalculateFlattening();
+      }
+    });
+  }
+
+  void _clearDecode(String path) {
+    setState(() {
+      _decodes.removeWhere(
+        (key, _) =>
+            key == path || key.startsWith('$path.') || key.startsWith('$path['),
+      );
+      _recalculateFlattening();
+    });
+  }
+
+  void _dismissDecodeError(String path) {
+    if (_decodes[path]?.error == null) return;
+    setState(() {
+      _decodes.remove(path);
+    });
   }
 
   void _recalculateFlattening() {
@@ -99,6 +181,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
       enableIndentationFlattening: widget.enableIndentationFlattening,
       hideNullFields: widget.hideNullFields,
       autoExpandSingleItemCollections: widget.autoExpandSingleItemCollections,
+      decodedValues: _decodedValuesForFlattener(),
     );
 
     _expandedPaths.addAll(_flattenResult.expandedPaths);
@@ -192,6 +275,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
     }
 
     return ScrollablePositionedList.builder(
+      shrinkWrap: widget.shrinkWrap,
       itemCount: nodes.length,
       itemScrollController: _itemScrollController,
       itemPositionsListener: _itemPositionsListener,
@@ -236,118 +320,150 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
       backgroundColor = colorScheme.tertiaryContainer.withValues(alpha: 0.3);
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        border: border,
-        borderRadius: isFocusedMatch ? BorderRadius.circular(4) : null,
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Indentation guides
-          if (node.depth > 0)
-            SizedBox(
-              width: node.depth * 16.0,
-              height: 22,
-              child: CustomPaint(
-                painter: _IndentationGuidePainter(
-                  depth: node.depth,
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onSecondaryTapDown: _canDecodeNode(node)
+          ? (details) =>
+                _showDecodeContextMenu(context, details.globalPosition, node)
+          : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: border,
+          borderRadius: isFocusedMatch ? BorderRadius.circular(4) : null,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Indentation guides
+            if (node.depth > 0)
+              SizedBox(
+                width: node.depth * 16.0,
+                height: 22,
+                child: CustomPaint(
+                  painter: _IndentationGuidePainter(
+                    depth: node.depth,
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                  ),
                 ),
               ),
-            ),
 
-          // Active match indicator icon
-          if (isFocusedMatch)
-            Padding(
-              padding: const EdgeInsets.only(right: 4.0),
-              child: Text('🎯', style: const TextStyle(fontSize: 12)),
-            ),
+            // Active match indicator icon
+            if (isFocusedMatch)
+              Padding(
+                padding: const EdgeInsets.only(right: 4.0),
+                child: Text('🎯', style: const TextStyle(fontSize: 12)),
+              ),
 
-          // Expand / Collapse chevron
-          if (node.hasChildren)
-            InkWell(
-              onTap: () => _toggleExpand(node.path),
-              borderRadius: BorderRadius.circular(4),
-              child: Padding(
-                padding: const EdgeInsets.all(2.0),
-                child: Icon(
+            // Expand / Collapse chevron
+            if (node.hasChildren)
+              IconButton(
+                icon: Icon(
                   node.isExpanded ? Icons.expand_more : Icons.chevron_right,
                   size: 16,
                   color: colorScheme.onSurfaceVariant,
                 ),
+                tooltip: node.isExpanded
+                    ? (AppLocalizations.of(context)?.collapseTooltip ??
+                          'Collapse')
+                    : (AppLocalizations.of(context)?.expandTooltip ?? 'Expand'),
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _toggleExpand(node.path),
+              )
+            else
+              const SizedBox(width: 24),
+
+            // Key name or compound breadcrumb key
+            if (node.key.isNotEmpty) ...[
+              InkWell(
+                onTap: node.hasChildren ? () => _toggleExpand(node.path) : null,
+                child: _buildKeyWidget(node, colorScheme),
               ),
-            )
-          else
-            const SizedBox(width: 20),
+              const SizedBox(width: 4),
+            ],
 
-          // Key name or compound breadcrumb key
-          if (node.key.isNotEmpty) ...[
-            InkWell(
-              onTap: node.hasChildren ? () => _toggleExpand(node.path) : null,
-              child: _buildKeyWidget(node, colorScheme),
-            ),
-            const SizedBox(width: 4),
-          ],
+            // Value content
+            Expanded(child: _buildNodeValue(context, node, colorScheme)),
 
-          // Value content
-          Expanded(child: _buildNodeValue(context, node, colorScheme)),
+            // Inline decode status (pending spinner, active chip, or error)
+            ..._buildDecodeStatusChips(context, node, colorScheme),
 
-          // Quick copy action on row
-          IconButton(
-            icon: const Icon(Icons.copy, size: 13),
-            tooltip:
-                AppLocalizations.of(context)?.copyValueTooltip ?? 'Copy value',
-            visualDensity: VisualDensity.compact,
-            onPressed: () {
-              final valStr = copyableNodeText(node.value);
-              Clipboard.setData(ClipboardData(text: valStr));
-              final l10n = AppLocalizations.of(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    l10n?.valueCopiedToClipboard ?? 'Value copied to clipboard',
-                  ),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
-          if (widget.onPinToColumn != null && node.path.isNotEmpty)
+            // Decode as… menu for string/binary rows
+            if (_canDecodeNode(node))
+              _buildDecodeButton(context, node, colorScheme),
+
+            // Quick copy action on row
             IconButton(
-              icon: const Icon(Icons.push_pin_outlined, size: 14),
-              tooltip: (widget.onFilterByField != null)
-                  ? (AppLocalizations.of(context)?.schemaPinAsColumnTooltip ??
-                        AppLocalizations.of(context)?.schemaPinAsColumn ??
-                        'Pin as table column')
-                  : (AppLocalizations.of(context)?.pinAsColumn ??
-                        'Pin as Column'),
-              visualDensity: VisualDensity.compact,
-              onPressed: () {
-                final normalized = normalizeSchemaFieldPath(node.path);
-                if (normalized.isNotEmpty) {
-                  widget.onPinToColumn!(normalized);
-                }
-              },
-            ),
-          if (widget.onFilterByField != null && node.path.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.filter_alt_outlined, size: 14),
+              icon: const Icon(Icons.copy, size: 13),
               tooltip:
-                  AppLocalizations.of(context)?.schemaFilterByFieldTooltip ??
-                  AppLocalizations.of(context)?.schemaFilterByField ??
-                  'Filter by this field',
+                  (node.type == JsonNodeType.binary && node.value is Uint8List)
+                  ? (AppLocalizations.of(context)?.copyAsHex ?? 'Copy as hex')
+                  : (AppLocalizations.of(context)?.copyValueTooltip ??
+                        'Copy value'),
               visualDensity: VisualDensity.compact,
               onPressed: () {
-                final normalized = normalizeSchemaFieldPath(node.path);
-                if (normalized.isNotEmpty) {
-                  widget.onFilterByField!(normalized);
-                }
+                final valStr =
+                    (node.type == JsonNodeType.binary &&
+                        node.value is Uint8List)
+                    ? formatHexBytes(node.value as Uint8List)
+                    : copyableNodeText(node.value);
+                Clipboard.setData(ClipboardData(text: valStr));
+                final l10n = AppLocalizations.of(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      l10n?.valueCopiedToClipboard ??
+                          'Value copied to clipboard',
+                    ),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
               },
             ),
-        ],
+            if (!node.insideDecoded &&
+                widget.onPinToColumn != null &&
+                node.path.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.push_pin_outlined, size: 14),
+                tooltip: (widget.onFilterByField != null)
+                    ? (AppLocalizations.of(context)?.schemaPinAsColumnTooltip ??
+                          'Pin as table column')
+                    : (AppLocalizations.of(context)?.pinAsColumn ??
+                          'Pin as Column'),
+                visualDensity: VisualDensity.compact,
+                onPressed: () {
+                  final normalized = normalizeSchemaFieldPath(node.path);
+                  if (normalized.isNotEmpty) {
+                    widget.onPinToColumn!(normalized);
+                  }
+                },
+              ),
+            if (!node.insideDecoded &&
+                widget.onFilterByField != null &&
+                node.path.isNotEmpty)
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return IconButton(
+                    icon: const Icon(Icons.filter_alt_outlined, size: 14),
+                    tooltip:
+                        l10n?.schemaFilterByFieldTooltip ??
+                        'Filter by this field',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      final normalized = normalizeSchemaFieldPath(node.path);
+                      if (normalized.isNotEmpty) {
+                        widget.onFilterByField!(normalized);
+                      }
+                    },
+                  );
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -538,8 +654,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
                   child: Text(
                     l10n?.matchesContextBadge(arrayMatchCount) ??
                         '$arrayMatchCount matches (Focus: ±1)',
-                    style: TextStyle(
-                      fontSize: 10,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Colors.brown.shade900,
                     ),
@@ -583,6 +698,9 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
 
       case JsonNodeType.primitive:
         return _buildPrimitiveNode(context, node, colorScheme);
+
+      case JsonNodeType.binary:
+        return _buildBinaryNode(context, node, colorScheme);
     }
   }
 
@@ -607,7 +725,279 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
       }
     }
 
+    final epoch = guessEpoch(value);
+    if (epoch != null) {
+      return _buildEpochTooltipWidget(context, value, epoch, colorScheme);
+    }
+
     return _buildPrimitiveText(value, colorScheme);
+  }
+
+  Widget _buildBinaryNode(
+    BuildContext context,
+    VirtualJsonNode node,
+    ColorScheme colorScheme,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final bytes = node.value is Uint8List
+        ? node.value as Uint8List
+        : Uint8List(0);
+    final summary =
+        l10n?.binaryBytesSummary(bytes.length) ?? '${bytes.length} bytes';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.memory, size: 13, color: colorScheme.secondary),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            summary,
+            style: AppFonts.robotoMono(
+              fontSize: 12,
+              color: colorScheme.secondary,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEpochTooltipWidget(
+    BuildContext context,
+    dynamic value,
+    EpochGuess epoch,
+    ColorScheme colorScheme,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final localFormatted = DateFormatUtils.formatDateTime(
+      context,
+      epoch.utc.toLocal(),
+    );
+    final utcFormatted = epoch.utc.toUtc().toIso8601String();
+    final localLabel = l10n?.localTimestampLabel ?? 'Local';
+    final utcLabel = l10n?.utcTimestampLabel ?? 'UTC';
+    final unitLabel = switch (epoch.unit) {
+      EpochUnit.seconds => l10n?.epochUnitSeconds ?? 'seconds',
+      EpochUnit.milliseconds => l10n?.epochUnitMilliseconds ?? 'milliseconds',
+      EpochUnit.microseconds => l10n?.epochUnitMicroseconds ?? 'microseconds',
+      EpochUnit.nanoseconds => l10n?.epochUnitNanoseconds ?? 'nanoseconds',
+    };
+    final isUtc = _timeDisplaySettings.value == TimeDisplayMode.utc;
+    final primary = isUtc
+        ? '$utcLabel: $utcFormatted'
+        : '$localLabel: $localFormatted';
+    final secondary = isUtc
+        ? '$localLabel: $localFormatted'
+        : '$utcLabel: $utcFormatted';
+    final message =
+        l10n?.epochTooltip(primary, secondary, unitLabel) ??
+        '$primary\n$secondary\nAssumed unit: $unitLabel';
+
+    return Tooltip(
+      message: message,
+      waitDuration: const Duration(milliseconds: 300),
+      child: _buildPrimitiveText(value, colorScheme),
+    );
+  }
+
+  bool _canDecodeNode(VirtualJsonNode node) {
+    if (node.type == JsonNodeType.binary && node.value is Uint8List) {
+      return true;
+    }
+    return node.type == JsonNodeType.primitive && node.value is String;
+  }
+
+  Object? _decodeInputForNode(VirtualJsonNode node) {
+    if (node.value is Uint8List) return node.value as Uint8List;
+    if (node.value is String) return node.value as String;
+    return null;
+  }
+
+  List<PopupMenuEntry<String>> _buildDecodeMenuEntries(
+    BuildContext context,
+    VirtualJsonNode node,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    return [
+      PopupMenuItem<String>(
+        value: 'json',
+        child: Text(l10n?.decodeAsJson ?? 'JSON'),
+      ),
+      PopupMenuItem<String>(
+        value: 'base64',
+        child: Text(l10n?.decodeAsBase64 ?? 'Base64'),
+      ),
+      PopupMenuItem<String>(
+        value: 'gzip',
+        child: Text(l10n?.decodeAsGzip ?? 'Gzip'),
+      ),
+      if (node.decodedKind != null) ...[
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'clear',
+          child: Text(l10n?.showOriginalOnly ?? 'Show original only'),
+        ),
+      ],
+    ];
+  }
+
+  void _handleDecodeMenuSelection(VirtualJsonNode node, String selection) {
+    if (selection == 'clear') {
+      _clearDecode(node.path);
+      return;
+    }
+    final input = _decodeInputForNode(node);
+    if (input == null) return;
+    final kind = switch (selection) {
+      'json' => DecodeKind.json,
+      'base64' => DecodeKind.base64,
+      'gzip' => DecodeKind.gzip,
+      _ => null,
+    };
+    if (kind != null) {
+      _triggerDecode(node.path, input, kind);
+    }
+  }
+
+  Future<void> _showDecodeContextMenu(
+    BuildContext context,
+    Offset globalPosition,
+    VirtualJsonNode node,
+  ) async {
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (overlay == null) return;
+    final selection = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        globalPosition & const Size(1, 1),
+        Offset.zero & overlay.size,
+      ),
+      items: _buildDecodeMenuEntries(context, node),
+    );
+    if (selection != null && mounted) {
+      _handleDecodeMenuSelection(node, selection);
+    }
+  }
+
+  Widget _buildDecodeButton(
+    BuildContext context,
+    VirtualJsonNode node,
+    ColorScheme colorScheme,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    return PopupMenuButton<String>(
+      tooltip: l10n?.decodeAs ?? 'Decode as…',
+      padding: EdgeInsets.zero,
+      icon: Icon(
+        Icons.transform,
+        size: 14,
+        color: node.decodedKind != null
+            ? colorScheme.primary
+            : colorScheme.onSurfaceVariant,
+      ),
+      itemBuilder: (ctx) => _buildDecodeMenuEntries(ctx, node),
+      onSelected: (selection) => _handleDecodeMenuSelection(node, selection),
+    );
+  }
+
+  List<Widget> _buildDecodeStatusChips(
+    BuildContext context,
+    VirtualJsonNode node,
+    ColorScheme colorScheme,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final decodeState = _decodes[node.path];
+    final widgets = <Widget>[];
+
+    if (decodeState?.pending == true) {
+      widgets.add(
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.0),
+          child: SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(strokeWidth: 1.5),
+          ),
+        ),
+      );
+    } else if (decodeState?.error != null) {
+      final msg = decodeErrorMessage(l10n, decodeState!.error!);
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  msg,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () => _dismissDecodeError(node.path),
+                  child: Icon(
+                    Icons.close,
+                    size: 12,
+                    color: colorScheme.onErrorContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (node.decodedKind != null) {
+      final label = decodeKindLabel(l10n, node.decodedKind!);
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () => _clearDecode(node.path),
+                  child: Tooltip(
+                    message: l10n?.showOriginalOnly ?? 'Show original only',
+                    child: Icon(
+                      Icons.close,
+                      size: 12,
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return widgets;
   }
 
   Widget _buildSmartTimestampWidget(
@@ -651,8 +1041,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
           const SizedBox(width: 4),
           Text(
             '(${parsedDate.timeZoneOffset.isNegative ? '-' : '+'}${parsedDate.timeZoneOffset.inHours.abs().toString().padLeft(2, '0')}:00)',
-            style: TextStyle(
-              fontSize: 10,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: colorScheme.outline,
               fontFamily: 'monospace',
             ),
@@ -789,4 +1178,27 @@ class _IndentationGuidePainter extends CustomPainter {
   bool shouldRepaint(covariant _IndentationGuidePainter oldDelegate) {
     return oldDelegate.depth != depth || oldDelegate.color != color;
   }
+}
+
+class _NodeDecodeState {
+  final DecodeKind kind;
+  final bool pending;
+  final DecodeResult? result;
+  final DecodeError? error;
+
+  const _NodeDecodeState._({
+    required this.kind,
+    this.pending = false,
+    this.result,
+    this.error,
+  });
+
+  factory _NodeDecodeState.pending(DecodeKind kind) =>
+      _NodeDecodeState._(kind: kind, pending: true);
+
+  factory _NodeDecodeState.done(DecodeKind kind, DecodeResult result) =>
+      _NodeDecodeState._(kind: kind, result: result);
+
+  factory _NodeDecodeState.error(DecodeKind kind, DecodeError error) =>
+      _NodeDecodeState._(kind: kind, error: error);
 }

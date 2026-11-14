@@ -3,6 +3,7 @@ import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
 import 'package:two_dimensional_scrollables/two_dimensional_scrollables.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 void main() {
   group('MessagesTableView', () {
@@ -43,6 +44,8 @@ void main() {
     testWidgets('renders messages', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -63,6 +66,8 @@ void main() {
     testWidgets('sorts by different columns', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -107,6 +112,8 @@ void main() {
     testWidgets('filters messages using filter dialog', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -153,6 +160,8 @@ void main() {
     testWidgets('shows topic column when enabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -173,6 +182,8 @@ void main() {
     testWidgets('hides Step and Topic columns by default', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -190,6 +201,8 @@ void main() {
     testWidgets('shows Step column when enabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
@@ -211,6 +224,8 @@ void main() {
       KafkaMessage? tappedMessage;
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: MessagesTableView(
               messages: messages,

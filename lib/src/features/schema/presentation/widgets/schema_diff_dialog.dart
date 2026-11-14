@@ -6,6 +6,7 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 
 enum DiffLineType { unchanged, added, removed }
 
@@ -361,6 +362,7 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
+                    tooltip: AppLocalizations.of(context)?.close ?? 'Close',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -513,7 +515,7 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
     if (_baseContent == null || _compareContent == null) {
       return Center(
         child: Text(
-          'Select versions to compare',
+          l10n?.selectVersionsToCompare ?? 'Select versions to compare',
           style: TextStyle(color: colorScheme.outline),
         ),
       );
@@ -529,10 +531,14 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, size: 40, color: Colors.green),
+            Icon(
+              Icons.check_circle_outline,
+              size: 40,
+              color: colorScheme.primary,
+            ),
             const SizedBox(height: 12),
             Text(
-              l10n?.noDifferencesFound ??
+              l10n?.schemaNoDifferencesFound ??
                   'No differences found between the selected versions.',
               style: TextStyle(
                 color: colorScheme.outline,
@@ -723,28 +729,9 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
     ColorScheme colorScheme,
     AppLocalizations? l10n,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (_compatError != null) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.red.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _compatError!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-      );
+      return ErrorBanner(title: _compatError!);
     }
 
     final result = _compatResult!;
@@ -754,13 +741,13 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: isCompatible
-            ? Colors.green.withValues(alpha: 0.08)
-            : Colors.red.withValues(alpha: 0.08),
+            ? colorScheme.primaryContainer
+            : colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isCompatible
-              ? Colors.green.withValues(alpha: 0.4)
-              : Colors.red.withValues(alpha: 0.4),
+              ? colorScheme.primary.withValues(alpha: 0.4)
+              : colorScheme.error.withValues(alpha: 0.4),
         ),
       ),
       child: Column(
@@ -770,7 +757,7 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
             children: [
               Icon(
                 isCompatible ? Icons.check_circle : Icons.cancel,
-                color: isCompatible ? Colors.green : Colors.red,
+                color: isCompatible ? colorScheme.primary : colorScheme.error,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -782,8 +769,8 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                   color: isCompatible
-                      ? Colors.green.shade800
-                      : Colors.red.shade800,
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onErrorContainer,
                 ),
               ),
             ],
@@ -799,7 +786,9 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
                             'Incompatible with registry policy')),
             style: TextStyle(
               fontSize: 12,
-              color: isCompatible ? Colors.green.shade900 : Colors.red.shade900,
+              color: isCompatible
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onErrorContainer,
             ),
           ),
         ],

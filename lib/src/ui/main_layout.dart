@@ -18,7 +18,7 @@ import 'package:kafkalyzer/src/ui/storage_notice_banner.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
-import 'package:kafkalyzer/src/theme_controller.dart';
+import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/ui/error_details_dialog.dart';
 
 class MainLayout extends StatefulWidget {
@@ -211,7 +211,7 @@ class _MainLayoutState extends State<MainLayout> {
 
     _updateSnackBarShown = true;
     final l10n = AppLocalizations.of(context)!;
-    final version = updateInfo.targetFullRelease.version;
+    final version = updateInfo.version;
     final messenger = ScaffoldMessenger.of(context);
 
     messenger.showSnackBar(
@@ -268,9 +268,10 @@ class _MainLayoutState extends State<MainLayout> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     AnimatedBuilder(
-                      animation: getIt<ThemeController>(),
+                      animation: getIt<AppearanceSettings>(),
                       builder: (context, _) {
-                        final isDark = getIt<ThemeController>().isDarkMode;
+                        final shownBrightness = Theme.of(context).brightness;
+                        final isDark = shownBrightness == Brightness.dark;
                         return IconButton(
                           icon: Icon(
                             isDark
@@ -280,8 +281,8 @@ class _MainLayoutState extends State<MainLayout> {
                           tooltip: isDark
                               ? l10n.switchLightMode
                               : l10n.switchDarkMode,
-                          onPressed: () =>
-                              getIt<ThemeController>().toggleTheme(),
+                          onPressed: () => getIt<AppearanceSettings>()
+                              .toggleBrightness(shownBrightness),
                         );
                       },
                     ),

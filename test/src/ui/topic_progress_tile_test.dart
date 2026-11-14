@@ -3,12 +3,15 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 void main() {
   group('TopicProgressTile', () {
     testWidgets('renders pending status correctly', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: TopicProgressTile(
               topic: 'topic-test',
@@ -38,6 +41,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: TopicProgressTile(
               topic: 'topic-test',
@@ -63,6 +68,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: TopicProgressTile(
               topic: 'topic-test',
@@ -82,7 +89,9 @@ void main() {
 
     testWidgets('renders error status', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: TopicProgressTile(
               topic: 'topic-test',
@@ -98,7 +107,9 @@ void main() {
 
     testWidgets('renders extraSubtitle and custom trailing', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: TopicProgressTile(
               topic: 'topic-test',
@@ -137,6 +148,8 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: TopicProgressTile(
                 topic: 'topic-$i',
@@ -152,6 +165,32 @@ void main() {
           findsOneWidget,
         );
       }
+    });
+
+    testWidgets('renders German localization for status and plural matches', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: const [Locale('en'), Locale('de')],
+          home: Scaffold(
+            body: TopicProgressTile(
+              topic: 'topic-de',
+              status: StepStatus.completed,
+              progress: SearchProgress(500, 500),
+              matchCount: 1,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('ABGESCHLOSSEN'), findsOneWidget);
+      expect(find.text('1 Treffer gefunden (500 durchsucht)'), findsOneWidget);
     });
   });
 }

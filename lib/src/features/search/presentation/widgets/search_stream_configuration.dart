@@ -640,17 +640,36 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
   }
 
   Widget _buildFastTraceToggle(AppLocalizations? l10n) {
+    final caveat = l10n?.fastTraceAssumptionCaveat ?? '';
     return Material(
       type: MaterialType.transparency,
-      child: SwitchListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(
-          l10n?.fastTrace ?? "Fast Trace",
-          style: const TextStyle(fontSize: 13),
+      child: Tooltip(
+        message: caveat,
+        child: SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  l10n?.fastTrace ?? "Fast Trace",
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+              if (caveat.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.info_outline,
+                  size: 15,
+                  semanticLabel: l10n?.fastTraceAssumptionInfoLabel,
+                ),
+              ],
+            ],
+          ),
+          value: widget.fastTraceEnabled,
+          onChanged: widget.onFastTraceChanged,
+          dense: true,
         ),
-        value: widget.fastTraceEnabled,
-        onChanged: widget.onFastTraceChanged,
-        dense: true,
       ),
     );
   }

@@ -228,7 +228,8 @@ void main() {
       // Try empty save
       await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
-      expect(find.text('Required'), findsNWidgets(2)); // Name and Servers
+      expect(find.text('Required'), findsOneWidget); // Name
+      expect(find.text('Enter at least one host:port entry'), findsOneWidget);
 
       // Fill forms
       await tester.enterText(
@@ -274,7 +275,8 @@ void main() {
       // Attempt test connection without filling forms
       await tester.tap(find.text('Test Connection'));
       await tester.pumpAndSettle();
-      expect(find.text('Required'), findsNWidgets(2));
+      expect(find.text('Required'), findsOneWidget);
+      expect(find.text('Enter at least one host:port entry'), findsOneWidget);
 
       // Fill in valid fields
       await tester.enterText(

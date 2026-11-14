@@ -334,19 +334,20 @@ class _ScriptEditorState extends State<ScriptEditor> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final l10n = AppLocalizations.of(context);
           return AlertDialog(
-            title: const Text("Edit Variable"),
+            title: Text(l10n?.editVariable ?? "Edit Variable"),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: "Name"),
+                  decoration: InputDecoration(labelText: l10n?.name ?? "Name"),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<ScriptVariableType>(
                   initialValue: selectedType,
-                  decoration: const InputDecoration(labelText: "Type"),
+                  decoration: InputDecoration(labelText: l10n?.type ?? "Type"),
                   items: ScriptVariableType.values
                       .map(
                         (t) => DropdownMenuItem(value: t, child: Text(t.name)),
@@ -359,7 +360,7 @@ class _ScriptEditorState extends State<ScriptEditor> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel"),
+                child: Text(l10n?.cancel ?? "Cancel"),
               ),
               FilledButton(
                 onPressed: () {
@@ -387,7 +388,7 @@ class _ScriptEditorState extends State<ScriptEditor> {
                   }
                   Navigator.pop(context);
                 },
-                child: const Text("Save"),
+                child: Text(l10n?.save ?? "Save"),
               ),
             ],
           );
@@ -446,10 +447,12 @@ class _ScriptEditorState extends State<ScriptEditor> {
               Expanded(
                 child: TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: "Script Name",
+                  decoration: InputDecoration(
+                    labelText:
+                        AppLocalizations.of(context)?.scriptName ??
+                        "Script Name",
                     isDense: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   onChanged: (_) => _save(),
                 ),
@@ -483,7 +486,10 @@ class _ScriptEditorState extends State<ScriptEditor> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Variables", style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              AppLocalizations.of(context)?.variables ?? "Variables",
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             _buildVariablesTable(),
             const SizedBox(height: 8),
@@ -495,15 +501,16 @@ class _ScriptEditorState extends State<ScriptEditor> {
   }
 
   Widget _buildVariablesTable() {
+    final l10n = AppLocalizations.of(context);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
-        columns: const [
-          DataColumn(label: Text("Name")),
-          DataColumn(label: Text("Type")),
-          DataColumn(label: Text("Source")),
-          DataColumn(label: Text("Used In")),
-          DataColumn(label: Text("Actions")),
+        columns: [
+          DataColumn(label: Text(l10n?.name ?? "Name")),
+          DataColumn(label: Text(l10n?.type ?? "Type")),
+          DataColumn(label: Text(l10n?.sourceCol ?? "Source")),
+          DataColumn(label: Text(l10n?.usedIn ?? "Used In")),
+          DataColumn(label: Text(l10n?.actions ?? "Actions")),
         ],
         rows: _analyzeVariables().map((info) {
           return DataRow(
@@ -528,14 +535,24 @@ class _ScriptEditorState extends State<ScriptEditor> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.edit, size: 18),
+                            tooltip:
+                                AppLocalizations.of(
+                                  context,
+                                )?.editVariableTooltip ??
+                                'Edit variable',
                             onPressed: () => _editVariable(info.originalVar!),
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.delete,
                               size: 18,
-                              color: Colors.red,
+                              color: Theme.of(context).colorScheme.error,
                             ),
+                            tooltip:
+                                AppLocalizations.of(
+                                  context,
+                                )?.deleteVariableTooltip ??
+                                'Delete variable',
                             onPressed: () {
                               setState(
                                 () => _variables.remove(info.originalVar),
@@ -560,10 +577,12 @@ class _ScriptEditorState extends State<ScriptEditor> {
         Expanded(
           child: TextField(
             controller: _variableController,
-            decoration: const InputDecoration(
-              labelText: "New Variable Name",
+            decoration: InputDecoration(
+              labelText:
+                  AppLocalizations.of(context)?.newVariableName ??
+                  "New Variable Name",
               isDense: true,
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
             onSubmitted: _addNewVariable,
           ),
@@ -583,6 +602,9 @@ class _ScriptEditorState extends State<ScriptEditor> {
         const SizedBox(width: 8),
         IconButton(
           icon: const Icon(Icons.add),
+          tooltip:
+              AppLocalizations.of(context)?.addVariableTooltip ??
+              'Add variable',
           onPressed: () => _addNewVariable(_variableController.text),
         ),
       ],
@@ -600,15 +622,19 @@ class _ScriptEditorState extends State<ScriptEditor> {
   }
 
   Widget _buildStepsList(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Steps", style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              l10n?.steps ?? "Steps",
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             FilledButton.icon(
               icon: const Icon(Icons.add),
-              label: const Text("Add Step"),
+              label: Text(l10n?.addStep ?? "Add Step"),
               onPressed: _addStep,
             ),
           ],
@@ -638,17 +664,28 @@ class _ScriptEditorState extends State<ScriptEditor> {
           key: ValueKey(step.id),
           child: ListTile(
             leading: CircleAvatar(child: Text("${index + 1}")),
-            title: Text(step.name.isEmpty ? "Unnamed Step" : step.name),
+            title: Text(
+              step.name.isEmpty
+                  ? (AppLocalizations.of(context)?.unnamedStep ??
+                        "Unnamed Step")
+                  : step.name,
+            ),
             subtitle: _buildStepSubtitle(index, step),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   icon: const Icon(Icons.edit),
+                  tooltip:
+                      AppLocalizations.of(context)?.editStepTooltip ??
+                      'Edit step',
                   onPressed: () => _editStep(index),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
+                  tooltip:
+                      AppLocalizations.of(context)?.deleteStepTooltip ??
+                      'Delete step',
                   onPressed: () => _confirmDeleteStep(index),
                 ),
                 ReorderableDragStartListener(
@@ -691,7 +728,10 @@ class _ScriptEditorState extends State<ScriptEditor> {
                       const Icon(Icons.download, size: 14, color: Colors.blue),
                       const SizedBox(width: 4),
                       Text(
-                        "Extracted: ${extracted.join(', ')}",
+                        AppLocalizations.of(
+                              context,
+                            )?.extractedVars(extracted.join(', ')) ??
+                            "Extracted: ${extracted.join(', ')}",
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.blue,
@@ -706,7 +746,10 @@ class _ScriptEditorState extends State<ScriptEditor> {
                       const Icon(Icons.input, size: 14, color: Colors.orange),
                       const SizedBox(width: 4),
                       Text(
-                        "Used: ${used.join(', ')}",
+                        AppLocalizations.of(
+                              context,
+                            )?.usedVars(used.join(', ')) ??
+                            "Used: ${used.join(', ')}",
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.orange,

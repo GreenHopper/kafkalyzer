@@ -534,6 +534,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
   }
 
   Widget _buildMonitor() {
+    final l10n = AppLocalizations.of(context);
     final runner = getIt<ScriptRunner>();
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -545,7 +546,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
               child: ScriptProgressWidget(
                 script: widget.script,
                 runner: runner,
-                title: "Execution Progress",
+                title: l10n?.executionProgress ?? "Execution Progress",
                 overrideClusterName: _selectedCluster?.name,
               ),
             ),
@@ -554,6 +555,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
           ListenableBuilder(
             listenable: runner,
             builder: (context, _) {
+              final l10n = AppLocalizations.of(context);
               return Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -562,9 +564,11 @@ class _ScriptRunViewState extends State<ScriptRunView> {
                       onPressed: () {
                         runner.cancelScript();
                       },
-                      child: const Text(
-                        "Stop",
-                        style: TextStyle(color: Colors.red),
+                      child: Text(
+                        l10n?.stop ?? "Stop",
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
                     )
                   else
@@ -574,7 +578,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
                           _isMonitoring = false;
                         });
                       },
-                      child: const Text("New Run"),
+                      child: Text(l10n?.newRun ?? "New Run"),
                     ),
                 ],
               );

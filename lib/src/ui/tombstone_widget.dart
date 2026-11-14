@@ -1,10 +1,12 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 class TombstoneWidget extends StatelessWidget {
   const TombstoneWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     // Greyed out styling for Tombstone
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -19,7 +21,7 @@ class TombstoneWidget extends StatelessWidget {
           Icon(Icons.delete_outline, size: 16, color: Colors.grey[700]),
           const SizedBox(width: 8),
           Text(
-            "TOMBSTONE (Value is NULL)",
+            l10n?.tombstoneValueNull ?? "TOMBSTONE (Value is NULL)",
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,

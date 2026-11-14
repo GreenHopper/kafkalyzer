@@ -143,7 +143,10 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Edit Step", style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            AppLocalizations.of(context)?.editStep ?? "Edit Step",
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 16),
           _buildStepNameField(),
           const SizedBox(height: 12),
@@ -164,9 +167,9 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   Widget _buildStepNameField() {
     return TextField(
       controller: _nameController,
-      decoration: const InputDecoration(
-        labelText: "Step Name",
-        border: OutlineInputBorder(),
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context)?.stepNameLabel ?? "Step Name",
+        border: const OutlineInputBorder(),
       ),
     );
   }
@@ -176,7 +179,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
 
     return ClusterDropdown(
       value: _selectedCluster,
-      labelText: "Cluster",
+      labelText: AppLocalizations.of(context)?.cluster ?? "Cluster",
       isExpanded: true,
       onChanged: (val) {
         setState(() {
@@ -398,13 +401,14 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Value Extractions",
+          AppLocalizations.of(context)?.valueExtractions ?? "Value Extractions",
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         if (_extractions.isEmpty)
-          const Text(
-            "No extractions defined",
+          Text(
+            AppLocalizations.of(context)?.noExtractionsDefined ??
+                "No extractions defined",
             style: TextStyle(color: Colors.grey),
           ),
 
@@ -418,7 +422,9 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
         const SizedBox(height: 8),
         OutlinedButton.icon(
           icon: const Icon(Icons.add),
-          label: const Text("Add Extraction"),
+          label: Text(
+            AppLocalizations.of(context)?.addExtraction ?? "Add Extraction",
+          ),
           onPressed: () => setState(
             () => _extractions.add(
               const ScriptExtraction(jsonPath: "", variableName: ""),
@@ -546,10 +552,11 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
           ),
         ),
         IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red),
+          icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
+          tooltip:
+              AppLocalizations.of(context)?.deleteExtraction ??
+              'Delete extraction',
           onPressed: () => setState(() => _extractions.removeAt(index)),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
         ),
       ],
     );
@@ -635,7 +642,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
       children: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: Text(AppLocalizations.of(context)?.cancel ?? "Cancel"),
         ),
         const SizedBox(width: 8),
         FilledButton(
@@ -679,7 +686,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
             );
             widget.onSave(newStep);
           },
-          child: const Text("Save"),
+          child: Text(AppLocalizations.of(context)?.save ?? "Save"),
         ),
       ],
     );
@@ -708,7 +715,9 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     return widget.variables.isNotEmpty
         ? PopupMenuButton<String>(
             icon: const Icon(Icons.data_object, size: 18),
-            tooltip: "Insert Variable",
+            tooltip:
+                AppLocalizations.of(context)?.insertVariable ??
+                "Insert Variable",
             onSelected: (v) => _insertVariable(controller, v),
             itemBuilder: (context) => widget.variables
                 .map((v) => PopupMenuItem(value: v.name, child: Text(v.name)))

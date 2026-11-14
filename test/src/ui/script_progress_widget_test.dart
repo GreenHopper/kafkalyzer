@@ -5,9 +5,13 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/ui/script_progress_widget.dart';
 import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 class FakeMultiSearchController extends ChangeNotifier
     implements MultiSearchController {
+  @override
+  int get bufferLimit => 50000;
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -26,6 +30,7 @@ class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
   Map<String, String> stepErrorMessages = {};
 
   final Map<String, int> matchCounts = {};
+  final Map<String, int> droppedCounts = {};
 
   @override
   SearchProgress? getProgress(String stepId, String topic) => null;
@@ -33,6 +38,11 @@ class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
   @override
   int getMatchCount(String stepId, String topic) {
     return matchCounts["${stepId}_$topic"] ?? 0;
+  }
+
+  @override
+  int getDroppedCount(String stepId, String topic) {
+    return droppedCounts["${stepId}_$topic"] ?? 0;
   }
 
   @override
@@ -62,8 +72,15 @@ void main() {
     Script script,
     ScriptRunner runner, {
     String? title,
+    Locale? locale,
   }) {
     return MaterialApp(
+      locale: locale,
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
+      ],
+      supportedLocales: const [Locale('en'), Locale('de')],
       home: Scaffold(
         body: SingleChildScrollView(
           child: ScriptProgressWidget(
@@ -130,5 +147,43 @@ void main() {
 
     expect(find.text('FAILED'), findsOneWidget);
     expect(find.text('Connection timeout'), findsOneWidget);
+  });
+
+  testWidgets('renders dropped messages indicator when a topic has drops', (
+    WidgetTester tester,
+  ) async {
+    final runner = FakeScriptRunner();
+    runner.stepStatuses['step-a'] = StepStatus.running;
+    runner.topicStatuses['step-a_topic-logs'] = StepStatus.completed;
+    runner.topicStatuses['step-a_topic-errors'] = StepStatus.completed;
+    runner.matchCounts['step-a_topic-logs'] = 51500;
+    runner.droppedCounts['step-a_topic-logs'] = 1500;
+
+    await tester.pumpWidget(createWidgetUnderTest(testScript, runner));
+    await tester.pump();
+
+    expect(
+      find.text('1,500 oldest messages dropped (limit 50,000)'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('renders German localization and plural matches', (
+    WidgetTester tester,
+  ) async {
+    final runner = FakeScriptRunner();
+    runner.stepStatuses['step-a'] = StepStatus.completed;
+    runner.topicStatuses['step-a_topic-logs'] = StepStatus.completed;
+    runner.topicStatuses['step-a_topic-errors'] = StepStatus.completed;
+    runner.matchCounts['step-a_topic-logs'] = 1;
+    runner.matchCounts['step-a_topic-errors'] = 0;
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(testScript, runner, locale: const Locale('de')),
+    );
+    await tester.pump();
+
+    expect(find.text('ABGESCHLOSSEN'), findsOneWidget);
+    expect(find.text('1 Treffer in 1 Topic gefunden'), findsOneWidget);
   });
 }

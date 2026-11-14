@@ -145,10 +145,14 @@ class ClusterOverviewView extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'Available Topics',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.outline,
-                                  ),
+                                  l10n?.availableTopics ?? 'Available Topics',
+                                  style: theme.textTheme.titleSmall == null
+                                      ? theme.textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.outline,
+                                        )
+                                      : theme.textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.outline,
+                                        ),
                                 ),
                               ],
                             ),
@@ -203,7 +207,8 @@ class ClusterOverviewView extends StatelessWidget {
                                   Text(
                                     hasSchemaRegistry
                                         ? profile.schemaRegistryUrl!
-                                        : 'Optional metadata registry',
+                                        : (l10n?.optionalMetadataRegistry ??
+                                              'Optional metadata registry'),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: colorScheme.outline,
                                     ),

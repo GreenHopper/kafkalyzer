@@ -9,7 +9,9 @@ import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/profile_crypto.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
+import 'package:kafkalyzer/src/services/encrypted_bundle.dart';
 import 'package:kafkalyzer/src/services/secure_storage_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
@@ -151,6 +153,8 @@ class MockFilePicker extends FilePickerPlatform {
   FilePickerResult? pickResult;
   bool saveFileCalled = false;
   bool pickFilesCalled = false;
+  List<String>? lastSaveAllowedExtensions;
+  List<String>? lastPickAllowedExtensions;
 
   @override
   Future<String?> saveFile({
@@ -163,6 +167,7 @@ class MockFilePicker extends FilePickerPlatform {
     bool lockParentWindow = false,
   }) async {
     saveFileCalled = true;
+    lastSaveAllowedExtensions = allowedExtensions;
     if (savePath == 'throw') {
       throw const FileSystemException('Failed to write');
     }
@@ -185,6 +190,7 @@ class MockFilePicker extends FilePickerPlatform {
     bool cancelUploadOnWindowBlur = true,
   }) async {
     pickFilesCalled = true;
+    lastPickAllowedExtensions = allowedExtensions;
     return pickResult;
   }
 }
@@ -289,7 +295,9 @@ void main() {
       final exportPath = p.join(tempDir, 'exported_config.zip');
       mockFilePicker.savePath = exportPath;
 
-      await settingsService.exportConfiguration();
+      await settingsService.exportConfiguration(
+        dialogTitle: 'Export Configuration',
+      );
 
       expect(mockFilePicker.saveFileCalled, isTrue);
       final exportFile = File(exportPath);
@@ -344,7 +352,9 @@ void main() {
         final exportPath = p.join(tempDir, 'exported_config_no_files.zip');
         mockFilePicker.savePath = exportPath;
 
-        await settingsService.exportConfiguration();
+        await settingsService.exportConfiguration(
+          dialogTitle: 'Export Configuration',
+        );
 
         expect(mockFilePicker.saveFileCalled, isTrue);
         final archive = ZipDecoder().decodeBytes(
@@ -359,14 +369,18 @@ void main() {
 
     test('exportConfiguration handles save file cancel', () async {
       mockFilePicker.savePath = null;
-      await settingsService.exportConfiguration();
+      await settingsService.exportConfiguration(
+        dialogTitle: 'Export Configuration',
+      );
       expect(mockFilePicker.saveFileCalled, isTrue);
     });
 
     test('exportConfiguration propagates exceptions', () async {
       mockFilePicker.savePath = 'throw';
       expect(
-        () => settingsService.exportConfiguration(),
+        () => settingsService.exportConfiguration(
+          dialogTitle: 'Export Configuration',
+        ),
         throwsA(isA<FileSystemException>()),
       );
     });
@@ -412,7 +426,10 @@ void main() {
         ),
       ]);
 
-      await settingsService.importConfiguration();
+      await settingsService.importConfiguration(
+        dialogTitle: 'Import Configuration',
+        promptPassphrase: ({required previousAttemptFailed}) async => null,
+      );
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('test_key'), 'new_value');
@@ -459,7 +476,10 @@ void main() {
           ),
         ]);
 
-        await settingsService.importConfiguration();
+        await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async => null,
+        );
 
         final prefs = await SharedPreferences.getInstance();
         expect(prefs.getString('filepath_key'), 'resolved_value');
@@ -468,7 +488,10 @@ void main() {
 
     test('importConfiguration handles picker cancel', () async {
       mockFilePicker.pickResult = null;
-      await settingsService.importConfiguration();
+      await settingsService.importConfiguration(
+        dialogTitle: 'Import Configuration',
+        promptPassphrase: ({required previousAttemptFailed}) async => null,
+      );
       expect(mockFilePicker.pickFilesCalled, isTrue);
     });
 
@@ -478,7 +501,10 @@ void main() {
       ]);
 
       expect(
-        () => settingsService.importConfiguration(),
+        () => settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async => null,
+        ),
         throwsA(isA<Exception>()),
       );
     });
@@ -505,7 +531,10 @@ void main() {
           ),
         ]);
 
-        await settingsService.importConfiguration();
+        await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async => null,
+        );
 
         final prefs = await SharedPreferences.getInstance();
         // Keys are invalid types, so they should be ignored / removed during import
@@ -539,7 +568,9 @@ void main() {
         final defaultExportPath = p.join(tempDir, 'export_default.zip');
         mockFilePicker.savePath = defaultExportPath;
 
-        await settingsService.exportConfiguration();
+        await settingsService.exportConfiguration(
+          dialogTitle: 'Export Configuration',
+        );
 
         final defaultArchive = ZipDecoder().decodeBytes(
           File(defaultExportPath).readAsBytesSync(),
@@ -563,17 +594,29 @@ void main() {
           isFalse,
         );
 
-        // 2. Opt-in export (includeSensitiveCredentials = true)
-        final optInExportPath = p.join(tempDir, 'export_opt_in.zip');
+        // 2. Opt-in export (encrypted with passphrase)
+        List<int>? capturedPlaintext;
+        when(
+          mockRustApi.crateApiProfileCryptoEncryptBundleWithPassphrase(
+            plaintext: anyNamed('plaintext'),
+            passphrase: 'correct-horse-battery',
+          ),
+        ).thenAnswer((inv) async {
+          capturedPlaintext = inv.namedArguments[#plaintext] as List<int>;
+          return BundleCryptoResult(
+            data: Uint8List.fromList(capturedPlaintext!),
+          );
+        });
+
+        final optInExportPath = p.join(tempDir, 'export_opt_in.zip.age');
         mockFilePicker.savePath = optInExportPath;
 
         await settingsService.exportConfiguration(
-          includeSensitiveCredentials: true,
+          dialogTitle: 'Export Configuration',
+          encryptionPassphrase: 'correct-horse-battery',
         );
 
-        final optInArchive = ZipDecoder().decodeBytes(
-          File(optInExportPath).readAsBytesSync(),
-        );
+        final optInArchive = ZipDecoder().decodeBytes(capturedPlaintext!);
         final optInPrefsFile = optInArchive.firstWhere(
           (f) => f.name == 'preferences.json',
         );
@@ -629,7 +672,11 @@ void main() {
           ]);
 
           await expectLater(
-            () => settingsService.importConfiguration(),
+            () => settingsService.importConfiguration(
+              dialogTitle: 'Import Configuration',
+              promptPassphrase: ({required previousAttemptFailed}) async =>
+                  null,
+            ),
             throwsA(isA<UnsafeArchiveEntryException>()),
             reason:
                 'Expected $unsafeEntry to throw UnsafeArchiveEntryException',
@@ -676,7 +723,10 @@ void main() {
           ),
         ]);
 
-        await settingsService.importConfiguration();
+        await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async => null,
+        );
 
         expect(
           fakeKeyring.data['cluster_auth-cluster_saslPassword'],
@@ -717,7 +767,10 @@ void main() {
           ),
         ]);
 
-        await settingsService.importConfiguration();
+        await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async => null,
+        );
 
         final prefs = await SharedPreferences.getInstance();
         final stored = jsonDecode(prefs.getString('cluster_profiles')!) as List;
@@ -757,7 +810,10 @@ void main() {
           ),
         ]);
 
-        await settingsService.importConfiguration();
+        await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async => null,
+        );
 
         final reloaded = await clusterService.loadClusters();
         expect(reloaded.map((c) => c.name), ['Prod', 'Test']);
@@ -774,12 +830,677 @@ void main() {
       final exportPath = p.join(tempDir, 'export_no_gcs.zip');
       mockFilePicker.savePath = exportPath;
 
-      await settingsService.exportConfiguration();
+      await settingsService.exportConfiguration(
+        dialogTitle: 'Export Configuration',
+      );
 
       final archive = ZipDecoder().decodeBytes(
         File(exportPath).readAsBytesSync(),
       );
       expect(archive.map((f) => f.name).toList(), ['preferences.json']);
+    });
+
+    test(
+      'exportConfiguration default export strips all six secret fields and writes ZIP',
+      () async {
+        await fakeKeyring.write(
+          key: 'cluster_secret_cluster-a_saslPassword',
+          value: 's1',
+        );
+        await fakeKeyring.write(
+          key: 'cluster_secret_cluster-a_saslOauthbearerToken',
+          value: 's2',
+        );
+        await fakeKeyring.write(
+          key: 'cluster_secret_cluster-a_sslKeyPassword',
+          value: 's3',
+        );
+        await fakeKeyring.write(
+          key: 'cluster_secret_cluster-a_sslKeystorePassword',
+          value: 's4',
+        );
+        await fakeKeyring.write(
+          key: 'cluster_secret_cluster-a_sslTruststorePassword',
+          value: 's5',
+        );
+        await fakeKeyring.write(
+          key: 'cluster_secret_cluster-a_schemaRegistryPassword',
+          value: 's6',
+        );
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          'cluster_profiles',
+          jsonEncode([
+            {
+              'name': 'cluster-a',
+              'saslPassword': 's1',
+              'saslOauthbearerToken': 's2',
+              'sslPemKeyPassword': 's3',
+              'sslKeystorePassword': 's4',
+              'sslTruststorePassword': 's5',
+              'schemaRegistryPassword': 's6',
+            },
+          ]),
+        );
+
+        final exportPath = p.join(tempDir, 'default_no_secrets.zip');
+        mockFilePicker.savePath = exportPath;
+
+        final saved = await settingsService.exportConfiguration(
+          dialogTitle: 'Export Configuration',
+        );
+        expect(saved, exportPath);
+        expect(mockFilePicker.lastSaveAllowedExtensions, ['zip']);
+
+        final archive = ZipDecoder().decodeBytes(
+          File(exportPath).readAsBytesSync(),
+        );
+        final prefsEntry = archive.findFile('preferences.json')!;
+        final decodedPrefs =
+            jsonDecode(utf8.decode(prefsEntry.content as List<int>))
+                as Map<String, dynamic>;
+        final clusters =
+            jsonDecode(decodedPrefs['cluster_profiles'] as String)
+                as List<dynamic>;
+        final cluster = clusters.first as Map<String, dynamic>;
+        for (final field in SecureStorageService.secretFields) {
+          expect(cluster.containsKey(field), isFalse);
+        }
+      },
+    );
+
+    test(
+      'exportConfiguration with passphrase includes all six secret fields in plaintext ZIP passed to encrypt and writes only encrypted bytes',
+      () async {
+        final secureStorage = getIt<SecureStorageService>();
+        await secureStorage.saveClusterSecrets('cluster-a', {
+          'saslPassword': 'sec-sasl',
+          'saslOauthbearerToken': 'sec-oauth',
+          'sslPemKeyPassword': 'sec-key',
+          'sslKeystorePassword': 'sec-ks',
+          'sslTruststorePassword': 'sec-ts',
+          'schemaRegistryPassword': 'sec-sr',
+        });
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          'cluster_profiles',
+          jsonEncode([
+            {'name': 'cluster-a'},
+          ]),
+        );
+
+        List<int>? capturedPlaintext;
+        final encryptedPayload = Uint8List.fromList([
+          ...utf8.encode('age-encryption.org/v1\n'),
+          1,
+          2,
+          3,
+        ]);
+        when(
+          mockRustApi.crateApiProfileCryptoEncryptBundleWithPassphrase(
+            plaintext: anyNamed('plaintext'),
+            passphrase: 'correct-horse-battery',
+          ),
+        ).thenAnswer((inv) async {
+          capturedPlaintext = inv.namedArguments[#plaintext] as List<int>;
+          return BundleCryptoResult(data: encryptedPayload);
+        });
+
+        final exportPath = p.join(tempDir, 'kafkalyzer_config.zip');
+        mockFilePicker.savePath = exportPath;
+
+        final saved = await settingsService.exportConfiguration(
+          dialogTitle: 'Export Configuration',
+          encryptionPassphrase: 'correct-horse-battery',
+        );
+        expect(saved, '$exportPath.age');
+        expect(mockFilePicker.lastSaveAllowedExtensions, ['age']);
+        expect(File(exportPath).existsSync(), isFalse);
+        expect(File('$exportPath.age').readAsBytesSync(), encryptedPayload);
+
+        expect(capturedPlaintext, isNotNull);
+        final archive = ZipDecoder().decodeBytes(capturedPlaintext!);
+        final prefsEntry = archive.findFile('preferences.json')!;
+        final decodedPrefs =
+            jsonDecode(utf8.decode(prefsEntry.content as List<int>))
+                as Map<String, dynamic>;
+        final clusters =
+            jsonDecode(decodedPrefs['cluster_profiles'] as String)
+                as List<dynamic>;
+        final cluster = clusters.first as Map<String, dynamic>;
+        expect(cluster['saslPassword'], 'sec-sasl');
+        expect(cluster['saslOauthbearerToken'], 'sec-oauth');
+        expect(cluster['sslPemKeyPassword'], 'sec-key');
+        expect(cluster['sslKeystorePassword'], 'sec-ks');
+        expect(cluster['sslTruststorePassword'], 'sec-ts');
+        expect(cluster['schemaRegistryPassword'], 'sec-sr');
+      },
+    );
+
+    test(
+      'exportConfiguration writes nothing and rethrows on encrypt failure',
+      () async {
+        when(
+          mockRustApi.crateApiProfileCryptoEncryptBundleWithPassphrase(
+            plaintext: anyNamed('plaintext'),
+            passphrase: anyNamed('passphrase'),
+          ),
+        ).thenAnswer(
+          (_) async => const BundleCryptoResult(
+            error: BundleCryptoErrorKind.internal,
+            message: 'boom',
+          ),
+        );
+
+        final exportPath = p.join(tempDir, 'should_not_exist.zip.age');
+        mockFilePicker.savePath = exportPath;
+
+        await expectLater(
+          () => settingsService.exportConfiguration(
+            dialogTitle: 'Export Configuration',
+            encryptionPassphrase: 'correct-horse-battery',
+          ),
+          throwsA(isA<EncryptedBundleException>()),
+        );
+        expect(File(exportPath).existsSync(), isFalse);
+      },
+    );
+
+    test(
+      'importConfiguration accepts zip and age, decrypts encrypted bundle, and restores preferences',
+      () async {
+        final archive = Archive();
+        final prefsBytes = utf8.encode(
+          jsonEncode({'encrypted_restored_key': 'restored_val'}),
+        );
+        archive.addFile(
+          ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+        );
+        final plainZip = Uint8List.fromList(ZipEncoder().encode(archive));
+        final fakeAgeBytes = Uint8List.fromList([
+          ...utf8.encode('age-encryption.org/v1\n'),
+          9,
+          8,
+          7,
+        ]);
+
+        when(
+          mockRustApi.crateApiProfileCryptoDecryptBundleWithPassphrase(
+            ciphertext: fakeAgeBytes,
+            passphrase: 'correct-horse-battery',
+          ),
+        ).thenAnswer((_) async => BundleCryptoResult(data: plainZip));
+
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'config.zip.age',
+            size: fakeAgeBytes.length,
+            bytes: fakeAgeBytes,
+          ),
+        ]);
+
+        final summary = await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async =>
+              'correct-horse-battery',
+        );
+        expect(summary, isNotNull);
+        expect(mockFilePicker.lastPickAllowedExtensions, ['zip', 'age']);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('encrypted_restored_key'), 'restored_val');
+      },
+    );
+
+    test(
+      'importConfiguration returns null without modifying preferences when passphrase prompt is cancelled',
+      () async {
+        final fakeAgeBytes = Uint8List.fromList([
+          ...utf8.encode('age-encryption.org/v1\n'),
+          9,
+          8,
+          7,
+        ]);
+
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'config.zip.age',
+            size: fakeAgeBytes.length,
+            bytes: fakeAgeBytes,
+          ),
+        ]);
+
+        final summary = await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async => null,
+        );
+        expect(summary, isNull);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('test_key'), 'test_value');
+      },
+    );
+
+    test(
+      'importConfiguration decrypts encrypted bundle with profiles and writes secrets to keyring',
+      () async {
+        final archive = Archive();
+        final prefsBytes = utf8.encode(
+          jsonEncode({
+            'cluster_profiles': jsonEncode([
+              {
+                'name': 'enc-cluster',
+                'bootstrapServers': 'localhost:9092',
+                'saslPassword': 'pw',
+              },
+            ]),
+          }),
+        );
+        archive.addFile(
+          ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+        );
+        final plainZip = Uint8List.fromList(ZipEncoder().encode(archive));
+        final fakeAgeBytes = Uint8List.fromList([
+          ...utf8.encode('age-encryption.org/v1\n'),
+          4,
+          5,
+          6,
+        ]);
+
+        when(
+          mockRustApi.crateApiProfileCryptoDecryptBundleWithPassphrase(
+            ciphertext: fakeAgeBytes,
+            passphrase: 'correct-horse-battery',
+          ),
+        ).thenAnswer((_) async => BundleCryptoResult(data: plainZip));
+
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'config.zip.age',
+            size: fakeAgeBytes.length,
+            bytes: fakeAgeBytes,
+          ),
+        ]);
+
+        final result = await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async =>
+              'correct-horse-battery',
+        );
+        expect(result, isNotNull);
+        final secrets = await getIt<SecureStorageService>().getClusterSecrets(
+          'enc-cluster',
+        );
+        expect(secrets['saslPassword'], 'pw');
+      },
+    );
+
+    test(
+      'importConfiguration wrong passphrase then cancel leaves prefs and keyring untouched',
+      () async {
+        final fakeAgeBytes = Uint8List.fromList([
+          ...utf8.encode('age-encryption.org/v1\n'),
+          4,
+          5,
+          6,
+        ]);
+        when(
+          mockRustApi.crateApiProfileCryptoDecryptBundleWithPassphrase(
+            ciphertext: fakeAgeBytes,
+            passphrase: 'wrong-passphrase',
+          ),
+        ).thenAnswer(
+          (_) async => const BundleCryptoResult(
+            error: BundleCryptoErrorKind.wrongPassphrase,
+          ),
+        );
+
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'config.zip.age',
+            size: fakeAgeBytes.length,
+            bytes: fakeAgeBytes,
+          ),
+        ]);
+
+        var attempts = 0;
+        final result = await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async {
+            attempts++;
+            return attempts == 1 ? 'wrong-passphrase' : null;
+          },
+        );
+        expect(result, isNull);
+        expect(attempts, 2);
+        expect(fakeKeyring.data, isEmpty);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('test_key'), 'test_value');
+      },
+    );
+
+    test(
+      'importConfiguration corrupt encrypted bundle throws EncryptedBundleException without writing',
+      () async {
+        final fakeAgeBytes = Uint8List.fromList([
+          ...utf8.encode('age-encryption.org/v1\n'),
+          4,
+          5,
+          6,
+        ]);
+        when(
+          mockRustApi.crateApiProfileCryptoDecryptBundleWithPassphrase(
+            ciphertext: fakeAgeBytes,
+            passphrase: 'any-passphrase',
+          ),
+        ).thenAnswer(
+          (_) async => const BundleCryptoResult(
+            error: BundleCryptoErrorKind.corrupt,
+            message: 'bad header',
+          ),
+        );
+
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'config.zip.age',
+            size: fakeAgeBytes.length,
+            bytes: fakeAgeBytes,
+          ),
+        ]);
+
+        await expectLater(
+          () => settingsService.importConfiguration(
+            dialogTitle: 'Import Configuration',
+            promptPassphrase: ({required previousAttemptFailed}) async =>
+                'any-passphrase',
+          ),
+          throwsA(
+            isA<EncryptedBundleException>().having(
+              (e) => e.kind,
+              'kind',
+              EncryptedBundleFailure.corrupt,
+            ),
+          ),
+        );
+        expect(fakeKeyring.data, isEmpty);
+      },
+    );
+
+    test(
+      'importConfiguration legacy plaintext bundle with credentials imports without prompting',
+      () async {
+        final archive = Archive();
+        final prefsBytes = utf8.encode(
+          jsonEncode({
+            'cluster_profiles': jsonEncode([
+              {
+                'name': 'legacy-cluster',
+                'bootstrapServers': 'localhost:9092',
+                'saslPassword': 'legacy-secret',
+              },
+            ]),
+          }),
+        );
+        archive.addFile(
+          ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+        );
+        final plainZip = Uint8List.fromList(ZipEncoder().encode(archive));
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'legacy.zip',
+            size: plainZip.length,
+            bytes: plainZip,
+          ),
+        ]);
+
+        var prompted = false;
+        final result = await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async {
+            prompted = true;
+            return null;
+          },
+        );
+        expect(prompted, isFalse);
+        expect(result, isNotNull);
+        final secrets = await getIt<SecureStorageService>().getClusterSecrets(
+          'legacy-cluster',
+        );
+        expect(secrets['saslPassword'], 'legacy-secret');
+      },
+    );
+
+    group('messageBufferLimit', () {
+      test('defaults to 50,000 when unset', () async {
+        await settingsService.loadMessageBufferLimit();
+        expect(settingsService.messageBufferLimit.value, 50000);
+      });
+
+      test(
+        'invalid stored value yields default without rewriting preference',
+        () async {
+          SharedPreferences.setMockInitialValues({'message_buffer_limit': 0});
+          await settingsService.loadMessageBufferLimit();
+          expect(settingsService.messageBufferLimit.value, 50000);
+          var prefs = await SharedPreferences.getInstance();
+          expect(prefs.getInt('message_buffer_limit'), 0);
+
+          SharedPreferences.setMockInitialValues({
+            'message_buffer_limit': 5000000,
+          });
+          await settingsService.loadMessageBufferLimit();
+          expect(settingsService.messageBufferLimit.value, 50000);
+          prefs = await SharedPreferences.getInstance();
+          expect(prefs.getInt('message_buffer_limit'), 5000000);
+
+          SharedPreferences.setMockInitialValues({
+            'message_buffer_limit': 'not-an-int',
+          });
+          await settingsService.loadMessageBufferLimit();
+          expect(settingsService.messageBufferLimit.value, 50000);
+          prefs = await SharedPreferences.getInstance();
+          expect(prefs.get('message_buffer_limit'), 'not-an-int');
+        },
+      );
+
+      test(
+        'setMessageBufferLimit persists valid values and rejects out-of-range',
+        () async {
+          await settingsService.setMessageBufferLimit(10000);
+          expect(settingsService.messageBufferLimit.value, 10000);
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getInt('message_buffer_limit'), 10000);
+
+          await expectLater(
+            () => settingsService.setMessageBufferLimit(999),
+            throwsArgumentError,
+          );
+          await expectLater(
+            () => settingsService.setMessageBufferLimit(1000001),
+            throwsArgumentError,
+          );
+          expect(settingsService.messageBufferLimit.value, 10000);
+        },
+      );
+
+      test(
+        'parseMessageBufferLimit accepts 1,000..1,000,000 and rejects invalid',
+        () {
+          expect(SettingsService.parseMessageBufferLimit('1000'), 1000);
+          expect(SettingsService.parseMessageBufferLimit(' 1000000 '), 1000000);
+          expect(SettingsService.parseMessageBufferLimit('999'), isNull);
+          expect(SettingsService.parseMessageBufferLimit('1000001'), isNull);
+          expect(SettingsService.parseMessageBufferLimit('abc'), isNull);
+          expect(SettingsService.parseMessageBufferLimit(''), isNull);
+        },
+      );
+
+      test('importConfiguration reloads messageBufferLimit', () async {
+        final archive = Archive();
+        final prefsBytes = utf8.encode(
+          jsonEncode({'message_buffer_limit': 25000}),
+        );
+        archive.addFile(
+          ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+        );
+        final zip = Uint8List.fromList(ZipEncoder().encode(archive));
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(name: 'cfg.zip', size: zip.length, bytes: zip),
+        ]);
+
+        await settingsService.importConfiguration(
+          dialogTitle: 'Import Configuration',
+          promptPassphrase: ({required previousAttemptFailed}) async => null,
+        );
+        expect(settingsService.messageBufferLimit.value, 25000);
+      });
+    });
+
+    group('IntSetting & defaultResultLimit', () {
+      test(
+        'readInt handles missing, wrong type, out-of-range, and boundaries',
+        () async {
+          SharedPreferences.setMockInitialValues({});
+          var prefs = await SharedPreferences.getInstance();
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.maxRunHistorySetting,
+            ),
+            30,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.maxConcurrentLagQueriesSetting,
+            ),
+            5,
+          );
+
+          SharedPreferences.setMockInitialValues({
+            SettingsService.maxConcurrentLagQueriesSetting.key: 'not-an-int',
+            SettingsService.maxRunHistorySetting.key: -1,
+            SettingsService.defaultResultLimitSetting.key: 100001,
+          });
+          prefs = await SharedPreferences.getInstance();
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.maxConcurrentLagQueriesSetting,
+            ),
+            5,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.maxRunHistorySetting,
+            ),
+            30,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.defaultResultLimitSetting,
+            ),
+            200,
+          );
+          // Does not rewrite invalid stored value
+          expect(
+            prefs.get(SettingsService.defaultResultLimitSetting.key),
+            100001,
+          );
+
+          SharedPreferences.setMockInitialValues({
+            SettingsService.maxRunHistorySetting.key: 0,
+            SettingsService.maxConcurrentLagQueriesSetting.key: 20,
+            SettingsService.defaultResultLimitSetting.key: 1,
+          });
+          prefs = await SharedPreferences.getInstance();
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.maxRunHistorySetting,
+            ),
+            0,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.maxConcurrentLagQueriesSetting,
+            ),
+            20,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.defaultResultLimitSetting,
+            ),
+            1,
+          );
+        },
+      );
+
+      test('parseInt validates range and rejects non-numeric text', () {
+        expect(
+          SettingsService.parseInt('0', SettingsService.maxRunHistorySetting),
+          0,
+        );
+        expect(
+          SettingsService.parseInt(
+            ' 1000 ',
+            SettingsService.maxRunHistorySetting,
+          ),
+          1000,
+        );
+        expect(
+          SettingsService.parseInt(
+            '1001',
+            SettingsService.maxRunHistorySetting,
+          ),
+          isNull,
+        );
+        expect(
+          SettingsService.parseInt(
+            '0',
+            SettingsService.maxConcurrentLagQueriesSetting,
+          ),
+          isNull,
+        );
+        expect(
+          SettingsService.parseInt(
+            'abc',
+            SettingsService.defaultResultLimitSetting,
+          ),
+          isNull,
+        );
+      });
+
+      test(
+        'importConfiguration with invalid default_result_limit: 0 yields 200 and leaves stored value',
+        () async {
+          final archive = Archive();
+          final prefsBytes = utf8.encode(
+            jsonEncode({'default_result_limit': 0}),
+          );
+          archive.addFile(
+            ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+          );
+          final zip = Uint8List.fromList(ZipEncoder().encode(archive));
+          mockFilePicker.pickResult = FilePickerResult([
+            PlatformFile(name: 'cfg.zip', size: zip.length, bytes: zip),
+          ]);
+
+          await settingsService.importConfiguration(
+            dialogTitle: 'Import Configuration',
+            promptPassphrase: ({required previousAttemptFailed}) async => null,
+          );
+          expect(settingsService.defaultResultLimit.value, 200);
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getInt('default_result_limit'), 0);
+        },
+      );
     });
   });
 }

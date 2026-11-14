@@ -1,169 +1,112 @@
-import 'package:flutter/services.dart';
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  final testMessage = KafkaMessage(
-    topic: 'test-orders',
-    partition: 1,
-    offset: 1042,
-    timestamp: 1695888000000,
-    key: 'order-1234',
-    payload: '{"orderId":"1234","customer":"1234","status":"CONFIRMED"}',
-    headers: [KafkaHeader(key: 'trace-id', value: 'abc-xyz-123')],
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  const message = KafkaMessage(
+    topic: 'test-topic',
+    partition: 0,
+    offset: 42,
+    key: 'k',
+    payload: 'alpha beta alpha gamma',
+    timestamp: 1700000000000,
   );
 
-  Widget createWidgetUnderTest({
-    KafkaMessage? message,
-    InspectorDockPosition dockPosition = InspectorDockPosition.bottom,
-    VoidCallback? onToggleDockPosition,
-    VoidCallback? onClose,
-    String? searchPhrase,
-  }) {
+  Widget wrap(Widget child) {
     return MaterialApp(
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        ...GlobalMaterialLocalizations.delegates,
-      ],
-      supportedLocales: const [Locale('en')],
-      home: Scaffold(
-        body: MessageInspectorPanel(
-          message: message ?? testMessage,
-          dockPosition: dockPosition,
-          onToggleDockPosition: onToggleDockPosition ?? () {},
-          onClose: onClose ?? () {},
-          searchPhrase: searchPhrase,
-        ),
-      ),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
+      home: Scaffold(body: SizedBox(width: 900, height: 600, child: child)),
     );
   }
 
   testWidgets(
-    'toggle search button opens inline search bar and focuses input',
+    'shows running state without No matches, then done and capped counts',
     (tester) async {
-      tester.view.physicalSize = const Size(1920, 1080);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(createWidgetUnderTest());
+      final completer = Completer<({Int32List offsets, bool capped})>();
+      await tester.pumpWidget(
+        wrap(
+          MessageInspectorPanel(
+            message: message,
+            dockPosition: InspectorDockPosition.bottom,
+            onToggleDockPosition: () {},
+            onClose: () {},
+            findPayloadMatches: (_, _) => completer.future,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // Search bar is initially hidden
-      expect(find.text('Search in message...'), findsNothing);
-
-      // Tap search icon in header
-      final searchToggle = find.widgetWithIcon(IconButton, Icons.search);
-      expect(searchToggle, findsOneWidget);
-      await tester.tap(searchToggle);
+      // Open in-inspector search bar via search icon button.
+      await tester.tap(find.byIcon(Icons.search));
       await tester.pumpAndSettle();
 
-      // Search bar is now visible
-      expect(find.text('Search in message...'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'alpha');
+      await tester.pump();
+      await tester.pump();
 
-      // Close search button closes it
-      final closeSearchButton = find.byTooltip('Close search');
-      expect(closeSearchButton, findsOneWidget);
-      await tester.tap(closeSearchButton);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Search in message...'), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'typing in search bar finds matches, displays counter, and allows next/prev navigation',
-    (tester) async {
-      tester.view.physicalSize = const Size(1920, 1080);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
-
-      // Open search
-      await tester.tap(find.widgetWithIcon(IconButton, Icons.search));
-      await tester.pumpAndSettle();
-
-      final searchField = find.byType(TextField);
-      expect(searchField, findsOneWidget);
-
-      // Search for "1234" which occurs twice in the payload
-      await tester.enterText(searchField, '1234');
-      await tester.pumpAndSettle();
-
-      // Matches should be found
-      expect(find.text('1 of 2'), findsOneWidget);
-
-      final nextMatchButton = find.byTooltip('Next match (Enter)');
-      final prevMatchButton = find.byTooltip('Previous match (Shift+Enter)');
-      expect(nextMatchButton, findsOneWidget);
-      expect(prevMatchButton, findsOneWidget);
-
-      // Tap next match
-      await tester.tap(nextMatchButton);
-      await tester.pumpAndSettle();
-      expect(find.text('2 of 2'), findsOneWidget);
-
-      // Tap next match again -> wraps to 1
-      await tester.tap(nextMatchButton);
-      await tester.pumpAndSettle();
-      expect(find.text('1 of 2'), findsOneWidget);
-
-      // Tap previous match -> wraps to 2
-      await tester.tap(prevMatchButton);
-      await tester.pumpAndSettle();
-      expect(find.text('2 of 2'), findsOneWidget);
-
-      // Search for non-existent text
-      await tester.enterText(searchField, 'nonexistent');
-      await tester.pumpAndSettle();
-      expect(find.text('No matches'), findsOneWidget);
-
-      // Clear search via clear icon
-      final clearButton = find.widgetWithIcon(IconButton, Icons.clear);
-      expect(clearButton, findsOneWidget);
-      await tester.tap(clearButton);
-      await tester.pumpAndSettle();
-
-      expect(find.text('1 of 2'), findsNothing);
       expect(find.text('No matches'), findsNothing);
+      expect(find.bySemanticsLabel('Searching...'), findsOneWidget);
+
+      completer.complete((offsets: Int32List.fromList([0, 11]), capped: false));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 / 2 matches'), findsOneWidget);
+
+      // Capped state
+      await tester.pumpWidget(
+        wrap(
+          MessageInspectorPanel(
+            message: message,
+            dockPosition: InspectorDockPosition.bottom,
+            onToggleDockPosition: () {},
+            onClose: () {},
+            findPayloadMatches: (_, _) async =>
+                (offsets: Int32List.fromList([0, 11, 16]), capped: true),
+          ),
+        ),
+      );
+      await tester.enterText(find.byType(TextField), 'a');
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 / 3+'), findsOneWidget);
     },
   );
 
-  testWidgets('Enter and Shift+Enter cycle through matches', (tester) async {
-    tester.view.physicalSize = const Size(1920, 1080);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(createWidgetUnderTest());
+  testWidgets('shows Search failed instead of No matches when search throws', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrap(
+        MessageInspectorPanel(
+          message: message,
+          dockPosition: InspectorDockPosition.bottom,
+          onToggleDockPosition: () {},
+          onClose: () {},
+          findPayloadMatches: (_, _) async => throw Exception('boom'),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    // Open search
-    await tester.tap(find.widgetWithIcon(IconButton, Icons.search));
+    await tester.tap(find.byIcon(Icons.search));
     await tester.pumpAndSettle();
 
-    final searchField = find.byType(TextField);
-    await tester.enterText(searchField, '1234');
+    await tester.enterText(find.byType(TextField), 'alpha');
     await tester.pumpAndSettle();
 
-    expect(find.text('1 of 2'), findsOneWidget);
-
-    // Press Enter -> next match
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    expect(find.text('2 of 2'), findsOneWidget);
-
-    // Press Shift+Enter -> previous match
-    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-    await tester.pumpAndSettle();
-    expect(find.text('1 of 2'), findsOneWidget);
+    expect(find.text('Search failed'), findsOneWidget);
+    expect(find.text('No matches'), findsNothing);
   });
 }

@@ -34,9 +34,9 @@ class GroupDeltaBadge extends StatelessWidget {
 
     final Color color;
     if (delta! > 0) {
-      color = Colors.red;
+      color = Theme.of(context).colorScheme.error;
     } else if (delta! < 0) {
-      color = Colors.green;
+      color = Theme.of(context).colorScheme.primary;
     } else {
       color = Theme.of(context).colorScheme.outline;
     }

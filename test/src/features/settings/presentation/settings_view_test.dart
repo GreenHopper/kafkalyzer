@@ -1,7 +1,17 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:archive/archive.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
+import 'package:kafkalyzer/src/rust/api/profile_crypto.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
+import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -14,12 +24,38 @@ import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 
+import '../../../rust/api/rust_mocks.mocks.dart';
+
 @GenerateMocks([
   ClusterListController,
   ActiveConnectionController,
   SettingsService,
 ])
 import 'settings_view_test.mocks.dart';
+
+class _FakeFilePicker extends FilePickerPlatform {
+  FilePickerResult? pickResult;
+  List<String>? lastAllowedExtensions;
+
+  @override
+  Future<FilePickerResult?> pickFiles({
+    String? dialogTitle,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Function(FilePickerStatus)? onFileLoading,
+    int compressionQuality = 0,
+    bool allowMultiple = false,
+    bool withData = false,
+    bool withReadStream = false,
+    bool lockParentWindow = false,
+    bool readSequential = false,
+    bool cancelUploadOnWindowBlur = true,
+  }) async {
+    lastAllowedExtensions = allowedExtensions;
+    return pickResult;
+  }
+}
 
 void main() {
   late MockClusterListController mockClusterListController;
@@ -54,10 +90,18 @@ void main() {
     );
     getIt.registerSingleton<SettingsService>(mockSettingsService);
     getIt.registerSingleton<SessionRestoreService>(SessionRestoreService());
+    getIt.registerSingleton<AppearanceSettings>(AppearanceSettings());
+    when(mockSettingsService.writeInt(any, any)).thenAnswer((invocation) async {
+      final setting = invocation.positionalArguments[0] as IntSetting;
+      final value = invocation.positionalArguments[1] as int;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(setting.key, value);
+    });
   });
 
-  Widget createWidgetUnderTest() {
+  Widget createWidgetUnderTest({Locale? locale}) {
     return MaterialApp(
+      locale: locale,
       theme: ThemeData(
         useMaterial3: true,
         splashFactory: InkRipple.splashFactory,
@@ -66,7 +110,7 @@ void main() {
         AppLocalizations.delegate,
         ...GlobalMaterialLocalizations.delegates,
       ],
-      supportedLocales: const [Locale('en')],
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const SettingsView(),
     );
   }
@@ -164,6 +208,15 @@ void main() {
       expect(find.text('Import Configuration'), findsOneWidget);
     });
 
+    Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+      await tester.scrollUntilVisible(
+        finder,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('renders cluster list', (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.0;
@@ -175,6 +228,9 @@ void main() {
 
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
+
+      await scrollTo(tester, find.text('Cluster Configuration'));
+      await scrollTo(tester, find.text('Schema Registry'));
 
       expect(find.text('Cluster Configuration'), findsOneWidget);
       expect(find.text('test-cluster'), findsOneWidget);
@@ -194,13 +250,15 @@ void main() {
 
       when(
         mockSettingsService.exportConfiguration(
-          includeSensitiveCredentials: anyNamed('includeSensitiveCredentials'),
+          dialogTitle: anyNamed('dialogTitle'),
+          encryptionPassphrase: anyNamed('encryptionPassphrase'),
         ),
       ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
+      await scrollTo(tester, find.text('Export Configuration'));
       await tester.tap(find.text('Export Configuration'));
       await tester.pumpAndSettle();
 
@@ -210,7 +268,8 @@ void main() {
 
       verify(
         mockSettingsService.exportConfiguration(
-          includeSensitiveCredentials: false,
+          dialogTitle: anyNamed('dialogTitle'),
+          encryptionPassphrase: null,
         ),
       ).called(1);
     });
@@ -226,6 +285,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
+      await scrollTo(tester, find.text('Add Cluster'));
       await tester.tap(find.text('Add Cluster'));
       await tester.pumpAndSettle();
 
@@ -244,6 +304,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
+      await scrollTo(tester, find.byIcon(Icons.delete_outline));
       await tester.tap(find.byIcon(Icons.delete_outline));
       await tester.pumpAndSettle();
 
@@ -273,8 +334,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
-      await tester.drag(find.byType(ListView).first, const Offset(0, -800));
-      await tester.pumpAndSettle();
+      await scrollTo(tester, find.byType(ReadOnlySecurityBadge));
 
       expect(find.byType(ReadOnlySecurityBadge), findsOneWidget);
       expect(find.text('Read-Only'), findsOneWidget);
@@ -292,6 +352,8 @@ void main() {
       when(mockActiveConnectionController.activeProfile).thenReturn(null);
       when(
         mockSettingsService.importConfiguration(
+          dialogTitle: anyNamed('dialogTitle'),
+          promptPassphrase: anyNamed('promptPassphrase'),
           onClusterConflict: anyNamed('onClusterConflict'),
         ),
       ).thenThrow(const UnsafeArchiveEntryException('../evil.txt'));
@@ -299,6 +361,7 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
+      await scrollTo(tester, find.text('Import Configuration'));
       await tester.tap(find.text('Import Configuration'));
       await tester.pumpAndSettle();
 
@@ -343,8 +406,507 @@ void main() {
         await tester.pumpWidget(createWidgetUnderTest());
         await tester.pumpAndSettle();
 
+        await scrollTo(tester, find.text('Insecure TLS'));
         expect(find.text('Insecure TLS'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'export dialog validates passphrase length and match and passes passphrase or null',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 1000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+        when(
+          mockSettingsService.exportConfiguration(
+            dialogTitle: anyNamed('dialogTitle'),
+            encryptionPassphrase: anyNamed('encryptionPassphrase'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        await scrollTo(tester, find.text('Export Configuration'));
+        await tester.tap(find.text('Export Configuration'));
+        await tester.pumpAndSettle();
+
+        // Check include credentials.
+        await tester.tap(find.byType(CheckboxListTile));
+        await tester.pumpAndSettle();
+
+        // 11 characters -> error and disabled button.
+        final fields = find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        );
+        expect(fields, findsNWidgets(2));
+        await tester.enterText(fields.at(0), '12345678901');
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Passphrase must be at least 12 characters'),
+          findsOneWidget,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(find.widgetWithText(FilledButton, 'Export'))
+              .onPressed,
+          isNull,
+        );
+
+        // 12+ characters with mismatch -> error and disabled button.
+        await tester.enterText(fields.at(0), 'valid-passphrase-123');
+        await tester.enterText(fields.at(1), 'different-passphrase');
+        await tester.pumpAndSettle();
+        expect(find.text('Passphrases do not match'), findsOneWidget);
+        expect(
+          tester
+              .widget<FilledButton>(find.widgetWithText(FilledButton, 'Export'))
+              .onPressed,
+          isNull,
+        );
+
+        // Matching passphrase -> enabled and calls service with passphrase.
+        await tester.enterText(fields.at(1), 'valid-passphrase-123');
+        await tester.pumpAndSettle();
+        expect(
+          tester
+              .widget<FilledButton>(find.widgetWithText(FilledButton, 'Export'))
+              .onPressed,
+          isNotNull,
+        );
+        await tester.tap(find.widgetWithText(FilledButton, 'Export'));
+        await tester.pumpAndSettle();
+
+        verify(
+          mockSettingsService.exportConfiguration(
+            dialogTitle: anyNamed('dialogTitle'),
+            encryptionPassphrase: 'valid-passphrase-123',
+          ),
+        ).called(1);
+      },
+    );
+
+    group('cluster import content dispatch', () {
+      late MockKafkalyzerRustLibApi mockRustApi;
+      late _FakeFilePicker fakePicker;
+      late FilePickerPlatform originalPicker;
+
+      setUp(() {
+        mockRustApi = MockKafkalyzerRustLibApi();
+        KafkalyzerRustLib.initMock(api: mockRustApi);
+        originalPicker = FilePickerPlatform.instance;
+        fakePicker = _FakeFilePicker();
+        FilePickerPlatform.instance = fakePicker;
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+      });
+
+      tearDown(() {
+        FilePickerPlatform.instance = originalPicker;
+        KafkalyzerRustLib.dispose();
+      });
+
+      testWidgets(
+        'imports encrypted ZIP (.age and renamed .zip), legacy JSON, and handles cancel',
+        (tester) async {
+          tester.view.physicalSize = const Size(1920, 1080);
+          tester.view.devicePixelRatio = 1.0;
+          addTearDown(tester.view.resetPhysicalSize);
+
+          final archive = Archive();
+          final jsonBytes = utf8.encode('[]');
+          archive.addFile(
+            ArchiveFile('clusters.json', jsonBytes.length, jsonBytes),
+          );
+          final plainZip = Uint8List.fromList(ZipEncoder().encode(archive));
+          final encryptedBytes = Uint8List.fromList([
+            ...utf8.encode('age-encryption.org/v1\n'),
+            1,
+            2,
+            3,
+          ]);
+
+          when(
+            mockRustApi.crateApiProfileCryptoDecryptBundleWithPassphrase(
+              ciphertext: encryptedBytes,
+              passphrase: 'correct-horse-battery',
+            ),
+          ).thenAnswer((_) async => BundleCryptoResult(data: plainZip));
+
+          when(
+            mockClusterListController.importClustersZip(
+              any,
+              onConflict: anyNamed('onConflict'),
+            ),
+          ).thenAnswer(
+            (_) async => const ImportSummary(
+              imported: 1,
+              replaced: 0,
+              renamed: 0,
+              skipped: 0,
+            ),
+          );
+          when(
+            mockClusterListController.importClusters(
+              any,
+              onConflict: anyNamed('onConflict'),
+            ),
+          ).thenAnswer(
+            (_) async => const ImportSummary(
+              imported: 1,
+              replaced: 0,
+              renamed: 0,
+              skipped: 0,
+            ),
+          );
+
+          await tester.pumpWidget(createWidgetUnderTest());
+          await tester.pumpAndSettle();
+
+          await scrollTo(tester, find.widgetWithText(OutlinedButton, 'Import'));
+
+          // 1. Encrypted .zip.age
+          fakePicker.pickResult = FilePickerResult([
+            PlatformFile(
+              name: 'clusters.zip.age',
+              size: encryptedBytes.length,
+              bytes: encryptedBytes,
+            ),
+          ]);
+          await tester.tap(find.widgetWithText(OutlinedButton, 'Import'));
+          await tester.pumpAndSettle();
+          expect(fakePicker.lastAllowedExtensions, ['json', 'zip', 'age']);
+          await tester.enterText(
+            find.descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(TextField),
+            ),
+            'correct-horse-battery',
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.widgetWithText(FilledButton, 'Import'));
+          await tester.pumpAndSettle();
+          verify(
+            mockClusterListController.importClustersZip(
+              plainZip,
+              onConflict: anyNamed('onConflict'),
+            ),
+          ).called(1);
+
+          // 2. Renamed encrypted file with .zip extension -> still decrypts!
+          fakePicker.pickResult = FilePickerResult([
+            PlatformFile(
+              name: 'renamed.zip',
+              size: encryptedBytes.length,
+              bytes: encryptedBytes,
+            ),
+          ]);
+          await tester.tap(find.widgetWithText(OutlinedButton, 'Import'));
+          await tester.pumpAndSettle();
+          await tester.enterText(
+            find.descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(TextField),
+            ),
+            'correct-horse-battery',
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.widgetWithText(FilledButton, 'Import'));
+          await tester.pumpAndSettle();
+          verify(
+            mockClusterListController.importClustersZip(
+              plainZip,
+              onConflict: anyNamed('onConflict'),
+            ),
+          ).called(1);
+
+          // 3. Legacy JSON -> dispatches to importClusters without prompt
+          fakePicker.pickResult = FilePickerResult([
+            PlatformFile(
+              name: 'clusters.json',
+              size: jsonBytes.length,
+              bytes: Uint8List.fromList(jsonBytes),
+            ),
+          ]);
+          await tester.tap(find.widgetWithText(OutlinedButton, 'Import'));
+          await tester.pumpAndSettle();
+          verify(
+            mockClusterListController.importClusters(
+              '[]',
+              onConflict: anyNamed('onConflict'),
+            ),
+          ).called(1);
+
+          // 4. Cancel passphrase prompt -> no import call and no SnackBar
+          fakePicker.pickResult = FilePickerResult([
+            PlatformFile(
+              name: 'cancel.zip.age',
+              size: encryptedBytes.length,
+              bytes: encryptedBytes,
+            ),
+          ]);
+          await tester.tap(find.widgetWithText(OutlinedButton, 'Import'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Cancel'));
+          await tester.pumpAndSettle();
+          verifyNever(
+            mockClusterListController.importClustersZip(
+              any,
+              onConflict: anyNamed('onConflict'),
+            ),
+          );
+        },
+      );
+    });
+
+    testWidgets(
+      'message buffer limit field shows 50000 by default, rejects invalid input, and persists valid input',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final realSettings = SettingsService();
+        GetIt.instance.unregister<SettingsService>();
+        GetIt.instance.registerSingleton<SettingsService>(realSettings);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        final fieldFinder = find.byKey(const Key('message_buffer_limit_field'));
+        expect(fieldFinder, findsOneWidget);
+        expect(tester.widget<TextField>(fieldFinder).controller?.text, '50000');
+
+        // Invalid out-of-range input -> shows localized range error and leaves pref unchanged
+        await tester.enterText(fieldFinder, '500');
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Enter a whole number between 1,000 and 1,000,000'),
+          findsOneWidget,
+        );
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getInt(SettingsService.messageBufferLimitKey), isNull);
+
+        // Valid input -> clears error and persists
+        await tester.enterText(fieldFinder, '25000');
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Enter a whole number between 1,000 and 1,000,000'),
+          findsNothing,
+        );
+        expect(prefs.getInt(SettingsService.messageBufferLimitKey), 25000);
+        expect(realSettings.messageBufferLimit.value, 25000);
+      },
+    );
+
+    testWidgets(
+      'renders sections in expected order: Appearance, General, Configuration, Cluster, Diagnostics, About',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 4000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        final titles = [
+          'Appearance',
+          'General',
+          'Configuration',
+          'Cluster Configuration',
+          'Diagnostics',
+          'About Kafkalyzer',
+        ];
+        final ys = titles
+            .map((t) => tester.getTopLeft(find.text(t)).dy)
+            .toList();
+        for (var i = 0; i < ys.length - 1; i++) {
+          expect(
+            ys[i],
+            lessThan(ys[i + 1]),
+            reason: '${titles[i]} should appear above ${titles[i + 1]}',
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      'appearance controls update AppearanceSettings and reset confirmation works',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        final appearance = GetIt.instance<AppearanceSettings>();
+        expect(appearance.themeMode, ThemeMode.system);
+
+        // Switch theme to Light
+        await tester.tap(find.text('Light'));
+        await tester.pumpAndSettle();
+        expect(appearance.themeMode, ThemeMode.light);
+
+        // Switch language to Deutsch
+        await tester.tap(find.byKey(const Key('appearance_language_dropdown')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Deutsch').last);
+        await tester.pumpAndSettle();
+        expect(appearance.locale, const Locale('de'));
+
+        // Switch text scale to 1.25
+        await tester.tap(
+          find.byKey(const Key('appearance_text_scale_dropdown')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('125%').last);
+        await tester.pumpAndSettle();
+        expect(appearance.textScale, 1.25);
+
+        // Cancel reset -> preserves changes
+        await tester.tap(find.byKey(const Key('reset_appearance_button')));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+        await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+        await tester.pumpAndSettle();
+        expect(appearance.themeMode, ThemeMode.light);
+        expect(appearance.locale, const Locale('de'));
+
+        // Confirm reset -> restores defaults
+        await tester.tap(find.byKey(const Key('reset_appearance_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Reset'));
+        await tester.pumpAndSettle();
+        expect(appearance.themeMode, ThemeMode.system);
+        expect(appearance.locale, isNull);
+        expect(appearance.textScale, 1.0);
+      },
+    );
+
+    testWidgets(
+      'default result limit IntSettingField validates range and persists valid input',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final realSettings = SettingsService();
+        GetIt.instance.unregister<SettingsService>();
+        GetIt.instance.registerSingleton<SettingsService>(realSettings);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        final fieldFinder = find.byKey(const Key('default_result_limit_field'));
+        await scrollTo(tester, fieldFinder);
+        expect(tester.widget<TextField>(fieldFinder).controller?.text, '200');
+
+        // Invalid out-of-range -> error and not persisted
+        await tester.enterText(fieldFinder, '0');
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<TextField>(fieldFinder).decoration?.errorText,
+          isNotNull,
+        );
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getInt(SettingsService.defaultResultLimitSetting.key),
+          isNull,
+        );
+
+        // Valid -> clears error and persists
+        await tester.enterText(fieldFinder, '250');
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<TextField>(fieldFinder).decoration?.errorText,
+          isNull,
+        );
+        expect(
+          prefs.getInt(SettingsService.defaultResultLimitSetting.key),
+          250,
+        );
+        expect(realSettings.defaultResultLimit.value, 250);
+      },
+    );
+
+    testWidgets(
+      'general reset button asks confirmation and resets general settings',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final realSettings = SettingsService();
+        GetIt.instance.unregister<SettingsService>();
+        GetIt.instance.registerSingleton<SettingsService>(realSettings);
+        await realSettings.setDefaultResultLimit(250);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        await scrollTo(tester, find.byKey(const Key('reset_general_button')));
+
+        // Cancel preserves 250
+        await tester.tap(find.byKey(const Key('reset_general_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+        await tester.pumpAndSettle();
+        expect(realSettings.defaultResultLimit.value, 250);
+
+        // Confirm resets to 200
+        await tester.tap(find.byKey(const Key('reset_general_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Reset'));
+        await tester.pumpAndSettle();
+        expect(realSettings.defaultResultLimit.value, 200);
+      },
+    );
+
+    testWidgets('renders German settings labels when locale is de', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      when(mockClusterListController.isLoading).thenReturn(false);
+      when(mockClusterListController.clusters).thenReturn([]);
+      when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(locale: const Locale('de')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Einstellungen'), findsOneWidget);
+    });
   });
 }

@@ -29,8 +29,6 @@ class ConsumerGroupControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGerman = Localizations.localeOf(context).languageCode == 'de';
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -63,43 +61,31 @@ class ConsumerGroupControls extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            _buildStatusDropdown(context, isGerman),
+            _buildStatusDropdown(context),
             const SizedBox(width: 16),
-            _buildRefreshDropdown(context, isGerman),
+            _buildRefreshDropdown(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatusDropdown(BuildContext context, bool isGerman) {
+  Widget _buildStatusDropdown(BuildContext context) {
     return SizedBox(
       width: 140,
       child: DropdownButtonFormField<String>(
         initialValue: statusFilter,
         isExpanded: true,
         decoration: InputDecoration(
-          labelText: isGerman ? 'Status' : 'State',
+          labelText: l10n.stateCol,
           border: const OutlineInputBorder(),
           isDense: true,
         ),
         items: [
-          DropdownMenuItem(
-            value: 'All',
-            child: Text(isGerman ? 'Alle' : 'All'),
-          ),
-          DropdownMenuItem(
-            value: 'Stable',
-            child: Text(isGerman ? 'Stable' : 'Stable'),
-          ),
-          DropdownMenuItem(
-            value: 'Empty',
-            child: Text(isGerman ? 'Empty' : 'Empty'),
-          ),
-          DropdownMenuItem(
-            value: 'Dead',
-            child: Text(isGerman ? 'Dead' : 'Dead'),
-          ),
+          DropdownMenuItem(value: 'All', child: Text(l10n.stateAll)),
+          DropdownMenuItem(value: 'Stable', child: Text(l10n.stateStable)),
+          DropdownMenuItem(value: 'Empty', child: Text(l10n.stateEmpty)),
+          DropdownMenuItem(value: 'Dead', child: Text(l10n.stateDead)),
         ],
         onChanged: (val) {
           if (val != null) {
@@ -110,23 +96,23 @@ class ConsumerGroupControls extends StatelessWidget {
     );
   }
 
-  Widget _buildRefreshDropdown(BuildContext context, bool isGerman) {
+  Widget _buildRefreshDropdown(BuildContext context) {
     return SizedBox(
       width: 140,
       child: DropdownButtonFormField<int>(
         initialValue: refreshIntervalSeconds,
         isExpanded: true,
         decoration: InputDecoration(
-          labelText: isGerman ? 'Intervall' : 'Refresh',
+          labelText: l10n.refreshIntervalLabel,
           border: const OutlineInputBorder(),
           isDense: true,
         ),
         items: [
-          DropdownMenuItem(value: 0, child: Text(isGerman ? 'Aus' : 'Off')),
-          DropdownMenuItem(value: 5, child: Text(isGerman ? '5s' : '5s')),
-          DropdownMenuItem(value: 15, child: Text(isGerman ? '15s' : '15s')),
-          DropdownMenuItem(value: 30, child: Text(isGerman ? '30s' : '30s')),
-          DropdownMenuItem(value: 60, child: Text(isGerman ? '60s' : '60s')),
+          DropdownMenuItem(value: 0, child: Text(l10n.refreshOff)),
+          const DropdownMenuItem(value: 5, child: Text('5s')),
+          const DropdownMenuItem(value: 15, child: Text('15s')),
+          const DropdownMenuItem(value: 30, child: Text('30s')),
+          const DropdownMenuItem(value: 60, child: Text('60s')),
         ],
         onChanged: activeProfile == null
             ? null

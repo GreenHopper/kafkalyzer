@@ -69,5 +69,27 @@ void main() {
         mockApi.crateApiKafkaUtilsCreateConfig(profile: profile),
       ).called(1);
     });
+
+    test('predictDefaultPartition calls bridge', () async {
+      when(
+        mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+          key: 'order-4711',
+          partitionCount: 12,
+        ),
+      ).thenAnswer((_) async => 3);
+
+      final result = await predictDefaultPartition(
+        key: 'order-4711',
+        partitionCount: 12,
+      );
+
+      expect(result, 3);
+      verify(
+        mockApi.crateApiKafkaUtilsPredictDefaultPartition(
+          key: 'order-4711',
+          partitionCount: 12,
+        ),
+      ).called(1);
+    });
   });
 }

@@ -134,12 +134,6 @@ abstract class AppLocalizations {
   /// **'Analyzing topic...'**
   String get analyzingTopic;
 
-  /// No description provided for @analysisComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Analysis Complete'**
-  String get analysisComplete;
-
   /// No description provided for @scanScope.
   ///
   /// In en, this message translates to:
@@ -188,23 +182,11 @@ abstract class AppLocalizations {
   /// **'Avg Message Size'**
   String get avgMessageSize;
 
-  /// No description provided for @minMaxSize.
-  ///
-  /// In en, this message translates to:
-  /// **'Min / Max Size'**
-  String get minMaxSize;
-
   /// No description provided for @tombstones.
   ///
   /// In en, this message translates to:
   /// **'Tombstones'**
   String get tombstones;
-
-  /// No description provided for @tombstoneRatio.
-  ///
-  /// In en, this message translates to:
-  /// **'Tombstone Ratio'**
-  String get tombstoneRatio;
 
   /// No description provided for @compactedTopic.
   ///
@@ -259,12 +241,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Structured Field Frequencies'**
   String get fieldFrequencies;
-
-  /// No description provided for @fieldValuesDistribution.
-  ///
-  /// In en, this message translates to:
-  /// **'Top Values'**
-  String get fieldValuesDistribution;
 
   /// No description provided for @noAnalysisYet.
   ///
@@ -332,18 +308,6 @@ abstract class AppLocalizations {
   /// **'Failed to export the analysis report.'**
   String get exportFailed;
 
-  /// No description provided for @scanSpeed.
-  ///
-  /// In en, this message translates to:
-  /// **'{speed} msgs/sec'**
-  String scanSpeed(String speed);
-
-  /// No description provided for @scanDuration.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan duration: {duration}'**
-  String scanDuration(String duration);
-
   /// No description provided for @hotPartition.
   ///
   /// In en, this message translates to:
@@ -392,12 +356,6 @@ abstract class AppLocalizations {
   /// **'Value copied to clipboard'**
   String get valueCopied;
 
-  /// No description provided for @distinctValues.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} distinct values tracked'**
-  String distinctValues(int count);
-
   /// No description provided for @fieldOccurrences.
   ///
   /// In en, this message translates to:
@@ -409,12 +367,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No fields matching \'{query}\''**
   String noMatchingFields(String query);
-
-  /// No description provided for @topValuesForField.
-  ///
-  /// In en, this message translates to:
-  /// **'Top values for {field}'**
-  String topValuesForField(String field);
 
   /// No description provided for @allMessages.
   ///
@@ -434,149 +386,17 @@ abstract class AppLocalizations {
   /// **'By Step'**
   String get byStep;
 
-  /// No description provided for @filterByMessageId.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by Message ID, CORID or PMXCOR ID'**
-  String get filterByMessageId;
-
-  /// No description provided for @enterMessageIdToFilter.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter message ID, CORID or PMXCOR ID...'**
-  String get enterMessageIdToFilter;
-
-  /// No description provided for @statusOpen.
-  ///
-  /// In en, this message translates to:
-  /// **'OPEN'**
-  String get statusOpen;
-
-  /// No description provided for @statusAnalyzing.
-  ///
-  /// In en, this message translates to:
-  /// **'AI ANALYSIS STARTED'**
-  String get statusAnalyzing;
-
-  /// No description provided for @statusCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'AI ANALYSIS DONE'**
-  String get statusCompleted;
-
-  /// No description provided for @statusFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'FAILED'**
-  String get statusFailed;
-
-  /// No description provided for @showingOrders.
-  ///
-  /// In en, this message translates to:
-  /// **'Showing {filtered} of {total} orders'**
-  String showingOrders(int filtered, int total);
-
-  /// No description provided for @loadOrders.
-  ///
-  /// In en, this message translates to:
-  /// **'Load Orders'**
-  String get loadOrders;
-
-  /// No description provided for @searchingForOrders.
-  ///
-  /// In en, this message translates to:
-  /// **'Searching for orders...'**
-  String get searchingForOrders;
-
-  /// No description provided for @noOrdersFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No orders found. Click Load to search.'**
-  String get noOrdersFound;
-
-  /// No description provided for @noOrdersMatchFilter.
-  ///
-  /// In en, this message translates to:
-  /// **'No orders match the filter.'**
-  String get noOrdersMatchFilter;
-
-  /// No description provided for @failedToLoadOrders.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load orders: {error}'**
-  String failedToLoadOrders(String error);
-
-  /// No description provided for @orders.
-  ///
-  /// In en, this message translates to:
-  /// **'Orders'**
-  String get orders;
-
-  /// No description provided for @rerunNotIntegrated.
-  ///
-  /// In en, this message translates to:
-  /// **'Rerun from history is not fully integrated in Orders View yet.'**
-  String get rerunNotIntegrated;
-
-  /// No description provided for @simulateOrder.
-  ///
-  /// In en, this message translates to:
-  /// **'Simulate Order'**
-  String get simulateOrder;
-
-  /// No description provided for @limitOrders.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable order limit'**
-  String get limitOrders;
-
-  /// No description provided for @maxOrders.
-  ///
-  /// In en, this message translates to:
-  /// **'Max Orders'**
-  String get maxOrders;
-
-  /// No description provided for @totalOrders.
-  ///
-  /// In en, this message translates to:
-  /// **'{total} Orders'**
-  String totalOrders(int total);
-
-  /// No description provided for @aiAnalysisDataAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Analysis Data Available'**
-  String get aiAnalysisDataAvailable;
-
-  /// No description provided for @kiError.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Error'**
-  String get kiError;
-
   /// No description provided for @active.
   ///
   /// In en, this message translates to:
   /// **'Active'**
   String get active;
 
-  /// No description provided for @firstAppearanceForKey.
-  ///
-  /// In en, this message translates to:
-  /// **'First appearance for Key: {key}'**
-  String firstAppearanceForKey(String key);
-
   /// No description provided for @stepMatches.
   ///
   /// In en, this message translates to:
   /// **'{count} matches'**
   String stepMatches(int count);
-
-  /// No description provided for @searchingInTopic.
-  ///
-  /// In en, this message translates to:
-  /// **'Searching in: {topic}'**
-  String searchingInTopic(String topic);
 
   /// No description provided for @examinedMessages.
   ///
@@ -593,7 +413,7 @@ abstract class AppLocalizations {
   /// No description provided for @matchesCount.
   ///
   /// In en, this message translates to:
-  /// **'{current} of {total}'**
+  /// **'{current} / {total} matches'**
   String matchesCount(int current, int total);
 
   /// No description provided for @otherResults.
@@ -602,53 +422,11 @@ abstract class AppLocalizations {
   /// **'Other Results'**
   String get otherResults;
 
-  /// No description provided for @noResultsFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No results found matching \'{phrase}\''**
-  String noResultsFound(String phrase);
-
-  /// No description provided for @noActiveStreams.
-  ///
-  /// In en, this message translates to:
-  /// **'No active streams'**
-  String get noActiveStreams;
-
-  /// No description provided for @noProgressInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'No progress info'**
-  String get noProgressInfo;
-
   /// No description provided for @scanned.
   ///
   /// In en, this message translates to:
   /// **'{count} scanned'**
   String scanned(int count);
-
-  /// No description provided for @scannedCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Scanned: {count}'**
-  String scannedCount(int count);
-
-  /// No description provided for @topicsProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'Completed {completed} of {total} topics'**
-  String topicsProgress(int completed, int total);
-
-  /// No description provided for @pmxcorStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'{status}'**
-  String pmxcorStatus(String status);
-
-  /// No description provided for @clusterLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cluster: {name}'**
-  String clusterLabel(String name);
 
   /// No description provided for @close.
   ///
@@ -722,12 +500,6 @@ abstract class AppLocalizations {
   /// **'Add Cluster'**
   String get addCluster;
 
-  /// No description provided for @reloadTopicsAndSchemas.
-  ///
-  /// In en, this message translates to:
-  /// **'Reload Topics & Schemas'**
-  String get reloadTopicsAndSchemas;
-
   /// No description provided for @selectClusterToViewTopics.
   ///
   /// In en, this message translates to:
@@ -745,12 +517,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter topics...'**
   String get filterTopics;
-
-  /// No description provided for @showInternal.
-  ///
-  /// In en, this message translates to:
-  /// **'Show internal'**
-  String get showInternal;
 
   /// No description provided for @consumerGroups.
   ///
@@ -775,12 +541,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Consumer Lag'**
   String get consumerLag;
-
-  /// No description provided for @autoRefresh.
-  ///
-  /// In en, this message translates to:
-  /// **'Auto-Refresh (15s)'**
-  String get autoRefresh;
 
   /// No description provided for @topicCol.
   ///
@@ -823,12 +583,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stream'**
   String get stream;
-
-  /// No description provided for @cards.
-  ///
-  /// In en, this message translates to:
-  /// **'Cards'**
-  String get cards;
 
   /// No description provided for @tree.
   ///
@@ -1130,12 +884,6 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get stop;
 
-  /// No description provided for @clearAll.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear All'**
-  String get clearAll;
-
   /// No description provided for @apply.
   ///
   /// In en, this message translates to:
@@ -1310,18 +1058,6 @@ abstract class AppLocalizations {
   /// **'Edit Definition'**
   String get editDefinition;
 
-  /// No description provided for @selectValidScript.
-  ///
-  /// In en, this message translates to:
-  /// **'Please select a valid script first.'**
-  String get selectValidScript;
-
-  /// No description provided for @scriptExecution.
-  ///
-  /// In en, this message translates to:
-  /// **'Script Execution: {name}'**
-  String scriptExecution(String name);
-
   /// No description provided for @newRun.
   ///
   /// In en, this message translates to:
@@ -1334,29 +1070,11 @@ abstract class AppLocalizations {
   /// **'History'**
   String get history;
 
-  /// No description provided for @reviewPreviousRuns.
-  ///
-  /// In en, this message translates to:
-  /// **'Review Previous Runs'**
-  String get reviewPreviousRuns;
-
   /// No description provided for @noPastRunsFound.
   ///
   /// In en, this message translates to:
   /// **'No past runs found.'**
   String get noPastRunsFound;
-
-  /// No description provided for @deleteRunResult.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Run Result'**
-  String get deleteRunResult;
-
-  /// No description provided for @deleteRunResultConfirmation.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete this run result?'**
-  String get deleteRunResultConfirmation;
 
   /// No description provided for @runResultDeleted.
   ///
@@ -1405,12 +1123,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Default Script Output Directory'**
   String get defaultScriptOutputDir;
-
-  /// No description provided for @selectOutputDirectory.
-  ///
-  /// In en, this message translates to:
-  /// **'Select Output Directory'**
-  String get selectOutputDirectory;
 
   /// No description provided for @maxScriptRunHistory.
   ///
@@ -1472,18 +1184,6 @@ abstract class AppLocalizations {
   /// **'Deselect All'**
   String get deselectAll;
 
-  /// No description provided for @viewAll.
-  ///
-  /// In en, this message translates to:
-  /// **'View All'**
-  String get viewAll;
-
-  /// No description provided for @messageDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Message Details'**
-  String get messageDetails;
-
   /// No description provided for @copyMessage.
   ///
   /// In en, this message translates to:
@@ -1517,14 +1217,8 @@ abstract class AppLocalizations {
   /// No description provided for @noDifferencesFound.
   ///
   /// In en, this message translates to:
-  /// **'No differences found between the selected versions.'**
+  /// **'No differences found.'**
   String get noDifferencesFound;
-
-  /// No description provided for @unknownView.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown View'**
-  String get unknownView;
 
   /// No description provided for @configurationExportedSuccessfully.
   ///
@@ -1543,12 +1237,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clusters exported successfully'**
   String get clustersExportedSuccessfully;
-
-  /// No description provided for @clustersImportedSuccessfully.
-  ///
-  /// In en, this message translates to:
-  /// **'Clusters imported successfully'**
-  String get clustersImportedSuccessfully;
 
   /// No description provided for @scriptExportedSuccessfully.
   ///
@@ -1748,12 +1436,6 @@ abstract class AppLocalizations {
   /// **'Raw JSON'**
   String get tabRawJson;
 
-  /// No description provided for @inspectorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Message Inspector'**
-  String get inspectorTitle;
-
   /// No description provided for @copyHeaders.
   ///
   /// In en, this message translates to:
@@ -1772,23 +1454,11 @@ abstract class AppLocalizations {
   /// **'All headers copied to clipboard'**
   String get copiedHeaders;
 
-  /// No description provided for @copiedHeaderValue.
-  ///
-  /// In en, this message translates to:
-  /// **'Copied value of \'{key}\''**
-  String copiedHeaderValue(String key);
-
   /// No description provided for @noHeaders.
   ///
   /// In en, this message translates to:
   /// **'No headers present on this message'**
   String get noHeaders;
-
-  /// No description provided for @copyRawJson.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy JSON'**
-  String get copyRawJson;
 
   /// No description provided for @previousMessageTooltip.
   ///
@@ -1838,6 +1508,12 @@ abstract class AppLocalizations {
   /// **'Previous match (Shift+Enter)'**
   String get previousMatchTooltip;
 
+  /// No description provided for @scriptRunMatchedOfExamined.
+  ///
+  /// In en, this message translates to:
+  /// **'{matched} of {examined}'**
+  String scriptRunMatchedOfExamined(int matched, int examined);
+
   /// No description provided for @noMatches.
   ///
   /// In en, this message translates to:
@@ -1874,12 +1550,6 @@ abstract class AppLocalizations {
   /// **'{matches} matches (Focus: ±1)'**
   String matchesContextBadge(int matches);
 
-  /// No description provided for @recollapseRange.
-  ///
-  /// In en, this message translates to:
-  /// **'Re-collapse range'**
-  String get recollapseRange;
-
   /// No description provided for @pinAsColumn.
   ///
   /// In en, this message translates to:
@@ -1897,12 +1567,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Column \'{path}\' is already pinned'**
   String columnAlreadyPinned(String path);
-
-  /// No description provided for @removeColumn.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove column'**
-  String get removeColumn;
 
   /// No description provided for @resetColumns.
   ///
@@ -1928,18 +1592,6 @@ abstract class AppLocalizations {
   /// **'Hide column'**
   String get hideColumn;
 
-  /// No description provided for @showColumn.
-  ///
-  /// In en, this message translates to:
-  /// **'Show column'**
-  String get showColumn;
-
-  /// No description provided for @autoFitColumn.
-  ///
-  /// In en, this message translates to:
-  /// **'Auto-fit width'**
-  String get autoFitColumn;
-
   /// No description provided for @hideEmptyFields.
   ///
   /// In en, this message translates to:
@@ -1951,12 +1603,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show empty fields'**
   String get showEmptyFields;
-
-  /// Indicates number of hidden null/empty fields
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 hidden empty field} other{{count} hidden empty fields}}'**
-  String hiddenEmptyFieldsCount(num count);
 
   /// No description provided for @rawTimestampLabel.
   ///
@@ -1975,24 +1621,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Local'**
   String get localTimestampLabel;
-
-  /// No description provided for @searchConfigurationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Search Configuration'**
-  String get searchConfigurationTitle;
-
-  /// No description provided for @collapseSearchConfiguration.
-  ///
-  /// In en, this message translates to:
-  /// **'Collapse search configuration'**
-  String get collapseSearchConfiguration;
-
-  /// No description provided for @expandSearchConfiguration.
-  ///
-  /// In en, this message translates to:
-  /// **'Expand search configuration'**
-  String get expandSearchConfiguration;
 
   /// No description provided for @collapseSidebar.
   ///
@@ -2096,30 +1724,6 @@ abstract class AppLocalizations {
   /// **'Expand advanced filters'**
   String get expandAdvancedFilters;
 
-  /// No description provided for @fetchMessagesCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Fetch {count} Messages'**
-  String fetchMessagesCount(int count);
-
-  /// No description provided for @fetchMessages.
-  ///
-  /// In en, this message translates to:
-  /// **'Fetch Messages'**
-  String get fetchMessages;
-
-  /// No description provided for @startLiveStream.
-  ///
-  /// In en, this message translates to:
-  /// **'Start Live Stream'**
-  String get startLiveStream;
-
-  /// No description provided for @filterChangedTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Parameters changed – Click to fetch new results'**
-  String get filterChangedTooltip;
-
   /// No description provided for @chipPartition.
   ///
   /// In en, this message translates to:
@@ -2192,29 +1796,11 @@ abstract class AppLocalizations {
   /// **'Recently Viewed Topics'**
   String get recentTopics;
 
-  /// No description provided for @noRecentTopics.
-  ///
-  /// In en, this message translates to:
-  /// **'No recently viewed topics yet.'**
-  String get noRecentTopics;
-
   /// No description provided for @clearRecentTopics.
   ///
   /// In en, this message translates to:
   /// **'Clear History'**
   String get clearRecentTopics;
-
-  /// No description provided for @clusterOverviewTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Cluster Overview'**
-  String get clusterOverviewTitle;
-
-  /// No description provided for @clusterOverviewSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Explore topics from the sidebar or open a recently examined topic.'**
-  String get clusterOverviewSubtitle;
 
   /// No description provided for @clusterTopicsCount.
   ///
@@ -2233,12 +1819,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No Schema Registry'**
   String get schemaRegistryNotConfigured;
-
-  /// No description provided for @securityProtocolLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Protocol: {protocol}'**
-  String securityProtocolLabel(String protocol);
 
   /// No description provided for @selectTopicPrompt.
   ///
@@ -2293,12 +1873,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stream Topics'**
   String get streamTopicsFilter;
-
-  /// No description provided for @partitionBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}P'**
-  String partitionBadge(int count);
 
   /// No description provided for @topicTooltip.
   ///
@@ -2540,18 +2114,6 @@ abstract class AppLocalizations {
   /// **'Testing Connection...'**
   String get testingConnection;
 
-  /// No description provided for @connectionSuccessful.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection successful!'**
-  String get connectionSuccessful;
-
-  /// No description provided for @connectionFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Connection failed: {error}'**
-  String connectionFailed(String error);
-
   /// No description provided for @schemaRegistryCredentialsOptional.
   ///
   /// In en, this message translates to:
@@ -2576,23 +2138,11 @@ abstract class AppLocalizations {
   /// **'Schema Registry'**
   String get schemaRegistryConfiguredBadge;
 
-  /// No description provided for @maxScriptRuns.
-  ///
-  /// In en, this message translates to:
-  /// **'Maximum Script Runs'**
-  String get maxScriptRuns;
-
   /// No description provided for @maxConcurrentLagQueries.
   ///
   /// In en, this message translates to:
   /// **'Maximum Concurrent Lag Queries'**
   String get maxConcurrentLagQueries;
-
-  /// No description provided for @maxConcurrentLagQueriesHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Default: 5 (Higher values can impact performance)'**
-  String get maxConcurrentLagQueriesHelper;
 
   /// No description provided for @deleteStepConfirmationTitle.
   ///
@@ -2660,12 +2210,6 @@ abstract class AppLocalizations {
   /// **'Field path (e.g. order.id, items[0].sku, /order/status)'**
   String get extractionJsonPath;
 
-  /// No description provided for @scriptProperties.
-  ///
-  /// In en, this message translates to:
-  /// **'Script Properties'**
-  String get scriptProperties;
-
   /// No description provided for @concurrencyLimit.
   ///
   /// In en, this message translates to:
@@ -2731,12 +2275,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Text'**
   String get variableTypeText;
-
-  /// No description provided for @variableTypeTimestamp.
-  ///
-  /// In en, this message translates to:
-  /// **'Timestamp'**
-  String get variableTypeTimestamp;
 
   /// No description provided for @variableTypeNumeric.
   ///
@@ -3026,23 +2564,11 @@ abstract class AppLocalizations {
   /// **'Schema'**
   String get schemaTabTitle;
 
-  /// No description provided for @schemaPinAsColumn.
-  ///
-  /// In en, this message translates to:
-  /// **'Pin as table column'**
-  String get schemaPinAsColumn;
-
   /// No description provided for @schemaPinAsColumnTooltip.
   ///
   /// In en, this message translates to:
   /// **'Pin this schema field as a projected table column'**
   String get schemaPinAsColumnTooltip;
-
-  /// No description provided for @schemaFilterByField.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by this field'**
-  String get schemaFilterByField;
 
   /// No description provided for @schemaFilterByFieldTooltip.
   ///
@@ -3121,12 +2647,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Consumer lag warning threshold (messages)'**
   String get lagWarnThresholdLabel;
-
-  /// No description provided for @lagWarnThresholdHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'0 disables the warning in the lag view.'**
-  String get lagWarnThresholdHelp;
 
   /// No description provided for @comparisonAction.
   ///
@@ -3230,23 +2750,119 @@ abstract class AppLocalizations {
   /// **'JSON (Full Payload)'**
   String get exportAsJson;
 
+  /// No description provided for @exportAsNdjson.
+  ///
+  /// In en, this message translates to:
+  /// **'NDJSON (One Message per Line)'**
+  String get exportAsNdjson;
+
   /// No description provided for @exportAsCsv.
   ///
   /// In en, this message translates to:
   /// **'CSV (Visible Columns)'**
   String get exportAsCsv;
 
-  /// No description provided for @exportFormat.
-  ///
-  /// In en, this message translates to:
-  /// **'Export Format'**
-  String get exportFormat;
-
   /// No description provided for @exportMessagesCsv.
   ///
   /// In en, this message translates to:
   /// **'Export Messages as CSV'**
   String get exportMessagesCsv;
+
+  /// No description provided for @exportSelectedOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only selected messages ({count})'**
+  String exportSelectedOnly(int count);
+
+  /// No description provided for @exportIncludeDimmedNonMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Include dimmed non-matches'**
+  String get exportIncludeDimmedNonMatches;
+
+  /// No description provided for @exportAddHeadersColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Headers column (CSV)'**
+  String get exportAddHeadersColumn;
+
+  /// No description provided for @pauseView.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pauseView;
+
+  /// No description provided for @pauseViewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Freeze the result view while consumption continues in the background'**
+  String get pauseViewTooltip;
+
+  /// No description provided for @resumeViewWithNew.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Resume} one{Resume · 1 new} other{Resume · {count} new}}'**
+  String resumeViewWithNew(int count);
+
+  /// No description provided for @resumeViewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume live updates and merge buffered messages'**
+  String get resumeViewTooltip;
+
+  /// No description provided for @followNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow newest'**
+  String get followNewest;
+
+  /// No description provided for @followNewestOnTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Following newest messages; click or scroll to pause following'**
+  String get followNewestOnTooltip;
+
+  /// No description provided for @followNewestOffTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to newest messages and keep following'**
+  String get followNewestOffTooltip;
+
+  /// No description provided for @followNewestDisabledTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow newest requires sorting by Timestamp'**
+  String get followNewestDisabledTooltip;
+
+  /// No description provided for @droppedMessagesIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'{dropped} oldest messages dropped (limit {limit})'**
+  String droppedMessagesIndicator(String dropped, String limit);
+
+  /// No description provided for @droppedMessagesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest messages were dropped when the buffer reached its limit. Adjust in Settings → General.'**
+  String get droppedMessagesTooltip;
+
+  /// No description provided for @messageBufferLimitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message buffer limit'**
+  String get messageBufferLimitLabel;
+
+  /// No description provided for @messageBufferLimitHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum retained messages per topic tab or search target (1,000–1,000,000)'**
+  String get messageBufferLimitHelper;
+
+  /// No description provided for @messageBufferLimitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number between 1,000 and 1,000,000'**
+  String get messageBufferLimitError;
 
   /// No description provided for @searchPresets.
   ///
@@ -3296,12 +2912,6 @@ abstract class AppLocalizations {
   /// **'Delete preset'**
   String get deletePreset;
 
-  /// No description provided for @updateCurrentPreset.
-  ///
-  /// In en, this message translates to:
-  /// **'Update current preset'**
-  String get updateCurrentPreset;
-
   /// No description provided for @restoreOpenTabsOnStartup.
   ///
   /// In en, this message translates to:
@@ -3341,7 +2951,7 @@ abstract class AppLocalizations {
   /// No description provided for @includeCredentialsWarning.
   ///
   /// In en, this message translates to:
-  /// **'Warning: Exporting credentials will store unencrypted passwords in the exported archive file.'**
+  /// **'Credentials will be encrypted with your passphrase in an age archive (.zip.age).'**
   String get includeCredentialsWarning;
 
   /// No description provided for @readOnlyBadgeLabel.
@@ -3434,12 +3044,6 @@ abstract class AppLocalizations {
   /// **'Check Compatibility'**
   String get checkCompatibility;
 
-  /// No description provided for @compatibilityCheckTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Schema Compatibility Check'**
-  String get compatibilityCheckTitle;
-
   /// No description provided for @schemaCompatible.
   ///
   /// In en, this message translates to:
@@ -3470,6 +3074,12 @@ abstract class AppLocalizations {
   /// **'No associated topics found for this subject.'**
   String get noAssociatedTopicsFound;
 
+  /// No description provided for @schemaNoDifferencesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No differences found between the selected versions.'**
+  String get schemaNoDifferencesFound;
+
   /// No description provided for @draftSchemaLabel.
   ///
   /// In en, this message translates to:
@@ -3487,12 +3097,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retryBadgeLabel;
-
-  /// No description provided for @deadLetterQueue.
-  ///
-  /// In en, this message translates to:
-  /// **'Dead-Letter Queue'**
-  String get deadLetterQueue;
 
   /// No description provided for @associatedDlqCount.
   ///
@@ -3596,12 +3200,6 @@ abstract class AppLocalizations {
   /// **'Failed to open file: {error}'**
   String failedToOpenFile(String error);
 
-  /// No description provided for @failedToOpenFolder.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to open folder: {error}'**
-  String failedToOpenFolder(String error);
-
   /// No description provided for @lagEstimateCaughtUp.
   ///
   /// In en, this message translates to:
@@ -3654,12 +3252,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recent Production'**
   String get recentProductionTitle;
-
-  /// No description provided for @recentProductionSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Message volume over recent hours'**
-  String get recentProductionSubtitle;
 
   /// No description provided for @window6h.
   ///
@@ -3739,12 +3331,6 @@ abstract class AppLocalizations {
   /// **'Scan covers the last {hours} hours of this window.'**
   String coverageHint(int hours);
 
-  /// No description provided for @hourlyTooltipDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} messages ({delta})'**
-  String hourlyTooltipDetails(String count, String delta);
-
   /// No description provided for @hourlyTooltipMatches.
   ///
   /// In en, this message translates to:
@@ -3786,12 +3372,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter: {path} = {value}'**
   String valueFilterActive(String path, String value);
-
-  /// No description provided for @valueFilterClear.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear filter'**
-  String get valueFilterClear;
 
   /// No description provided for @valueFilterDialogTitle.
   ///
@@ -3865,12 +3445,6 @@ abstract class AppLocalizations {
   /// **'Field: {path}'**
   String drillDownFieldPath(String path);
 
-  /// No description provided for @drillDownValue.
-  ///
-  /// In en, this message translates to:
-  /// **'Value: {value}'**
-  String drillDownValue(String value);
-
   /// No description provided for @drillDownCount.
   ///
   /// In en, this message translates to:
@@ -3936,12 +3510,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Duplicate Messages'**
   String get duplicateMessagesCardTitle;
-
-  /// No description provided for @duplicateMessagesRate.
-  ///
-  /// In en, this message translates to:
-  /// **'{rate}% of messages'**
-  String duplicateMessagesRate(String rate);
 
   /// No description provided for @duplicateMessagesSubtitle.
   ///
@@ -4015,12 +3583,6 @@ abstract class AppLocalizations {
   /// **'Occurrences'**
   String get duplicateCountHeader;
 
-  /// No description provided for @duplicateShareHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Share'**
-  String get duplicateShareHeader;
-
   /// No description provided for @duplicateKeyHeader.
   ///
   /// In en, this message translates to:
@@ -4068,18 +3630,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Jump to Sample'**
   String get jumpToSampleOffset;
-
-  /// No description provided for @duplicateCoordinates.
-  ///
-  /// In en, this message translates to:
-  /// **'Coordinates'**
-  String get duplicateCoordinates;
-
-  /// No description provided for @duplicateTimestamp.
-  ///
-  /// In en, this message translates to:
-  /// **'Timestamp'**
-  String get duplicateTimestamp;
 
   /// No description provided for @duplicateKey.
   ///
@@ -4267,12 +3817,6 @@ abstract class AppLocalizations {
   /// **'Disable verification (insecure)'**
   String get tlsTransitionDisable;
 
-  /// No description provided for @tlsVerificationFailedConnectError.
-  ///
-  /// In en, this message translates to:
-  /// **'TLS certificate verification failed: {error}'**
-  String tlsVerificationFailedConnectError(String error);
-
   /// No description provided for @messageFetchFailedTitle.
   ///
   /// In en, this message translates to:
@@ -4362,12 +3906,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Partition ownership unknown'**
   String get partitionOwnershipUnknown;
-
-  /// No description provided for @topicNotReadable.
-  ///
-  /// In en, this message translates to:
-  /// **'Topic not readable'**
-  String get topicNotReadable;
 
   /// No description provided for @diagStageNetwork.
   ///
@@ -4873,12 +4411,6 @@ abstract class AppLocalizations {
   /// **'Command palette'**
   String get shortcutCommandPalette;
 
-  /// No description provided for @commandPaletteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Command Palette'**
-  String get commandPaletteTitle;
-
   /// No description provided for @commandPaletteHint.
   ///
   /// In en, this message translates to:
@@ -4980,6 +4512,1772 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Script not found'**
   String get scriptNotFound;
+
+  /// No description provided for @fastTracePartitionPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition {partition} of {partitionCount}'**
+  String fastTracePartitionPreview(int partition, int partitionCount);
+
+  /// No description provided for @fastTracePartitionCountUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition count unknown'**
+  String get fastTracePartitionCountUnknown;
+
+  /// No description provided for @fastTraceEnterKeyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a key to preview target partition'**
+  String get fastTraceEnterKeyHint;
+
+  /// No description provided for @fastTraceFirstTermOnlyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the first term selects the scanned partition'**
+  String get fastTraceFirstTermOnlyNote;
+
+  /// No description provided for @fastTraceAssumptionSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Assumes Java default partitioner (murmur2), UTF-8 text key'**
+  String get fastTraceAssumptionSummary;
+
+  /// No description provided for @fastTraceAssumptionCaveat.
+  ///
+  /// In en, this message translates to:
+  /// **'Assumes the Java default partitioner hashing the key as UTF-8 text. The actual partition can differ if the producer uses another partitioner (e.g. librdkafka consistent/CRC32 or custom), binary or serialized keys (e.g. Avro keys with Confluent wire prefix), or if partitions were added after the message was produced.'**
+  String get fastTraceAssumptionCaveat;
+
+  /// No description provided for @fastTraceAssumptionInfoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast Trace partitioning assumptions'**
+  String get fastTraceAssumptionInfoLabel;
+
+  /// No description provided for @chipFastTracePartition.
+  ///
+  /// In en, this message translates to:
+  /// **'Fast Trace → P{partition}'**
+  String chipFastTracePartition(int partition);
+
+  /// No description provided for @exportPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase'**
+  String get exportPassphraseLabel;
+
+  /// No description provided for @exportPassphraseConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm passphrase'**
+  String get exportPassphraseConfirmLabel;
+
+  /// No description provided for @exportPassphraseTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase must be at least {min} characters'**
+  String exportPassphraseTooShort(int min);
+
+  /// No description provided for @exportPassphraseMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrases do not match'**
+  String get exportPassphraseMismatch;
+
+  /// No description provided for @exportPassphraseNotRecoverable.
+  ///
+  /// In en, this message translates to:
+  /// **'A lost passphrase cannot be recovered. Without it, this bundle cannot be opened.'**
+  String get exportPassphraseNotRecoverable;
+
+  /// No description provided for @showPassphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Show passphrase'**
+  String get showPassphrase;
+
+  /// No description provided for @hidePassphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide passphrase'**
+  String get hidePassphrase;
+
+  /// No description provided for @encryptingBundle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypting bundle...'**
+  String get encryptingBundle;
+
+  /// No description provided for @importPassphraseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter bundle passphrase'**
+  String get importPassphraseTitle;
+
+  /// No description provided for @importPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase'**
+  String get importPassphraseLabel;
+
+  /// No description provided for @importPassphraseWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong passphrase. Please try again.'**
+  String get importPassphraseWrong;
+
+  /// No description provided for @importEncryptedCorrupt.
+  ///
+  /// In en, this message translates to:
+  /// **'The encrypted bundle is damaged or corrupt.'**
+  String get importEncryptedCorrupt;
+
+  /// No description provided for @importEncryptedUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This encrypted file is not passphrase-encrypted and cannot be imported.'**
+  String get importEncryptedUnsupported;
+
+  /// No description provided for @importEncryptedTooExpensive.
+  ///
+  /// In en, this message translates to:
+  /// **'This encrypted bundle requires too much work to decrypt on this device.'**
+  String get importEncryptedTooExpensive;
+
+  /// No description provided for @searchRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching...'**
+  String get searchRunning;
+
+  /// No description provided for @searchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed'**
+  String get searchFailed;
+
+  /// No description provided for @matchesCountCapped.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total}+'**
+  String matchesCountCapped(int current, int total);
+
+  /// No description provided for @environmentTagSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment Tag (optional)'**
+  String get environmentTagSectionTitle;
+
+  /// No description provided for @environmentLabelField.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment Label'**
+  String get environmentLabelField;
+
+  /// No description provided for @environmentLabelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. DEV, TEST, STAGE, PROD'**
+  String get environmentLabelHint;
+
+  /// No description provided for @environmentLabelTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment label must be at most {max} characters'**
+  String environmentLabelTooLong(int max);
+
+  /// No description provided for @environmentSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment: {label}'**
+  String environmentSemanticsLabel(String label);
+
+  /// No description provided for @environmentColorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get environmentColorRed;
+
+  /// No description provided for @environmentColorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get environmentColorOrange;
+
+  /// No description provided for @environmentColorYellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get environmentColorYellow;
+
+  /// No description provided for @environmentColorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get environmentColorGreen;
+
+  /// No description provided for @environmentColorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get environmentColorBlue;
+
+  /// No description provided for @environmentColorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get environmentColorPurple;
+
+  /// No description provided for @environmentColorGrey.
+  ///
+  /// In en, this message translates to:
+  /// **'Grey'**
+  String get environmentColorGrey;
+
+  /// No description provided for @bootstrapNoEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least one host:port entry'**
+  String get bootstrapNoEntries;
+
+  /// No description provided for @bootstrapMissingPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry \"{entry}\" requires a port (:port)'**
+  String bootstrapMissingPort(String entry);
+
+  /// No description provided for @bootstrapInvalidPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry \"{entry}\" has an invalid port (1–65535)'**
+  String bootstrapInvalidPort(String entry);
+
+  /// No description provided for @bootstrapInvalidHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry \"{entry}\" has an invalid host'**
+  String bootstrapInvalidHost(String entry);
+
+  /// No description provided for @bootstrapSchemeNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry \"{entry}\" must not include a URL scheme'**
+  String bootstrapSchemeNotAllowed(String entry);
+
+  /// No description provided for @extraPropertiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional client properties'**
+  String get extraPropertiesTitle;
+
+  /// No description provided for @extraPropertiesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One key=value per line'**
+  String get extraPropertiesHint;
+
+  /// No description provided for @extraPropertiesAllowedKeysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed keys'**
+  String get extraPropertiesAllowedKeysTitle;
+
+  /// No description provided for @extraPropertiesSyntaxError.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {line}: invalid syntax (expected key=value)'**
+  String extraPropertiesSyntaxError(int line);
+
+  /// No description provided for @extraPropertiesNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {line}: \"{key}\" is not allowed'**
+  String extraPropertiesNotAllowed(int line, String key);
+
+  /// No description provided for @extraPropertiesInvalidValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {line}: invalid value for \"{key}\" (allowed: {allowed})'**
+  String extraPropertiesInvalidValue(int line, String key, String allowed);
+
+  /// No description provided for @extraPropertiesDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Line {line}: duplicate key \"{key}\"'**
+  String extraPropertiesDuplicate(int line, String key);
+
+  /// No description provided for @importClientPropertiesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import client.properties'**
+  String get importClientPropertiesAction;
+
+  /// No description provided for @importClientPropertiesPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import client.properties Preview'**
+  String get importClientPropertiesPreviewTitle;
+
+  /// No description provided for @importClientPropertiesMappedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile fields to apply'**
+  String get importClientPropertiesMappedSection;
+
+  /// No description provided for @importClientPropertiesExtrasSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional properties'**
+  String get importClientPropertiesExtrasSection;
+
+  /// No description provided for @importClientPropertiesSkippedSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Not applied'**
+  String get importClientPropertiesSkippedSection;
+
+  /// No description provided for @importClientPropertiesApplyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get importClientPropertiesApplyAction;
+
+  /// No description provided for @importClientPropertiesTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'File is larger than 1 MiB and cannot be imported.'**
+  String get importClientPropertiesTooLarge;
+
+  /// No description provided for @importClientPropertiesInvalidUtf8.
+  ///
+  /// In en, this message translates to:
+  /// **'File is not valid UTF-8 and cannot be read.'**
+  String get importClientPropertiesInvalidUtf8;
+
+  /// No description provided for @importClientPropertiesReadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read file: {error}'**
+  String importClientPropertiesReadError(String error);
+
+  /// No description provided for @importClientPropertiesNothingToApply.
+  ///
+  /// In en, this message translates to:
+  /// **'No supported properties were found in this file.'**
+  String get importClientPropertiesNothingToApply;
+
+  /// No description provided for @skipReasonNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown or not allowed'**
+  String get skipReasonNotAllowed;
+
+  /// No description provided for @skipReasonUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsupported type or format'**
+  String get skipReasonUnsupported;
+
+  /// No description provided for @skipReasonPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholder cannot be resolved'**
+  String get skipReasonPlaceholder;
+
+  /// No description provided for @skipReasonVerificationOverride.
+  ///
+  /// In en, this message translates to:
+  /// **'TLS verification can only be disabled in the dialog'**
+  String get skipReasonVerificationOverride;
+
+  /// No description provided for @skipReasonInvalidValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid value'**
+  String get skipReasonInvalidValue;
+
+  /// No description provided for @duplicateClusterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateClusterAction;
+
+  /// No description provided for @duplicateClusterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate Cluster'**
+  String get duplicateClusterTitle;
+
+  /// No description provided for @clusterFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter clusters (name, environment, bootstrap)'**
+  String get clusterFilterHint;
+
+  /// No description provided for @clusterFilterNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No cluster matches the filter'**
+  String get clusterFilterNoMatch;
+
+  /// No description provided for @clusterFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filter'**
+  String get clusterFilterClear;
+
+  /// No description provided for @disconnectClusterTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get disconnectClusterTooltip;
+
+  /// No description provided for @disconnectConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect from {cluster}?'**
+  String disconnectConfirmTitle(String cluster);
+
+  /// No description provided for @disconnectConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A search or analysis is still running for this cluster. Disconnecting will stop it and close its tabs.'**
+  String get disconnectConfirmBody;
+
+  /// No description provided for @disconnectConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get disconnectConfirmAction;
+
+  /// No description provided for @unrestoredTabsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 tab could not be restored ({topics})} other{{count} tabs could not be restored ({topics})}}'**
+  String unrestoredTabsMessage(int count, String topics);
+
+  /// No description provided for @decodeAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Decode as…'**
+  String get decodeAs;
+
+  /// No description provided for @decodeAsJson.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON'**
+  String get decodeAsJson;
+
+  /// No description provided for @decodeAsBase64.
+  ///
+  /// In en, this message translates to:
+  /// **'Base64'**
+  String get decodeAsBase64;
+
+  /// No description provided for @decodeAsGzip.
+  ///
+  /// In en, this message translates to:
+  /// **'gzip'**
+  String get decodeAsGzip;
+
+  /// No description provided for @showOriginalOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Show original only'**
+  String get showOriginalOnly;
+
+  /// No description provided for @showOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show original'**
+  String get showOriginal;
+
+  /// No description provided for @copyDecoded.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy decoded'**
+  String get copyDecoded;
+
+  /// No description provided for @copyAsHex.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as hex'**
+  String get copyAsHex;
+
+  /// No description provided for @binaryBytesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} bytes'**
+  String binaryBytesSummary(int count);
+
+  /// No description provided for @decodeErrorInvalidJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Not valid JSON'**
+  String get decodeErrorInvalidJson;
+
+  /// No description provided for @decodeErrorInvalidBase64.
+  ///
+  /// In en, this message translates to:
+  /// **'Not valid Base64'**
+  String get decodeErrorInvalidBase64;
+
+  /// No description provided for @decodeErrorNotGzip.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a gzip stream'**
+  String get decodeErrorNotGzip;
+
+  /// No description provided for @decodeErrorCorruptGzip.
+  ///
+  /// In en, this message translates to:
+  /// **'Corrupt gzip data'**
+  String get decodeErrorCorruptGzip;
+
+  /// No description provided for @decodeErrorInputTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Input exceeds {limitMib} MiB limit'**
+  String decodeErrorInputTooLarge(int limitMib);
+
+  /// No description provided for @decodeErrorOutputTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Decoded output exceeds {limitMib} MiB limit'**
+  String decodeErrorOutputTooLarge(int limitMib);
+
+  /// No description provided for @epochUnitSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'seconds'**
+  String get epochUnitSeconds;
+
+  /// No description provided for @epochUnitMilliseconds.
+  ///
+  /// In en, this message translates to:
+  /// **'milliseconds'**
+  String get epochUnitMilliseconds;
+
+  /// No description provided for @epochUnitMicroseconds.
+  ///
+  /// In en, this message translates to:
+  /// **'microseconds'**
+  String get epochUnitMicroseconds;
+
+  /// No description provided for @epochUnitNanoseconds.
+  ///
+  /// In en, this message translates to:
+  /// **'nanoseconds'**
+  String get epochUnitNanoseconds;
+
+  /// No description provided for @epochTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'{primary}\n{secondary}\nAssumed unit: {unit}'**
+  String epochTooltip(String primary, String secondary, String unit);
+
+  /// No description provided for @emptyValueMarker.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty value'**
+  String get emptyValueMarker;
+
+  /// No description provided for @inspectorKeySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get inspectorKeySection;
+
+  /// No description provided for @inspectorHeadersSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Headers ({count})'**
+  String inspectorHeadersSection(int count);
+
+  /// No description provided for @appearanceSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearanceSectionTitle;
+
+  /// No description provided for @themeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get themeLabel;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @languageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get languageLabel;
+
+  /// No description provided for @languageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get languageSystem;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// No description provided for @languageGerman.
+  ///
+  /// In en, this message translates to:
+  /// **'Deutsch'**
+  String get languageGerman;
+
+  /// No description provided for @textSizeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get textSizeLabel;
+
+  /// No description provided for @textSizeCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom ({percent}%)'**
+  String textSizeCustom(int percent);
+
+  /// No description provided for @timeDisplayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Timestamps'**
+  String get timeDisplayLabel;
+
+  /// No description provided for @timeDisplayLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get timeDisplayLocal;
+
+  /// No description provided for @timeDisplayUtc.
+  ///
+  /// In en, this message translates to:
+  /// **'UTC'**
+  String get timeDisplayUtc;
+
+  /// No description provided for @defaultResultLimitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default result limit'**
+  String get defaultResultLimitLabel;
+
+  /// No description provided for @intSettingRangeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Range: {min}–{max} (Default: {defaultValue})'**
+  String intSettingRangeHelper(int min, int max, int defaultValue);
+
+  /// No description provided for @intSettingRangeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number from {min} to {max}'**
+  String intSettingRangeError(int min, int max);
+
+  /// No description provided for @resetToDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to defaults'**
+  String get resetToDefaults;
+
+  /// No description provided for @resetSectionConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset {section} settings?'**
+  String resetSectionConfirmTitle(String section);
+
+  /// No description provided for @resetSectionConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This restores {section} preferences to their defaults. Cluster profiles, secrets, scripts, and saved searches will not be touched.'**
+  String resetSectionConfirmBody(String section);
+
+  /// No description provided for @resetConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetConfirmAction;
+
+  /// No description provided for @manualUpdateAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} available'**
+  String manualUpdateAvailableTitle(String version);
+
+  /// No description provided for @manualUpdateAvailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A newer release ({version}) is available on GitHub. This installation cannot update automatically.'**
+  String manualUpdateAvailableBody(String version);
+
+  /// No description provided for @manualUpToDateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You are on the latest version. Automatic updates are not available for this installation.'**
+  String get manualUpToDateHint;
+
+  /// No description provided for @latestReleaseKnownBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest release on GitHub: {version}. Running version could not be compared.'**
+  String latestReleaseKnownBody(String version);
+
+  /// No description provided for @openReleasePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open release page'**
+  String get openReleasePage;
+
+  /// No description provided for @downloadCancelledSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Download cancelled. The update will not be installed.'**
+  String get downloadCancelledSnackbar;
+
+  /// No description provided for @connectionErrorInvalidBootstrapServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid bootstrap server'**
+  String get connectionErrorInvalidBootstrapServers;
+
+  /// No description provided for @connectionErrorTlsVerificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'TLS certificate verification failed'**
+  String get connectionErrorTlsVerificationFailed;
+
+  /// No description provided for @connectionErrorValidationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed validation'**
+  String get connectionErrorValidationFailed;
+
+  /// No description provided for @connectionErrorBrokerTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Broker transport failure. Check your address and network.'**
+  String get connectionErrorBrokerTransport;
+
+  /// No description provided for @connectionErrorConnectionRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection refused'**
+  String get connectionErrorConnectionRefused;
+
+  /// No description provided for @connectionErrorOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed'**
+  String get connectionErrorOther;
+
+  /// No description provided for @topicAnalysisEmptyFieldPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Field path cannot be empty'**
+  String get topicAnalysisEmptyFieldPath;
+
+  /// No description provided for @topicAnalysisNoPreviousScope.
+  ///
+  /// In en, this message translates to:
+  /// **'No previous analysis scope to rescan'**
+  String get topicAnalysisNoPreviousScope;
+
+  /// No description provided for @exportTopicAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Topic Analysis'**
+  String get exportTopicAnalysis;
+
+  /// No description provided for @importTopicAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Topic Analysis'**
+  String get importTopicAnalysis;
+
+  /// No description provided for @saveRunArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Run Archive - {name}'**
+  String saveRunArchive(String name);
+
+  /// No description provided for @saveSchemaMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Schema Markdown'**
+  String get saveSchemaMarkdown;
+
+  /// No description provided for @step.
+  ///
+  /// In en, this message translates to:
+  /// **'Step'**
+  String get step;
+
+  /// No description provided for @content.
+  ///
+  /// In en, this message translates to:
+  /// **'Content'**
+  String get content;
+
+  /// No description provided for @filterColumnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter {column}'**
+  String filterColumnTitle(String column);
+
+  /// No description provided for @filterSubstringHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter substring to filter...'**
+  String get filterSubstringHint;
+
+  /// No description provided for @copyContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy content'**
+  String get copyContent;
+
+  /// No description provided for @emptyBinaryData.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty binary data'**
+  String get emptyBinaryData;
+
+  /// No description provided for @preparingHexDump.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing hex dump for clipboard...'**
+  String get preparingHexDump;
+
+  /// No description provided for @hexDumpCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex dump copied to clipboard'**
+  String get hexDumpCopied;
+
+  /// No description provided for @copyFullHexDump.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Full Hex Dump'**
+  String get copyFullHexDump;
+
+  /// No description provided for @objectCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Object copied to clipboard'**
+  String get objectCopiedToClipboard;
+
+  /// No description provided for @entityDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity Details'**
+  String get entityDetails;
+
+  /// No description provided for @copyWholeObject.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy whole object'**
+  String get copyWholeObject;
+
+  /// No description provided for @errorComputingDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Error computing diff'**
+  String get errorComputingDiff;
+
+  /// No description provided for @globalNoStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Global (No Step)'**
+  String get globalNoStep;
+
+  /// No description provided for @stacktrace.
+  ///
+  /// In en, this message translates to:
+  /// **'Stacktrace'**
+  String get stacktrace;
+
+  /// No description provided for @noResultsMatchingPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found matching \'{phrase}\''**
+  String noResultsMatchingPhrase(String phrase);
+
+  /// No description provided for @hideNonMatchingMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide non-matching messages'**
+  String get hideNonMatchingMessages;
+
+  /// No description provided for @showNonMatchesAsDimmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Show non-matches as dimmed'**
+  String get showNonMatchesAsDimmed;
+
+  /// No description provided for @availableTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Topics'**
+  String get availableTopics;
+
+  /// No description provided for @optionalMetadataRegistry.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional metadata registry'**
+  String get optionalMetadataRegistry;
+
+  /// No description provided for @noClusterSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No cluster selected'**
+  String get noClusterSelected;
+
+  /// No description provided for @quickJumpTopicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic: {topic}'**
+  String quickJumpTopicLabel(String topic);
+
+  /// No description provided for @quickJumpPartitionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition: {partition}'**
+  String quickJumpPartitionLabel(int partition);
+
+  /// No description provided for @quickJumpOffsetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Offset: {offset}'**
+  String quickJumpOffsetLabel(int offset);
+
+  /// No description provided for @quickJumpFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter: {filter}'**
+  String quickJumpFilterLabel(String filter);
+
+  /// No description provided for @schemaRegistryUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. {url}'**
+  String schemaRegistryUrlHint(String url);
+
+  /// No description provided for @startTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Time'**
+  String get startTime;
+
+  /// No description provided for @endTime.
+  ///
+  /// In en, this message translates to:
+  /// **'End Time'**
+  String get endTime;
+
+  /// No description provided for @fieldOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Field (Opt.)'**
+  String get fieldOptional;
+
+  /// No description provided for @selectTopicsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Select Topic ({filtered}/{total})} other{Select Topics ({filtered}/{total})}}'**
+  String selectTopicsDialogTitle(int count, int filtered, int total);
+
+  /// No description provided for @kafkaStreamTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'Kafka Stream Topics'**
+  String get kafkaStreamTopics;
+
+  /// No description provided for @searchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get searchLabel;
+
+  /// No description provided for @selectCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Select ({count})'**
+  String selectCount(int count);
+
+  /// No description provided for @selectDateTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Date & Time'**
+  String get selectDateTime;
+
+  /// No description provided for @presetsRelativeToNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Presets (Relative to Now)'**
+  String get presetsRelativeToNow;
+
+  /// No description provided for @selectVersionsToCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Select versions to compare'**
+  String get selectVersionsToCompare;
+
+  /// No description provided for @unknownError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown error'**
+  String get unknownError;
+
+  /// No description provided for @unreadableStoredData.
+  ///
+  /// In en, this message translates to:
+  /// **'Unreadable stored data'**
+  String get unreadableStoredData;
+
+  /// No description provided for @tombstoneValueNull.
+  ///
+  /// In en, this message translates to:
+  /// **'TOMBSTONE (Value is NULL)'**
+  String get tombstoneValueNull;
+
+  /// No description provided for @lagChangeDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'Change: {delta}'**
+  String lagChangeDelta(String delta);
+
+  /// No description provided for @ofTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'of {total}'**
+  String ofTotal(String total);
+
+  /// No description provided for @activeStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Active / Stable'**
+  String get activeStable;
+
+  /// No description provided for @idleEmptyCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Idle/Empty'**
+  String idleEmptyCount(String count);
+
+  /// No description provided for @activeQueries.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Queries'**
+  String get activeQueries;
+
+  /// No description provided for @queueCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue: {count}'**
+  String queueCount(int count);
+
+  /// No description provided for @connectingToCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to cluster...'**
+  String get connectingToCluster;
+
+  /// No description provided for @establishingConnectionOffsets.
+  ///
+  /// In en, this message translates to:
+  /// **'Establishing connection and calculating consumer group offsets...'**
+  String get establishingConnectionOffsets;
+
+  /// No description provided for @selectClusterForConsumerLag.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a cluster above to view consumer lag details.'**
+  String get selectClusterForConsumerLag;
+
+  /// No description provided for @loadedConsumerGroupsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully loaded {count} consumer groups in {seconds}s.'**
+  String loadedConsumerGroupsSummary(String count, String seconds);
+
+  /// No description provided for @groupIdCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Group ID'**
+  String get groupIdCol;
+
+  /// No description provided for @stateCol.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get stateCol;
+
+  /// No description provided for @protocolCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Protocol'**
+  String get protocolCol;
+
+  /// No description provided for @consumersCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumers'**
+  String get consumersCol;
+
+  /// No description provided for @processedCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Processed'**
+  String get processedCol;
+
+  /// No description provided for @noActivePartitionAssignments.
+  ///
+  /// In en, this message translates to:
+  /// **'No active partition assignments.'**
+  String get noActivePartitionAssignments;
+
+  /// No description provided for @noMessageAtOrAfterOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'No message found at or after offset {offset}'**
+  String noMessageAtOrAfterOffset(String offset);
+
+  /// No description provided for @viewMessageAtOffset.
+  ///
+  /// In en, this message translates to:
+  /// **'View message at offset'**
+  String get viewMessageAtOffset;
+
+  /// No description provided for @errorWithMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String errorWithMessage(String error);
+
+  /// No description provided for @stateAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get stateAll;
+
+  /// No description provided for @stateStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Stable'**
+  String get stateStable;
+
+  /// No description provided for @stateEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get stateEmpty;
+
+  /// No description provided for @stateDead.
+  ///
+  /// In en, this message translates to:
+  /// **'Dead'**
+  String get stateDead;
+
+  /// No description provided for @refreshIntervalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refreshIntervalLabel;
+
+  /// No description provided for @refreshOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get refreshOff;
+
+  /// No description provided for @scriptName.
+  ///
+  /// In en, this message translates to:
+  /// **'Script Name'**
+  String get scriptName;
+
+  /// No description provided for @sourceCol.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get sourceCol;
+
+  /// No description provided for @newVariableName.
+  ///
+  /// In en, this message translates to:
+  /// **'New Variable Name'**
+  String get newVariableName;
+
+  /// No description provided for @extractedVars.
+  ///
+  /// In en, this message translates to:
+  /// **'Extracted: {vars}'**
+  String extractedVars(String vars);
+
+  /// No description provided for @usedVars.
+  ///
+  /// In en, this message translates to:
+  /// **'Used: {vars}'**
+  String usedVars(String vars);
+
+  /// No description provided for @stepNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Step Name'**
+  String get stepNameLabel;
+
+  /// No description provided for @valueExtractions.
+  ///
+  /// In en, this message translates to:
+  /// **'Value Extractions'**
+  String get valueExtractions;
+
+  /// No description provided for @noExtractionsDefined.
+  ///
+  /// In en, this message translates to:
+  /// **'No extractions defined'**
+  String get noExtractionsDefined;
+
+  /// No description provided for @insertVariable.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Variable'**
+  String get insertVariable;
+
+  /// No description provided for @deleteExtraction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete extraction'**
+  String get deleteExtraction;
+
+  /// No description provided for @filterByParameter.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by {parameter}'**
+  String filterByParameter(String parameter);
+
+  /// No description provided for @searchValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Search values'**
+  String get searchValues;
+
+  /// No description provided for @selectAllMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Select All Matches'**
+  String get selectAllMatches;
+
+  /// No description provided for @clearSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Selection'**
+  String get clearSelection;
+
+  /// No description provided for @copyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy value'**
+  String get copyValue;
+
+  /// No description provided for @copiedValueToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied \'{value}\' to clipboard'**
+  String copiedValueToClipboard(String value);
+
+  /// No description provided for @applyWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply ({count})'**
+  String applyWithCount(int count);
+
+  /// No description provided for @noScriptsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No scripts available'**
+  String get noScriptsAvailable;
+
+  /// No description provided for @executionProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Execution Progress'**
+  String get executionProgress;
+
+  /// No description provided for @runningEllipsis.
+  ///
+  /// In en, this message translates to:
+  /// **'Running...'**
+  String get runningEllipsis;
+
+  /// No description provided for @backTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backTooltip;
+
+  /// No description provided for @failedToLoadDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load details'**
+  String get failedToLoadDetails;
+
+  /// No description provided for @defaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get defaultLabel;
+
+  /// No description provided for @clusterLabelValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster: {cluster}'**
+  String clusterLabelValue(String cluster);
+
+  /// No description provided for @clusterRuntimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster: {cluster} • {runtime}'**
+  String clusterRuntimeLabel(String cluster, String runtime);
+
+  /// No description provided for @startedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Started: {time}'**
+  String startedAt(String time);
+
+  /// No description provided for @finishedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished: {time}'**
+  String finishedAt(String time);
+
+  /// No description provided for @totalRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Runtime: {duration}'**
+  String totalRuntime(String duration);
+
+  /// No description provided for @runHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Run History'**
+  String get runHistory;
+
+  /// No description provided for @importRunArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Run Archive'**
+  String get importRunArchive;
+
+  /// No description provided for @matchedAnalyzed.
+  ///
+  /// In en, this message translates to:
+  /// **'{matched} matched / {analyzed} analyzed'**
+  String matchedAnalyzed(int matched, int analyzed);
+
+  /// No description provided for @loadResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Load Results'**
+  String get loadResults;
+
+  /// No description provided for @runAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Again'**
+  String get runAgain;
+
+  /// No description provided for @exportRunArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Run Archive'**
+  String get exportRunArchive;
+
+  /// No description provided for @deleteRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Run'**
+  String get deleteRun;
+
+  /// No description provided for @deleteRunResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Run Result'**
+  String get deleteRunResultTitle;
+
+  /// No description provided for @deleteRunResultConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this run result? This cannot be undone.'**
+  String get deleteRunResultConfirm;
+
+  /// No description provided for @failedToDeleteRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete run: {error}'**
+  String failedToDeleteRun(String error);
+
+  /// No description provided for @noSchemaFieldsMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'No schema fields found matching \'{query}\''**
+  String noSchemaFieldsMatching(String query);
+
+  /// No description provided for @noSchemasForScriptTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'No schemas found for the current script\'s topics.'**
+  String get noSchemasForScriptTopics;
+
+  /// No description provided for @fieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Field: {field}'**
+  String fieldLabel(String field);
+
+  /// No description provided for @foundTimesAcrossTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Found 1 time} other{Found {count} times}} across {topics, plural, =1{1 topic} other{{topics} topics}}'**
+  String foundTimesAcrossTopics(int count, int topics);
+
+  /// No description provided for @copyMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Markdown'**
+  String get copyMarkdown;
+
+  /// No description provided for @copiedSchemaToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied {field} schema to clipboard.'**
+  String copiedSchemaToClipboard(String field);
+
+  /// No description provided for @downloadMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Markdown'**
+  String get downloadMarkdown;
+
+  /// No description provided for @savedSchemaToFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved schema to file'**
+  String get savedSchemaToFile;
+
+  /// No description provided for @foundInTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Found in topic: {topic}'**
+  String foundInTopic(String topic);
+
+  /// No description provided for @pathLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Path: {path}'**
+  String pathLabel(String path);
+
+  /// No description provided for @foundInMultipleLocations.
+  ///
+  /// In en, this message translates to:
+  /// **'Found in multiple locations (differences highlighted):'**
+  String get foundInMultipleLocations;
+
+  /// No description provided for @baselineTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline Topic: {topic}'**
+  String baselineTopic(String topic);
+
+  /// No description provided for @comparedToTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Compared to Topic: {topic}'**
+  String comparedToTopic(String topic);
+
+  /// No description provided for @noDifferencesFromBaseline.
+  ///
+  /// In en, this message translates to:
+  /// **'No differences from baseline.'**
+  String get noDifferencesFromBaseline;
+
+  /// No description provided for @stepStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'PENDING'**
+  String get stepStatusPending;
+
+  /// No description provided for @stepStatusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'RUNNING'**
+  String get stepStatusRunning;
+
+  /// No description provided for @stepStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'COMPLETED'**
+  String get stepStatusCompleted;
+
+  /// No description provided for @stepStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'FAILED'**
+  String get stepStatusFailed;
+
+  /// No description provided for @remainingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{formatted} remaining} other{{formatted} remaining}}'**
+  String remainingCount(int count, String formatted);
+
+  /// No description provided for @matchesFoundScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'{matches, plural, =1{{formattedMatches} match found ({formattedScanned} scanned)} other{{formattedMatches} matches found ({formattedScanned} scanned)}}'**
+  String matchesFoundScanned(
+    int matches,
+    String formattedMatches,
+    String formattedScanned,
+  );
+
+  /// No description provided for @matchesFoundInTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'{matches, plural, =1{1 match} other{{matches} matches}} found in {topics, plural, =1{1 topic} other{{topics} topics}}'**
+  String matchesFoundInTopics(int matches, int topics);
+
+  /// No description provided for @msgsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{formatted} msg} other{{formatted} msgs}}'**
+  String msgsCount(int count, String formatted);
+
+  /// No description provided for @msgsPerSecCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{formatted} msg/sec} other{{formatted} msgs/sec}}'**
+  String msgsPerSecCount(int count, String formatted);
+
+  /// No description provided for @emptyAngleBracket.
+  ///
+  /// In en, this message translates to:
+  /// **'<empty>'**
+  String get emptyAngleBracket;
+
+  /// No description provided for @partitionOffsetSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition {partition} • Offset {offset}'**
+  String partitionOffsetSummary(int partition, int offset);
+
+  /// No description provided for @noStructuredFieldsDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'No structured fields detected'**
+  String get noStructuredFieldsDetected;
+
+  /// No description provided for @noScalarValuesForField.
+  ///
+  /// In en, this message translates to:
+  /// **'No scalar values recorded for this field'**
+  String get noScalarValuesForField;
+
+  /// No description provided for @peakHourSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Peak: {hour}:00 UTC ({count} msgs • {percentage}%)'**
+  String peakHourSummary(String hour, String count, String percentage);
+
+  /// No description provided for @hourlyTooltipSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{hour}:00 - {hour}:59 UTC\n{count} msgs ({percentage}%)'**
+  String hourlyTooltipSummary(String hour, String count, String percentage);
+
+  /// No description provided for @noKeyedMessagesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No keyed messages found'**
+  String get noKeyedMessagesFound;
+
+  /// No description provided for @noContentTypesRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'No content types recorded'**
+  String get noContentTypesRecorded;
+
+  /// No description provided for @partitionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition {partition}'**
+  String partitionLabel(int partition);
+
+  /// No description provided for @partitionStatsLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} msgs ({percentage}%) • {size}'**
+  String partitionStatsLine(String count, String percentage, String size);
+
+  /// No description provided for @offsetsRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Offsets: {from} .. {to}'**
+  String offsetsRange(String from, String to);
+
+  /// No description provided for @offsetsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Offsets: -'**
+  String get offsetsEmpty;
+
+  /// No description provided for @durationPartitionsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{partitions, plural, =1{{duration} • 1 partition} other{{duration} • {partitions} partitions}}'**
+  String durationPartitionsSummary(String duration, int partitions);
+
+  /// No description provided for @analyzingTopicProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing topic... ({scanned} / {total} messages • {percentage}%)'**
+  String analyzingTopicProgress(
+    String scanned,
+    String total,
+    String percentage,
+  );
+
+  /// No description provided for @keyLabelWithColon.
+  ///
+  /// In en, this message translates to:
+  /// **'Key: '**
+  String get keyLabelWithColon;
+
+  /// No description provided for @refreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refreshTooltip;
+
+  /// No description provided for @editVariableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit variable'**
+  String get editVariableTooltip;
+
+  /// No description provided for @deleteVariableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete variable'**
+  String get deleteVariableTooltip;
+
+  /// No description provided for @addVariableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add variable'**
+  String get addVariableTooltip;
+
+  /// No description provided for @editStepTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit step'**
+  String get editStepTooltip;
+
+  /// No description provided for @deleteStepTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete step'**
+  String get deleteStepTooltip;
+
+  /// No description provided for @browseDirectoryTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose folder'**
+  String get browseDirectoryTooltip;
+
+  /// No description provided for @expandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get expandTooltip;
+
+  /// No description provided for @collapseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get collapseTooltip;
+
+  /// No description provided for @selectStepTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all topics in step'**
+  String get selectStepTooltip;
+
+  /// No description provided for @deselectStepTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all topics in step'**
+  String get deselectStepTooltip;
+
+  /// No description provided for @filterColumnTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter {column}'**
+  String filterColumnTooltip(String column);
+
+  /// No description provided for @removeColumnTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove column'**
+  String get removeColumnTooltip;
+
+  /// No description provided for @compositeBadgeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show nested fields'**
+  String get compositeBadgeTooltip;
+
+  /// No description provided for @skewedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Skewed'**
+  String get skewedLabel;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @copyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to copy to clipboard'**
+  String get copyFailed;
 }
 
 class _AppLocalizationsDelegate

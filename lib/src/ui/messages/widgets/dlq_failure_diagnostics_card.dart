@@ -212,7 +212,7 @@ class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Stacktrace',
+                      AppLocalizations.of(context)?.stacktrace ?? 'Stacktrace',
                       style: TextStyle(
                         fontSize: 11,
                         color: colorScheme.outline,

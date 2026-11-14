@@ -12,7 +12,8 @@ import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_se
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
-import 'package:kafkalyzer/src/theme_controller.dart';
+import 'package:kafkalyzer/src/services/appearance_settings.dart';
+import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/connection_diagnostics_service.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
@@ -23,10 +24,12 @@ import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
 import 'package:kafkalyzer/src/services/file_opener_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:kafkalyzer/src/services/window_state_service.dart';
 import 'package:kafkalyzer/src/services/saved_searches_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/secure_storage_service.dart';
+import 'package:kafkalyzer/src/services/time_display_settings.dart';
 
 final getIt = GetIt.instance;
 
@@ -39,6 +42,9 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
     () => UpdateService(logger: getIt<Logger>()),
   );
   getIt.registerLazySingleton<ClusterService>(() => ClusterService());
+  getIt.registerLazySingleton<ClusterProfileTools>(
+    () => const ClusterProfileTools(),
+  );
   getIt.registerLazySingleton<KafkaMetadataService>(
     () => KafkaMetadataService(),
   );
@@ -65,7 +71,8 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
     () => TopicAnalysisController(),
   );
   getIt.registerLazySingleton<SchemaController>(() => SchemaController());
-  getIt.registerLazySingleton<ThemeController>(() => ThemeController());
+  getIt.registerLazySingleton<AppearanceSettings>(() => AppearanceSettings());
+  getIt.registerLazySingleton<WindowStateService>(() => WindowStateService());
   getIt.registerLazySingleton<MainNavigationController>(
     () => MainNavigationController(),
   );
@@ -95,4 +102,5 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
   getIt.registerLazySingleton<SessionRestoreService>(
     () => SessionRestoreService(),
   );
+  getIt.registerLazySingleton<TimeDisplaySettings>(() => TimeDisplaySettings());
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -36,6 +37,11 @@ class MessageInspectorPanel extends StatefulWidget {
   final ClusterProfile? profile;
   final void Function(String topic, int partition, int offset)?
   onJumpToOriginalMessage;
+  final Future<({Int32List offsets, bool capped})> Function(
+    String text,
+    String query,
+  )?
+  findPayloadMatches;
 
   const MessageInspectorPanel({
     super.key,
@@ -53,6 +59,7 @@ class MessageInspectorPanel extends StatefulWidget {
     this.onPinToColumn,
     this.profile,
     this.onJumpToOriginalMessage,
+    this.findPayloadMatches,
   });
 
   @override
@@ -66,8 +73,19 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
   final FocusNode _searchFocusNode = FocusNode();
   int _totalMatches = 0;
   int _currentMatchIndex = 0;
+  RawSearchState _searchState = RawSearchState.idle;
   final GlobalKey<JsonOrStringViewerState> _payloadViewerKey = GlobalKey();
+  final GlobalKey<JsonOrStringViewerState> _keyViewerKey = GlobalKey();
+  final GlobalKey _keySectionKey = GlobalKey();
+  final List<GlobalKey<JsonOrStringViewerState>> _headerViewerKeys = [];
+  final List<GlobalKey> _headerSectionKeys = [];
+
+  int _payloadMatchCount = 0;
+  int _keyMatchCount = 0;
+  List<int> _headerValueMatchCounts = [];
+
   late final TabController _tabController;
+  int _activeTabIndex = 0;
 
   // Schema of the selected message, set when the user jumps to it.
   String? _schemaSubject;
@@ -80,6 +98,28 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
     super.initState();
     _searchController = TextEditingController();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_onTabChanged);
+    _syncHeaderLists(widget.message.headers?.length ?? 0);
+  }
+
+  void _onTabChanged() {
+    if (_activeTabIndex != _tabController.index && mounted) {
+      setState(() {
+        _activeTabIndex = _tabController.index;
+      });
+    }
+  }
+
+  void _syncHeaderLists(int count) {
+    _headerViewerKeys
+      ..clear()
+      ..addAll(
+        List.generate(count, (_) => GlobalKey<JsonOrStringViewerState>()),
+      );
+    _headerSectionKeys
+      ..clear()
+      ..addAll(List.generate(count, (_) => GlobalKey()));
+    _headerValueMatchCounts = List.filled(count, 0);
   }
 
   @override
@@ -87,11 +127,17 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
     super.didUpdateWidget(oldWidget);
     if (widget.message != oldWidget.message) {
       _currentMatchIndex = 0;
+      _searchState = RawSearchState.idle;
+      _payloadMatchCount = 0;
+      _keyMatchCount = 0;
+      _syncHeaderLists(widget.message.headers?.length ?? 0);
+      _recomputeTotalMatches();
     }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -105,12 +151,124 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
     return widget.searchPhrase ?? '';
   }
 
+  int _countSubstringMatches(String text, String query) {
+    final q = query.trim();
+    if (q.isEmpty || text.isEmpty) return 0;
+    final lowerText = text.toLowerCase();
+    final lowerQuery = q.toLowerCase();
+    var count = 0;
+    var start = 0;
+    while (true) {
+      final idx = lowerText.indexOf(lowerQuery, start);
+      if (idx == -1) break;
+      count++;
+      start = idx + lowerQuery.length;
+    }
+    return count;
+  }
+
+  int _headerKeyMatchCount(int index) {
+    final headers = widget.message.headers ?? const <KafkaHeader>[];
+    if (index < 0 || index >= headers.length) return 0;
+    return _countSubstringMatches(headers[index].key, _effectiveSearchQuery);
+  }
+
+  void _recomputeTotalMatches() {
+    final headers = widget.message.headers ?? const <KafkaHeader>[];
+    var total = _payloadMatchCount + _keyMatchCount;
+    for (var i = 0; i < headers.length; i++) {
+      total += _headerKeyMatchCount(i);
+      if (i < _headerValueMatchCounts.length) {
+        total += _headerValueMatchCounts[i];
+      }
+    }
+    _totalMatches = total;
+    if (_totalMatches == 0 || _currentMatchIndex >= _totalMatches) {
+      _currentMatchIndex = 0;
+    }
+  }
+
+  _SearchTarget? _resolveMatchTarget(int globalIndex) {
+    if (_totalMatches == 0 || globalIndex < 0 || globalIndex >= _totalMatches) {
+      return null;
+    }
+    var rem = globalIndex;
+    if (rem < _payloadMatchCount) {
+      return _SearchTarget(
+        tab: 0,
+        viewerKey: _payloadViewerKey,
+        localIndex: rem,
+      );
+    }
+    rem -= _payloadMatchCount;
+
+    if (rem < _keyMatchCount) {
+      return _SearchTarget(
+        tab: 1,
+        sectionKey: _keySectionKey,
+        viewerKey: _keyViewerKey,
+        localIndex: rem,
+      );
+    }
+    rem -= _keyMatchCount;
+
+    final headers = widget.message.headers ?? const <KafkaHeader>[];
+    for (var i = 0; i < headers.length; i++) {
+      final hk = _headerKeyMatchCount(i);
+      if (rem < hk) {
+        return _SearchTarget(
+          tab: 1,
+          sectionKey: _headerSectionKeys[i],
+          headerKeyIndex: i,
+          localIndex: rem,
+        );
+      }
+      rem -= hk;
+
+      final hv = i < _headerValueMatchCounts.length
+          ? _headerValueMatchCounts[i]
+          : 0;
+      if (rem < hv) {
+        return _SearchTarget(
+          tab: 1,
+          sectionKey: _headerSectionKeys[i],
+          viewerKey: _headerViewerKeys[i],
+          localIndex: rem,
+        );
+      }
+      rem -= hv;
+    }
+    return null;
+  }
+
+  void _jumpToActiveMatch() {
+    final target = _resolveMatchTarget(_currentMatchIndex);
+    if (target == null) return;
+    if (_tabController.index != target.tab) {
+      _tabController.animateTo(target.tab);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final sectionCtx = target.sectionKey?.currentContext;
+      if (sectionCtx != null) {
+        Scrollable.ensureVisible(
+          sectionCtx,
+          duration: const Duration(milliseconds: 200),
+          alignment: 0.2,
+        );
+      }
+      if (target.viewerKey != null && target.localIndex != null) {
+        target.viewerKey!.currentState?.jumpToMatch(target.localIndex!);
+      }
+    });
+  }
+
   void _jumpToNextMatch() {
     if (_totalMatches == 0) return;
     setState(() {
       _currentMatchIndex = (_currentMatchIndex + 1) % _totalMatches;
     });
-    _payloadViewerKey.currentState?.jumpToMatch(_currentMatchIndex);
+    _jumpToActiveMatch();
   }
 
   void _jumpToPreviousMatch() {
@@ -119,7 +277,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
       _currentMatchIndex =
           (_currentMatchIndex - 1 + _totalMatches) % _totalMatches;
     });
-    _payloadViewerKey.currentState?.jumpToMatch(_currentMatchIndex);
+    _jumpToActiveMatch();
   }
 
   dynamic _tryParseJson(String? content) {
@@ -195,18 +353,21 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
             const Divider(height: 1),
             // Tab Content
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                physics: const NeverScrollableScrollPhysics(),
+              child: IndexedStack(
+                index: _activeTabIndex,
                 children: [
-                  // Tab 1: Payload Viewer
+                  // Tab 1: Payload Viewer (kept mounted)
                   _buildPayloadTab(context),
-                  // Tab 2: Key & Headers
+                  // Tab 2: Key & Headers (kept mounted)
                   _buildKeyAndHeadersTab(context, colorScheme, l10n),
-                  // Tab 3: Raw JSON
-                  _buildRawJsonTab(context, colorScheme, l10n, dateStr),
-                  // Tab 4: Schema Viewer
-                  _buildSchemaTab(context),
+                  // Tab 3: Raw JSON (lazy: built only while selected)
+                  _activeTabIndex == 2
+                      ? _buildRawJsonTab(context, colorScheme, l10n, dateStr)
+                      : const SizedBox.shrink(),
+                  // Tab 4: Schema Viewer (lazy: built only while selected)
+                  _activeTabIndex == _schemaTabIndex
+                      ? _buildSchemaTab(context)
+                      : const SizedBox.shrink(),
                 ],
               ),
             ),
@@ -253,7 +414,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                       Flexible(
                         child: Text.rich(
                           TextSpan(
-                            text: 'Key: ',
+                            text: l10n.keyLabelWithColon,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -352,31 +513,29 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                         _buildCompactChip(context, dateStr, Icons.access_time),
                       ],
                       const SizedBox(width: 6),
-                      Tooltip(
-                        message: l10n.copyMetadata,
-                        child: IconButton(
-                          icon: const Icon(Icons.copy, size: 14),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 24,
-                            minHeight: 24,
-                          ),
-                          onPressed: () {
-                            final text =
-                                'Partition: ${widget.message.partition}\n'
-                                'Offset: ${widget.message.offset}\n'
-                                'Timestamp: $dateStr'
-                                '${_schemaMetadataLine(l10n)}';
-                            Clipboard.setData(ClipboardData(text: text));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.metadataCopied),
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          },
+                      IconButton(
+                        tooltip: l10n.copyMetadata,
+                        icon: const Icon(Icons.copy, size: 14),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 24,
+                          minHeight: 24,
                         ),
+                        onPressed: () {
+                          final text =
+                              'Partition: ${widget.message.partition}\n'
+                              'Offset: ${widget.message.offset}\n'
+                              'Timestamp: $dateStr'
+                              '${_schemaMetadataLine(l10n)}';
+                          Clipboard.setData(ClipboardData(text: text));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(l10n.metadataCopied),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -393,156 +552,142 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Search in message toggle
-                        Tooltip(
-                          message: l10n.searchInMessage,
-                          child: IconButton(
-                            icon: Icon(
-                              _isSearchOpen ? Icons.search_off : Icons.search,
-                              size: 16,
-                              color: _isSearchOpen ? colorScheme.primary : null,
-                            ),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 28,
-                              minHeight: 28,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isSearchOpen = !_isSearchOpen;
-                                if (!_isSearchOpen) {
-                                  _searchController.clear();
-                                  _totalMatches = 0;
-                                  _currentMatchIndex = 0;
-                                }
-                              });
-                              if (_isSearchOpen) {
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  _searchFocusNode.requestFocus();
-                                });
-                              }
-                            },
+                        IconButton(
+                          tooltip: l10n.searchInMessage,
+                          icon: Icon(
+                            _isSearchOpen ? Icons.search_off : Icons.search,
+                            size: 16,
+                            color: _isSearchOpen ? colorScheme.primary : null,
                           ),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isSearchOpen = !_isSearchOpen;
+                              if (!_isSearchOpen) {
+                                _searchController.clear();
+                                _totalMatches = 0;
+                                _currentMatchIndex = 0;
+                              }
+                            });
+                            if (_isSearchOpen) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _searchFocusNode.requestFocus();
+                              });
+                            }
+                          },
                         ),
                         const SizedBox(width: 4),
                         // Copy Entire Message as JSON
-                        Tooltip(
-                          message: l10n.copyMessage,
-                          child: IconButton(
-                            icon: const Icon(Icons.copy_all, size: 16),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 28,
-                              minHeight: 28,
-                            ),
-                            onPressed: () {
-                              final fullJson = _formatFullMessageJson(dateStr);
-                              Clipboard.setData(ClipboardData(text: fullJson));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.fullMessageCopied),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            },
+                        IconButton(
+                          tooltip: l10n.copyMessage,
+                          icon: const Icon(Icons.copy_all, size: 16),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
                           ),
+                          onPressed: () {
+                            final fullJson = _formatFullMessageJson(dateStr);
+                            Clipboard.setData(ClipboardData(text: fullJson));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.fullMessageCopied),
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(width: 4),
                         // Copy Shareable Link
-                        Tooltip(
-                          message: l10n.copyShareableLink,
-                          child: IconButton(
-                            key: const Key('copy_shareable_link_button'),
-                            icon: const Icon(Icons.link, size: 16),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 28,
-                              minHeight: 28,
-                            ),
-                            onPressed: () {
-                              final ref = MessageReference(
-                                cluster: widget.profile?.name,
-                                topic: widget.message.topic,
-                                partition: widget.message.partition,
-                                offset: widget.message.offset,
-                                filter: widget.searchPhrase,
-                              );
-                              Clipboard.setData(
-                                ClipboardData(text: ref.toString()),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.shareableLinkCopied),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            },
+                        IconButton(
+                          key: const Key('copy_shareable_link_button'),
+                          tooltip: l10n.copyShareableLink,
+                          icon: const Icon(Icons.link, size: 16),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
                           ),
+                          onPressed: () {
+                            final ref = MessageReference(
+                              cluster: widget.profile?.name,
+                              topic: widget.message.topic,
+                              partition: widget.message.partition,
+                              offset: widget.message.offset,
+                              filter: widget.searchPhrase,
+                            );
+                            Clipboard.setData(
+                              ClipboardData(text: ref.toString()),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.shareableLinkCopied),
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(width: 4),
                         // Maximize / Focus Mode Toggle
                         if (widget.onToggleMaximize != null) ...[
-                          Tooltip(
-                            message: widget.isMaximized
+                          IconButton(
+                            tooltip: widget.isMaximized
                                 ? l10n.exitFocusMode
                                 : l10n.focusMode,
-                            child: IconButton(
-                              icon: Icon(
-                                widget.isMaximized
-                                    ? Icons.fullscreen_exit
-                                    : Icons.fullscreen,
-                                size: 18,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 28,
-                                minHeight: 28,
-                              ),
-                              onPressed: widget.onToggleMaximize,
+                            icon: Icon(
+                              widget.isMaximized
+                                  ? Icons.fullscreen_exit
+                                  : Icons.fullscreen,
+                              size: 18,
                             ),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 28,
+                              minHeight: 28,
+                            ),
+                            onPressed: widget.onToggleMaximize,
                           ),
                           const SizedBox(width: 4),
                         ],
                         // Docking Toggle (when not maximized)
                         if (!widget.isMaximized) ...[
-                          Tooltip(
-                            message: isBottom ? l10n.dockSide : l10n.dockBottom,
-                            child: IconButton(
-                              icon: Icon(
-                                isBottom
-                                    ? Icons.view_sidebar_outlined
-                                    : Icons.dock_outlined,
-                                size: 16,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 28,
-                                minHeight: 28,
-                              ),
-                              onPressed: widget.onToggleDockPosition,
+                          IconButton(
+                            tooltip: isBottom ? l10n.dockSide : l10n.dockBottom,
+                            icon: Icon(
+                              isBottom
+                                  ? Icons.view_sidebar_outlined
+                                  : Icons.dock_outlined,
+                              size: 16,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        // Close Button
-                        Tooltip(
-                          message: l10n.closeInspector,
-                          child: IconButton(
-                            icon: const Icon(Icons.close, size: 16),
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                               minWidth: 28,
                               minHeight: 28,
                             ),
-                            onPressed: widget.onClose,
+                            onPressed: widget.onToggleDockPosition,
                           ),
+                          const SizedBox(width: 4),
+                        ],
+                        // Close Button
+                        IconButton(
+                          tooltip: l10n.closeInspector,
+                          icon: const Icon(Icons.close, size: 16),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
+                          ),
+                          onPressed: widget.onClose,
                         ),
                       ],
                     ),
@@ -579,8 +724,13 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                     setState(() {
                       _isSearchOpen = false;
                       _searchController.clear();
-                      _totalMatches = 0;
-                      _currentMatchIndex = 0;
+                      _payloadMatchCount = 0;
+                      _keyMatchCount = 0;
+                      _headerValueMatchCounts = List.filled(
+                        widget.message.headers?.length ?? 0,
+                        0,
+                      );
+                      _recomputeTotalMatches();
                     });
                   }),
                 },
@@ -595,11 +745,17 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear, size: 14),
+                            tooltip: l10n.clear,
                             onPressed: () {
                               _searchController.clear();
                               setState(() {
-                                _totalMatches = 0;
-                                _currentMatchIndex = 0;
+                                _payloadMatchCount = 0;
+                                _keyMatchCount = 0;
+                                _headerValueMatchCounts = List.filled(
+                                  widget.message.headers?.length ?? 0,
+                                  0,
+                                );
+                                _recomputeTotalMatches();
                               });
                             },
                           )
@@ -617,6 +773,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                   onChanged: (val) {
                     setState(() {
                       _currentMatchIndex = 0;
+                      _recomputeTotalMatches();
                     });
                   },
                   onSubmitted: (_) => _jumpToNextMatch(),
@@ -625,16 +782,43 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            _totalMatches > 0
-                ? l10n.matchesCount(_currentMatchIndex + 1, _totalMatches)
-                : (_searchController.text.isNotEmpty ? l10n.noMatches : ''),
-            style: AppFonts.robotoMono(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurfaceVariant,
+          if (_searchState == RawSearchState.running)
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: Semantics(
+                label: l10n.searchRunning,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else if (_searchState == RawSearchState.failed)
+            Text(
+              l10n.searchFailed,
+              style: AppFonts.robotoMono(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.error,
+              ),
+            )
+          else
+            Text(
+              _totalMatches > 0
+                  ? (_searchState == RawSearchState.capped
+                        ? l10n.matchesCountCapped(
+                            _currentMatchIndex + 1,
+                            _totalMatches,
+                          )
+                        : l10n.matchesCount(
+                            _currentMatchIndex + 1,
+                            _totalMatches,
+                          ))
+                  : (_searchController.text.isNotEmpty ? l10n.noMatches : ''),
+              style: AppFonts.robotoMono(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
           const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.keyboard_arrow_up, size: 18),
@@ -855,6 +1039,11 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
       for (final h in widget.message.headers ?? <KafkaHeader>[]) h.key: h.value,
     };
     final failureMeta = DlqFailureMetadata.fromHeaders(headerMap);
+    final activeTarget = _resolveMatchTarget(_currentMatchIndex);
+    final focusedPayloadMatch =
+        activeTarget != null && activeTarget.viewerKey == _payloadViewerKey
+        ? activeTarget.localIndex
+        : null;
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -875,17 +1064,23 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
               key: _payloadViewerKey,
               rawContent: widget.message.payload ?? '',
               searchQuery: _effectiveSearchQuery,
-              focusedMatchIndex: _totalMatches > 0 ? _currentMatchIndex : null,
+              focusedMatchIndex: focusedPayloadMatch,
               onMatchCountChanged: (count) {
-                if (_totalMatches != count && mounted) {
+                if (_payloadMatchCount != count && mounted) {
                   setState(() {
-                    _totalMatches = count;
-                    if (_currentMatchIndex >= count) {
-                      _currentMatchIndex = 0;
-                    }
+                    _payloadMatchCount = count;
+                    _recomputeTotalMatches();
                   });
                 }
               },
+              onSearchStateChanged: (state) {
+                if (_searchState != state && mounted) {
+                  setState(() {
+                    _searchState = state;
+                  });
+                }
+              },
+              findMatches: widget.findPayloadMatches,
               expand: true,
               persistenceKey: 'inspector_payload',
               onPinToColumn: widget.onPinToColumn,
@@ -896,38 +1091,114 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
     );
   }
 
+  Widget _buildHighlightedHeaderKey(
+    String keyText,
+    ColorScheme colorScheme,
+    int? focusedOccurrence,
+  ) {
+    final baseStyle = const TextStyle(
+      fontWeight: FontWeight.bold,
+      fontSize: 12,
+    );
+    final query = _effectiveSearchQuery.trim();
+    if (query.isEmpty || keyText.isEmpty) {
+      return SelectableText(keyText, style: baseStyle);
+    }
+
+    final lowerText = keyText.toLowerCase();
+    final lowerQuery = query.toLowerCase();
+    if (!lowerText.contains(lowerQuery)) {
+      return SelectableText(keyText, style: baseStyle);
+    }
+
+    final spans = <TextSpan>[];
+    var start = 0;
+    var occ = 0;
+    while (true) {
+      final idx = lowerText.indexOf(lowerQuery, start);
+      if (idx == -1) {
+        if (start < keyText.length) {
+          spans.add(TextSpan(text: keyText.substring(start), style: baseStyle));
+        }
+        break;
+      }
+      if (idx > start) {
+        spans.add(
+          TextSpan(text: keyText.substring(start, idx), style: baseStyle),
+        );
+      }
+      final isFocused = focusedOccurrence == occ;
+      spans.add(
+        TextSpan(
+          text: keyText.substring(idx, idx + query.length),
+          style: baseStyle.copyWith(
+            backgroundColor: isFocused
+                ? Colors.orange
+                : colorScheme.tertiaryContainer,
+            color: isFocused ? Colors.black : colorScheme.onTertiaryContainer,
+          ),
+        ),
+      );
+      occ++;
+      start = idx + query.length;
+    }
+    return SelectableText.rich(TextSpan(children: spans));
+  }
+
   Widget _buildKeyAndHeadersTab(
     BuildContext context,
     ColorScheme colorScheme,
     AppLocalizations l10n,
   ) {
     final headers = widget.message.headers ?? [];
+    final activeTarget = _resolveMatchTarget(_currentMatchIndex);
+    final focusedKeyMatch =
+        activeTarget != null && activeTarget.viewerKey == _keyViewerKey
+        ? activeTarget.localIndex
+        : null;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Key Viewer
-          SizedBox(
-            height: 130,
+          Container(
+            key: _keySectionKey,
             child: JsonOrStringViewer(
-              title: 'Key',
+              key: _keyViewerKey,
+              title: l10n.inspectorKeySection,
               rawContent: widget.message.key ?? '',
               persistenceKey: 'inspector_key',
+              treeViewHeight: 280,
+              fitTreeHeight: true,
+              emptyValueMarker: l10n.emptyValueMarker,
+              searchQuery: _effectiveSearchQuery,
+              focusedMatchIndex: focusedKeyMatch,
+              onMatchCountChanged: (count) {
+                if (_keyMatchCount != count && mounted) {
+                  setState(() {
+                    _keyMatchCount = count;
+                    _recomputeTotalMatches();
+                  });
+                }
+              },
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           // Headers Header with Copy Action
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Headers (${headers.length})',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: colorScheme.primary,
+              Expanded(
+                child: Text(
+                  l10n.inspectorHeadersSection(headers.length),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: colorScheme.primary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (headers.isNotEmpty)
@@ -952,76 +1223,69 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
                 ),
             ],
           ),
-          const SizedBox(height: 4),
-          // Headers List
-          Expanded(
-            child: headers.isEmpty
-                ? Center(
-                    child: Text(
-                      l10n.noHeaders,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.outline,
-                        fontStyle: FontStyle.italic,
-                      ),
+          const SizedBox(height: 6),
+          if (headers.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text(
+                  l10n.noHeaders,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.outline,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            )
+          else
+            for (var index = 0; index < headers.length; index++)
+              Padding(
+                key: _headerSectionKeys[index],
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.4),
                     ),
-                  )
-                : ListView.builder(
-                    itemCount: headers.length,
-                    itemBuilder: (context, index) {
-                      final header = headers[index];
-                      return Card(
-                        elevation: 0,
-                        margin: const EdgeInsets.only(bottom: 6),
-                        color: colorScheme.surfaceContainerLow,
-                        shape: RoundedRectangleBorder(
-                          side: BorderSide(
-                            color: colorScheme.outlineVariant.withValues(
-                              alpha: 0.4,
-                            ),
-                          ),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: ListTile(
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          title: SelectableText(
-                            header.key,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          subtitle: SelectableText(
-                            header.value,
-                            style: AppFonts.robotoMono(
-                              fontSize: 11,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.content_copy, size: 14),
-                            visualDensity: VisualDensity.compact,
-                            tooltip: l10n.copiedHeaderValue(header.key),
-                            onPressed: () {
-                              Clipboard.setData(
-                                ClipboardData(text: header.value),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    l10n.copiedHeaderValue(header.key),
-                                  ),
-                                  duration: const Duration(seconds: 1),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      );
+                  ),
+                  child: JsonOrStringViewer(
+                    key: _headerViewerKeys[index],
+                    titleWidget: _buildHighlightedHeaderKey(
+                      headers[index].key,
+                      colorScheme,
+                      activeTarget?.headerKeyIndex == index
+                          ? activeTarget!.localIndex
+                          : null,
+                    ),
+                    rawContent: headers[index].value,
+                    persistenceKey: 'inspector_header',
+                    treeViewHeight: 220,
+                    fitTreeHeight: true,
+                    recognizeHexFallback: true,
+                    emptyValueMarker: l10n.emptyValueMarker,
+                    searchQuery: _effectiveSearchQuery,
+                    focusedMatchIndex:
+                        activeTarget != null &&
+                            activeTarget.viewerKey == _headerViewerKeys[index]
+                        ? activeTarget.localIndex
+                        : null,
+                    onMatchCountChanged: (count) {
+                      if (index < _headerValueMatchCounts.length &&
+                          _headerValueMatchCounts[index] != count &&
+                          mounted) {
+                        setState(() {
+                          _headerValueMatchCounts[index] = count;
+                          _recomputeTotalMatches();
+                        });
+                      }
                     },
                   ),
-          ),
+                ),
+              ),
         ],
       ),
     );
@@ -1082,4 +1346,20 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
       onPinToColumn: widget.onPinToColumn,
     );
   }
+}
+
+class _SearchTarget {
+  final int tab;
+  final GlobalKey? sectionKey;
+  final GlobalKey<JsonOrStringViewerState>? viewerKey;
+  final int? headerKeyIndex;
+  final int? localIndex;
+
+  const _SearchTarget({
+    required this.tab,
+    this.sectionKey,
+    this.viewerKey,
+    this.headerKeyIndex,
+    this.localIndex,
+  });
 }
