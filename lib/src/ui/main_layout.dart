@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -6,9 +7,12 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_tra
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/tls_transition_dialog.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
+import 'package:kafkalyzer/src/features/navigation/command_palette/command_palette_dialog.dart';
+import 'package:kafkalyzer/src/features/navigation/main_navigation_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/script_manager_view.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
 import 'package:kafkalyzer/src/ui/focus_utils.dart';
+import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
 import 'package:kafkalyzer/src/ui/storage_notice_banner.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
@@ -25,14 +29,23 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  int _selectedIndex = 0;
+  late final MainNavigationController _navController;
+  bool _ownsNavController = false;
   bool _updateSnackBarShown = false;
   bool _showingTlsDialog = false;
   bool _showingShortcutOverview = false;
+  bool _showingCommandPalette = false;
 
   @override
   void initState() {
     super.initState();
+    if (getIt.isRegistered<MainNavigationController>()) {
+      _navController = getIt<MainNavigationController>();
+    } else {
+      _navController = MainNavigationController();
+      _ownsNavController = true;
+    }
+    _navController.addListener(_onNavigationChanged);
     HardwareKeyboard.instance.addHandler(_handleGlobalShortcut);
     getIt<UpdateService>().availableUpdateNotifier.addListener(
       _onAvailableUpdateChanged,
@@ -53,6 +66,10 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   void dispose() {
+    _navController.removeListener(_onNavigationChanged);
+    if (_ownsNavController) {
+      _navController.dispose();
+    }
     HardwareKeyboard.instance.removeHandler(_handleGlobalShortcut);
     getIt<UpdateService>().availableUpdateNotifier.removeListener(
       _onAvailableUpdateChanged,
@@ -68,12 +85,35 @@ class _MainLayoutState extends State<MainLayout> {
     super.dispose();
   }
 
+  void _onNavigationChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   bool _handleGlobalShortcut(KeyEvent event) {
     if (event is! KeyDownEvent) return false;
-    if (!mounted || _showingShortcutOverview) return false;
+    if (!mounted) return false;
     final route = ModalRoute.of(context);
     if (route != null && !route.isCurrent) return false;
 
+    final matchesPalette = AppShortcuts.commandPalette.activators.any(
+      (a) => a.accepts(event, HardwareKeyboard.instance),
+    );
+    if (matchesPalette) {
+      if (_showingCommandPalette) return true;
+      final isMacCtrlK =
+          defaultTargetPlatform == TargetPlatform.macOS &&
+          HardwareKeyboard.instance.isControlPressed &&
+          !HardwareKeyboard.instance.isMetaPressed;
+      if (isMacCtrlK && isTextInputFocused()) {
+        return false;
+      }
+      _openCommandPalette();
+      return true;
+    }
+
+    if (_showingShortcutOverview) return false;
     final isF1 = event.logicalKey == LogicalKeyboardKey.f1;
     final isQuestion = event.character == '?';
     if (!isF1 && (!isQuestion || isTextInputFocused())) {
@@ -82,6 +122,16 @@ class _MainLayoutState extends State<MainLayout> {
 
     _openShortcutOverview();
     return true;
+  }
+
+  Future<void> _openCommandPalette() async {
+    if (_showingCommandPalette) return;
+    _showingCommandPalette = true;
+    try {
+      await CommandPaletteDialog.show(context);
+    } finally {
+      _showingCommandPalette = false;
+    }
   }
 
   Future<void> _openShortcutOverview() async {
@@ -185,12 +235,8 @@ class _MainLayoutState extends State<MainLayout> {
         children: [
           NavigationRail(
             backgroundColor: Theme.of(context).colorScheme.surface,
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (int index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
+            selectedIndex: _navController.railIndex,
+            onDestinationSelected: _navController.selectIndex,
             labelType: NavigationRailLabelType.all,
             groupAlignment: -1.0, // Top align
             destinations: [
@@ -256,12 +302,11 @@ class _MainLayoutState extends State<MainLayout> {
               children: [
                 const StorageNoticeBanner(),
                 Expanded(
-                  child: switch (_selectedIndex) {
-                    0 => const ExplorerView(),
-                    1 => const ConsumerLagView(),
-                    2 => const ScriptManagerView(),
-                    3 => const SettingsView(),
-                    _ => Center(child: Text(l10n.unknownView)),
+                  child: switch (_navController.destination) {
+                    MainDestination.explorer => const ExplorerView(),
+                    MainDestination.consumerLag => const ConsumerLagView(),
+                    MainDestination.scripts => const ScriptManagerView(),
+                    MainDestination.settings => const SettingsView(),
                   },
                 ),
               ],

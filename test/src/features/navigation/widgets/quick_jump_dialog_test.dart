@@ -156,5 +156,36 @@ void main() {
         expect(jumpedCluster?.name, equals('prod-kafka'));
       },
     );
+
+    testWidgets(
+      'initialInput pre-fills field, parses reference, and enables Jump',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: QuickJumpDialog(
+                availableClusters: const [
+                  ClusterProfile(
+                    name: 'prod-kafka',
+                    bootstrapServers: 'b:9092',
+                    tlsVerification: TlsVerification.enabled,
+                  ),
+                ],
+                initialInput:
+                    'kafkalyzer://open?cluster=prod-kafka&topic=orders',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final submitButton = tester.widget<FilledButton>(
+          find.byKey(const Key('quick_jump_submit_button')),
+        );
+        expect(submitButton.onPressed, isNotNull);
+      },
+    );
   });
 }

@@ -557,12 +557,17 @@ class MessagesViewState extends State<MessagesView> {
       return true;
     }
 
-    // Letter shortcuts must not fire while typing into a text field.
+    // Letter shortcuts must not fire while typing into a text field or when a
+    // modifier key (Ctrl/Cmd/Alt) is held.
     final isLetterShortcut =
         key == LogicalKeyboardKey.keyJ ||
         key == LogicalKeyboardKey.keyK ||
         key == LogicalKeyboardKey.keyF;
-    if (textFocused && isLetterShortcut) return false;
+    final hasModifier =
+        HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isMetaPressed ||
+        HardwareKeyboard.instance.isAltPressed;
+    if (isLetterShortcut && (textFocused || hasModifier)) return false;
 
     // Arrow up/down always step messages while the inspector is open so
     // focus traversal cannot move between search-bar controls or topic

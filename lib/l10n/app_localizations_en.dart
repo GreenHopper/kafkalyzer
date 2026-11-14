@@ -2769,4 +2769,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutKeyShift => 'Shift';
+
+  @override
+  String get shortcutCommandPalette => 'Command palette';
+
+  @override
+  String get commandPaletteTitle => 'Command Palette';
+
+  @override
+  String get commandPaletteHint => 'Search clusters, topics, groups, scripts…';
+
+  @override
+  String get commandPaletteKindDestination => 'Destination';
+
+  @override
+  String get commandPaletteKindCluster => 'Cluster';
+
+  @override
+  String get commandPaletteKindTopic => 'Topic';
+
+  @override
+  String get commandPaletteKindConsumerGroup => 'Consumer Group';
+
+  @override
+  String get commandPaletteKindScript => 'Script';
+
+  @override
+  String get commandPaletteKindReference => 'Reference';
+
+  @override
+  String get commandPaletteOpenReference => 'Open reference in Quick Jump';
+
+  @override
+  String get commandPaletteActiveCluster => 'active';
+
+  @override
+  String get commandPaletteNoResults => 'No matching results';
+
+  @override
+  String commandPaletteResultsCap(int shown, int total) {
+    return '$shown of $total matches, keep typing';
+  }
+
+  @override
+  String get commandPaletteGroupsNotLoadedNote =>
+      'Consumer groups appear after Consumer Lag has loaded them.';
+
+  @override
+  String get commandPaletteListLabel => 'Command palette results';
+
+  @override
+  String commandPalettePartitionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count partitions',
+      one: '1 partition',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String commandPaletteStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count steps',
+      one: '1 step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String consumerGroupNotFound(String id) {
+    return 'Consumer group $id not found';
+  }
+
+  @override
+  String get scriptNotFound => 'Script not found';
 }

@@ -22,6 +22,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('⌘B'), findsWidgets);
+    expect(find.text('⌘K'), findsOneWidget);
 
     debugDefaultTargetPlatformOverride = TargetPlatform.linux;
     await tester.pumpWidget(
@@ -33,5 +34,6 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Ctrl+B'), findsWidgets);
+    expect(find.text('Ctrl+K'), findsOneWidget);
   });
 }

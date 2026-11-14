@@ -3,6 +3,8 @@ import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
+import 'package:kafkalyzer/src/features/consumer/application/consumer_group_directory.dart';
+import 'package:kafkalyzer/src/features/navigation/main_navigation_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
@@ -64,6 +66,12 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
   );
   getIt.registerLazySingleton<SchemaController>(() => SchemaController());
   getIt.registerLazySingleton<ThemeController>(() => ThemeController());
+  getIt.registerLazySingleton<MainNavigationController>(
+    () => MainNavigationController(),
+  );
+  getIt.registerLazySingleton<ConsumerGroupDirectory>(
+    () => ConsumerGroupDirectory(),
+  );
 
   getIt.registerLazySingleton<ScriptRepository>(() => ScriptRepository());
   getIt.registerLazySingleton<ScriptController>(() => ScriptController());

@@ -4866,6 +4866,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shift'**
   String get shortcutKeyShift;
+
+  /// No description provided for @shortcutCommandPalette.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette'**
+  String get shortcutCommandPalette;
+
+  /// No description provided for @commandPaletteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Command Palette'**
+  String get commandPaletteTitle;
+
+  /// No description provided for @commandPaletteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search clusters, topics, groups, scripts…'**
+  String get commandPaletteHint;
+
+  /// No description provided for @commandPaletteKindDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get commandPaletteKindDestination;
+
+  /// No description provided for @commandPaletteKindCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster'**
+  String get commandPaletteKindCluster;
+
+  /// No description provided for @commandPaletteKindTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic'**
+  String get commandPaletteKindTopic;
+
+  /// No description provided for @commandPaletteKindConsumerGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumer Group'**
+  String get commandPaletteKindConsumerGroup;
+
+  /// No description provided for @commandPaletteKindScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Script'**
+  String get commandPaletteKindScript;
+
+  /// No description provided for @commandPaletteKindReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get commandPaletteKindReference;
+
+  /// No description provided for @commandPaletteOpenReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Open reference in Quick Jump'**
+  String get commandPaletteOpenReference;
+
+  /// No description provided for @commandPaletteActiveCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'active'**
+  String get commandPaletteActiveCluster;
+
+  /// No description provided for @commandPaletteNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching results'**
+  String get commandPaletteNoResults;
+
+  /// No description provided for @commandPaletteResultsCap.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total} matches, keep typing'**
+  String commandPaletteResultsCap(int shown, int total);
+
+  /// No description provided for @commandPaletteGroupsNotLoadedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumer groups appear after Consumer Lag has loaded them.'**
+  String get commandPaletteGroupsNotLoadedNote;
+
+  /// No description provided for @commandPaletteListLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Command palette results'**
+  String get commandPaletteListLabel;
+
+  /// No description provided for @commandPalettePartitionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 partition} other{{count} partitions}}'**
+  String commandPalettePartitionsCount(int count);
+
+  /// No description provided for @commandPaletteStepsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 step} other{{count} steps}}'**
+  String commandPaletteStepsCount(int count);
+
+  /// No description provided for @consumerGroupNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumer group {id} not found'**
+  String consumerGroupNotFound(String id);
+
+  /// No description provided for @scriptNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Script not found'**
+  String get scriptNotFound;
 }
 
 class _AppLocalizationsDelegate

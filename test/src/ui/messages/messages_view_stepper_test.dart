@@ -587,4 +587,37 @@ void main() {
       expect(diffView.selectedMessage?.key, equals('order-100'));
     },
   );
+
+  testWidgets(
+    'Ctrl+K and Meta+K do not step messages while plain K still steps',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('order-101', findRichText: true).first);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 3'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.pumpAndSettle();
+      expect(find.text('1 of 3'), findsOneWidget);
+    },
+  );
 }

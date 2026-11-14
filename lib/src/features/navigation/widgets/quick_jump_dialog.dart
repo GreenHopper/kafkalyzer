@@ -9,6 +9,7 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 class QuickJumpDialog extends StatefulWidget {
   final List<ClusterProfile>? availableClusters;
   final ClusterProfile? currentCluster;
+  final String? initialInput;
   final Future<void> Function(
     ClusterProfile cluster,
     String topic,
@@ -22,6 +23,7 @@ class QuickJumpDialog extends StatefulWidget {
     super.key,
     this.availableClusters,
     this.currentCluster,
+    this.initialInput,
     this.onJump,
   });
 
@@ -40,7 +42,7 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
   @override
   void initState() {
     super.initState();
-    _inputController = TextEditingController();
+    _inputController = TextEditingController(text: widget.initialInput);
 
     if (widget.availableClusters != null) {
       _clusters = widget.availableClusters!;
@@ -53,6 +55,13 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
     _selectedCluster =
         widget.currentCluster ??
         (_clusters.isNotEmpty ? _clusters.first : null);
+
+    if (widget.initialInput != null && widget.initialInput!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _onInputChanged(widget.initialInput!, AppLocalizations.of(context));
+      });
+    }
   }
 
   @override

@@ -2794,4 +2794,82 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shortcutKeyShift => 'Umschalt';
+
+  @override
+  String get shortcutCommandPalette => 'Befehlspalette';
+
+  @override
+  String get commandPaletteTitle => 'Befehlspalette';
+
+  @override
+  String get commandPaletteHint => 'Cluster, Topics, Gruppen, Skripte suchen…';
+
+  @override
+  String get commandPaletteKindDestination => 'Bereich';
+
+  @override
+  String get commandPaletteKindCluster => 'Cluster';
+
+  @override
+  String get commandPaletteKindTopic => 'Topic';
+
+  @override
+  String get commandPaletteKindConsumerGroup => 'Consumer-Gruppe';
+
+  @override
+  String get commandPaletteKindScript => 'Skript';
+
+  @override
+  String get commandPaletteKindReference => 'Referenz';
+
+  @override
+  String get commandPaletteOpenReference => 'Referenz in Quick Jump öffnen';
+
+  @override
+  String get commandPaletteActiveCluster => 'aktiv';
+
+  @override
+  String get commandPaletteNoResults => 'Keine passenden Ergebnisse';
+
+  @override
+  String commandPaletteResultsCap(int shown, int total) {
+    return '$shown von $total Treffern, weitertippen';
+  }
+
+  @override
+  String get commandPaletteGroupsNotLoadedNote =>
+      'Consumer-Gruppen erscheinen, nachdem Consumer Lag sie geladen hat.';
+
+  @override
+  String get commandPaletteListLabel => 'Ergebnisse der Befehlspalette';
+
+  @override
+  String commandPalettePartitionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Partitionen',
+      one: '1 Partition',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String commandPaletteStepsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Schritte',
+      one: '1 Schritt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String consumerGroupNotFound(String id) {
+    return 'Consumer-Gruppe $id nicht gefunden';
+  }
+
+  @override
+  String get scriptNotFound => 'Skript nicht gefunden';
 }

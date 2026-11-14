@@ -237,9 +237,17 @@ abstract final class AppShortcuts {
     description: (l10n) => l10n.shortcutShowOverview,
   );
 
+  static final ShortcutEntry commandPalette = ShortcutEntry(
+    id: 'global.command_palette',
+    context: ShortcutContext.global,
+    keys: const [ShortcutKey(LogicalKeyboardKey.keyK, primaryModifier: true)],
+    description: (l10n) => l10n.shortcutCommandPalette,
+  );
+
   /// Every registered shortcut in display order.
   static final List<ShortcutEntry> all = [
     showOverview,
+    commandPalette,
     toggleExplorerSidebar,
     quickJump,
     toggleScriptsSidebar,

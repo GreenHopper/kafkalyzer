@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/src/features/navigation/command_palette/command_palette_dialog.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +9,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/main_layout.dart';
+import 'package:kafkalyzer/src/features/navigation/main_navigation_controller.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
@@ -174,6 +177,9 @@ void main() {
     await getIt.reset();
     getIt.registerSingleton<Logger>(Logger());
     getIt.registerSingleton<ThemeController>(ThemeController());
+    getIt.registerSingleton<MainNavigationController>(
+      MainNavigationController(),
+    );
     getIt.registerSingleton<ActiveConnectionController>(
       FakeActiveConnectionController(),
     );
@@ -484,6 +490,112 @@ void main() {
       await tester.pumpAndSettle();
       expect(controller.text, '?');
       expect(find.byType(ShortcutOverviewDialog), findsNothing);
+    },
+  );
+
+  testWidgets('MainNavigationController.select(settings) shows SettingsView', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pumpAndSettle();
+
+    getIt<MainNavigationController>().select(MainDestination.settings);
+    await tester.pumpAndSettle();
+
+    final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+    expect(rail.selectedIndex, 3);
+  });
+
+  testWidgets(
+    'Ctrl+K opens CommandPaletteDialog from any destination and not over dialogs or twice',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      getIt<MainNavigationController>().select(MainDestination.settings);
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.byType(CommandPaletteDialog), findsOneWidget);
+
+      // Second Ctrl+K does not open a second palette.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.byType(CommandPaletteDialog), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(CommandPaletteDialog), findsNothing);
+
+      // Open ShortcutOverviewDialog first; Ctrl+K must not open over it.
+      await tester.sendKeyEvent(LogicalKeyboardKey.f1);
+      await tester.pumpAndSettle();
+      expect(find.byType(ShortcutOverviewDialog), findsOneWidget);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.byType(CommandPaletteDialog), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'macOS keeps Ctrl+K in focused TextField while Meta+K opens CommandPaletteDialog',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      addTearDown(() {
+        debugDefaultTargetPlatformOverride = null;
+      });
+
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Column(
+            children: [
+              Material(child: TextField(controller: controller)),
+              const Expanded(child: MainLayout()),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      // Ctrl+K on macOS in a focused TextField does not open palette.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect(find.byType(CommandPaletteDialog), findsNothing);
+
+      // Meta+K on macOS opens palette even in a focused TextField.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pumpAndSettle();
+      expect(find.byType(CommandPaletteDialog), findsOneWidget);
     },
   );
 }

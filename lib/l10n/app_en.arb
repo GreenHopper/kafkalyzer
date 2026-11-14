@@ -1414,5 +1414,45 @@
   "shortcutKeyEnter": "Enter",
   "shortcutKeyArrowDown": "Down Arrow",
   "shortcutKeyArrowUp": "Up Arrow",
-  "shortcutKeyShift": "Shift"
+  "shortcutKeyShift": "Shift",
+  "shortcutCommandPalette": "Command palette",
+  "commandPaletteTitle": "Command Palette",
+  "commandPaletteHint": "Search clusters, topics, groups, scripts…",
+  "commandPaletteKindDestination": "Destination",
+  "commandPaletteKindCluster": "Cluster",
+  "commandPaletteKindTopic": "Topic",
+  "commandPaletteKindConsumerGroup": "Consumer Group",
+  "commandPaletteKindScript": "Script",
+  "commandPaletteKindReference": "Reference",
+  "commandPaletteOpenReference": "Open reference in Quick Jump",
+  "commandPaletteActiveCluster": "active",
+  "commandPaletteNoResults": "No matching results",
+  "commandPaletteResultsCap": "{shown} of {total} matches, keep typing",
+  "@commandPaletteResultsCap": {
+    "placeholders": {
+      "shown": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "commandPaletteGroupsNotLoadedNote": "Consumer groups appear after Consumer Lag has loaded them.",
+  "commandPaletteListLabel": "Command palette results",
+  "commandPalettePartitionsCount": "{count, plural, =1{1 partition} other{{count} partitions}}",
+  "@commandPalettePartitionsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "commandPaletteStepsCount": "{count, plural, =1{1 step} other{{count} steps}}",
+  "@commandPaletteStepsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "consumerGroupNotFound": "Consumer group {id} not found",
+  "@consumerGroupNotFound": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "scriptNotFound": "Script not found"
 }

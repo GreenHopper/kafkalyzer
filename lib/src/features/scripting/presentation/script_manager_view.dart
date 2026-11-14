@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_editor.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/navigation/main_navigation_controller.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_run_view.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
@@ -35,11 +36,18 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
+  String? _pendingScriptId;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadSidebarPreference();
+
+    if (getIt.isRegistered<MainNavigationController>()) {
+      getIt<MainNavigationController>().addListener(_consumeNavigationRequest);
+      _consumeNavigationRequest();
+    }
 
     // Attempt to restore state immediately after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -70,13 +78,57 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
 
   @override
   void dispose() {
+    if (getIt.isRegistered<MainNavigationController>()) {
+      getIt<MainNavigationController>().removeListener(
+        _consumeNavigationRequest,
+      );
+    }
     _searchController.dispose();
     getIt<ScriptController>().removeListener(_attemptRestoreState);
     _tabController.dispose();
     super.dispose();
   }
 
+  void _consumeNavigationRequest() {
+    if (!mounted || !getIt.isRegistered<MainNavigationController>()) return;
+    final scriptId = getIt<MainNavigationController>().takeScriptRequest();
+    if (scriptId == null) return;
+    _pendingScriptId = scriptId;
+    _applyPendingScriptRequest();
+  }
+
+  bool _applyPendingScriptRequest() {
+    final scriptId = _pendingScriptId;
+    if (scriptId == null) return false;
+    final controller = getIt<ScriptController>();
+    if (controller.isLoading && controller.scripts.isEmpty) {
+      return true;
+    }
+    _pendingScriptId = null;
+    final match = controller.scripts.where((s) => s.id == scriptId).firstOrNull;
+    if (match != null) {
+      setState(() {
+        _selectedScript = match;
+        _rerunParams = null;
+        _runViewKey = UniqueKey();
+      });
+      if (_tabController.index != 0) {
+        _tabController.animateTo(0);
+      }
+    } else if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(l10n.scriptNotFound)));
+      });
+    }
+    return true;
+  }
+
   void _attemptRestoreState() {
+    if (_applyPendingScriptRequest()) return;
     // If user has already selected a script, don't override it automatically
     // unless you want to force show the running one?
     // Generally, if we just opened the view and _selectedScript is null, we restore.

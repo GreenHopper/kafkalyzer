@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
+import 'package:kafkalyzer/src/features/consumer/application/consumer_group_directory.dart';
+import 'package:kafkalyzer/src/features/navigation/main_navigation_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
@@ -85,6 +87,9 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
   // Lag in messages at which a group is marked; 0 disables the marking.
   int _lagWarnThreshold = 0;
+  String? _pendingRevealGroupId;
+  String? _revealedGroupId;
+  int _revealNonce = 0;
 
   void _appendLagReading(String groupId, Map<String, int> readings, int total) {
     final now = DateTime.now();
@@ -138,6 +143,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _loadConcurrencyLimit();
+    if (getIt.isRegistered<MainNavigationController>()) {
+      getIt<MainNavigationController>().addListener(_consumeNavigationRequest);
+      _consumeNavigationRequest();
+    }
   }
 
   Future<void> _loadConcurrencyLimit() async {
@@ -154,10 +163,56 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
   @override
   void dispose() {
+    if (getIt.isRegistered<MainNavigationController>()) {
+      getIt<MainNavigationController>().removeListener(
+        _consumeNavigationRequest,
+      );
+    }
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _refreshTimer?.cancel();
     super.dispose();
+  }
+
+  void _consumeNavigationRequest() {
+    if (!mounted || !getIt.isRegistered<MainNavigationController>()) return;
+    final groupId = getIt<MainNavigationController>()
+        .takeConsumerGroupRequest();
+    if (groupId == null) return;
+
+    if (_lags.isEmpty && (_isCycleRunning || _lastProfile == null)) {
+      setState(() {
+        _pendingRevealGroupId = groupId;
+        _statusFilter = 'All';
+      });
+      _searchController.text = groupId;
+    } else {
+      _revealGroup(groupId);
+    }
+  }
+
+  void _revealGroup(String groupId) {
+    final exists = _lags.any((g) => g.groupId == groupId);
+    setState(() {
+      _statusFilter = 'All';
+      _filterText = groupId;
+      _revealedGroupId = exists ? groupId : null;
+      _revealNonce++;
+    });
+    if (_searchController.text != groupId) {
+      _searchController.text = groupId;
+    }
+    if (!exists && mounted) {
+      final l10n = AppLocalizations.of(context)!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(
+            SnackBar(content: Text(l10n.consumerGroupNotFound(groupId))),
+          );
+      });
+    }
   }
 
   void _onSearchChanged() {
@@ -210,6 +265,12 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           activeController.activeProfile != profile) {
         return;
       }
+      if (getIt.isRegistered<ConsumerGroupDirectory>()) {
+        getIt<ConsumerGroupDirectory>().record(
+          profile.name,
+          lags.map((l) => l.groupId),
+        );
+      }
       setState(() {
         _lags = lags;
         _lastFetchDuration = stopwatch.elapsed;
@@ -223,6 +284,11 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         _partitionDeltas.clear();
         _activeLagQueries = 0;
       });
+      if (_pendingRevealGroupId != null) {
+        final pending = _pendingRevealGroupId!;
+        _pendingRevealGroupId = null;
+        _revealGroup(pending);
+      }
       _enqueueUnloadedGroups(_filteredLagsFor(lags), profile, generation);
     } catch (e) {
       stopwatch.stop();
@@ -1079,6 +1145,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                 margin: const EdgeInsets.only(bottom: 8),
                 clipBehavior: Clip.antiAlias,
                 child: ExpansionTile(
+                  key: _revealedGroupId == group.groupId
+                      ? ValueKey('reveal_${group.groupId}_$_revealNonce')
+                      : ValueKey(group.groupId),
+                  initiallyExpanded: _revealedGroupId == group.groupId,
                   tilePadding: const EdgeInsets.only(left: 24, right: 24),
                   title: Row(
                     children: [
