@@ -4272,6 +4272,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'TLS certificate verification failed: {error}'**
   String tlsVerificationFailedConnectError(String error);
+
+  /// No description provided for @messageFetchFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to fetch messages'**
+  String get messageFetchFailedTitle;
+
+  /// No description provided for @topicsLoadFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load topics'**
+  String get topicsLoadFailedTitle;
+
+  /// No description provided for @subjectsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load schemas: {error}'**
+  String subjectsLoadFailed(String error);
+
+  /// No description provided for @columnFiltersNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No rows match the active column filters.'**
+  String get columnFiltersNoMatch;
+
+  /// No description provided for @resetColumnFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset filters'**
+  String get resetColumnFilters;
 }
 
 class _AppLocalizationsDelegate

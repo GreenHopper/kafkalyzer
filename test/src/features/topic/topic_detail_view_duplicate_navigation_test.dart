@@ -83,6 +83,9 @@ class _RecordingStreamController extends ChangeNotifier
   }
 
   @override
+  String? get error => null;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

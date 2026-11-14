@@ -41,7 +41,7 @@ void main() {
   );
 
   setUp(() {
-    mockController = MockSchemaController();
+    mockController = _TestMockSchemaController();
   });
 
   group('SchemaViewerDialog', () {
@@ -245,4 +245,9 @@ void main() {
       );
     });
   });
+}
+
+class _TestMockSchemaController extends MockSchemaController {
+  @override
+  String? errorFor(ClusterProfile cluster) => null;
 }

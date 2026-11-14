@@ -45,7 +45,7 @@ void main() {
     );
 
     setUp(() {
-      mockController = MockSchemaController();
+      mockController = _TestMockSchemaController();
     });
 
     Widget createTestApp(Widget child) {
@@ -205,7 +205,7 @@ void main() {
     );
 
     setUp(() {
-      mockController = MockSchemaController();
+      mockController = _TestMockSchemaController();
     });
 
     testWidgets('shows compare schema button in toolbar', (tester) async {
@@ -238,4 +238,9 @@ void main() {
       expect(find.byKey(const Key('schema_compare_button')), findsOneWidget);
     });
   });
+}
+
+class _TestMockSchemaController extends MockSchemaController {
+  @override
+  String? errorFor(ClusterProfile cluster) => null;
 }

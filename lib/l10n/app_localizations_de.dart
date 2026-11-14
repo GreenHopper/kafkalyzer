@@ -2457,4 +2457,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String tlsVerificationFailedConnectError(String error) {
     return 'TLS-Zertifikatsprüfung fehlgeschlagen: $error';
   }
+
+  @override
+  String get messageFetchFailedTitle =>
+      'Nachrichten konnten nicht geladen werden';
+
+  @override
+  String get topicsLoadFailedTitle => 'Topics konnten nicht geladen werden';
+
+  @override
+  String subjectsLoadFailed(String error) {
+    return 'Schemas konnten nicht geladen werden: $error';
+  }
+
+  @override
+  String get columnFiltersNoMatch =>
+      'Keine Zeilen entsprechen den aktiven Spaltenfiltern.';
+
+  @override
+  String get resetColumnFilters => 'Filter zurücksetzen';
 }

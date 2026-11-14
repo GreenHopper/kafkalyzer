@@ -63,8 +63,14 @@ void main() {
 
       await controller.runStartupSweep();
 
-      expect(listController.clusters[0].tlsVerification, TlsVerification.enabled);
-      expect(listController.clusters[1].tlsVerification, TlsVerification.enabled);
+      expect(
+        listController.clusters[0].tlsVerification,
+        TlsVerification.enabled,
+      );
+      expect(
+        listController.clusters[1].tlsVerification,
+        TlsVerification.enabled,
+      );
       expect(controller.pendingDecisions, isEmpty);
 
       final prefs = await SharedPreferences.getInstance();
@@ -173,30 +179,37 @@ void main() {
       final f2 = controller.resolveBeforeConnect(profile);
       expect(probeCalls, 1);
 
-      completer.complete(const TlsProbeResult(outcome: TlsProbeOutcome.verified));
+      completer.complete(
+        const TlsProbeResult(outcome: TlsProbeOutcome.verified),
+      );
       final results = await Future.wait([f1, f2]);
       expect(results[0].profile.tlsVerification, TlsVerification.enabled);
       expect(results[1].profile.tlsVerification, TlsVerification.enabled);
     });
 
-    test('drops result when profile is deleted while probe is in flight', () async {
-      final profile = makeProfile('ephemeral');
-      await listController.addCluster(profile);
+    test(
+      'drops result when profile is deleted while probe is in flight',
+      () async {
+        final profile = makeProfile('ephemeral');
+        await listController.addCluster(profile);
 
-      final completer = Completer<TlsProbeResult>();
-      final controller = TlsTransitionController(
-        clusterListProvider: () => listController,
-        probeFn: (_) => completer.future,
-      );
+        final completer = Completer<TlsProbeResult>();
+        final controller = TlsTransitionController(
+          clusterListProvider: () => listController,
+          probeFn: (_) => completer.future,
+        );
 
-      final f = controller.resolveBeforeConnect(profile);
-      await listController.deleteCluster(0);
-      expect(listController.clusters, isEmpty);
+        final f = controller.resolveBeforeConnect(profile);
+        await listController.deleteCluster(0);
+        expect(listController.clusters, isEmpty);
 
-      completer.complete(const TlsProbeResult(outcome: TlsProbeOutcome.verified));
-      final res = await f;
-      expect(listController.clusters, isEmpty);
-      expect(res.profile.tlsVerification, TlsVerification.enabled);
-    });
+        completer.complete(
+          const TlsProbeResult(outcome: TlsProbeOutcome.verified),
+        );
+        final res = await f;
+        expect(listController.clusters, isEmpty);
+        expect(res.profile.tlsVerification, TlsVerification.enabled);
+      },
+    );
   });
 }

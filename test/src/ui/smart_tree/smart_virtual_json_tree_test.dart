@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/ui/smart_tree/copyable_node_text.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_composite_badge.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_virtual_json_tree.dart';
 
@@ -407,5 +410,71 @@ void main() {
         expect(find.text('🎯'), findsOneWidget);
       },
     );
+
+    test(
+      'copyableNodeText serializes Map/List as pretty JSON and scalars as plain text',
+      () {
+        expect(
+          copyableNodeText({
+            'b': 2,
+            'a': [1, true],
+          }),
+          const JsonEncoder.withIndent('  ').convert({
+            'b': 2,
+            'a': [1, true],
+          }),
+        );
+        expect(
+          copyableNodeText(['x', 42]),
+          const JsonEncoder.withIndent('  ').convert(['x', 42]),
+        );
+        expect(copyableNodeText('hello'), 'hello');
+        expect(copyableNodeText(42), '42');
+        expect(copyableNodeText(null), 'null');
+      },
+    );
+
+    testWidgets('copying a nested Map node copies valid pretty JSON', (
+      tester,
+    ) async {
+      String? copiedText;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copiedText = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+
+      final nested = {'id': 1042, 'name': 'Acme'};
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              width: 600,
+              height: 400,
+              child: SmartVirtualJsonTree(
+                json: {'customer': nested},
+                autoExpandSingleItemCollections: false,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.copy).first);
+      await tester.pump();
+
+      expect(copiedText, isNotNull);
+      expect(jsonDecode(copiedText!), nested);
+      expect(copiedText, const JsonEncoder.withIndent('  ').convert(nested));
+    });
   });
 }

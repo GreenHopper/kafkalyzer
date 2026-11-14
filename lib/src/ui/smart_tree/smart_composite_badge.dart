@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/src/ui/smart_tree/copyable_node_text.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/entity_formatter_registry.dart';
 
 /// An interactive badge displaying a compressed summary of a composite semantic entity.
@@ -56,12 +56,7 @@ class _SmartCompositeBadgeState extends State<SmartCompositeBadge> {
   }
 
   void _copyFullObject(BuildContext context) {
-    String text;
-    try {
-      text = const JsonEncoder.withIndent('  ').convert(widget.data);
-    } catch (_) {
-      text = widget.data.toString();
-    }
+    final text = copyableNodeText(widget.data);
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

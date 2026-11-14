@@ -86,6 +86,9 @@ class MockMultiSearchController extends MultiSearchController {
   final Map<SearchTarget, SearchStatus> status = {};
 
   @override
+  final Map<SearchTarget, String> errors = {};
+
+  @override
   final Map<SearchTarget, SearchProgress> progress = {};
 
   @override
@@ -652,6 +655,39 @@ void main() {
         expect(
           mockMultiSearchController.addedTargets.first.profile.tlsVerification,
           TlsVerification.unreviewed,
+        );
+      },
+    );
+
+    test(
+      'runScript marks topic step as error when MultiSearchController target errors',
+      () async {
+        mockMultiSearchController.onTargetAdded = (target) async {
+          mockMultiSearchController.status[target] = SearchStatus.error;
+          mockMultiSearchController.errors[target] = 'Broker auth failed';
+          mockMultiSearchController._notifyListeners();
+        };
+
+        const script = Script(
+          id: 'err-script',
+          name: 'Error Script',
+          steps: [
+            ScriptStep(
+              id: 's1',
+              name: 'Step 1',
+              clusterName: 'TestCluster',
+              topicNames: ['test-topic'],
+            ),
+          ],
+        );
+
+        await scriptRunner.runScript(script, {});
+
+        expect(scriptRunner.topicStatuses['s1_test-topic'], StepStatus.error);
+        expect(scriptRunner.stepStatuses['s1'], StepStatus.error);
+        expect(
+          scriptRunner.stepErrorMessages['s1'],
+          contains('Broker auth failed'),
         );
       },
     );

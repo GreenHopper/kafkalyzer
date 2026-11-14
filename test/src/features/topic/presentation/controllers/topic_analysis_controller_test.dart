@@ -167,7 +167,11 @@ void main() {
       expect(controller.isImported, isTrue);
 
       await controller.startAnalysis(
-        const ClusterProfile(name: 'test', bootstrapServers: 'localhost:9092', tlsVerification: TlsVerification.enabled),
+        const ClusterProfile(
+          name: 'test',
+          bootstrapServers: 'localhost:9092',
+          tlsVerification: TlsVerification.enabled,
+        ),
         'orders',
       );
 

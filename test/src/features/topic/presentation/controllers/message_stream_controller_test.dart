@@ -56,7 +56,7 @@ void main() {
     await controller.stopStreaming();
     controller.dispose();
     if (!streamController.isClosed) {
-      await streamController.close();
+      unawaited(streamController.close());
     }
   });
 
@@ -123,5 +123,57 @@ void main() {
 
     expect(controller.messages, hasLength(200));
     expect(controller.isStreaming, isFalse);
+  });
+
+  test(
+    'stream error sets error and stops streaming, and new startStreaming clears it',
+    () async {
+      await startUnlimited();
+      streamController.addError(Exception('Broker disconnected'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.isStreaming, isFalse);
+      expect(controller.error, contains('Broker disconnected'));
+
+      // New startStreaming clears the error
+      streamController = StreamController<KafkaMessage>();
+      await startUnlimited();
+      expect(controller.error, isNull);
+    },
+  );
+
+  test('factory throwing sets error and stops streaming', () async {
+    final throwingController = MessageStreamController(
+      logger: Logger(level: Level.off),
+      consumeStreamFactory:
+          ({
+            required profile,
+            required topic,
+            filterTerms,
+            filterField,
+            required filterType,
+            required searchScope,
+            fastTraceKey,
+            startOffset,
+            startTimestamp,
+            startPartition,
+            maxResults,
+            endOffset,
+            endTimestamp,
+            required runForever,
+            startFromTail,
+          }) => throw StateError('Factory boom'),
+    );
+
+    await throwingController.startStreaming(
+      profile,
+      'orders',
+      filterType: FilterType.contains,
+      searchScope: SearchScope.both,
+    );
+
+    expect(throwingController.isStreaming, isFalse);
+    expect(throwingController.error, contains('Factory boom'));
+    throwingController.dispose();
   });
 }

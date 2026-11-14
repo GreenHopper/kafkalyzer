@@ -842,7 +842,8 @@ class ScriptRunner extends ChangeNotifier {
       }
     }
 
-    if (_multiSearchController.status[target] == SearchStatus.stopped) {
+    if (_multiSearchController.status[target] == SearchStatus.stopped ||
+        _multiSearchController.status[target] == SearchStatus.error) {
       if (!completer.isCompleted) completer.complete();
     }
 
@@ -853,9 +854,12 @@ class ScriptRunner extends ChangeNotifier {
     _multiSearchController.removeListener(listenerFn);
 
     // Process extractions after completion
-    if (_multiSearchController.status[target] != SearchStatus.error) {
-      await _processExtractions(step, target);
+    if (_multiSearchController.status[target] == SearchStatus.error) {
+      throw StateError(
+        _multiSearchController.errors[target] ?? 'Search failed for $topicName',
+      );
     }
+    await _processExtractions(step, target);
   }
 
   ({int? offset, int? timestamp}) _resolveStartStrategy(ScriptStep step) {

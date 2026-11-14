@@ -40,7 +40,11 @@ class MockClusterListController extends ClusterListController {
   MockClusterListController() : super();
   @override
   List<ClusterProfile> get clusters => [
-    const ClusterProfile(name: "Cluster A", bootstrapServers: "localhost:9092", tlsVerification: TlsVerification.enabled),
+    const ClusterProfile(
+      name: "Cluster A",
+      bootstrapServers: "localhost:9092",
+      tlsVerification: TlsVerification.enabled,
+    ),
   ];
 }
 

@@ -243,6 +243,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
                   messages: messages,
                   onFetchLatest: startStreaming,
                   isStreaming: streamController.isStreaming,
+                  errorMessage: streamController.error,
                   profile: widget.profile,
                   schemaViewBuilderWithPin:
                       (context, searchPhrase, onPinToColumn) {

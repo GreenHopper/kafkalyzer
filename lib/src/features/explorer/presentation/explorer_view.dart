@@ -292,6 +292,40 @@ class _ExplorerViewState extends State<ExplorerView> {
                 topicController,
               ),
             ],
+            if (activeController.activeProfile != null &&
+                schemaController.errorFor(activeController.activeProfile!) !=
+                    null)
+              Container(
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.subjectsLoadFailed(
+                          schemaController.errorFor(
+                            activeController.activeProfile!,
+                          )!,
+                        ),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             if (activeController.error != null)
               _buildErrorBox(context, activeController),
           ],
@@ -557,9 +591,56 @@ class _ExplorerViewState extends State<ExplorerView> {
     ActiveConnectionController activeController,
     TopicController topicController,
   ) {
+    final activeProfile = activeController.activeProfile!;
     if (activeController.isConnecting ||
-        topicController.isLoading(activeController.activeProfile!)) {
+        topicController.isLoading(activeProfile)) {
       return const Expanded(child: Center(child: CircularProgressIndicator()));
+    }
+
+    final topicError = topicController.errorFor(activeProfile);
+    final l10n = AppLocalizations.of(context)!;
+    if (topicError != null && activeController.topics.isEmpty) {
+      return Expanded(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 32,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.topicsLoadFailedTitle,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  topicError,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: () =>
+                      topicController.fetchTopics(activeProfile, force: true),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: Text(l10n.retry),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
     }
 
     final allTopicNames = activeController.topics.map((t) => t.name).toList();

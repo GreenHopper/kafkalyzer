@@ -23,9 +23,7 @@ class InsecureTlsBadge extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.errorContainer,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: colorScheme.error.withValues(alpha: 0.4),
-            ),
+            border: Border.all(color: colorScheme.error.withValues(alpha: 0.4)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

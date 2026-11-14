@@ -168,7 +168,11 @@ void main() {
       expect(controller.comparison, isNotNull);
 
       await controller.startAnalysis(
-        const ClusterProfile(name: 'test', bootstrapServers: 'localhost:9092', tlsVerification: TlsVerification.enabled),
+        const ClusterProfile(
+          name: 'test',
+          bootstrapServers: 'localhost:9092',
+          tlsVerification: TlsVerification.enabled,
+        ),
         'orders',
       );
       await controller.stopAnalysis();

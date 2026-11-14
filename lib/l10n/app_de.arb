@@ -879,5 +879,10 @@
   "tlsTransitionDialogBody": "Die Zertifikatsprüfung für das Cluster \"{clusterName}\" ist fehlgeschlagen. Wählen Sie, ob die TLS-Prüfung aktiviert bleiben soll (empfohlen) oder für dieses Profil deaktiviert werden soll.\n\nDetails: {error}",
   "tlsTransitionKeepEnabled": "Prüfung aktiviert lassen",
   "tlsTransitionDisable": "Prüfung deaktivieren (unsicher)",
-  "tlsVerificationFailedConnectError": "TLS-Zertifikatsprüfung fehlgeschlagen: {error}"
+  "tlsVerificationFailedConnectError": "TLS-Zertifikatsprüfung fehlgeschlagen: {error}",
+  "messageFetchFailedTitle": "Nachrichten konnten nicht geladen werden",
+  "topicsLoadFailedTitle": "Topics konnten nicht geladen werden",
+  "subjectsLoadFailed": "Schemas konnten nicht geladen werden: {error}",
+  "columnFiltersNoMatch": "Keine Zeilen entsprechen den aktiven Spaltenfiltern.",
+  "resetColumnFilters": "Filter zurücksetzen"
 }

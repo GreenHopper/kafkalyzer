@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
+import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
 
 class SearchTarget {
   final ClusterProfile profile;
@@ -134,11 +136,13 @@ class SearchProgress {
 
 class MultiSearchController extends ChangeNotifier {
   final Logger _logger = getIt<Logger>();
+  final MessageConsumeStreamFactory _consumeStreamFactory;
 
   String? _outputDirectory;
   String? get outputDirectory => _outputDirectory;
 
-  MultiSearchController() {
+  MultiSearchController({MessageConsumeStreamFactory? consumeStreamFactory})
+    : _consumeStreamFactory = consumeStreamFactory ?? consumeWithFilter {
     loadDirectory();
   }
 
@@ -161,6 +165,9 @@ class MultiSearchController extends ChangeNotifier {
   final Map<SearchTarget, SearchStatus> _status = {};
   Map<SearchTarget, SearchStatus> get status => Map.unmodifiable(_status);
 
+  final Map<SearchTarget, String> _errors = {};
+  Map<SearchTarget, String> get errors => Map.unmodifiable(_errors);
+
   final Map<SearchTarget, List<KafkaMessage>> _results = {};
   final Map<SearchTarget, List<KafkaMessage>> _cachedUnmodifiableResults = {};
 
@@ -176,7 +183,10 @@ class MultiSearchController extends ChangeNotifier {
     }
     // Aggregate for "All" view
     final all = _results.values.expand((element) => element).toList();
-    all.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    all.sort((a, b) {
+      final tsCmp = b.timestamp.compareTo(a.timestamp);
+      return tsCmp != 0 ? tsCmp : compareMessageIdentity(a, b);
+    });
     return all;
   }
 
@@ -235,6 +245,7 @@ class MultiSearchController extends ChangeNotifier {
       _stopSubscription(target);
       _results.remove(target);
       _progress.remove(target);
+      _errors.remove(target);
       _status[target] = SearchStatus.running;
 
       // Setup file saving if directory is selected
@@ -279,7 +290,7 @@ class MultiSearchController extends ChangeNotifier {
         );
       }
 
-      final stream = consumeWithFilter(
+      final stream = _consumeStreamFactory(
         profile: target.profile,
         topic: target.topic.name,
         filterTerms: finalFilterTerms,
@@ -375,7 +386,9 @@ class MultiSearchController extends ChangeNotifier {
         },
         onError: (e) {
           _logger.e("Error streaming from ${target.topic.name}", error: e);
+          _errors[target] = e.toString();
           _status[target] = SearchStatus.error;
+          _closeFileSink(target);
           notifyListeners();
         },
         onDone: () {
@@ -391,8 +404,10 @@ class MultiSearchController extends ChangeNotifier {
       _subscriptions[target] = subscription;
     } catch (e) {
       _logger.e("Failed to start stream for ${target.topic.name}", error: e);
+      _errors[target] = e.toString();
       _status[target] = SearchStatus.error;
       _closeFileSink(target);
+      notifyListeners();
     }
   }
 

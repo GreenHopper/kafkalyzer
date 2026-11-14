@@ -455,62 +455,68 @@ void main() {
         tlsVerification: TlsVerification.unreviewed,
       );
 
-      test('verified probe updates profile to enabled before validateConnection', () async {
-        final validatedProfiles = <ClusterProfile>[];
-        mockMetadataService.onValidate = ({required profile}) async {
-          validatedProfiles.add(profile);
-          return true;
-        };
+      test(
+        'verified probe updates profile to enabled before validateConnection',
+        () async {
+          final validatedProfiles = <ClusterProfile>[];
+          mockMetadataService.onValidate = ({required profile}) async {
+            validatedProfiles.add(profile);
+            return true;
+          };
 
-        final tlsController = TlsTransitionController(
-          probeFn: (_) async =>
-              const TlsProbeResult(outcome: TlsProbeOutcome.verified),
-        );
-        getIt.registerSingleton<TlsTransitionController>(tlsController);
+          final tlsController = TlsTransitionController(
+            probeFn: (_) async =>
+                const TlsProbeResult(outcome: TlsProbeOutcome.verified),
+          );
+          getIt.registerSingleton<TlsTransitionController>(tlsController);
 
-        await controller.connect(unreviewedProfile);
+          await controller.connect(unreviewedProfile);
 
-        expect(validatedProfiles, hasLength(1));
-        expect(
-          validatedProfiles.first.tlsVerification,
-          TlsVerification.enabled,
-        );
-        expect(
-          controller.activeProfile?.tlsVerification,
-          TlsVerification.enabled,
-        );
-        expect(controller.error, isNull);
-      });
+          expect(validatedProfiles, hasLength(1));
+          expect(
+            validatedProfiles.first.tlsVerification,
+            TlsVerification.enabled,
+          );
+          expect(
+            controller.activeProfile?.tlsVerification,
+            TlsVerification.enabled,
+          );
+          expect(controller.error, isNull);
+        },
+      );
 
-      test('rejected probe + keep verification on blocks connect without calling validateConnection', () async {
-        var validateCalled = false;
-        mockMetadataService.onValidate = ({required profile}) async {
-          validateCalled = true;
-          return true;
-        };
+      test(
+        'rejected probe + keep verification on blocks connect without calling validateConnection',
+        () async {
+          var validateCalled = false;
+          mockMetadataService.onValidate = ({required profile}) async {
+            validateCalled = true;
+            return true;
+          };
 
-        final tlsController = TlsTransitionController(
-          probeFn: (_) async => const TlsProbeResult(
-            outcome: TlsProbeOutcome.certificateRejected,
-            message: 'self-signed cert',
-          ),
-        );
-        getIt.registerSingleton<TlsTransitionController>(tlsController);
+          final tlsController = TlsTransitionController(
+            probeFn: (_) async => const TlsProbeResult(
+              outcome: TlsProbeOutcome.certificateRejected,
+              message: 'self-signed cert',
+            ),
+          );
+          getIt.registerSingleton<TlsTransitionController>(tlsController);
 
-        final connectFuture = controller.connect(unreviewedProfile);
-        await Future<void>.delayed(Duration.zero);
-        expect(tlsController.currentDecision, isNotNull);
+          final connectFuture = controller.connect(unreviewedProfile);
+          await Future<void>.delayed(Duration.zero);
+          expect(tlsController.currentDecision, isNotNull);
 
-        await tlsController.resolveDecision(
-          tlsController.currentDecision!,
-          keepVerificationEnabled: true,
-        );
-        await connectFuture;
+          await tlsController.resolveDecision(
+            tlsController.currentDecision!,
+            keepVerificationEnabled: true,
+          );
+          await connectFuture;
 
-        expect(validateCalled, isFalse);
-        expect(controller.activeProfile, isNull);
-        expect(controller.error, contains('self-signed cert'));
-      });
+          expect(validateCalled, isFalse);
+          expect(controller.activeProfile, isNull);
+          expect(controller.error, contains('self-signed cert'));
+        },
+      );
 
       test('rejected probe + disable connects with disabled profile', () async {
         final validatedProfiles = <ClusterProfile>[];
@@ -549,33 +555,36 @@ void main() {
         expect(controller.error, isNull);
       });
 
-      test('inconclusive probe keeps verification on during validateConnection and marks enabled on success', () async {
-        final validatedProfiles = <ClusterProfile>[];
-        mockMetadataService.onValidate = ({required profile}) async {
-          validatedProfiles.add(profile);
-          return true;
-        };
+      test(
+        'inconclusive probe keeps verification on during validateConnection and marks enabled on success',
+        () async {
+          final validatedProfiles = <ClusterProfile>[];
+          mockMetadataService.onValidate = ({required profile}) async {
+            validatedProfiles.add(profile);
+            return true;
+          };
 
-        final tlsController = TlsTransitionController(
-          probeFn: (_) async => const TlsProbeResult(
-            outcome: TlsProbeOutcome.inconclusive,
-            message: 'timed out',
-          ),
-        );
-        getIt.registerSingleton<TlsTransitionController>(tlsController);
+          final tlsController = TlsTransitionController(
+            probeFn: (_) async => const TlsProbeResult(
+              outcome: TlsProbeOutcome.inconclusive,
+              message: 'timed out',
+            ),
+          );
+          getIt.registerSingleton<TlsTransitionController>(tlsController);
 
-        await controller.connect(unreviewedProfile);
+          await controller.connect(unreviewedProfile);
 
-        expect(validatedProfiles, hasLength(1));
-        expect(
-          validatedProfiles.first.tlsVerification,
-          isNot(TlsVerification.disabled),
-        );
-        expect(
-          controller.activeProfile?.tlsVerification,
-          TlsVerification.enabled,
-        );
-      });
+          expect(validatedProfiles, hasLength(1));
+          expect(
+            validatedProfiles.first.tlsVerification,
+            isNot(TlsVerification.disabled),
+          );
+          expect(
+            controller.activeProfile?.tlsVerification,
+            TlsVerification.enabled,
+          );
+        },
+      );
     });
   });
 }

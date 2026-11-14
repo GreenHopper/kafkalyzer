@@ -340,7 +340,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Insecure TLS'), findsOneWidget);
         expect(
-          find.textContaining('Certificate and hostname verification is disabled'),
+          find.textContaining(
+            'Certificate and hostname verification is disabled',
+          ),
           findsOneWidget,
         );
 

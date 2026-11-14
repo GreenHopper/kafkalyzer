@@ -101,10 +101,7 @@ class TlsTransitionController extends ChangeNotifier {
   ) {
     final existing = _pendingDecisions
         .cast<TlsTransitionDecision?>()
-        .firstWhere(
-          (d) => d?.profile.name == profile.name,
-          orElse: () => null,
-        );
+        .firstWhere((d) => d?.profile.name == profile.name, orElse: () => null);
     if (existing != null) return existing;
 
     final decision = TlsTransitionDecision(

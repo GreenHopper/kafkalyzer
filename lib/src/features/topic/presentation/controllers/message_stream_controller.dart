@@ -76,10 +76,12 @@ class MessageStreamController extends ChangeNotifier {
   Timer? _throttleTimer;
   bool _hasPendingUiUpdate = false;
   bool _isStreaming = false;
+  String? _error;
 
   List<KafkaMessage> get messages =>
       _cachedUnmodifiableMessages ??= List.unmodifiable(_messages);
   bool get isStreaming => _isStreaming;
+  String? get error => _error;
   int _totalConsumed = 0;
   int get totalConsumed => _totalConsumed;
 
@@ -121,6 +123,7 @@ class MessageStreamController extends ChangeNotifier {
     _totalConsumed = 0;
     _totalToScan = 0;
     _startTime = DateTime.now();
+    _error = null;
     _isStreaming = true;
     _maxResults = maxResults;
     notifyListeners();
@@ -147,6 +150,8 @@ class MessageStreamController extends ChangeNotifier {
         _onMessageReceived,
         onError: (e) {
           _logger.e("Error consuming topic $topic", error: e);
+          _flushPendingUiUpdate();
+          _error = e.toString();
           _isStreaming = false;
           notifyListeners();
         },
@@ -157,6 +162,7 @@ class MessageStreamController extends ChangeNotifier {
       );
     } catch (e) {
       _logger.e("Failed to start stream", error: e);
+      _error = e.toString();
       _isStreaming = false;
       notifyListeners();
     }

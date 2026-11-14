@@ -4,35 +4,54 @@ import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'dart:convert';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:logger/logger.dart';
 
 class SchemaController extends ChangeNotifier {
   final SchemaRegistryService _registryService;
+  final Logger _logger = getIt.isRegistered<Logger>()
+      ? getIt<Logger>()
+      : Logger();
 
   SchemaController({SchemaRegistryService? registryService})
     : _registryService = registryService ?? getIt<SchemaRegistryService>();
 
   final Map<String, List<String>> _cache = {};
   final Map<String, bool> _isLoading = {};
+  final Map<String, String> _errors = {};
 
   List<String>? getSchemas(ClusterProfile cluster) => _cache[cluster.name];
 
   bool isLoading(ClusterProfile cluster) => _isLoading[cluster.name] ?? false;
 
+  String? errorFor(ClusterProfile cluster) => _errors[cluster.name];
+
   Future<void> fetchSchemas(
     ClusterProfile cluster, {
     bool force = false,
   }) async {
+    if (cluster.schemaRegistryUrl?.trim().isEmpty ?? true) {
+      _errors.remove(cluster.name);
+      _cache[cluster.name] = const [];
+      notifyListeners();
+      return;
+    }
+
     if (!force && _cache.containsKey(cluster.name)) return;
 
+    _errors.remove(cluster.name);
     _isLoading[cluster.name] = true;
     notifyListeners();
 
     try {
       final schemas = await _registryService.fetchSubjects(profile: cluster);
       _cache[cluster.name] = schemas;
-    } catch (e) {
-      debugPrint("Error fetching schemas for ${cluster.name}: $e");
-      // Optionally handle error state
+    } catch (e, st) {
+      _logger.e(
+        "Error fetching schemas for ${cluster.name}",
+        error: e,
+        stackTrace: st,
+      );
+      _errors[cluster.name] = e.toString();
     } finally {
       _isLoading[cluster.name] = false;
       notifyListeners();

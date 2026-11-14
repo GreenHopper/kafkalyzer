@@ -18,6 +18,7 @@ class FakeMessageExportService implements MessageExportService {
   List<KafkaMessage> exported = [];
   bool called = false;
   ExportFormat? lastFormat;
+  String? resultPath = '/tmp/export.json';
 
   @override
   Future<String?> exportMessages(
@@ -29,7 +30,7 @@ class FakeMessageExportService implements MessageExportService {
     called = true;
     exported = messages;
     lastFormat = format;
-    return null;
+    return resultPath;
   }
 
   @override
@@ -633,6 +634,152 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Keine Nachrichten zum Anzeigen'), findsOneWidget);
   });
+
+  testWidgets('cancelled export (null result) shows no SnackBar', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    fakeExportService.resultPath = null;
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.download));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('JSON (Full Payload)'));
+    await tester.pumpAndSettle();
+
+    expect(fakeExportService.called, isTrue);
+    expect(find.byType(SnackBar), findsNothing);
+    expect(find.text('Messages exported successfully'), findsNothing);
+  });
+
+  testWidgets('export menu is disabled when filtered message list is empty', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    // Filter out all messages via the search bar
+    await tester.enterText(
+      find.byType(TextField).first,
+      'nonexistent-filter-xyz',
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    final popupButton = tester.widget<PopupMenuButton<ExportFormat>>(
+      find.byType(PopupMenuButton<ExportFormat>),
+    );
+    expect(popupButton.enabled, isFalse);
+  });
+
+  testWidgets('errorMessage with empty messages renders error state', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(
+          body: MessagesView(
+            messages: [],
+            errorMessage: 'Broker connection refused',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Failed to fetch messages'), findsOneWidget);
+    expect(find.text('Broker connection refused'), findsOneWidget);
+  });
+
+  testWidgets('errorMessage with non-empty messages renders error banner', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: MessagesView(
+            messages: testMessages,
+            errorMessage: 'Stream interrupted',
+            onMessageTap: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Failed to fetch messages: Stream interrupted'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets(
+    'equal-timestamp messages sort deterministically regardless of input order',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final mA = KafkaMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 10,
+        key: 'k',
+        payload: 'alpha item',
+        timestamp: 5000,
+      );
+      final mB = KafkaMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 20,
+        key: 'k',
+        payload: 'beta item',
+        timestamp: 5000,
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(messages: [mB, mA], onMessageTap: (_) {}),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to timeline view where _compareMessages drives display order
+      await tester.tap(find.text('Timeline'));
+      await tester.pumpAndSettle();
+
+      final topA = tester
+          .getTopLeft(find.text('alpha item', findRichText: true))
+          .dy;
+      final topB = tester
+          .getTopLeft(find.text('beta item', findRichText: true))
+          .dy;
+      expect(topA, lessThan(topB));
+    },
+  );
 }
 
 void _dummyTap(KafkaMessage message) {}

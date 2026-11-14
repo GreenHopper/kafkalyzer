@@ -1274,5 +1274,15 @@
     "placeholders": {
       "error": { "type": "String" }
     }
-  }
+  },
+  "messageFetchFailedTitle": "Failed to fetch messages",
+  "topicsLoadFailedTitle": "Failed to load topics",
+  "subjectsLoadFailed": "Failed to load schemas: {error}",
+  "@subjectsLoadFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "columnFiltersNoMatch": "No rows match the active column filters.",
+  "resetColumnFilters": "Reset filters"
 }

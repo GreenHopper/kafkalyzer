@@ -15,6 +15,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/actionable_topic_empty_state.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -83,6 +84,9 @@ class MessagesView extends StatefulWidget {
   /// Optional active cluster profile.
   final ClusterProfile? profile;
 
+  /// Optional error message from the active stream/fetch.
+  final String? errorMessage;
+
   const MessagesView({
     super.key,
     required this.messages,
@@ -98,6 +102,7 @@ class MessagesView extends StatefulWidget {
     this.onFetchLatest,
     this.isStreaming = false,
     this.profile,
+    this.errorMessage,
   });
 
   @override
@@ -395,17 +400,19 @@ class MessagesViewState extends State<MessagesView> {
   }
 
   int _compareMessages(KafkaMessage a, KafkaMessage b) {
-    if (widget.sortComparator != null) {
-      return widget.sortComparator!(a, b);
-    }
-    final cmp = switch (_sortField) {
-      'partition' => a.partition.compareTo(b.partition),
-      'offset' => a.offset.compareTo(b.offset),
-      'key' => (a.key ?? '').compareTo(b.key ?? ''),
-      'value' => (a.payload ?? '').compareTo(b.payload ?? ''),
-      _ => a.timestamp.compareTo(b.timestamp),
-    };
-    return _sortAscending ? cmp : -cmp;
+    final cmp = widget.sortComparator != null
+        ? widget.sortComparator!(a, b)
+        : switch (_sortField) {
+            'partition' => a.partition.compareTo(b.partition),
+            'offset' => a.offset.compareTo(b.offset),
+            'key' => (a.key ?? '').compareTo(b.key ?? ''),
+            'value' => (a.payload ?? '').compareTo(b.payload ?? ''),
+            _ => a.timestamp.compareTo(b.timestamp),
+          };
+    final directed = (widget.sortComparator == null && !_sortAscending)
+        ? -cmp
+        : cmp;
+    return directed != 0 ? directed : compareMessageIdentity(a, b);
   }
 
   Future<void> _loadSortPreferences() async {
@@ -656,10 +663,13 @@ class MessagesViewState extends State<MessagesView> {
   @override
   Widget build(BuildContext context) {
     if (widget.messages.isEmpty) {
-      if (widget.onFetchLatest != null || widget.isStreaming) {
+      if (widget.onFetchLatest != null ||
+          widget.isStreaming ||
+          widget.errorMessage != null) {
         return ActionableTopicEmptyState(
           onFetch: widget.onFetchLatest,
           isStreaming: widget.isStreaming,
+          errorMessage: widget.errorMessage,
         );
       }
       final l10n = AppLocalizations.of(context);
@@ -669,6 +679,7 @@ class MessagesViewState extends State<MessagesView> {
     }
 
     final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Focus(
       focusNode: _shortcutFocusNode,
@@ -676,6 +687,35 @@ class MessagesViewState extends State<MessagesView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (widget.errorMessage != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: colorScheme.errorContainer,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 18,
+                    color: colorScheme.onErrorContainer,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${l10n.messageFetchFailedTitle}: ${widget.errorMessage!}',
+                      style: TextStyle(
+                        color: colorScheme.onErrorContainer,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  if (widget.onFetchLatest != null)
+                    TextButton(
+                      onPressed: widget.onFetchLatest,
+                      child: Text(l10n.retry),
+                    ),
+                ],
+              ),
+            ),
           if (widget.showHeader && !_isMaximized) ...[
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -855,6 +895,7 @@ class MessagesViewState extends State<MessagesView> {
                   ],
                   const SizedBox(width: 8),
                   PopupMenuButton<ExportFormat>(
+                    enabled: _cachedFilteredMessages.isNotEmpty,
                     tooltip: l10n.exportMessages,
                     icon: const Icon(Icons.download),
                     onSelected: (ExportFormat format) async {
@@ -867,22 +908,12 @@ class MessagesViewState extends State<MessagesView> {
                               isScriptingView:
                                   widget.showTopic || widget.showStep,
                             );
-                        if (context.mounted) {
-                          if (outputFile != null) {
-                            showExportSuccessSnackBar(
-                              context,
-                              message: l10n.messagesExportedSuccessfully,
-                              filePath: outputFile,
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  l10n.messagesExportedSuccessfully,
-                                ),
-                              ),
-                            );
-                          }
+                        if (context.mounted && outputFile != null) {
+                          showExportSuccessSnackBar(
+                            context,
+                            message: l10n.messagesExportedSuccessfully,
+                            filePath: outputFile,
+                          );
                         }
                       } catch (e) {
                         if (context.mounted) {

@@ -415,7 +415,11 @@ void main() {
 
       await service.saveClusters([
         ...loaded,
-        const ClusterProfile(name: 'Four', bootstrapServers: 'b:9092', tlsVerification: TlsVerification.enabled),
+        const ClusterProfile(
+          name: 'Four',
+          bootstrapServers: 'b:9092',
+          tlsVerification: TlsVerification.enabled,
+        ),
       ]);
       final prefs = await SharedPreferences.getInstance();
       final rawAfter = jsonDecode(prefs.getString('cluster_profiles')!) as List;
@@ -478,13 +482,33 @@ void main() {
       'handles replace, rename, skip, cancel, and intra-bundle duplicates',
       () async {
         final existing = [
-          const ClusterProfile(name: 'Prod', bootstrapServers: 'old:9092', tlsVerification: TlsVerification.enabled),
+          const ClusterProfile(
+            name: 'Prod',
+            bootstrapServers: 'old:9092',
+            tlsVerification: TlsVerification.enabled,
+          ),
         ];
         final imported = [
-          const ClusterProfile(name: ' prod ', bootstrapServers: 'new1:9092', tlsVerification: TlsVerification.enabled),
-          const ClusterProfile(name: 'Prod', bootstrapServers: 'new2:9092', tlsVerification: TlsVerification.enabled),
-          const ClusterProfile(name: 'PROD', bootstrapServers: 'new3:9092', tlsVerification: TlsVerification.enabled),
-          const ClusterProfile(name: 'Staging', bootstrapServers: 'stg:9092', tlsVerification: TlsVerification.enabled),
+          const ClusterProfile(
+            name: ' prod ',
+            bootstrapServers: 'new1:9092',
+            tlsVerification: TlsVerification.enabled,
+          ),
+          const ClusterProfile(
+            name: 'Prod',
+            bootstrapServers: 'new2:9092',
+            tlsVerification: TlsVerification.enabled,
+          ),
+          const ClusterProfile(
+            name: 'PROD',
+            bootstrapServers: 'new3:9092',
+            tlsVerification: TlsVerification.enabled,
+          ),
+          const ClusterProfile(
+            name: 'Staging',
+            bootstrapServers: 'stg:9092',
+            tlsVerification: TlsVerification.enabled,
+          ),
         ];
 
         final suggestions = <String>[];
@@ -539,44 +563,52 @@ void main() {
       );
     });
 
-    test('saveClusters and loadClusters preserve disabled tlsVerification', () async {
-      final disabled = fullProfile(name: 'insecure').copyWith(
-        tlsVerification: TlsVerification.disabled,
-      );
-      await service.saveClusters([disabled]);
-      final loaded = await service.loadClusters();
-      expect(loaded, hasLength(1));
-      expect(loaded.first.tlsVerification, TlsVerification.disabled);
-    });
+    test(
+      'saveClusters and loadClusters preserve disabled tlsVerification',
+      () async {
+        final disabled = fullProfile(
+          name: 'insecure',
+        ).copyWith(tlsVerification: TlsVerification.disabled);
+        await service.saveClusters([disabled]);
+        final loaded = await service.loadClusters();
+        expect(loaded, hasLength(1));
+        expect(loaded.first.tlsVerification, TlsVerification.disabled);
+      },
+    );
 
-    test('legacy stored profile without tlsVerification loads as unreviewed', () async {
-      when(
-        mockApi.crateApiJsonPathDeserializeClusterProfile(json: anyNamed('json')),
-      ).thenAnswer((inv) async {
-        final map = jsonDecode(inv.namedArguments[#json] as String) as Map;
-        final raw = map['tlsVerification'] as String?;
-        final tlsVerification = TlsVerification.values.firstWhere(
-          (v) => v.name == raw,
-          orElse: () => TlsVerification.unreviewed,
+    test(
+      'legacy stored profile without tlsVerification loads as unreviewed',
+      () async {
+        when(
+          mockApi.crateApiJsonPathDeserializeClusterProfile(
+            json: anyNamed('json'),
+          ),
+        ).thenAnswer((inv) async {
+          final map = jsonDecode(inv.namedArguments[#json] as String) as Map;
+          final raw = map['tlsVerification'] as String?;
+          final tlsVerification = TlsVerification.values.firstWhere(
+            (v) => v.name == raw,
+            orElse: () => TlsVerification.unreviewed,
+          );
+          return ClusterProfile(
+            name: (map['name'] as String?) ?? 'legacy',
+            bootstrapServers: (map['bootstrapServers'] as String?) ?? 'b:9092',
+            tlsVerification: tlsVerification,
+          );
+        });
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          'cluster_profiles',
+          jsonEncode([
+            {'name': 'legacy', 'bootstrapServers': 'b:9092'},
+          ]),
         );
-        return ClusterProfile(
-          name: (map['name'] as String?) ?? 'legacy',
-          bootstrapServers: (map['bootstrapServers'] as String?) ?? 'b:9092',
-          tlsVerification: tlsVerification,
-        );
-      });
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        'cluster_profiles',
-        jsonEncode([
-          {'name': 'legacy', 'bootstrapServers': 'b:9092'},
-        ]),
-      );
-
-      final loaded = await service.loadClusters();
-      expect(loaded, hasLength(1));
-      expect(loaded.first.tlsVerification, TlsVerification.unreviewed);
-    });
+        final loaded = await service.loadClusters();
+        expect(loaded, hasLength(1));
+        expect(loaded.first.tlsVerification, TlsVerification.unreviewed);
+      },
+    );
   });
 }

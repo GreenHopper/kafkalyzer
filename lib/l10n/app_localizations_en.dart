@@ -2440,4 +2440,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String tlsVerificationFailedConnectError(String error) {
     return 'TLS certificate verification failed: $error';
   }
+
+  @override
+  String get messageFetchFailedTitle => 'Failed to fetch messages';
+
+  @override
+  String get topicsLoadFailedTitle => 'Failed to load topics';
+
+  @override
+  String subjectsLoadFailed(String error) {
+    return 'Failed to load schemas: $error';
+  }
+
+  @override
+  String get columnFiltersNoMatch => 'No rows match the active column filters.';
+
+  @override
+  String get resetColumnFilters => 'Reset filters';
 }

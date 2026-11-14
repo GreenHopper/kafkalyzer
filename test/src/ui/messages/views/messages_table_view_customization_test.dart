@@ -231,4 +231,150 @@ void main() {
       expect(text, contains('filter=test-query'));
     },
   );
+
+  testWidgets(
+    'sorting by column breaks ties deterministically by topic, partition, offset',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final m1 = KafkaMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 5,
+        key: 'k',
+        payload: '{"row":"first"}',
+        timestamp: 9000,
+      );
+      final m2 = KafkaMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 10,
+        key: 'k',
+        payload: '{"row":"second"}',
+        timestamp: 9000,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: MessagesTableView(messages: [m2, m1])),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap Timestamp column header to activate column sort
+      await tester.tap(find.text('Timestamp'));
+      await tester.pumpAndSettle();
+
+      // Ties should put offset 5 before offset 10
+      final firstY = tester.getTopLeft(find.text('5')).dy;
+      final secondY = tester.getTopLeft(find.text('10')).dy;
+      expect(firstY, lessThan(secondY));
+    },
+  );
+
+  testWidgets(
+    'Content column filter matches full payload beyond 300-char preview',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final longPayload = '${'x' * 350}needle-beyond-preview';
+      final mLong = KafkaMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 1,
+        key: 'k1',
+        payload: longPayload,
+        timestamp: 2000,
+      );
+      final mOther = KafkaMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 2,
+        key: 'k2',
+        payload: '{"nullableKey":null,"other":"value"}',
+        timestamp: 1000,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: MessagesTableView(messages: [mLong, mOther])),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Open Content column filter (column index 4: Timestamp, Partition, Offset, Key, Content)
+      await tester.tap(find.byIcon(Icons.filter_list).at(4));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byType(TextField).last,
+        'needle-beyond-preview',
+      );
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('2'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'empty column-filter state preserves header and resets filters on tap',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final m1 = KafkaMessage(
+        topic: 'orders',
+        partition: 0,
+        offset: 1,
+        key: 'k1',
+        payload: 'hello',
+        timestamp: 1000,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: MessagesTableView(messages: [m1])),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Filter Content with a non-matching term
+      await tester.tap(find.byIcon(Icons.filter_list).at(4));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'does-not-exist');
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Timestamp'), findsOneWidget);
+      expect(
+        find.text('No rows match the active column filters.'),
+        findsOneWidget,
+      );
+      expect(find.text('Reset filters'), findsOneWidget);
+
+      await tester.tap(find.text('Reset filters'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1'), findsOneWidget);
+      expect(
+        find.text('No rows match the active column filters.'),
+        findsNothing,
+      );
+    },
+  );
 }

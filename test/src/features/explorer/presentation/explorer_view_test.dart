@@ -69,7 +69,7 @@ void main() {
     mockActiveConnectionController = MockActiveConnectionController();
     // Use FixedMockTopicController to handle missing hasCachedTopics stub in generated mocks
     mockTopicController = FixedMockTopicController();
-    mockSchemaController = MockSchemaController();
+    mockSchemaController = FixedMockSchemaController();
 
     final getIt = GetIt.instance;
     getIt.reset();
@@ -907,15 +907,16 @@ void main() {
         final analysisCtrl = FakeTopicAnalysisController();
 
         when(mockClusterListController.isLoading).thenReturn(false);
-        when(mockClusterListController.clusters).thenReturn([
-          disabledProfile,
-          testProfile,
-        ]);
+        when(
+          mockClusterListController.clusters,
+        ).thenReturn([disabledProfile, testProfile]);
         when(
           mockActiveConnectionController.activeProfile,
         ).thenReturn(disabledProfile);
         when(mockActiveConnectionController.isConnecting).thenReturn(false);
-        when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
@@ -947,10 +948,92 @@ void main() {
         expect(find.text('Insecure TLS'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'displays topicController.errorFor in sidebar with retry action',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([testProfile]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(false);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(mockActiveConnectionController.error).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+        when(mockActiveConnectionController.topics).thenReturn([]);
+        when(mockActiveConnectionController.openTopics).thenReturn([]);
+        when(
+          mockTopicController.hasCachedTopics(testProfile),
+        ).thenReturn(false);
+        when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+        when(mockTopicController.getTopics(testProfile)).thenReturn(null);
+        (mockTopicController as FixedMockTopicController).mockError =
+            'Metadata broker down';
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+
+        expect(find.text('Failed to load topics'), findsOneWidget);
+        expect(find.text('Metadata broker down'), findsOneWidget);
+
+        await tester.tap(find.text('Retry'));
+        await tester.pump();
+        verify(
+          mockTopicController.fetchTopics(testProfile, force: true),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'displays schemaController.errorFor in sidebar when subject fetch fails',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([testProfile]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(false);
+        when(
+          mockActiveConnectionController.showInternalTopics,
+        ).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(mockActiveConnectionController.error).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+        when(mockActiveConnectionController.topics).thenReturn([]);
+        when(mockActiveConnectionController.openTopics).thenReturn([]);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+        when(mockTopicController.getTopics(testProfile)).thenReturn([]);
+        (mockSchemaController as FixedMockSchemaController).mockError =
+            '401 Unauthorized';
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+
+        expect(
+          find.text('Failed to load schemas: 401 Unauthorized'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }
 
 class FixedMockTopicController extends MockTopicController {
+  String? mockError;
+
   @override
   bool hasCachedTopics(ClusterProfile? cluster) {
     return super.noSuchMethod(
@@ -960,6 +1043,16 @@ class FixedMockTopicController extends MockTopicController {
         )
         as bool;
   }
+
+  @override
+  String? errorFor(ClusterProfile cluster) => mockError;
+}
+
+class FixedMockSchemaController extends MockSchemaController {
+  String? mockError;
+
+  @override
+  String? errorFor(ClusterProfile cluster) => mockError;
 }
 
 class MockLogger extends Logger {
@@ -983,6 +1076,9 @@ class FakeMessageStreamController extends ChangeNotifier
 
   @override
   bool get isStreaming => streaming;
+
+  @override
+  String? get error => null;
 
   @override
   int get totalConsumed => 0;

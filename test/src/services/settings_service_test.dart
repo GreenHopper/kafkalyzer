@@ -731,7 +731,11 @@ void main() {
       () async {
         final clusterService = getIt<ClusterService>();
         await clusterService.saveClusters([
-          const ClusterProfile(name: 'Prod', bootstrapServers: 'prod:9092', tlsVerification: TlsVerification.enabled),
+          const ClusterProfile(
+            name: 'Prod',
+            bootstrapServers: 'prod:9092',
+            tlsVerification: TlsVerification.enabled,
+          ),
         ]);
 
         final archive = Archive();

@@ -133,5 +133,45 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'failing fetchSubjects exposes errorFor and later success clears it',
+      () async {
+        when(
+          mockService.fetchSubjects(profile: testProfile),
+        ).thenThrow(Exception('Registry 503'));
+
+        await controller.fetchSchemas(testProfile);
+
+        expect(controller.getSchemas(testProfile), isNull);
+        expect(controller.errorFor(testProfile), contains('Registry 503'));
+
+        when(
+          mockService.fetchSubjects(profile: testProfile),
+        ).thenAnswer((_) async => ['orders-value']);
+        await controller.fetchSchemas(testProfile, force: true);
+
+        expect(controller.errorFor(testProfile), isNull);
+        expect(controller.getSchemas(testProfile), ['orders-value']);
+      },
+    );
+
+    test(
+      'profile without schemaRegistryUrl caches [] with no error and no service call',
+      () async {
+        const noRegistryProfile = ClusterProfile(
+          name: 'no-sr',
+          bootstrapServers: 'localhost:9092',
+          schemaRegistryUrl: '   ',
+          tlsVerification: TlsVerification.enabled,
+        );
+
+        await controller.fetchSchemas(noRegistryProfile);
+
+        expect(controller.getSchemas(noRegistryProfile), isEmpty);
+        expect(controller.errorFor(noRegistryProfile), isNull);
+        verifyNever(mockService.fetchSubjects(profile: anyNamed('profile')));
+      },
+    );
   });
 }

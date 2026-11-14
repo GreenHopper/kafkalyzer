@@ -178,6 +178,16 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
 
     try {
       await _controller.fetchSchemas(widget.profile);
+      final schemaError = _controller.errorFor(widget.profile);
+      if (schemaError != null) {
+        if (mounted) {
+          setState(() {
+            _error = schemaError;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
       final schemas = _controller.getSchemas(widget.profile);
       String? keyContent;
       String? valueContent;

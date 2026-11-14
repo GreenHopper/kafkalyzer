@@ -4,11 +4,13 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 class ActionableTopicEmptyState extends StatelessWidget {
   final VoidCallback? onFetch;
   final bool isStreaming;
+  final String? errorMessage;
 
   const ActionableTopicEmptyState({
     super.key,
     this.onFetch,
     this.isStreaming = false,
+    this.errorMessage,
   });
 
   @override
@@ -35,6 +37,8 @@ class ActionableTopicEmptyState extends StatelessWidget {
       );
     }
 
+    final hasError = errorMessage != null;
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -45,7 +49,9 @@ class ActionableTopicEmptyState extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                color: hasError
+                    ? colorScheme.error.withValues(alpha: 0.5)
+                    : colorScheme.outlineVariant.withValues(alpha: 0.5),
               ),
             ),
             color: colorScheme.surfaceContainerLowest,
@@ -59,30 +65,42 @@ class ActionableTopicEmptyState extends StatelessWidget {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withValues(
-                        alpha: 0.4,
-                      ),
+                      color:
+                          (hasError
+                                  ? colorScheme.errorContainer
+                                  : colorScheme.primaryContainer)
+                              .withValues(alpha: 0.4),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      Icons.mark_email_unread_outlined,
+                      hasError
+                          ? Icons.error_outline
+                          : Icons.mark_email_unread_outlined,
                       size: 36,
-                      color: colorScheme.primary,
+                      color: hasError ? colorScheme.error : colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    l10n?.noMessagesLoadedTitle ?? 'No messages loaded yet',
+                    hasError
+                        ? (l10n?.messageFetchFailedTitle ??
+                              'Failed to load messages')
+                        : (l10n?.noMessagesLoadedTitle ??
+                              'No messages loaded yet'),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+                      color: hasError
+                          ? colorScheme.error
+                          : colorScheme.onSurface,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    l10n?.noMessagesLoadedSubtitle ??
-                        'Fetch the latest messages from this topic or configure your filters above.',
+                    hasError
+                        ? errorMessage!
+                        : (l10n?.noMessagesLoadedSubtitle ??
+                              'Fetch the latest messages from this topic or configure your filters above.'),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),

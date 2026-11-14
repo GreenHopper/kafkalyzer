@@ -85,12 +85,16 @@ class FakeActiveConnectionController extends ChangeNotifier
 class FakeMessageStreamController extends ChangeNotifier
     implements MessageStreamController {
   bool clearMessagesCalled = false;
+  String? errorMessage;
 
   @override
   List<KafkaMessage> get messages => [];
 
   @override
   bool get isStreaming => false;
+
+  @override
+  String? get error => errorMessage;
 
   @override
   int get totalConsumed => 0;
@@ -116,9 +120,13 @@ class FakeMessageStreamController extends ChangeNotifier
 
 class FakeSchemaController extends ChangeNotifier implements SchemaController {
   List<String> schemas = [];
+  String? errorMessage;
 
   @override
   List<String>? getSchemas(ClusterProfile profile) => schemas;
+
+  @override
+  String? errorFor(ClusterProfile profile) => errorMessage;
 
   @override
   Future<void> fetchSchemas(
@@ -578,4 +586,22 @@ void main() {
       expect(find.byKey(const Key('topic_health_tag')), findsNothing);
     },
   );
+
+  testWidgets('renders streamController.error when message fetch fails', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    fakeActiveController.mockStreamController.errorMessage =
+        'Consumer group timeout';
+
+    await tester.pumpWidget(detailView(threePartitionTopic));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Failed to fetch messages'), findsOneWidget);
+    expect(find.text('Consumer group timeout'), findsOneWidget);
+  });
 }

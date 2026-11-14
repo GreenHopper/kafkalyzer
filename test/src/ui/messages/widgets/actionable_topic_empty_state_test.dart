@@ -4,7 +4,11 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/actionable_topic_empty_state.dart';
 
 void main() {
-  Widget buildWidget({VoidCallback? onFetch, bool isStreaming = false}) {
+  Widget buildWidget({
+    VoidCallback? onFetch,
+    bool isStreaming = false,
+    String? errorMessage,
+  }) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -12,6 +16,7 @@ void main() {
         body: ActionableTopicEmptyState(
           onFetch: onFetch,
           isStreaming: isStreaming,
+          errorMessage: errorMessage,
         ),
       ),
     );
@@ -49,4 +54,26 @@ void main() {
     expect(find.text('Loading messages from Kafka...'), findsOneWidget);
     expect(find.text('Fetch Latest 200 Messages'), findsNothing);
   });
+
+  testWidgets(
+    'renders error state card with retry button when errorMessage is set',
+    (tester) async {
+      bool retried = false;
+      await tester.pumpWidget(
+        buildWidget(
+          errorMessage: 'SASL authentication failed',
+          onFetch: () => retried = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      expect(find.text('Failed to fetch messages'), findsOneWidget);
+      expect(find.text('SASL authentication failed'), findsOneWidget);
+
+      await tester.tap(find.text('Fetch Latest 200 Messages'));
+      await tester.pump();
+      expect(retried, isTrue);
+    },
+  );
 }

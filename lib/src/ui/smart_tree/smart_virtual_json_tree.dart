@@ -4,6 +4,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/schema/utils/schema_path_utils.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
+import 'package:kafkalyzer/src/ui/smart_tree/copyable_node_text.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/json_tree_flattener.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/smart_composite_badge.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/virtual_json_node.dart';
@@ -301,7 +302,7 @@ class SmartVirtualJsonTreeState extends State<SmartVirtualJsonTree> {
                 AppLocalizations.of(context)?.copyValueTooltip ?? 'Copy value',
             visualDensity: VisualDensity.compact,
             onPressed: () {
-              final valStr = node.value?.toString() ?? 'null';
+              final valStr = copyableNodeText(node.value);
               Clipboard.setData(ClipboardData(text: valStr));
               final l10n = AppLocalizations.of(context);
               ScaffoldMessenger.of(context).showSnackBar(

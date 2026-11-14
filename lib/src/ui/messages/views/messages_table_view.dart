@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/navigation/models/message_reference.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
@@ -432,7 +433,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
             val = data.keyString;
             break;
           case 4: // Content
-            val = data.contentPreview;
+            val = data.message.payload ?? '';
             break;
           case 5: // Topic
             val = data.message.topic;
@@ -514,6 +515,9 @@ class _MessagesTableViewState extends State<MessagesTableView> {
           cmp = valA.toString().compareTo(valB.toString());
         }
 
+        if (cmp == 0) {
+          return compareMessageIdentity(a.message, b.message);
+        }
         return _sortAscending ? cmp : -cmp;
       });
     }
@@ -1148,7 +1152,7 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       color: Theme.of(context).colorScheme.onTertiaryContainer,
     );
 
-    return TableView.builder(
+    final table = TableView.builder(
       verticalDetails: ScrollableDetails.vertical(
         controller: _verticalScrollController,
       ),
@@ -1165,5 +1169,56 @@ class _MessagesTableViewState extends State<MessagesTableView> {
       ),
       diagonalDragBehavior: DiagonalDragBehavior.free,
     );
+
+    final hasActiveColumnFilters = _columnFilters.values.any(
+      (v) => v.isNotEmpty,
+    );
+    if (_cachedData.isEmpty && hasActiveColumnFilters) {
+      final l10n = AppLocalizations.of(context);
+      return Stack(
+        children: [
+          table,
+          Positioned(
+            top: 48,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.filter_alt_off_outlined,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n?.columnFiltersNoMatch ??
+                        'No rows match the active column filters.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _columnFilters.clear();
+                        _needsRebuildRows = true;
+                      });
+                    },
+                    icon: const Icon(Icons.clear_all, size: 16),
+                    label: Text(l10n?.resetColumnFilters ?? 'Reset filters'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return table;
   }
 }
