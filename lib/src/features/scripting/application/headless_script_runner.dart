@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:logger/logger.dart';
 
 /// Result summary of a headless script pipeline run.
@@ -333,6 +334,13 @@ Options:
           (c) => c?.name == clusterName,
           orElse: () => null,
         );
+      } on StoredDataUnreadableException catch (e) {
+        final backupNote = e.backupPath != null
+            ? ' (backup: ${e.backupPath})'
+            : '';
+        err.writeln('Error: cluster profiles could not be read$backupNote.');
+        if (shouldExit) exit(3);
+        return 3;
       } catch (e) {
         err.writeln('Error loading cluster profiles: $e');
         if (shouldExit) exit(3);
@@ -367,6 +375,13 @@ Options:
             (s) => s?.name == scriptArg || s?.id == scriptArg,
             orElse: () => null,
           );
+        } on StoredDataUnreadableException catch (e) {
+          final backupNote = e.backupPath != null
+              ? ' (backup: ${e.backupPath})'
+              : '';
+          err.writeln('Error: script store could not be read$backupNote.');
+          if (shouldExit) exit(3);
+          return 3;
         } catch (e) {
           err.writeln('Error loading script repository: $e');
           if (shouldExit) exit(3);

@@ -7,6 +7,8 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
+import 'package:kafkalyzer/src/utils/archive_safety.dart';
 
 class ClusterListController extends ChangeNotifier {
   final ClusterService _clusterService = getIt<ClusterService>();
@@ -15,69 +17,82 @@ class ClusterListController extends ChangeNotifier {
 
   List<ClusterProfile> get clusters => _clusters;
   bool get isLoading => _isLoading;
+  StoreStatus get storeStatus => _clusterService.storeStatus;
 
   ClusterListController() {
     loadClusters();
+  }
+
+  void _requireReadableStore() {
+    if (storeStatus.isUnreadable) {
+      throw StoredDataUnreadableException(
+        'cluster_profiles',
+        backupPath: storeStatus.backupPath,
+      );
+    }
   }
 
   Future<void> loadClusters() async {
     _isLoading = true;
     notifyListeners();
 
-    _clusters = await _clusterService.loadClusters();
+    try {
+      _clusters = await _clusterService.loadClusters();
+    } on StoredDataUnreadableException {
+      _clusters = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
-    // Fallback if empty (for demo/first run)
-    // Default fallback removed per user request.
-
-    _isLoading = false;
-    notifyListeners();
+  Future<void> discardUnreadable() async {
+    await _clusterService.discardUnreadable();
+    await loadClusters();
   }
 
   Future<void> addCluster(ClusterProfile profile) async {
+    _requireReadableStore();
     _clusters = List.from(_clusters)..add(profile);
     await _clusterService.saveClusters(_clusters);
     notifyListeners();
   }
 
   Future<void> updateCluster(int index, ClusterProfile updatedProfile) async {
+    _requireReadableStore();
     _clusters = List.from(_clusters)..[index] = updatedProfile;
     await _clusterService.saveClusters(_clusters);
     notifyListeners();
   }
 
   Future<void> deleteCluster(int index) async {
+    _requireReadableStore();
     _clusters = List.from(_clusters)..removeAt(index);
     await _clusterService.saveClusters(_clusters);
     notifyListeners();
   }
 
-  Future<void> importClustersZip(List<int> zipBytes) async {
+  Future<ImportSummary?> importClustersZip(
+    List<int> zipBytes, {
+    ImportConflictResolver? onConflict,
+  }) async {
+    _requireReadableStore();
     try {
       final archive = ZipDecoder().decodeBytes(zipBytes);
       final prefsDir = await getApplicationDocumentsDirectory();
       final sharedPrefsDir = Directory('${prefsDir.path}/shared_preferences');
-      if (!await sharedPrefsDir.exists()) {
-        await sharedPrefsDir.create(recursive: true);
-      }
 
-      // First pass: extract files and find clusters.json
-      String? jsonString;
+      // Validate all entries before creating directories or writing any file.
+      final plan = planArchiveExtraction(
+        archive,
+        sharedPrefsDir.path,
+        select: (name) => name != 'clusters.json',
+      );
 
-      for (final file in archive) {
-        if (file.isFile) {
-          if (file.name == 'clusters.json') {
-            final content = file.content as List<int>;
-            jsonString = utf8.decode(content);
-          } else {
-            // Extract other files (keystores/truststores)
-            final filename = file.name;
-            final data = file.content as List<int>;
-            File('${sharedPrefsDir.path}/$filename')
-              ..createSync(recursive: true)
-              ..writeAsBytesSync(data);
-          }
-        }
-      }
+      final clustersEntry = archive.findFile('clusters.json');
+      final String? jsonString = clustersEntry != null
+          ? utf8.decode(clustersEntry.content as List<int>)
+          : null;
 
       if (jsonString != null) {
         final List<dynamic> jsonList = jsonDecode(jsonString);
@@ -89,10 +104,6 @@ class ClusterListController extends ChangeNotifier {
           // Update paths to point to the new location
           String? updatePath(String? path) {
             if (path == null || path.isEmpty) return null;
-            // We assume the exported path was a relative filename.
-            // Even if it was absolute in the export, we only care about the filename here
-            // because we flattened the structure in the ZIP or kept it simple.
-            // Let's assume the ZIP contains the files at root or we just take the basename.
             final filename = path.split('/').last.split('\\').last;
             return '${sharedPrefsDir.path}/$filename';
           }
@@ -105,21 +116,48 @@ class ClusterListController extends ChangeNotifier {
           );
         }
 
-        final newClusters = List<ClusterProfile>.from(_clusters);
-        for (var imported in importedClusters) {
-          final existingIndex = newClusters.indexWhere(
-            (c) => c.name == imported.name,
-          );
-          if (existingIndex != -1) {
-            newClusters[existingIndex] = imported;
-          } else {
-            newClusters.add(imported);
+        final mergeResult = await mergeImportedProfiles(
+          _clusters,
+          importedClusters,
+          onConflict ?? (_, _) async => const ImportConflictChoice.replace(),
+        );
+        if (mergeResult == null) {
+          return null;
+        }
+
+        if (plan.isNotEmpty) {
+          if (!await sharedPrefsDir.exists()) {
+            await sharedPrefsDir.create(recursive: true);
+          }
+          for (final entry in plan.entries) {
+            final data = entry.key.content as List<int>;
+            File(entry.value)
+              ..createSync(recursive: true)
+              ..writeAsBytesSync(data);
           }
         }
-        _clusters = newClusters;
+
+        _clusters = mergeResult.clusters;
         await _clusterService.saveClusters(_clusters);
         notifyListeners();
+        return mergeResult.summary;
+      } else if (plan.isNotEmpty) {
+        if (!await sharedPrefsDir.exists()) {
+          await sharedPrefsDir.create(recursive: true);
+        }
+        for (final entry in plan.entries) {
+          final data = entry.key.content as List<int>;
+          File(entry.value)
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(data);
+        }
       }
+      return const ImportSummary(
+        imported: 0,
+        replaced: 0,
+        renamed: 0,
+        skipped: 0,
+      );
     } catch (e) {
       debugPrint("Error importing clusters ZIP: $e");
       rethrow;
@@ -129,7 +167,11 @@ class ClusterListController extends ChangeNotifier {
   // Keeping legacy method for backward compatibility if needed, or removing/renaming it.
   // For now, let's keep it but maybe it's unused if we switch UI entirely.
   // Actually, the plan implies switching to ZIP, so we might not use this anymore for files.
-  Future<void> importClusters(String jsonString) async {
+  Future<ImportSummary?> importClusters(
+    String jsonString, {
+    ImportConflictResolver? onConflict,
+  }) async {
+    _requireReadableStore();
     // ... existing implementation ...
     try {
       final List<dynamic> jsonList = jsonDecode(jsonString);
@@ -140,20 +182,19 @@ class ClusterListController extends ChangeNotifier {
         );
       }
 
-      final newClusters = List<ClusterProfile>.from(_clusters);
-      for (var imported in importedClusters) {
-        final existingIndex = newClusters.indexWhere(
-          (c) => c.name == imported.name,
-        );
-        if (existingIndex != -1) {
-          newClusters[existingIndex] = imported;
-        } else {
-          newClusters.add(imported);
-        }
+      final mergeResult = await mergeImportedProfiles(
+        _clusters,
+        importedClusters,
+        onConflict ?? (_, _) async => const ImportConflictChoice.replace(),
+      );
+      if (mergeResult == null) {
+        return null;
       }
-      _clusters = newClusters;
+
+      _clusters = mergeResult.clusters;
       await _clusterService.saveClusters(_clusters);
       notifyListeners();
+      return mergeResult.summary;
     } catch (e) {
       debugPrint("Error importing clusters: $e");
       rethrow;
@@ -161,15 +202,16 @@ class ClusterListController extends ChangeNotifier {
   }
 
   Future<List<int>> exportClustersZip(
-    List<ClusterProfile> clustersToExport,
-  ) async {
+    List<ClusterProfile> clustersToExport, {
+    bool includeSecrets = false,
+  }) async {
     final archive = Archive();
 
     // Create a modified list of clusters for the JSON where paths are relative filenames
     final List<String> exportJsonList = [];
 
     for (var cluster in clustersToExport) {
-      var exportCluster = cluster;
+      var exportCluster = includeSecrets ? cluster : cluster.sanitized();
 
       String? processFile(String? path) {
         if (path == null || path.isEmpty) return null;
@@ -198,10 +240,14 @@ class ClusterListController extends ChangeNotifier {
     return ZipEncoder().encode(archive);
   }
 
-  Future<String> exportClusters(List<ClusterProfile> clustersToExport) async {
+  Future<String> exportClusters(
+    List<ClusterProfile> clustersToExport, {
+    bool includeSecrets = false,
+  }) async {
     final encoded = <String>[];
     for (final cluster in clustersToExport) {
-      encoded.add(await serializeClusterProfile(profile: cluster));
+      final exportCluster = includeSecrets ? cluster : cluster.sanitized();
+      encoded.add(await serializeClusterProfile(profile: exportCluster));
     }
     return '[${encoded.join(',')}]';
   }

@@ -21,8 +21,13 @@ The system SHALL automatically initialize the default output directory on startu
 - **THEN** the default output directory is automatically set to a platform-appropriate path inside the user's Documents folder
 
 ### Requirement: Derived Script Output Path
-The system SHALL automatically save script execution outputs inside a subdirectory named after the script within the settings' default directory.
+The system SHALL automatically save script execution outputs inside a subdirectory whose name is sanitized as a single safe path segment from the script name within the settings' default directory.
 
 #### Scenario: User executes a script
 - **WHEN** user executes a script named "My Test Script"
 - **THEN** script run files are created in the folder "[general_default_output_dir]/My_Test_Script/[run_id]"
+
+#### Scenario: User executes a script with path separators or traversal in its name
+- **WHEN** user executes a script named "../../evil"
+- **THEN** the output directory SHALL remain directly inside "[general_default_output_dir]" under a sanitized single-segment directory name
+- **AND** no directory SHALL be created outside "[general_default_output_dir]"

@@ -5,6 +5,7 @@ import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/utils/archive_safety.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -273,6 +274,36 @@ void main() {
 
       expect(find.byType(ReadOnlySecurityBadge), findsOneWidget);
       expect(find.text('Read-Only'), findsOneWidget);
+    });
+
+    testWidgets('shows unsafe entry error SnackBar on configuration import', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      when(mockClusterListController.isLoading).thenReturn(false);
+      when(mockClusterListController.clusters).thenReturn([]);
+      when(mockActiveConnectionController.activeProfile).thenReturn(null);
+      when(
+        mockSettingsService.importConfiguration(
+          onClusterConflict: anyNamed('onClusterConflict'),
+        ),
+      ).thenThrow(const UnsafeArchiveEntryException('../evil.txt'));
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Import Configuration'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Import rejected: archive contains an unsafe entry (../evil.txt).',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

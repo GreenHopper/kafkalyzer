@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
@@ -8,6 +9,20 @@ class SecureStorageService {
   final Logger _logger;
   final Map<String, String> _inMemoryFallback = {};
   bool _useFallback = false;
+
+  /// Becomes `true` on the first OS keyring read/write/delete failure and stays
+  /// `true` for the rest of the session.
+  final ValueNotifier<bool> unavailable = ValueNotifier<bool>(false);
+
+  /// Whether the OS keyring is still available (no fallback triggered).
+  bool get isAvailable => !unavailable.value;
+
+  void _markUnavailable() {
+    _useFallback = true;
+    if (!unavailable.value) {
+      unavailable.value = true;
+    }
+  }
 
   static const List<String> secretFields = [
     'saslPassword',
@@ -26,20 +41,23 @@ class SecureStorageService {
       'cluster_${clusterName}_$field';
 
   /// Writes a secret value for a given key to the OS keyring.
-  Future<void> write(String key, String value) async {
+  /// Returns `true` if the write reached the OS keyring, `false` on fallback.
+  Future<bool> write(String key, String value) async {
     if (_useFallback) {
       _inMemoryFallback[key] = value;
-      return;
+      return false;
     }
     try {
       await _storage.write(key: key, value: value);
+      return true;
     } catch (e) {
       _logger.w(
         'Failed to write to OS keyring. Falling back to in-memory storage.',
         error: e,
       );
-      _useFallback = true;
+      _markUnavailable();
       _inMemoryFallback[key] = value;
+      return false;
     }
   }
 
@@ -55,39 +73,47 @@ class SecureStorageService {
         'Failed to read from OS keyring. Falling back to in-memory storage.',
         error: e,
       );
-      _useFallback = true;
+      _markUnavailable();
       return _inMemoryFallback[key];
     }
   }
 
   /// Deletes a secret from the OS keyring.
-  Future<void> delete(String key) async {
+  /// Returns `true` if the delete reached the OS keyring, `false` on fallback.
+  Future<bool> delete(String key) async {
     if (_useFallback) {
       _inMemoryFallback.remove(key);
-      return;
+      return false;
     }
     try {
       await _storage.delete(key: key);
+      return true;
     } catch (e) {
       _logger.w('Failed to delete from OS keyring.', error: e);
+      _markUnavailable();
       _inMemoryFallback.remove(key);
+      return false;
     }
   }
 
   /// Stores all non-empty sensitive fields of a cluster profile into the keyring.
-  Future<void> saveClusterSecrets(
+  /// Returns `true` only if every write and delete operation reached the keyring.
+  Future<bool> saveClusterSecrets(
     String clusterName,
     Map<String, String?> secrets,
   ) async {
+    var allSucceeded = true;
     for (final field in secretFields) {
       final val = secrets[field];
       final key = _buildKey(clusterName, field);
-      if (val != null && val.isNotEmpty) {
-        await write(key, val);
-      } else {
-        await delete(key);
+      final ok = (val != null && val.isNotEmpty)
+          ? await write(key, val)
+          : await delete(key);
+      if (!ok) {
+        allSucceeded = false;
       }
     }
+    return allSucceeded;
   }
 
   /// Retrieves all sensitive fields of a cluster profile from the keyring.

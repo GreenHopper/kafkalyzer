@@ -2322,4 +2322,89 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inspectDuplicateTooltip => 'View duplicate details';
+
+  @override
+  String importRejectedUnsafeEntry(String entry) {
+    return 'Import rejected: archive contains an unsafe entry ($entry).';
+  }
+
+  @override
+  String get clusterNameAlreadyUsed =>
+      'A cluster profile with this name already exists.';
+
+  @override
+  String get importConflictTitle => 'Cluster Profile Conflict';
+
+  @override
+  String importConflictMessage(String name) {
+    return 'A cluster profile named \"$name\" already exists.';
+  }
+
+  @override
+  String get importConflictReplace => 'Replace existing';
+
+  @override
+  String get importConflictRename => 'Import as new name';
+
+  @override
+  String get importConflictSkip => 'Skip';
+
+  @override
+  String importSummary(int added, int replaced, int renamed, int skipped) {
+    return 'Imported $added added, $replaced replaced, $renamed renamed, $skipped skipped.';
+  }
+
+  @override
+  String get keyringUnavailableNotice =>
+      'System keyring is unavailable. Credentials are kept in memory for this session only and will not be persisted securely.';
+
+  @override
+  String get profileStoreUnreadableNotice =>
+      'Saved cluster profiles could not be read and were left untouched so nothing is lost.';
+
+  @override
+  String get scriptStoreUnreadableNotice =>
+      'Saved scripts could not be read and were left untouched so nothing is lost.';
+
+  @override
+  String storeBackupLocation(String path) {
+    return 'Backup saved at: $path';
+  }
+
+  @override
+  String get storeBackupFailed => 'No backup file could be written.';
+
+  @override
+  String storePartiallyUnreadable(int count, String store) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'entries were',
+      one: 'entry was',
+    );
+    return '$count unreadable saved $store $_temp0 skipped and preserved.';
+  }
+
+  @override
+  String duplicateProfileNamesNotice(String names) {
+    return 'Duplicate cluster profile names detected: $names. Please rename duplicates so each profile has a unique name.';
+  }
+
+  @override
+  String get discardUnreadableData => 'Discard unreadable data';
+
+  @override
+  String get discardUnreadableConfirm =>
+      'This will permanently delete the unreadable stored data so you can save new items. Continue?';
+
+  @override
+  String get copyBackupPath => 'Copy backup path';
+
+  @override
+  String get storeUnreadableActionRefused =>
+      'Action refused while stored data is unreadable. Discard unreadable data or restore the backup first.';
+
+  @override
+  String get passwordsNotPersistedTooltip =>
+      'System keyring is unavailable. This password will not be persisted across restarts.';
 }

@@ -18,30 +18,33 @@ class SavedSearchesService extends ChangeNotifier {
   static String storageKey(String clusterName, String topicName) =>
       '$_keyPrefix${clusterName}_$topicName';
 
+  ({List<TopicSearchPreset> valid, List<String> rawUnreadable})
+  _partitionPresets(List<String> rawList, String key) {
+    final valid = <TopicSearchPreset>[];
+    final rawUnreadable = <String>[];
+    for (final str in rawList) {
+      try {
+        valid.add(
+          TopicSearchPreset.fromJson(jsonDecode(str) as Map<String, dynamic>),
+        );
+      } catch (e) {
+        debugPrint('SavedSearchesService: unreadable preset in "$key": $e');
+        rawUnreadable.add(str);
+      }
+    }
+    valid.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return (valid: valid, rawUnreadable: rawUnreadable);
+  }
+
   /// Loads all saved presets for a given cluster and topic.
   Future<List<TopicSearchPreset>> getPresets({
     required String clusterName,
     required String topicName,
   }) async {
     final prefs = await _getPrefs();
-    final rawList =
-        prefs.getStringList(storageKey(clusterName, topicName)) ?? [];
-
-    final list = rawList
-        .map((str) {
-          try {
-            return TopicSearchPreset.fromJson(
-              jsonDecode(str) as Map<String, dynamic>,
-            );
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<TopicSearchPreset>()
-        .toList();
-
-    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return list;
+    final key = storageKey(clusterName, topicName);
+    final rawList = prefs.getStringList(key) ?? [];
+    return _partitionPresets(rawList, key).valid;
   }
 
   /// Saves or updates a preset.
@@ -49,10 +52,9 @@ class SavedSearchesService extends ChangeNotifier {
   Future<void> savePreset(TopicSearchPreset preset) async {
     final prefs = await _getPrefs();
     final key = storageKey(preset.clusterName, preset.topicName);
-    final existing = await getPresets(
-      clusterName: preset.clusterName,
-      topicName: preset.topicName,
-    );
+    final rawList = prefs.getStringList(key) ?? [];
+    final partitioned = _partitionPresets(rawList, key);
+    final existing = partitioned.valid;
 
     final index = existing.indexWhere(
       (p) => p.id == preset.id || p.name == preset.name,
@@ -63,10 +65,10 @@ class SavedSearchesService extends ChangeNotifier {
       existing.add(preset);
     }
 
-    await prefs.setStringList(
-      key,
-      existing.map((p) => jsonEncode(p.toJson())).toList(),
-    );
+    await prefs.setStringList(key, [
+      ...existing.map((p) => jsonEncode(p.toJson())),
+      ...partitioned.rawUnreadable,
+    ]);
     notifyListeners();
   }
 
@@ -78,16 +80,15 @@ class SavedSearchesService extends ChangeNotifier {
   }) async {
     final prefs = await _getPrefs();
     final key = storageKey(clusterName, topicName);
-    final existing = await getPresets(
-      clusterName: clusterName,
-      topicName: topicName,
-    );
+    final rawList = prefs.getStringList(key) ?? [];
+    final partitioned = _partitionPresets(rawList, key);
+    final existing = partitioned.valid;
 
     existing.removeWhere((p) => p.id == presetId);
-    await prefs.setStringList(
-      key,
-      existing.map((p) => jsonEncode(p.toJson())).toList(),
-    );
+    await prefs.setStringList(key, [
+      ...existing.map((p) => jsonEncode(p.toJson())),
+      ...partitioned.rawUnreadable,
+    ]);
     notifyListeners();
   }
 }

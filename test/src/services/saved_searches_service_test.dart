@@ -124,5 +124,42 @@ void main() {
       expect(list.length, 1);
       expect(list.first.id, 'p2');
     });
+
+    test(
+      'preserves unreadable preset strings verbatim across save and delete',
+      () async {
+        const corruptRaw = '{not valid preset json';
+        final key = SavedSearchesService.storageKey('cluster-a', 'topic-a');
+        SharedPreferences.setMockInitialValues({
+          key: [corruptRaw],
+        });
+
+        final p1 = TopicSearchPreset(
+          id: 'p1',
+          name: 'Preset 1',
+          clusterName: 'cluster-a',
+          topicName: 'topic-a',
+          createdAt: DateTime(2026, 1, 1),
+        );
+        await service.savePreset(p1);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList(key), contains(corruptRaw));
+        expect(
+          await service.getPresets(
+            clusterName: 'cluster-a',
+            topicName: 'topic-a',
+          ),
+          hasLength(1),
+        );
+
+        await service.deletePreset(
+          clusterName: 'cluster-a',
+          topicName: 'topic-a',
+          presetId: 'p1',
+        );
+        expect(prefs.getStringList(key), [corruptRaw]);
+      },
+    );
   });
 }

@@ -7,6 +7,8 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
+import 'package:kafkalyzer/src/utils/archive_safety.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 
 class ScriptHistoryList extends StatelessWidget {
@@ -74,6 +76,18 @@ class ScriptHistoryList extends StatelessWidget {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Run archive imported')),
+                    );
+                  }
+                } on UnsafeArchiveEntryException catch (e) {
+                  if (context.mounted) {
+                    final l10n = AppLocalizations.of(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          l10n?.importRejectedUnsafeEntry(e.entryName) ??
+                              'Import rejected: unsafe entry (${e.entryName}).',
+                        ),
+                      ),
                     );
                   }
                 } catch (e) {

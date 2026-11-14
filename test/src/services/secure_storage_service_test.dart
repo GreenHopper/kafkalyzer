@@ -132,10 +132,52 @@ void main() {
         fakeStorage.throwOnOperation = true;
 
         // Should not throw
-        await service.write('fallback_key', 'fallback_secret');
+        expect(service.isAvailable, isTrue);
+        expect(service.unavailable.value, isFalse);
+
+        final ok = await service.write('fallback_key', 'fallback_secret');
+        expect(ok, isFalse);
+        expect(service.isAvailable, isFalse);
+        expect(service.unavailable.value, isTrue);
+
         final val = await service.read('fallback_key');
         expect(val, 'fallback_secret');
       },
     );
+
+    test(
+      'saveClusterSecrets returns true on success and false when keyring fails',
+      () async {
+        expect(service.isAvailable, isTrue);
+        final ok = await service.saveClusterSecrets('prod', {
+          'saslPassword': 'secret',
+        });
+        expect(ok, isTrue);
+        expect(service.isAvailable, isTrue);
+
+        fakeStorage.throwOnOperation = true;
+        final failed = await service.saveClusterSecrets('prod2', {
+          'saslPassword': 'secret2',
+        });
+        expect(failed, isFalse);
+        expect(service.isAvailable, isFalse);
+        expect(service.unavailable.value, isTrue);
+      },
+    );
+
+    test('read and delete failures mark unavailable', () async {
+      final readFailService = SecureStorageService(
+        storage: FakeFlutterSecureStorage()..throwOnOperation = true,
+      );
+      await readFailService.read('k');
+      expect(readFailService.isAvailable, isFalse);
+
+      final deleteFailService = SecureStorageService(
+        storage: FakeFlutterSecureStorage()..throwOnOperation = true,
+      );
+      final deleted = await deleteFailService.delete('k');
+      expect(deleted, isFalse);
+      expect(deleteFailService.isAvailable, isFalse);
+    });
   });
 }

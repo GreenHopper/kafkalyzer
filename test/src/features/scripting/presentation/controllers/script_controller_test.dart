@@ -2,13 +2,32 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class MockScriptRepository implements ScriptRepository {
   final List<Script> _storage = [];
+  StoreStatus _status = const StoreStatus.ok();
+  bool throwUnreadable = false;
+
+  @override
+  StoreStatus get storeStatus => _status;
+
+  @override
+  Future<void> discardUnreadable() async {
+    throwUnreadable = false;
+    _status = const StoreStatus.ok();
+  }
 
   @override
   Future<List<Script>> getScripts() async {
+    if (throwUnreadable) {
+      _status = const StoreStatus.unreadable('/tmp/backup.json');
+      throw StoredDataUnreadableException(
+        'saved_scripts_v1',
+        backupPath: '/tmp/backup.json',
+      );
+    }
     return List.from(_storage); // Return copy
   }
 
@@ -98,4 +117,42 @@ void main() {
     expect(controller.scripts[1].name, equals('Banana'));
     expect(controller.scripts[2].name, equals('Zebra'));
   });
+
+  test(
+    'refuses mutations while store is unreadable and allows discard',
+    () async {
+      mockRepository.throwUnreadable = true;
+      await controller.loadScripts();
+
+      expect(controller.storeStatus.isUnreadable, isTrue);
+      expect(controller.scripts, isEmpty);
+
+      const script = Script(id: '1', name: 'A');
+      await expectLater(
+        controller.createScript('New'),
+        throwsA(isA<StoredDataUnreadableException>()),
+      );
+      await expectLater(
+        controller.saveScript(script),
+        throwsA(isA<StoredDataUnreadableException>()),
+      );
+      await expectLater(
+        controller.duplicateScript(script),
+        throwsA(isA<StoredDataUnreadableException>()),
+      );
+      await expectLater(
+        controller.deleteScript('1'),
+        throwsA(isA<StoredDataUnreadableException>()),
+      );
+      await expectLater(
+        controller.importScripts('[]'),
+        throwsA(isA<StoredDataUnreadableException>()),
+      );
+
+      await controller.discardUnreadable();
+      expect(controller.storeStatus.isOk, isTrue);
+      await controller.createScript('Recovered');
+      expect(controller.scripts.map((s) => s.name), ['Recovered']);
+    },
+  );
 }

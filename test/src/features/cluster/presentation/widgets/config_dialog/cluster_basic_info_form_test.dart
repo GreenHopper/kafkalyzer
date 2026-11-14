@@ -199,5 +199,76 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'rejects duplicate profile names case/whitespace-insensitively and allows keeping own name',
+      (tester) async {
+        final formKey = GlobalKey<FormState>();
+        nameController.text = ' prod ';
+        bootstrapServersController.text = 'localhost:9092';
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Form(
+                key: formKey,
+                child: ClusterBasicInfoForm(
+                  nameController: nameController,
+                  bootstrapServersController: bootstrapServersController,
+                  schemaRegistryUrlController: schemaRegistryUrlController,
+                  schemaRegistryUsernameController:
+                      schemaRegistryUsernameController,
+                  schemaRegistryPasswordController:
+                      schemaRegistryPasswordController,
+                  existingNames: const ['Prod'],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(formKey.currentState!.validate(), isFalse);
+        await tester.pump();
+        expect(
+          find.text('A cluster profile with this name already exists.'),
+          findsOneWidget,
+        );
+
+        // Editing "Prod" without rename (own name excluded from existingNames)
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              ...GlobalMaterialLocalizations.delegates,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Form(
+                key: formKey,
+                child: ClusterBasicInfoForm(
+                  nameController: nameController,
+                  bootstrapServersController: bootstrapServersController,
+                  schemaRegistryUrlController: schemaRegistryUrlController,
+                  schemaRegistryUsernameController:
+                      schemaRegistryUsernameController,
+                  schemaRegistryPasswordController:
+                      schemaRegistryPasswordController,
+                  existingNames: const ['Staging'],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(formKey.currentState!.validate(), isTrue);
+      },
+    );
   });
 }

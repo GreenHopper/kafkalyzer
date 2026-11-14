@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/application/headless_script_runner.dart';
+import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:logger/logger.dart';
 
 void main() {
@@ -108,5 +112,65 @@ void main() {
         );
       },
     );
+
+    test(
+      'runFromArgs reports unreadable cluster profiles and returns non-zero',
+      () async {
+        await getIt.reset();
+        getIt.registerSingleton<ClusterService>(_UnreadableClusterService());
+
+        final err = StringBuffer();
+        final exitCode = await HeadlessScriptRunner.runCli(
+          ['--script', 'my-script', '--cluster', 'prod'],
+          stderrSink: err,
+          stdoutSink: StringBuffer(),
+          shouldExit: false,
+        );
+
+        expect(exitCode, isNonZero);
+        expect(err.toString(), contains('cluster profiles could not be read'));
+        expect(err.toString(), isNot(contains('not found')));
+      },
+    );
+
+    test(
+      'runCli reports unreadable script store and returns non-zero',
+      () async {
+        await getIt.reset();
+        getIt.registerSingleton<ScriptRepository>(
+          _UnreadableScriptRepository(),
+        );
+
+        final err = StringBuffer();
+        final exitCode = await HeadlessScriptRunner.runCli(
+          ['--script', 'my-script', '--cluster', 'prod'],
+          clusterOverride: const ClusterProfile(
+            name: 'prod',
+            bootstrapServers: 'localhost:9092',
+          ),
+          stderrSink: err,
+          stdoutSink: StringBuffer(),
+          shouldExit: false,
+        );
+
+        expect(exitCode, isNonZero);
+        expect(err.toString(), contains('script store could not be read'));
+        expect(err.toString(), isNot(contains('not found')));
+      },
+    );
   });
+}
+
+class _UnreadableClusterService extends ClusterService {
+  @override
+  Future<List<ClusterProfile>> loadClusters() async {
+    throw StoredDataUnreadableException('cluster_profiles');
+  }
+}
+
+class _UnreadableScriptRepository extends ScriptRepository {
+  @override
+  Future<List<Script>> getScripts() async {
+    throw StoredDataUnreadableException('saved_scripts_v1');
+  }
 }

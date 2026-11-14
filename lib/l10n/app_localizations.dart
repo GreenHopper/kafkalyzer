@@ -4098,6 +4098,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View duplicate details'**
   String get inspectDuplicateTooltip;
+
+  /// No description provided for @importRejectedUnsafeEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Import rejected: archive contains an unsafe entry ({entry}).'**
+  String importRejectedUnsafeEntry(String entry);
+
+  /// No description provided for @clusterNameAlreadyUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'A cluster profile with this name already exists.'**
+  String get clusterNameAlreadyUsed;
+
+  /// No description provided for @importConflictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster Profile Conflict'**
+  String get importConflictTitle;
+
+  /// No description provided for @importConflictMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'A cluster profile named \"{name}\" already exists.'**
+  String importConflictMessage(String name);
+
+  /// No description provided for @importConflictReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace existing'**
+  String get importConflictReplace;
+
+  /// No description provided for @importConflictRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Import as new name'**
+  String get importConflictRename;
+
+  /// No description provided for @importConflictSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get importConflictSkip;
+
+  /// No description provided for @importSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {added} added, {replaced} replaced, {renamed} renamed, {skipped} skipped.'**
+  String importSummary(int added, int replaced, int renamed, int skipped);
+
+  /// No description provided for @keyringUnavailableNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'System keyring is unavailable. Credentials are kept in memory for this session only and will not be persisted securely.'**
+  String get keyringUnavailableNotice;
+
+  /// No description provided for @profileStoreUnreadableNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved cluster profiles could not be read and were left untouched so nothing is lost.'**
+  String get profileStoreUnreadableNotice;
+
+  /// No description provided for @scriptStoreUnreadableNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved scripts could not be read and were left untouched so nothing is lost.'**
+  String get scriptStoreUnreadableNotice;
+
+  /// No description provided for @storeBackupLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved at: {path}'**
+  String storeBackupLocation(String path);
+
+  /// No description provided for @storeBackupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No backup file could be written.'**
+  String get storeBackupFailed;
+
+  /// No description provided for @storePartiallyUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unreadable saved {store} {count, plural, =1{entry was} other{entries were}} skipped and preserved.'**
+  String storePartiallyUnreadable(int count, String store);
+
+  /// No description provided for @duplicateProfileNamesNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate cluster profile names detected: {names}. Please rename duplicates so each profile has a unique name.'**
+  String duplicateProfileNamesNotice(String names);
+
+  /// No description provided for @discardUnreadableData.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unreadable data'**
+  String get discardUnreadableData;
+
+  /// No description provided for @discardUnreadableConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete the unreadable stored data so you can save new items. Continue?'**
+  String get discardUnreadableConfirm;
+
+  /// No description provided for @copyBackupPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy backup path'**
+  String get copyBackupPath;
+
+  /// No description provided for @storeUnreadableActionRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Action refused while stored data is unreadable. Discard unreadable data or restore the backup first.'**
+  String get storeUnreadableActionRefused;
+
+  /// No description provided for @passwordsNotPersistedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'System keyring is unavailable. This password will not be persisted across restarts.'**
+  String get passwordsNotPersistedTooltip;
 }
 
 class _AppLocalizationsDelegate

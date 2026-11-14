@@ -1200,5 +1200,59 @@
   "duplicateTimestamp": "Timestamp",
   "duplicateKey": "Key",
   "duplicatePayload": "Decoded Payload",
-  "inspectDuplicateTooltip": "View duplicate details"
+  "inspectDuplicateTooltip": "View duplicate details",
+  "importRejectedUnsafeEntry": "Import rejected: archive contains an unsafe entry ({entry}).",
+  "@importRejectedUnsafeEntry": {
+    "placeholders": {
+      "entry": { "type": "String" }
+    }
+  },
+  "clusterNameAlreadyUsed": "A cluster profile with this name already exists.",
+  "importConflictTitle": "Cluster Profile Conflict",
+  "importConflictMessage": "A cluster profile named \"{name}\" already exists.",
+  "@importConflictMessage": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "importConflictReplace": "Replace existing",
+  "importConflictRename": "Import as new name",
+  "importConflictSkip": "Skip",
+  "importSummary": "Imported {added} added, {replaced} replaced, {renamed} renamed, {skipped} skipped.",
+  "@importSummary": {
+    "placeholders": {
+      "added": { "type": "int" },
+      "replaced": { "type": "int" },
+      "renamed": { "type": "int" },
+      "skipped": { "type": "int" }
+    }
+  },
+  "keyringUnavailableNotice": "System keyring is unavailable. Credentials are kept in memory for this session only and will not be persisted securely.",
+  "profileStoreUnreadableNotice": "Saved cluster profiles could not be read and were left untouched so nothing is lost.",
+  "scriptStoreUnreadableNotice": "Saved scripts could not be read and were left untouched so nothing is lost.",
+  "storeBackupLocation": "Backup saved at: {path}",
+  "@storeBackupLocation": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "storeBackupFailed": "No backup file could be written.",
+  "storePartiallyUnreadable": "{count} unreadable saved {store} {count, plural, =1{entry was} other{entries were}} skipped and preserved.",
+  "@storePartiallyUnreadable": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "store": { "type": "String" }
+    }
+  },
+  "duplicateProfileNamesNotice": "Duplicate cluster profile names detected: {names}. Please rename duplicates so each profile has a unique name.",
+  "@duplicateProfileNamesNotice": {
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+  "discardUnreadableData": "Discard unreadable data",
+  "discardUnreadableConfirm": "This will permanently delete the unreadable stored data so you can save new items. Continue?",
+  "copyBackupPath": "Copy backup path",
+  "storeUnreadableActionRefused": "Action refused while stored data is unreadable. Discard unreadable data or restore the backup first.",
+  "passwordsNotPersistedTooltip": "System keyring is unavailable. This password will not be persisted across restarts."
 }

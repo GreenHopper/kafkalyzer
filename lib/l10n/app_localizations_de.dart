@@ -2337,4 +2337,90 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get inspectDuplicateTooltip => 'Duplikat-Details anzeigen';
+
+  @override
+  String importRejectedUnsafeEntry(String entry) {
+    return 'Import abgelehnt: Das Archiv enthält einen unsicheren Eintrag ($entry).';
+  }
+
+  @override
+  String get clusterNameAlreadyUsed =>
+      'Ein Cluster-Profil mit diesem Namen existiert bereits.';
+
+  @override
+  String get importConflictTitle => 'Cluster-Profil-Konflikt';
+
+  @override
+  String importConflictMessage(String name) {
+    return 'Ein Cluster-Profil namens \"$name\" existiert bereits.';
+  }
+
+  @override
+  String get importConflictReplace => 'Bestehendes ersetzen';
+
+  @override
+  String get importConflictRename => 'Unter neuem Namen importieren';
+
+  @override
+  String get importConflictSkip => 'Überspringen';
+
+  @override
+  String importSummary(int added, int replaced, int renamed, int skipped) {
+    return 'Import: $added hinzugefügt, $replaced ersetzt, $renamed umbenannt, $skipped übersprungen.';
+  }
+
+  @override
+  String get keyringUnavailableNotice =>
+      'Der System-Schlüsselbund ist nicht verfügbar. Zugangsdaten werden nur für diese Sitzung im Speicher gehalten und nicht dauerhaft sicher gespeichert.';
+
+  @override
+  String get profileStoreUnreadableNotice =>
+      'Gespeicherte Cluster-Profile konnten nicht gelesen werden und blieben unverändert, damit nichts verloren geht.';
+
+  @override
+  String get scriptStoreUnreadableNotice =>
+      'Gespeicherte Skripte konnten nicht gelesen werden und blieben unverändert, damit nichts verloren geht.';
+
+  @override
+  String storeBackupLocation(String path) {
+    return 'Sicherung gespeichert unter: $path';
+  }
+
+  @override
+  String get storeBackupFailed =>
+      'Es konnte keine Sicherungsdatei geschrieben werden.';
+
+  @override
+  String storePartiallyUnreadable(int count, String store) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Einträge wurden',
+      one: 'Eintrag wurde',
+    );
+    return '$count nicht lesbare gespeicherte $store-$_temp0 übersprungen und erhalten.';
+  }
+
+  @override
+  String duplicateProfileNamesNotice(String names) {
+    return 'Doppelte Cluster-Profilnamen erkannt: $names. Bitte benennen Sie Duplikate um, sodass jedes Profil einen eindeutigen Namen hat.';
+  }
+
+  @override
+  String get discardUnreadableData => 'Unlesbare Daten verwerfen';
+
+  @override
+  String get discardUnreadableConfirm =>
+      'Dadurch werden die nicht lesbaren gespeicherten Daten dauerhaft gelöscht, sodass neue Einträge gespeichert werden können. Fortfahren?';
+
+  @override
+  String get copyBackupPath => 'Sicherungspfad kopieren';
+
+  @override
+  String get storeUnreadableActionRefused =>
+      'Aktion abgelehnt, solange gespeicherte Daten nicht lesbar sind. Verwerfen Sie zuerst die unlesbaren Daten oder stellen Sie die Sicherung wieder her.';
+
+  @override
+  String get passwordsNotPersistedTooltip =>
+      'Der System-Schlüsselbund ist nicht verfügbar. Dieses Passwort wird nicht über Neustarts hinweg gespeichert.';
 }

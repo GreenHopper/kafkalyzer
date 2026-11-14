@@ -19,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
+import 'package:kafkalyzer/src/utils/archive_safety.dart';
 
 enum StepStatus { pending, running, completed, error }
 
@@ -198,14 +199,14 @@ class ScriptRunner extends ChangeNotifier {
       if (baseDir == null) {
         final globalDir = previousDir;
         if (globalDir != null) {
-          final safeName = script.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+          final safeName = safePathSegment(script.name);
           baseDir = "$globalDir/$safeName";
         }
       }
 
       if (baseDir != null) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final runId = "${script.name}_$timestamp";
+        final runId = "${safePathSegment(script.name)}_$timestamp";
         final dir = Directory("$baseDir/$runId");
         if (!dir.existsSync()) {
           await dir.create(recursive: true);
@@ -454,7 +455,7 @@ class ScriptRunner extends ChangeNotifier {
     } else {
       final globalDir = _multiSearchController.outputDirectory;
       if (globalDir != null) {
-        final safeName = script.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+        final safeName = safePathSegment(script.name);
         dirsToCheck.add("$globalDir/$safeName");
         dirsToCheck.add(globalDir); // Backwards compatibility
       }
@@ -722,45 +723,49 @@ class ScriptRunner extends ChangeNotifier {
             (await getApplicationDocumentsDirectory()).path;
 
         // Use defaultGlobal/scriptName
-        final safeName = script.name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+        final safeName = safePathSegment(script.name);
         baseDir = "$defaultGlobal/$safeName";
-        if (!Directory(baseDir).existsSync()) {
-          Directory(baseDir).createSync(recursive: true);
-        }
       }
 
       // First pass: Find manifest to get ID
       String? runId;
-      for (final file in archive) {
-        if (file.name == 'run_manifest.json') {
-          final content = utf8.decode(file.content as List<int>);
-          final json = jsonDecode(content);
-          runId = json['id'];
-          break;
+      final manifestFile = archive.findFile('run_manifest.json');
+      if (manifestFile != null) {
+        final content = utf8.decode(manifestFile.content as List<int>);
+        final json = jsonDecode(content);
+        if (json is Map && json['id'] is String) {
+          runId = json['id'] as String;
         }
       }
 
       // Fallback if no manifest or ID found (shouldn't happen for valid exports)
       // Use zip filename without extension as fallback ID
       if (runId == null) {
-        final filename = archivePath.split(Platform.pathSeparator).last;
+        final filename = archivePath.split(RegExp(r'[/\\]')).last;
         runId = filename.endsWith('.zip')
             ? filename.substring(0, filename.length - 4)
             : filename;
       }
 
+      if (!isSafePathSegment(runId)) {
+        throw UnsafeArchiveEntryException(runId);
+      }
+
       final targetDir = Directory('$baseDir/$runId');
+      final plan = planArchiveExtraction(archive, targetDir.path);
+
+      if (!Directory(baseDir).existsSync()) {
+        Directory(baseDir).createSync(recursive: true);
+      }
       if (!targetDir.existsSync()) {
         targetDir.createSync(recursive: true);
       }
 
-      for (final file in archive) {
-        if (file.isFile) {
-          final data = file.content as List<int>;
-          final outFile = File('${targetDir.path}/${file.name}');
-          outFile.createSync(recursive: true);
-          outFile.writeAsBytesSync(data);
-        }
+      for (final entry in plan.entries) {
+        final data = entry.key.content as List<int>;
+        final outFile = File(entry.value);
+        outFile.createSync(recursive: true);
+        outFile.writeAsBytesSync(data);
       }
       notifyListeners();
     } catch (e) {
@@ -1068,10 +1073,7 @@ class ScriptRunner extends ChangeNotifier {
               script.outputDirectory!.isNotEmpty) {
             directoriesToClean.add(script.outputDirectory!);
           } else {
-            final safeName = script.name.replaceAll(
-              RegExp(r'[<>:"/\\|?*]'),
-              '_',
-            );
+            final safeName = safePathSegment(script.name);
             directoriesToClean.add("$defaultDir/$safeName");
           }
         }

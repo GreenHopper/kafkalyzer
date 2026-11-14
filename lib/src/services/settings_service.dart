@@ -5,7 +5,12 @@ import 'package:archive/archive.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
+import 'package:kafkalyzer/src/rust/api/json_path.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/secure_storage_service.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
+import 'package:kafkalyzer/src/utils/archive_safety.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -14,8 +19,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
 
 class SettingsService {
-  static const _gcsKeyFileName = 'wgs-kaenup-data-test-6d6c17c275e1.json';
-
   /// Group lag above which the lag view warns. 0 disables the warning.
   static const lagWarnThresholdKey = 'consumer_lag_warn_threshold';
 
@@ -148,16 +151,7 @@ class SettingsService {
         debugPrint('DEBUG: cluster_profiles key NOT found');
       }
 
-      // 2. Handle GCS Key File
-      final gcsKeyFile = await _findGcsKeyFile();
-      if (gcsKeyFile != null) {
-        final bytes = await gcsKeyFile.readAsBytes();
-        archive.addFile(
-          ArchiveFile('files/$_gcsKeyFileName', bytes.length, bytes),
-        );
-      }
-
-      // 3. Add Preferences JSON
+      // 2. Add Preferences JSON
       final prefsJson = jsonEncode(allPrefs);
       final prefsBytes = utf8.encode(prefsJson);
       archive.addFile(
@@ -190,7 +184,13 @@ class SettingsService {
     }
   }
 
-  Future<void> importConfiguration() async {
+  Future<ImportSummary?> importConfiguration({
+    Future<ImportConflictChoice?> Function(
+      ClusterProfile imported,
+      String suggestedName,
+    )?
+    onClusterConflict,
+  }) async {
     try {
       final result = await FilePicker.pickFiles(
         dialogTitle: 'Import Configuration',
@@ -199,7 +199,7 @@ class SettingsService {
         withData: true, // Needed for web/some platforms, but safer for IO
       );
 
-      if (result == null || result.files.isEmpty) return;
+      if (result == null || result.files.isEmpty) return null;
 
       final fileBytes =
           result.files.single.bytes ??
@@ -217,92 +217,130 @@ class SettingsService {
         p.join(appSupportDir.path, 'shared_preferences'),
       );
 
-      debugPrint('📂 Import Target Directory: ${sharedPrefsDir.path}');
+      // Validate all archive entries and parse preferences.json before writing anything.
+      final plan = planArchiveExtraction(
+        archive,
+        sharedPrefsDir.path,
+        select: (name) =>
+            name.startsWith('files/') &&
+            name.substring('files/'.length).isNotEmpty,
+        mapEntryName: (name) =>
+            name.startsWith('files/') ? name.substring('files/'.length) : name,
+      );
 
-      if (!await sharedPrefsDir.exists()) {
-        debugPrint(
-          '⚠️ Directory does not exist, creating: ${sharedPrefsDir.path}',
-        );
-        await sharedPrefsDir.create(recursive: true);
-      } else {
-        debugPrint('✅ Directory exists: ${sharedPrefsDir.path}');
-      }
+      final prefsEntry = archive.findFile('preferences.json');
+      final Map<String, dynamic>? parsedPrefs = prefsEntry != null
+          ? Map<String, dynamic>.from(
+              jsonDecode(utf8.decode(prefsEntry.content as List<int>)) as Map,
+            )
+          : null;
 
-      String? prefsJsonString;
+      MergeImportResult? mergeResult;
+      ClusterService? clusterService;
+      List<String>? rawImportedClusterJsons;
 
-      // 1. Extract Files
-      for (final file in archive) {
-        if (file.isFile) {
-          if (file.name == 'preferences.json') {
-            prefsJsonString = utf8.decode(file.content as List<int>);
-          } else if (file.name.startsWith('files/')) {
-            final filename = file.name.substring('files/'.length);
-            if (filename.isNotEmpty) {
-              final data = file.content as List<int>;
-              // Use platform-aware path construction
-              final targetPath = p.join(sharedPrefsDir.path, filename);
-              debugPrint('📄 Extracting file to: $targetPath');
-              final targetFile = File(targetPath);
+      if (parsedPrefs != null) {
+        // Never import the migration flag from the bundle; secrets must be
+        // written to the local OS keyring or migrated on next start.
+        parsedPrefs.remove('credentials_migrated_to_keyring_v1');
 
-              // Ensure directory exists if filename contains paths (though currently flat)
-              await targetFile.parent.create(recursive: true);
-
-              await targetFile.writeAsBytes(data);
-            }
-          }
-        }
-      }
-
-      // 2. Restore Preferences
-      if (prefsJsonString != null) {
-        final prefs = await SharedPreferences.getInstance();
-        final Map<String, dynamic> allPrefs = jsonDecode(prefsJsonString);
-
-        // Special handling for clusters to fix paths
-        if (allPrefs.containsKey('cluster_profiles')) {
+        if (parsedPrefs.containsKey('cluster_profiles')) {
           try {
-            final clustersJsonString = allPrefs['cluster_profiles'] as String;
+            final clustersJsonString =
+                parsedPrefs['cluster_profiles'] as String;
             final dynamic decodedClusters = jsonDecode(clustersJsonString);
 
             if (decodedClusters is List) {
-              final List<dynamic> clustersList = decodedClusters;
-              final List<dynamic> importedClustersList = [];
+              clusterService = getIt<ClusterService>();
+              if (clusterService.storeStatus.isUnreadable) {
+                throw StoredDataUnreadableException(
+                  'cluster_profiles',
+                  backupPath: clusterService.storeStatus.backupPath,
+                );
+              }
+              final existing = await clusterService.loadClusters();
 
-              for (final clusterJson in clustersList) {
+              final importedProfiles = <ClusterProfile>[];
+              rawImportedClusterJsons = <String>[];
+              for (final clusterJson in decodedClusters) {
                 final Map<String, dynamic> importedCluster = Map.from(
-                  clusterJson,
+                  clusterJson as Map,
                 );
 
                 String? fixPath(String? path) {
                   if (path != null && path.startsWith('files/')) {
                     final filename = path.substring('files/'.length);
-                    // Use platform-aware path construction
                     return p.join(sharedPrefsDir.path, filename);
                   }
                   return path;
                 }
 
                 importedCluster['sslKeystoreLocation'] = fixPath(
-                  importedCluster['sslKeystoreLocation'],
+                  importedCluster['sslKeystoreLocation'] as String?,
                 );
                 importedCluster['sslTruststoreLocation'] = fixPath(
-                  importedCluster['sslTruststoreLocation'],
+                  importedCluster['sslTruststoreLocation'] as String?,
                 );
 
-                importedClustersList.add(importedCluster);
+                final encoded = jsonEncode(importedCluster);
+                rawImportedClusterJsons.add(encoded);
+                importedProfiles.add(
+                  await deserializeClusterProfile(json: encoded),
+                );
               }
-              allPrefs['cluster_profiles'] = jsonEncode(importedClustersList);
+
+              mergeResult = await mergeImportedProfiles(
+                existing,
+                importedProfiles,
+                onClusterConflict ??
+                    (_, _) async => const ImportConflictChoice.replace(),
+              );
+              if (mergeResult == null) {
+                // User cancelled conflict resolution: abort without writing.
+                return null;
+              }
+              parsedPrefs.remove('cluster_profiles');
             } else {
               debugPrint(
                 '❌ Import Error: cluster_profiles is not a List (got ${decodedClusters.runtimeType}). Skipping import for this key.',
               );
-              allPrefs.remove('cluster_profiles');
+              parsedPrefs.remove('cluster_profiles');
             }
+          } on StoredDataUnreadableException {
+            rethrow;
           } catch (e) {
             debugPrint('❌ Error processing cluster_profiles during import: $e');
-            allPrefs.remove('cluster_profiles');
+            parsedPrefs.remove('cluster_profiles');
           }
         }
+      }
+
+      debugPrint('📂 Import Target Directory: ${sharedPrefsDir.path}');
+
+      if (plan.isNotEmpty) {
+        if (!await sharedPrefsDir.exists()) {
+          debugPrint(
+            '⚠️ Directory does not exist, creating: ${sharedPrefsDir.path}',
+          );
+          await sharedPrefsDir.create(recursive: true);
+        } else {
+          debugPrint('✅ Directory exists: ${sharedPrefsDir.path}');
+        }
+
+        // 1. Extract Files
+        for (final entry in plan.entries) {
+          final data = entry.key.content as List<int>;
+          final targetFile = File(entry.value);
+          debugPrint('📄 Extracting file to: ${entry.value}');
+          await targetFile.parent.create(recursive: true);
+          await targetFile.writeAsBytes(data);
+        }
+      }
+
+      // 2. Restore Preferences
+      if (parsedPrefs != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final Map<String, dynamic> allPrefs = parsedPrefs;
 
         // 3. Fix Paths
         await _fixImportedPaths(allPrefs);
@@ -326,12 +364,28 @@ class SettingsService {
           }
         }
 
+        if (mergeResult != null && clusterService != null) {
+          final allWritesOk = await clusterService.saveClusters(
+            mergeResult.clusters,
+          );
+          if (!allWritesOk) {
+            // Keyring failed: keep plaintext JSON in preferences and clear the
+            // migration flag so migration retries on the next start.
+            final encoded = <String>[];
+            for (final c in mergeResult.clusters) {
+              encoded.add(await serializeClusterProfile(profile: c));
+            }
+            await prefs.setString('cluster_profiles', '[${encoded.join(',')}]');
+            await prefs.setBool('credentials_migrated_to_keyring_v1', false);
+          }
+        }
+
         // 3. Reload Controllers
         await getIt<ClusterListController>().loadClusters();
         await getIt<ScriptController>().loadScripts();
-
-        // Notify user? Rely on caller to show snackbar?
       }
+
+      return mergeResult?.summary;
     } catch (e) {
       debugPrint('Error importing configuration: $e');
       rethrow;
@@ -357,60 +411,6 @@ class SettingsService {
       }
     } catch (e) {
       debugPrint('DEBUG: ❌ Error adding file: $e');
-    }
-    return null;
-  }
-
-  // Simplified version of GcsService._findKeyFile
-  Future<File?> _findGcsKeyFile() async {
-    final List<String> candidates = [];
-    try {
-      // Changed to getApplicationSupportDirectory to search in AppData (Windows) or .local/share (Linux)
-      final appSupportDir = await getApplicationSupportDirectory();
-      candidates.add(
-        p.join(appSupportDir.path, 'shared_preferences', _gcsKeyFileName),
-      );
-
-      // Keep checking Documents for backward compatibility
-      final appDocDir = await getApplicationDocumentsDirectory();
-      candidates.add(
-        p.join(appDocDir.path, 'shared_preferences', _gcsKeyFileName),
-      );
-    } catch (_) {}
-
-    if (Platform.isLinux) {
-      final home = Platform.environment['HOME'];
-      if (home != null) {
-        candidates.add(
-          p.join(
-            home,
-            '.local/share/at.greenhopper.kafkalyzer',
-            _gcsKeyFileName,
-          ),
-        );
-        candidates.add(
-          p.join(home, '.local/share/kafkalyzer', _gcsKeyFileName),
-        );
-      }
-    } else if (Platform.isWindows) {
-      final appData = Platform.environment['APPDATA'];
-      if (appData != null) {
-        candidates.add(
-          p.join(appData, 'at.greenhopper', 'kafkalyzer', _gcsKeyFileName),
-        );
-      }
-    } else if (Platform.isMacOS) {
-      final home = Platform.environment['HOME'];
-      if (home != null) {
-        candidates.add('$home/Library/Preferences/$_gcsKeyFileName');
-      }
-    }
-
-    for (final path in candidates) {
-      final file = File(path);
-      if (await file.exists()) {
-        return file;
-      }
     }
     return null;
   }

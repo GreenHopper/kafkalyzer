@@ -10,8 +10,13 @@ import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 
 class ClusterConfigDialog extends StatefulWidget {
   final ClusterProfile? cluster;
+  final List<String> existingNames;
 
-  const ClusterConfigDialog({super.key, this.cluster});
+  const ClusterConfigDialog({
+    super.key,
+    this.cluster,
+    this.existingNames = const [],
+  });
 
   @override
   State<ClusterConfigDialog> createState() => _ClusterConfigDialogState();
@@ -270,6 +275,7 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                       _schemaRegistryUsernameController,
                   schemaRegistryPasswordController:
                       _schemaRegistryPasswordController,
+                  existingNames: widget.existingNames,
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),

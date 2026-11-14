@@ -13,6 +13,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
@@ -60,6 +61,8 @@ class FakeClusterListController extends ChangeNotifier
   List<ClusterProfile> get clusters => [];
   @override
   bool get isLoading => false;
+  @override
+  StoreStatus get storeStatus => const StoreStatus.ok();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -103,6 +106,8 @@ class FakeScriptController extends ChangeNotifier implements ScriptController {
   List<Script> get scripts => [];
   @override
   bool get isLoading => false;
+  @override
+  StoreStatus get storeStatus => const StoreStatus.ok();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

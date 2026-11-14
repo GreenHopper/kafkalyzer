@@ -4,12 +4,12 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
-import 'dart:ui' as _i7;
 
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart'
     as _i3;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i4;
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as _i2;
+import 'package:listen/src/listen.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i6;
 

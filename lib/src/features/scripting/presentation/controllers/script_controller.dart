@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 
 class ScriptController extends ChangeNotifier {
@@ -13,9 +14,19 @@ class ScriptController extends ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  StoreStatus get storeStatus => _repository.storeStatus;
 
   ScriptController() {
     loadScripts();
+  }
+
+  void _requireReadableStore() {
+    if (storeStatus.isUnreadable) {
+      throw StoredDataUnreadableException(
+        'saved_scripts_v1',
+        backupPath: storeStatus.backupPath,
+      );
+    }
   }
 
   Future<void> loadScripts() async {
@@ -26,6 +37,8 @@ class ScriptController extends ChangeNotifier {
       _scripts.sort(
         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
       );
+    } on StoredDataUnreadableException {
+      _scripts = [];
     } catch (e) {
       // Handle error
     } finally {
@@ -34,18 +47,26 @@ class ScriptController extends ChangeNotifier {
     }
   }
 
+  Future<void> discardUnreadable() async {
+    await _repository.discardUnreadable();
+    await loadScripts();
+  }
+
   Future<void> saveScript(Script script) async {
+    _requireReadableStore();
     await _repository.saveScript(script);
     await loadScripts();
   }
 
   Future<Script> createScript(String name) async {
+    _requireReadableStore();
     final newScript = Script(id: const Uuid().v4(), name: name);
     await saveScript(newScript);
     return newScript;
   }
 
   Future<void> duplicateScript(Script script) async {
+    _requireReadableStore();
     final newScript = script.copyWith(
       id: const Uuid().v4(),
       name: "${script.name} (Copy)",
@@ -54,6 +75,7 @@ class ScriptController extends ChangeNotifier {
   }
 
   Future<void> deleteScript(String id) async {
+    _requireReadableStore();
     await _repository.deleteScript(id);
     await loadScripts();
   }
@@ -64,6 +86,7 @@ class ScriptController extends ChangeNotifier {
   }
 
   Future<void> importScripts(String jsonString) async {
+    _requireReadableStore();
     _isLoading = true;
     notifyListeners();
     try {

@@ -1,15 +1,22 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:archive/archive.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
+import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
+import 'package:kafkalyzer/src/utils/archive_safety.dart';
+import 'package:path/path.dart' as p;
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import '../../../../rust/api/json_path_test_stub.dart';
@@ -35,7 +42,7 @@ class MockClusterService extends ClusterService {
   @override
   Future<List<ClusterProfile>> loadClusters() async => [];
   @override
-  Future<void> saveClusters(List<ClusterProfile> clusters) async {}
+  Future<bool> saveClusters(List<ClusterProfile> clusters) async => true;
 }
 
 class MockClusterListController extends ClusterListController {
@@ -433,5 +440,187 @@ void main() {
     expect(target.filterTerms!.length, 2);
     expect(target.filterTerms, containsAll(["ID: 123", "ID: 456"]));
     expect(target.filterTerm, isNull); // Should be null if expanded
+  });
+
+  group('importRunArchive safety', () {
+    test(
+      'rejects ../evil.txt, absolute entry, and traversal manifest id',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'kafkalyzer_run_imp_',
+        );
+        try {
+          final outputRoot = Directory(p.join(tempDir.path, 'out'))
+            ..createSync();
+          final script = Script(
+            id: 's1',
+            name: 'Safe Script',
+            outputDirectory: outputRoot.path,
+            steps: [],
+          );
+
+          Future<void> expectRejected(Archive archive, String zipName) async {
+            final zipPath = p.join(tempDir.path, zipName);
+            File(zipPath).writeAsBytesSync(ZipEncoder().encode(archive));
+            await expectLater(
+              () => scriptRunner.importRunArchive(zipPath, script),
+              throwsA(isA<UnsafeArchiveEntryException>()),
+            );
+            expect(outputRoot.listSync(), isEmpty);
+          }
+
+          final okBytes = utf8.encode(jsonEncode({'id': 'run_1'}));
+          final evilBytes = utf8.encode('evil');
+
+          await expectRejected(
+            Archive()
+              ..addFile(
+                ArchiveFile('run_manifest.json', okBytes.length, okBytes),
+              )
+              ..addFile(
+                ArchiveFile('../evil.txt', evilBytes.length, evilBytes),
+              ),
+            'traversal.zip',
+          );
+
+          await expectRejected(
+            Archive()
+              ..addFile(
+                ArchiveFile('run_manifest.json', okBytes.length, okBytes),
+              )
+              ..addFile(
+                ArchiveFile('/tmp/evil.txt', evilBytes.length, evilBytes),
+              ),
+            'absolute.zip',
+          );
+
+          final badManifestBytes = utf8.encode(
+            jsonEncode({'id': '../../outside'}),
+          );
+          await expectRejected(
+            Archive()..addFile(
+              ArchiveFile(
+                'run_manifest.json',
+                badManifestBytes.length,
+                badManifestBytes,
+              ),
+            ),
+            'bad_id.zip',
+          );
+        } finally {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                const MethodChannel('plugins.flutter.io/path_provider'),
+                null,
+              );
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
+
+    test('round-trips a zip produced by exportRunArchive', () async {
+      final tempDir = Directory.systemTemp.createTempSync('kafkalyzer_run_rt_');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('plugins.flutter.io/path_provider'),
+            (call) async => tempDir.path,
+          );
+      try {
+        final srcDir = Directory(p.join(tempDir.path, 'src_run'))..createSync();
+        final destRoot = Directory(p.join(tempDir.path, 'dest_out'))
+          ..createSync();
+        final manifest = ScriptRun(
+          id: 'Safe_Script_12345',
+          scriptName: 'Safe Script',
+          timestamp: 12345,
+          parameters: const {},
+          status: ScriptRunStatus.completed,
+          path: srcDir.path,
+        );
+        File(
+          p.join(srcDir.path, 'run_manifest.json'),
+        ).writeAsStringSync(jsonEncode(manifest.toJson()));
+        File(p.join(srcDir.path, 'out.txt')).writeAsStringSync('hello');
+
+        final zipPath = await scriptRunner.exportRunArchive(manifest);
+        expect(zipPath, isNotNull);
+
+        final script = Script(
+          id: 's1',
+          name: 'Safe Script',
+          outputDirectory: destRoot.path,
+          steps: [],
+        );
+        await scriptRunner.importRunArchive(zipPath!, script);
+
+        final importedOut = File(
+          p.join(destRoot.path, 'Safe_Script_12345', 'out.txt'),
+        );
+        expect(importedOut.existsSync(), isTrue);
+        expect(importedOut.readAsStringSync(), 'hello');
+      } finally {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('plugins.flutter.io/path_provider'),
+              null,
+            );
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+  });
+
+  group('sanitised run directories', () {
+    test(
+      'sanitizes ../../reports/x, .., and My Test Script while keeping scriptName',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'kafkalyzer_rundir_',
+        );
+        try {
+          final globalOut = Directory(p.join(tempDir.path, 'global_out'))
+            ..createSync();
+          await mockMultiSearchController.setDirectory(globalOut.path);
+
+          for (final entry in {
+            '../../reports/x': '.._.._reports_x',
+            '..': '_',
+            'My Test Script': 'My_Test_Script',
+          }.entries) {
+            await mockMultiSearchController.setDirectory(globalOut.path);
+            final script = Script(
+              id: 'id-${entry.key}',
+              name: entry.key,
+              steps: [],
+            );
+            await scriptRunner.runScript(script, {});
+
+            final expectedParent = Directory(
+              p.join(globalOut.path, entry.value),
+            );
+            expect(expectedParent.existsSync(), isTrue);
+            final runDirs = expectedParent
+                .listSync()
+                .whereType<Directory>()
+                .toList();
+            expect(runDirs.length, 1);
+            expect(p.isWithin(globalOut.path, runDirs.first.path), isTrue);
+
+            final manifestFile = File(
+              p.join(runDirs.first.path, 'run_manifest.json'),
+            );
+            expect(manifestFile.existsSync(), isTrue);
+            final decoded = jsonDecode(manifestFile.readAsStringSync()) as Map;
+            expect(decoded['scriptName'], entry.key);
+          }
+        } finally {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                const MethodChannel('plugins.flutter.io/path_provider'),
+                null,
+              );
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
   });
 }

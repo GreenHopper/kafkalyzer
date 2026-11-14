@@ -1,12 +1,72 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/secure_storage_service.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../rust/api/rust_mocks.mocks.dart';
+
+class _FakeFlutterSecureStorage implements FlutterSecureStorage {
+  final Map<String, String> data = {};
+  bool Function(String key)? shouldFail;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (shouldFail?.call(key) ?? false) throw Exception('Keyring error');
+    if (value == null) {
+      data.remove(key);
+    } else {
+      data[key] = value;
+    }
+  }
+
+  @override
+  Future<String?> read({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (shouldFail?.call(key) ?? false) throw Exception('Keyring error');
+    return data[key];
+  }
+
+  @override
+  Future<void> delete({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (shouldFail?.call(key) ?? false) throw Exception('Keyring error');
+    data.remove(key);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 /// Stand-in for the Rust profile codec: it remembers whole profiles under a
 /// reference, so anything the Dart persistence layer loses shows up as a lost
@@ -93,6 +153,7 @@ List<Object?> fieldValues(ClusterProfile profile) => [
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late ClusterService service;
+  late _FakeFlutterSecureStorage fakeKeyring;
   late _CodecStub codec;
   final mockApi = MockKafkalyzerRustLibApi();
 
@@ -108,7 +169,10 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     reset(mockApi);
     codec = _CodecStub()..register(mockApi);
-    service = ClusterService();
+    fakeKeyring = _FakeFlutterSecureStorage();
+    service = ClusterService(
+      secureStorage: SecureStorageService(storage: fakeKeyring),
+    );
   });
 
   group('ClusterService', () {
@@ -181,14 +245,19 @@ void main() {
       expect(fieldValues(reloaded.single), fieldValues(expected));
     });
 
-    test('loadClusters returns empty list on json parse error', () async {
-      SharedPreferences.setMockInitialValues({
-        'cluster_profiles': 'INVALID_JSON',
-      });
+    test(
+      'loadClusters throws StoredDataUnreadableException on json parse error',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'cluster_profiles': 'INVALID_JSON',
+        });
 
-      final clusters = await service.loadClusters();
-      expect(clusters, isEmpty);
-    });
+        await expectLater(
+          () => service.loadClusters(),
+          throwsA(isA<StoredDataUnreadableException>()),
+        );
+      },
+    );
 
     test(
       'sanitizes sensitive credentials before writing to SharedPreferences and persists to SecureStorage',
@@ -245,6 +314,212 @@ void main() {
         final sanitizedStored = codec.byRef.values.last;
         expect(sanitizedStored.saslPassword, isNull);
         expect(sanitizedStored.schemaRegistryPassword, isNull);
+      },
+    );
+
+    test(
+      'migration keeps plaintext and does not set flag when keyring write throws',
+      () async {
+        fakeKeyring.shouldFail = (_) => true;
+        final legacyProfile = fullProfile(name: 'legacy-fail');
+        codec.byRef['legacy-fail-ref'] = legacyProfile;
+        final legacyJson = jsonEncode([
+          {'ref': 'legacy-fail-ref'},
+        ]);
+        SharedPreferences.setMockInitialValues({
+          'cluster_profiles': legacyJson,
+        });
+
+        final loaded = await service.loadClusters();
+        expect(loaded.single.saslPassword, 'pass');
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('cluster_profiles'), legacyJson);
+        expect(prefs.getBool('credentials_migrated_to_keyring_v1'), isNull);
+      },
+    );
+
+    test(
+      'migration strips plaintext only for profiles whose keyring write succeeded',
+      () async {
+        // Note: SecureStorageService has sticky fallback, so test per-profile
+        // by failing on B's key (A is processed first).
+        fakeKeyring.shouldFail = (key) => key.contains('cluster_B_');
+        codec.byRef['ref-A'] = fullProfile(name: 'A');
+        codec.byRef['ref-B'] = fullProfile(name: 'B');
+        SharedPreferences.setMockInitialValues({
+          'cluster_profiles': jsonEncode([
+            {'ref': 'ref-A'},
+            {'ref': 'ref-B'},
+          ]),
+        });
+
+        final loaded = await service.loadClusters();
+        expect(loaded.length, 2);
+        expect(loaded[0].saslPassword, 'pass');
+        expect(loaded[1].saslPassword, 'pass');
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('credentials_migrated_to_keyring_v1'), isNull);
+        final stored = jsonDecode(prefs.getString('cluster_profiles')!) as List;
+        final storedA = codec.byRef[(stored[0] as Map)['ref']]!;
+        final storedB = codec.byRef[(stored[1] as Map)['ref']]!;
+        expect(storedA.saslPassword, isNull);
+        expect(storedB.saslPassword, 'pass');
+      },
+    );
+
+    test(
+      'rename moves secrets and removes old keys only when writes succeed',
+      () async {
+        await service.saveClusters([fullProfile(name: 'Prod')]);
+        expect(fakeKeyring.data['cluster_Prod_saslPassword'], 'pass');
+
+        final renamed = fullProfile(name: 'Prod EU');
+        await service.saveClusters([renamed]);
+        expect(fakeKeyring.data['cluster_Prod EU_saslPassword'], 'pass');
+        expect(
+          fakeKeyring.data.containsKey('cluster_Prod_saslPassword'),
+          isFalse,
+        );
+
+        // Now simulate keyring failure on rename
+        fakeKeyring.shouldFail = (_) => true;
+        await service.saveClusters([fullProfile(name: 'Prod US')]);
+        expect(fakeKeyring.data['cluster_Prod EU_saslPassword'], 'pass');
+
+        final prefs = await SharedPreferences.getInstance();
+        final stored = jsonDecode(prefs.getString('cluster_profiles')!) as List;
+        final storedProfile = codec.byRef[(stored.single as Map)['ref']]!;
+        expect(storedProfile.saslPassword, isNull);
+      },
+    );
+
+    test('preserves corrupt entry across load and saveClusters', () async {
+      codec.byRef['ref-1'] = fullProfile(name: 'One');
+      codec.byRef['ref-3'] = fullProfile(name: 'Three');
+      SharedPreferences.setMockInitialValues({
+        'cluster_profiles': jsonEncode([
+          {'ref': 'ref-1'},
+          {'corrupt': true},
+          {'ref': 'ref-3'},
+        ]),
+      });
+
+      final loaded = await service.loadClusters();
+      expect(loaded.map((c) => c.name), ['One', 'Three']);
+      expect(service.storeStatus.isPartiallyUnreadable, isTrue);
+      expect(service.storeStatus.unreadableCount, 1);
+
+      await service.saveClusters([
+        ...loaded,
+        const ClusterProfile(name: 'Four', bootstrapServers: 'b:9092'),
+      ]);
+      final prefs = await SharedPreferences.getInstance();
+      final rawAfter = jsonDecode(prefs.getString('cluster_profiles')!) as List;
+      expect(rawAfter.length, 4);
+      expect(rawAfter.last, {'corrupt': true});
+    });
+
+    test(
+      'truncated JSON throws on load and save, keeps raw intact, writes backup',
+      () async {
+        final tempDir = Directory.systemTemp.createTempSync(
+          'kafkalyzer_cs_bkp_',
+        );
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('plugins.flutter.io/path_provider'),
+              (call) async => tempDir.path,
+            );
+        try {
+          const rawBroken = '[{"ref":"ref-1"';
+          SharedPreferences.setMockInitialValues({
+            'cluster_profiles': rawBroken,
+          });
+
+          await expectLater(
+            () => service.loadClusters(),
+            throwsA(isA<StoredDataUnreadableException>()),
+          );
+          expect(service.storeStatus.isUnreadable, isTrue);
+          expect(service.storeStatus.backupPath, isNotNull);
+          expect(
+            File(service.storeStatus.backupPath!).readAsStringSync(),
+            rawBroken,
+          );
+
+          await expectLater(
+            () => service.saveClusters([fullProfile(name: 'New')]),
+            throwsA(isA<StoredDataUnreadableException>()),
+          );
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getString('cluster_profiles'), rawBroken);
+        } finally {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                const MethodChannel('plugins.flutter.io/path_provider'),
+                null,
+              );
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
+  });
+
+  group('normalizeProfileName & mergeImportedProfiles', () {
+    test('normalizes case and whitespace', () {
+      expect(normalizeProfileName('  Prod  '), 'prod');
+    });
+
+    test(
+      'handles replace, rename, skip, cancel, and intra-bundle duplicates',
+      () async {
+        final existing = [
+          const ClusterProfile(name: 'Prod', bootstrapServers: 'old:9092'),
+        ];
+        final imported = [
+          const ClusterProfile(name: ' prod ', bootstrapServers: 'new1:9092'),
+          const ClusterProfile(name: 'Prod', bootstrapServers: 'new2:9092'),
+          const ClusterProfile(name: 'PROD', bootstrapServers: 'new3:9092'),
+          const ClusterProfile(name: 'Staging', bootstrapServers: 'stg:9092'),
+        ];
+
+        final suggestions = <String>[];
+        var callIdx = 0;
+        final res = await mergeImportedProfiles(existing, imported, (
+          item,
+          suggested,
+        ) async {
+          suggestions.add(suggested);
+          callIdx++;
+          if (callIdx == 1) return const ImportConflictChoice.replace();
+          if (callIdx == 2) return ImportConflictChoice.rename(suggested);
+          return const ImportConflictChoice.skip();
+        });
+
+        expect(res, isNotNull);
+        expect(suggestions, [
+          'prod (imported)',
+          'Prod (imported)',
+          'PROD (imported 2)',
+        ]);
+        expect(res!.clusters.map((c) => c.name), [
+          ' prod ',
+          'Prod (imported)',
+          'Staging',
+        ]);
+        expect(res.summary.imported, 1);
+        expect(res.summary.replaced, 1);
+        expect(res.summary.renamed, 1);
+        expect(res.summary.skipped, 1);
+
+        final cancelled = await mergeImportedProfiles(
+          existing,
+          imported,
+          (_, _) async => null,
+        );
+        expect(cancelled, isNull);
       },
     );
   });

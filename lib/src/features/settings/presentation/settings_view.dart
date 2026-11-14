@@ -9,10 +9,14 @@ import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/import_conflict_dialog.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
+import 'package:kafkalyzer/src/utils/archive_safety.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 
@@ -302,11 +306,48 @@ class _SettingsViewState extends State<SettingsView> {
                 onPressed: () async {
                   final settingsService = getIt<SettingsService>();
                   try {
-                    await settingsService.importConfiguration();
+                    final summary = await settingsService.importConfiguration(
+                      onClusterConflict: (imported, suggestedRename) {
+                        if (!context.mounted) return Future.value(null);
+                        return ImportConflictDialog.show(
+                          context,
+                          profileName: imported.name,
+                          suggestedRename: suggestedRename,
+                          takenNormalizedNames: getIt<ClusterListController>()
+                              .clusters
+                              .map((c) => normalizeProfileName(c.name))
+                              .toSet(),
+                        );
+                      },
+                    );
+                    if (context.mounted) {
+                      final message = summary != null
+                          ? l10n.importSummary(
+                              summary.imported,
+                              summary.replaced,
+                              summary.renamed,
+                              summary.skipped,
+                            )
+                          : l10n.configurationImportedSuccessfully;
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(message)));
+                    }
+                  } on StoredDataUnreadableException {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(l10n.configurationImportedSuccessfully),
+                          content: Text(l10n.storeUnreadableActionRefused),
+                        ),
+                      );
+                    }
+                  } on UnsafeArchiveEntryException catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            l10n.importRejectedUnsafeEntry(e.entryName),
+                          ),
                         ),
                       );
                     }
@@ -393,21 +434,68 @@ class _SettingsViewState extends State<SettingsView> {
                     final extension = result.files.single.extension
                         ?.toLowerCase();
 
-                    if (extension == 'zip') {
-                      final bytes = await file.readAsBytes();
-                      await clusterController.importClustersZip(bytes);
-                    } else {
-                      final jsonString = await file.readAsString();
-                      await clusterController.importClusters(jsonString);
+                    ImportSummary? summary;
+                    Future<ImportConflictChoice?> resolveConflict(
+                      ClusterProfile imported,
+                      String suggestedRename,
+                    ) {
+                      if (!context.mounted) return Future.value(null);
+                      return ImportConflictDialog.show(
+                        context,
+                        profileName: imported.name,
+                        suggestedRename: suggestedRename,
+                        takenNormalizedNames: clusterController.clusters
+                            .map((c) => normalizeProfileName(c.name))
+                            .toSet(),
+                      );
                     }
 
-                    if (context.mounted) {
+                    if (extension == 'zip') {
+                      final bytes = await file.readAsBytes();
+                      summary = await clusterController.importClustersZip(
+                        bytes,
+                        onConflict: resolveConflict,
+                      );
+                    } else {
+                      final jsonString = await file.readAsString();
+                      summary = await clusterController.importClusters(
+                        jsonString,
+                        onConflict: resolveConflict,
+                      );
+                    }
+
+                    if (summary != null && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(l10n.clustersImportedSuccessfully),
+                          content: Text(
+                            l10n.importSummary(
+                              summary.imported,
+                              summary.replaced,
+                              summary.renamed,
+                              summary.skipped,
+                            ),
+                          ),
                         ),
                       );
                     }
+                  }
+                } on StoredDataUnreadableException {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.storeUnreadableActionRefused),
+                      ),
+                    );
+                  }
+                } on UnsafeArchiveEntryException catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          l10n.importRejectedUnsafeEntry(e.entryName),
+                        ),
+                      ),
+                    );
                   }
                 } catch (e) {
                   if (context.mounted) {
@@ -428,13 +516,23 @@ class _SettingsViewState extends State<SettingsView> {
                   ? null
                   : () async {
                       try {
+                        final includeSecrets = await _askExportCredentials(
+                          context,
+                          l10n,
+                          title: l10n.export,
+                        );
+                        if (includeSecrets == null) return;
+
                         final selectedClusters = clusterController.clusters
                             .where(
                               (c) => _selectedClusterNames.contains(c.name),
                             )
                             .toList();
                         final zipBytes = await clusterController
-                            .exportClustersZip(selectedClusters);
+                            .exportClustersZip(
+                              selectedClusters,
+                              includeSecrets: includeSecrets,
+                            );
 
                         String? outputFile = await FilePicker.saveFile(
                           dialogTitle: l10n.export,
@@ -477,7 +575,11 @@ class _SettingsViewState extends State<SettingsView> {
               onPressed: () async {
                 final result = await showDialog<ClusterProfile>(
                   context: context,
-                  builder: (context) => const ClusterConfigDialog(),
+                  builder: (context) => ClusterConfigDialog(
+                    existingNames: clusterController.clusters
+                        .map((c) => c.name)
+                        .toList(),
+                  ),
                 );
                 if (result != null) {
                   clusterController.addCluster(result);
@@ -609,7 +711,15 @@ class _SettingsViewState extends State<SettingsView> {
                 onPressed: () async {
                   final result = await showDialog<ClusterProfile>(
                     context: context,
-                    builder: (context) => ClusterConfigDialog(cluster: cluster),
+                    builder: (context) => ClusterConfigDialog(
+                      cluster: cluster,
+                      existingNames: clusterController.clusters
+                          .asMap()
+                          .entries
+                          .where((e) => e.key != index)
+                          .map((e) => e.value.name)
+                          .toList(),
+                    ),
                   );
                   if (result != null) {
                     final oldName = cluster.name;
@@ -680,19 +790,20 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
-  Future<void> _handleExportConfiguration(
+  Future<bool?> _askExportCredentials(
     BuildContext context,
-    AppLocalizations l10n,
-  ) async {
+    AppLocalizations l10n, {
+    required String title,
+  }) {
     bool includeCredentials = false;
 
-    final confirmed = await showDialog<bool>(
+    return showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(l10n.exportConfiguration),
+              title: Text(title),
               content: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Column(
@@ -753,11 +864,12 @@ class _SettingsViewState extends State<SettingsView> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  onPressed: () => Navigator.of(dialogContext).pop(null),
                   child: Text(l10n.cancel),
                 ),
                 FilledButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(includeCredentials),
                   child: Text(l10n.export),
                 ),
               ],
@@ -766,8 +878,19 @@ class _SettingsViewState extends State<SettingsView> {
         );
       },
     );
+  }
 
-    if (confirmed != true) return;
+  Future<void> _handleExportConfiguration(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) async {
+    final includeCredentials = await _askExportCredentials(
+      context,
+      l10n,
+      title: l10n.exportConfiguration,
+    );
+
+    if (includeCredentials == null) return;
 
     final settingsService = getIt<SettingsService>();
     try {

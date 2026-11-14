@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/password_form_field.dart';
+import 'package:kafkalyzer/src/services/cluster_service.dart';
 
 class ClusterBasicInfoForm extends StatefulWidget {
   final TextEditingController nameController;
@@ -8,6 +9,7 @@ class ClusterBasicInfoForm extends StatefulWidget {
   final TextEditingController schemaRegistryUrlController;
   final TextEditingController schemaRegistryUsernameController;
   final TextEditingController schemaRegistryPasswordController;
+  final List<String> existingNames;
 
   const ClusterBasicInfoForm({
     super.key,
@@ -16,6 +18,7 @@ class ClusterBasicInfoForm extends StatefulWidget {
     required this.schemaRegistryUrlController,
     required this.schemaRegistryUsernameController,
     required this.schemaRegistryPasswordController,
+    this.existingNames = const [],
   });
 
   @override
@@ -63,9 +66,21 @@ class _ClusterBasicInfoFormState extends State<ClusterBasicInfoForm> {
             decoration: InputDecoration(
               labelText: l10n?.clusterNameLabel ?? 'Cluster Name',
             ),
-            validator: (value) => value!.isEmpty
-                ? (l10n?.requiredValidation ?? 'Required')
-                : null,
+            validator: (value) {
+              final trimmed = value?.trim() ?? '';
+              if (trimmed.isEmpty) {
+                return l10n?.requiredValidation ?? 'Required';
+              }
+              final normalized = normalizeProfileName(trimmed);
+              final isDuplicate = widget.existingNames.any(
+                (n) => normalizeProfileName(n) == normalized,
+              );
+              if (isDuplicate) {
+                return l10n?.clusterNameAlreadyUsed ??
+                    'A cluster profile with this name already exists.';
+              }
+              return null;
+            },
           ),
         ),
         Padding(

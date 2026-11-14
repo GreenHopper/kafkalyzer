@@ -34,7 +34,7 @@ class MockClusterService extends ClusterService {
   Future<List<ClusterProfile>> loadClusters() async => [];
 
   @override
-  Future<void> saveClusters(List<ClusterProfile> clusters) async {}
+  Future<bool> saveClusters(List<ClusterProfile> clusters) async => true;
 }
 
 class MockKafkaMetadataService extends KafkaMetadataService {

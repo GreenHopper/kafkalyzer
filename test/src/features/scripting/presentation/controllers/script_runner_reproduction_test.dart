@@ -53,7 +53,7 @@ class MockClusterService extends ClusterService {
   @override
   Future<List<ClusterProfile>> loadClusters() async => [];
   @override
-  Future<void> saveClusters(List<ClusterProfile> clusters) async {}
+  Future<bool> saveClusters(List<ClusterProfile> clusters) async => true;
 }
 
 class MockClusterListController extends ClusterListController {

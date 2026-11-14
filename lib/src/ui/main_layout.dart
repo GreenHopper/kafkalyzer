@@ -5,6 +5,7 @@ import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/script_manager_view.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
+import 'package:kafkalyzer/src/ui/storage_notice_banner.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
@@ -143,13 +144,20 @@ class _MainLayoutState extends State<MainLayout> {
             ).colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
           Expanded(
-            child: switch (_selectedIndex) {
-              0 => const ExplorerView(),
-              1 => const ConsumerLagView(),
-              2 => const ScriptManagerView(),
-              3 => const SettingsView(),
-              _ => Center(child: Text(l10n.unknownView)),
-            },
+            child: Column(
+              children: [
+                const StorageNoticeBanner(),
+                Expanded(
+                  child: switch (_selectedIndex) {
+                    0 => const ExplorerView(),
+                    1 => const ConsumerLagView(),
+                    2 => const ScriptManagerView(),
+                    3 => const SettingsView(),
+                    _ => Center(child: Text(l10n.unknownView)),
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),

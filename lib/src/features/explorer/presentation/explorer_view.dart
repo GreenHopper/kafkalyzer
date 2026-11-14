@@ -642,7 +642,11 @@ class _ExplorerViewState extends State<ExplorerView> {
         onAddCluster: () async {
           final result = await showDialog<ClusterProfile>(
             context: context,
-            builder: (context) => const ClusterConfigDialog(),
+            builder: (context) => ClusterConfigDialog(
+              existingNames: clusterController.clusters
+                  .map((c) => c.name)
+                  .toList(),
+            ),
           );
           if (result != null) {
             clusterController.addCluster(result);

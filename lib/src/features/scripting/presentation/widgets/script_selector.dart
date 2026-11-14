@@ -57,6 +57,10 @@ class ScriptSelector extends StatelessWidget {
           });
         }
 
+        if (scriptController.storeStatus.isUnreadable) {
+          return const SizedBox.shrink();
+        }
+
         if (scripts.isEmpty) {
           return const Text("No scripts available");
         }

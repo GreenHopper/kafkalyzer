@@ -9,21 +9,118 @@ import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/services/secure_storage_service.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
+import 'package:kafkalyzer/src/utils/archive_safety.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as p;
 
-// Manual Mocks
-class MockClusterService extends ClusterService {
+import '../rust/api/rust_mocks.mocks.dart';
+
+class _FakeFlutterSecureStorage implements FlutterSecureStorage {
+  final Map<String, String> data = {};
+  bool throwOnOperation = false;
+
   @override
-  Future<List<ClusterProfile>> loadClusters() async => [];
+  Future<void> write({
+    required String key,
+    required String? value,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (throwOnOperation) throw Exception('Keyring error');
+    if (value == null) {
+      data.remove(key);
+    } else {
+      data[key] = value;
+    }
+  }
+
+  @override
+  Future<String?> read({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (throwOnOperation) throw Exception('Keyring error');
+    return data[key];
+  }
+
+  @override
+  Future<void> delete({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (throwOnOperation) throw Exception('Keyring error');
+    data.remove(key);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+void _registerClusterCodec(MockKafkalyzerRustLibApi api) {
+  when(
+    api.crateApiJsonPathSerializeClusterProfile(profile: anyNamed('profile')),
+  ).thenAnswer((inv) async {
+    final p = inv.namedArguments[#profile] as ClusterProfile;
+    return jsonEncode({
+      'name': p.name,
+      'bootstrapServers': p.bootstrapServers,
+      if (p.saslUsername != null) 'saslUsername': p.saslUsername,
+      if (p.saslPassword != null) 'saslPassword': p.saslPassword,
+      if (p.sslKeystoreLocation != null)
+        'sslKeystoreLocation': p.sslKeystoreLocation,
+      if (p.sslTruststoreLocation != null)
+        'sslTruststoreLocation': p.sslTruststoreLocation,
+      if (p.schemaRegistryPassword != null)
+        'schemaRegistryPassword': p.schemaRegistryPassword,
+    });
+  });
+
+  when(
+    api.crateApiJsonPathDeserializeClusterProfile(json: anyNamed('json')),
+  ).thenAnswer((inv) async {
+    final m = jsonDecode(inv.namedArguments[#json] as String) as Map;
+    return ClusterProfile(
+      name: (m['name'] as String?) ?? '',
+      bootstrapServers: (m['bootstrapServers'] as String?) ?? 'localhost:9092',
+      saslUsername: m['saslUsername'] as String?,
+      saslPassword: m['saslPassword'] as String?,
+      sslKeystoreLocation: m['sslKeystoreLocation'] as String?,
+      sslTruststoreLocation: m['sslTruststoreLocation'] as String?,
+      schemaRegistryPassword: m['schemaRegistryPassword'] as String?,
+    );
+  });
 }
 
 class MockScriptRepository implements ScriptRepository {
+  @override
+  StoreStatus get storeStatus => const StoreStatus.ok();
+
+  @override
+  Future<void> discardUnreadable() async {}
+
   @override
   Future<void> deleteScript(String id) async {}
 
@@ -96,14 +193,29 @@ void main() {
   late SettingsService settingsService;
   late MockFilePicker mockFilePicker;
   late String tempDir;
+  late _FakeFlutterSecureStorage fakeKeyring;
+  final mockRustApi = MockKafkalyzerRustLibApi();
+
+  setUpAll(() {
+    KafkalyzerRustLib.initMock(api: mockRustApi);
+  });
+
+  tearDownAll(() {
+    KafkalyzerRustLib.dispose();
+  });
 
   setUp(() async {
     await getIt.reset();
+    reset(mockRustApi);
+    _registerClusterCodec(mockRustApi);
 
-    // Register dependencies needed by controllers first
-    getIt.registerSingleton<ClusterService>(MockClusterService());
+    fakeKeyring = _FakeFlutterSecureStorage();
+    final secureStorage = SecureStorageService(storage: fakeKeyring);
+    getIt.registerSingleton<SecureStorageService>(secureStorage);
+    getIt.registerSingleton<ClusterService>(
+      ClusterService(secureStorage: secureStorage),
+    );
     getIt.registerSingleton<ScriptRepository>(MockScriptRepository());
-    getIt.registerSingleton<SecureStorageService>(SecureStorageService());
 
     getIt.registerSingleton<ClusterListController>(MockClusterListController());
     getIt.registerSingleton<ScriptController>(MockScriptController());
@@ -191,7 +303,6 @@ void main() {
         containsAll([
           'files/keystore.jks',
           'files/truststore.jks',
-          'files/wgs-kaenup-data-test-6d6c17c275e1.json',
           'preferences.json',
         ]),
       );
@@ -479,5 +590,191 @@ void main() {
         );
       },
     );
+
+    test(
+      'importConfiguration rejects unsafe entries without writing files or preferences',
+      () async {
+        for (final unsafeEntry in [
+          'files/../../evil',
+          'files//abs/evil',
+          r'files/C:\evil',
+        ]) {
+          final prefsBytes = utf8.encode(
+            jsonEncode({'test_key': 'overwritten_value', 'new_key': 'evil'}),
+          );
+          final truststoreBytes = utf8.encode('good');
+          final evilBytes = utf8.encode('evil');
+
+          final archive = Archive()
+            ..addFile(
+              ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+            )
+            ..addFile(
+              ArchiveFile(
+                'files/truststore.jks',
+                truststoreBytes.length,
+                truststoreBytes,
+              ),
+            )
+            ..addFile(ArchiveFile(unsafeEntry, evilBytes.length, evilBytes));
+
+          final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive));
+          mockFilePicker.pickResult = FilePickerResult([
+            PlatformFile(
+              name: 'bad_config.zip',
+              size: zipBytes.length,
+              bytes: zipBytes,
+            ),
+          ]);
+
+          await expectLater(
+            () => settingsService.importConfiguration(),
+            throwsA(isA<UnsafeArchiveEntryException>()),
+            reason:
+                'Expected $unsafeEntry to throw UnsafeArchiveEntryException',
+          );
+
+          final prefs = await SharedPreferences.getInstance();
+          expect(prefs.getString('test_key'), 'test_value');
+          expect(prefs.containsKey('new_key'), isFalse);
+          expect(
+            File(
+              p.join(tempDir, 'shared_preferences', 'truststore.jks'),
+            ).existsSync(),
+            isFalse,
+          );
+        }
+      },
+    );
+
+    test(
+      'importConfiguration moves bundle credentials to keyring and overrides stale values',
+      () async {
+        fakeKeyring.data['cluster_auth-cluster_saslPassword'] = 'stale_pw';
+        final archive = Archive();
+        final prefsJson = jsonEncode({
+          'credentials_migrated_to_keyring_v1': true,
+          'cluster_profiles': jsonEncode([
+            {
+              'name': 'auth-cluster',
+              'bootstrapServers': 'b:9092',
+              'saslPassword': 'new_bundle_pw',
+            },
+          ]),
+        });
+        final prefsBytes = utf8.encode(prefsJson);
+        archive.addFile(
+          ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+        );
+        final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive));
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'creds.zip',
+            size: zipBytes.length,
+            bytes: zipBytes,
+          ),
+        ]);
+
+        await settingsService.importConfiguration();
+
+        expect(
+          fakeKeyring.data['cluster_auth-cluster_saslPassword'],
+          'new_bundle_pw',
+        );
+        final prefs = await SharedPreferences.getInstance();
+        final stored = jsonDecode(prefs.getString('cluster_profiles')!) as List;
+        expect((stored.single as Map).containsKey('saslPassword'), isFalse);
+        expect(prefs.getBool('credentials_migrated_to_keyring_v1'), isTrue);
+      },
+    );
+
+    test(
+      'importConfiguration keeps plaintext and clears migration flag when keyring fails',
+      () async {
+        fakeKeyring.throwOnOperation = true;
+        final archive = Archive();
+        final prefsJson = jsonEncode({
+          'credentials_migrated_to_keyring_v1': true,
+          'cluster_profiles': jsonEncode([
+            {
+              'name': 'auth-cluster',
+              'bootstrapServers': 'b:9092',
+              'saslPassword': 'bundle_pw',
+            },
+          ]),
+        });
+        final prefsBytes = utf8.encode(prefsJson);
+        archive.addFile(
+          ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+        );
+        final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive));
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'creds_fail.zip',
+            size: zipBytes.length,
+            bytes: zipBytes,
+          ),
+        ]);
+
+        await settingsService.importConfiguration();
+
+        final prefs = await SharedPreferences.getInstance();
+        final stored = jsonDecode(prefs.getString('cluster_profiles')!) as List;
+        expect((stored.single as Map)['saslPassword'], 'bundle_pw');
+        expect(prefs.getBool('credentials_migrated_to_keyring_v1'), isFalse);
+      },
+    );
+
+    test(
+      'importConfiguration merges cluster profiles and keeps existing profiles not in bundle',
+      () async {
+        final clusterService = getIt<ClusterService>();
+        await clusterService.saveClusters([
+          const ClusterProfile(name: 'Prod', bootstrapServers: 'prod:9092'),
+        ]);
+
+        final archive = Archive();
+        final prefsJson = jsonEncode({
+          'cluster_profiles': jsonEncode([
+            {'name': 'Test', 'bootstrapServers': 'test:9092'},
+          ]),
+        });
+        final prefsBytes = utf8.encode(prefsJson);
+        archive.addFile(
+          ArchiveFile('preferences.json', prefsBytes.length, prefsBytes),
+        );
+        final zipBytes = Uint8List.fromList(ZipEncoder().encode(archive));
+        mockFilePicker.pickResult = FilePickerResult([
+          PlatformFile(
+            name: 'merge.zip',
+            size: zipBytes.length,
+            bytes: zipBytes,
+          ),
+        ]);
+
+        await settingsService.importConfiguration();
+
+        final reloaded = await clusterService.loadClusters();
+        expect(reloaded.map((c) => c.name), ['Prod', 'Test']);
+      },
+    );
+
+    test('exportConfiguration does not include legacy GCS key file', () async {
+      final sharedPrefsDir = Directory(p.join(tempDir, 'shared_preferences'))
+        ..createSync(recursive: true);
+      File(
+        p.join(sharedPrefsDir.path, 'wgs-kaenup-data-test-6d6c17c275e1.json'),
+      ).writeAsStringSync('{"secret":"gcs"}');
+
+      final exportPath = p.join(tempDir, 'export_no_gcs.zip');
+      mockFilePicker.savePath = exportPath;
+
+      await settingsService.exportConfiguration();
+
+      final archive = ZipDecoder().decodeBytes(
+        File(exportPath).readAsBytesSync(),
+      );
+      expect(archive.map((f) => f.name).toList(), ['preferences.json']);
+    });
   });
 }

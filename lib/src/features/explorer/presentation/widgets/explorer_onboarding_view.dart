@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 
@@ -106,7 +107,11 @@ class ExplorerOnboardingView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              if (clusters.isEmpty) ...[
+              if (clusters.isEmpty &&
+                  !(getIt.isRegistered<ClusterListController>() &&
+                      getIt<ClusterListController>()
+                          .storeStatus
+                          .isUnreadable)) ...[
                 Card(
                   elevation: 0,
                   color: colorScheme.surfaceContainerLow,

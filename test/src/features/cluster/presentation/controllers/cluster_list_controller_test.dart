@@ -1,21 +1,41 @@
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Manual Mock
 class MockClusterService extends ClusterService {
   List<ClusterProfile> _clusters = [];
+  StoreStatus _status = const StoreStatus.ok();
+  bool throwUnreadable = false;
+
+  @override
+  StoreStatus get storeStatus => _status;
+
+  @override
+  Future<void> discardUnreadable() async {
+    throwUnreadable = false;
+    _status = const StoreStatus.ok();
+  }
 
   @override
   Future<List<ClusterProfile>> loadClusters() async {
+    if (throwUnreadable) {
+      _status = const StoreStatus.unreadable('/tmp/backup.json');
+      throw StoredDataUnreadableException(
+        'cluster_profiles',
+        backupPath: '/tmp/backup.json',
+      );
+    }
     return List.from(_clusters);
   }
 
   @override
-  Future<void> saveClusters(List<ClusterProfile> clusters) async {
+  Future<bool> saveClusters(List<ClusterProfile> clusters) async {
     _clusters = List.from(clusters);
+    return true;
   }
 
   // Helper to pre-seed data
@@ -82,5 +102,46 @@ void main() {
       await controller.deleteCluster(0);
       expect(controller.clusters, isEmpty);
     });
+
+    test(
+      'refuses mutations while store is unreadable and allows discard',
+      () async {
+        mockService.throwUnreadable = true;
+        await controller.loadClusters();
+
+        expect(controller.storeStatus.isUnreadable, isTrue);
+        expect(controller.clusters, isEmpty);
+
+        const cluster = ClusterProfile(
+          name: 'Test',
+          bootstrapServers: 'localhost:9092',
+        );
+        await expectLater(
+          controller.addCluster(cluster),
+          throwsA(isA<StoredDataUnreadableException>()),
+        );
+        await expectLater(
+          controller.updateCluster(0, cluster),
+          throwsA(isA<StoredDataUnreadableException>()),
+        );
+        await expectLater(
+          controller.deleteCluster(0),
+          throwsA(isA<StoredDataUnreadableException>()),
+        );
+        await expectLater(
+          controller.importClusters('[]'),
+          throwsA(isA<StoredDataUnreadableException>()),
+        );
+        await expectLater(
+          controller.importClustersZip([]),
+          throwsA(isA<StoredDataUnreadableException>()),
+        );
+
+        await controller.discardUnreadable();
+        expect(controller.storeStatus.isOk, isTrue);
+        await controller.addCluster(cluster);
+        expect(controller.clusters.map((c) => c.name), ['Test']);
+      },
+    );
   });
 }
