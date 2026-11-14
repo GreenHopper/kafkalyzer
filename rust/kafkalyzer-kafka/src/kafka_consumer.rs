@@ -233,7 +233,6 @@ pub(crate) fn create_sr_settings(profile: &ClusterProfile) -> Option<SrSettings>
             sr_url = format!("http://{}", sr_url);
         }
         if !sr_url.is_empty() {
-            use std::io::Read;
             let mut builder = SrSettings::new_builder(sr_url);
 
             // 1. Basic Auth
@@ -244,54 +243,8 @@ pub(crate) fn create_sr_settings(profile: &ClusterProfile) -> Option<SrSettings>
                 builder.set_basic_authorization(u, Some(p));
             }
 
-            // 2. Client builder for SSL/TLS configuration
-            let mut client_builder = reqwest::Client::builder();
-
-            // SSL Truststore
-            if let Some(truststore_path) = &profile.ssl_truststore_location {
-                if !truststore_path.trim().is_empty() {
-                    if let Ok(mut file) = std::fs::File::open(truststore_path) {
-                        let mut cert_bytes = vec![];
-                        if file.read_to_end(&mut cert_bytes).is_ok() {
-                            if let Ok(cert) = reqwest::Certificate::from_pem(&cert_bytes) {
-                                client_builder = client_builder.add_root_certificate(cert);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // SSL Keystore (mTLS)
-            if let Some(keystore_path) = &profile.ssl_keystore_location {
-                if !keystore_path.trim().is_empty()
-                    && (keystore_path.to_lowercase().ends_with(".p12")
-                        || keystore_path.to_lowercase().ends_with(".pfx"))
-                {
-                    let password = profile.ssl_keystore_password.as_deref().unwrap_or("");
-                    if let Ok(mut file) = std::fs::File::open(keystore_path) {
-                        let mut pkcs12_bytes = vec![];
-                        if file.read_to_end(&mut pkcs12_bytes).is_ok() {
-                            if let Ok(identity) =
-                                reqwest::Identity::from_pkcs12_der(&pkcs12_bytes, password)
-                            {
-                                client_builder = client_builder.identity(identity);
-                            }
-                        }
-                    }
-                }
-            } else if let (Some(cert_path), Some(key_path)) = (
-                &profile.ssl_pem_certificate_location,
-                &profile.ssl_pem_key_location,
-            ) {
-                if let (Ok(cert_bytes), Ok(key_bytes)) =
-                    (std::fs::read(cert_path), std::fs::read(key_path))
-                {
-                    if let Ok(identity) = reqwest::Identity::from_pkcs8_pem(&cert_bytes, &key_bytes)
-                    {
-                        client_builder = client_builder.identity(identity);
-                    }
-                }
-            }
+            // 2. Shared SSL/TLS client builder
+            let client_builder = crate::schema_registry::schema_registry_client_builder(profile);
 
             if let Ok(settings) = builder.build_with(client_builder) {
                 return Some(settings);

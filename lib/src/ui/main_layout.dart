@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/tls_transition_dialog.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart';
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/script_manager_view.dart';
@@ -20,6 +22,7 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
   bool _updateSnackBarShown = false;
+  bool _showingTlsDialog = false;
 
   @override
   void initState() {
@@ -27,9 +30,13 @@ class _MainLayoutState extends State<MainLayout> {
     getIt<UpdateService>().availableUpdateNotifier.addListener(
       _onAvailableUpdateChanged,
     );
+    if (getIt.isRegistered<TlsTransitionController>()) {
+      getIt<TlsTransitionController>().addListener(_onTlsDecisionsChanged);
+    }
     // Handle update already discovered before this widget mounted.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _onAvailableUpdateChanged();
+      _onTlsDecisionsChanged();
     });
   }
 
@@ -38,7 +45,44 @@ class _MainLayoutState extends State<MainLayout> {
     getIt<UpdateService>().availableUpdateNotifier.removeListener(
       _onAvailableUpdateChanged,
     );
+    if (getIt.isRegistered<TlsTransitionController>()) {
+      getIt<TlsTransitionController>().removeListener(_onTlsDecisionsChanged);
+    }
     super.dispose();
+  }
+
+  Future<void> _onTlsDecisionsChanged() async {
+    if (!mounted ||
+        _showingTlsDialog ||
+        !getIt.isRegistered<TlsTransitionController>()) {
+      return;
+    }
+    final controller = getIt<TlsTransitionController>();
+    final decision = controller.currentDecision;
+    if (decision == null) return;
+
+    _showingTlsDialog = true;
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => TlsTransitionDialog(decision: decision),
+      );
+      if (result == null) {
+        controller.dismissDecision(decision);
+      } else {
+        await controller.resolveDecision(
+          decision,
+          keepVerificationEnabled: result,
+        );
+      }
+    } finally {
+      _showingTlsDialog = false;
+      if (mounted && controller.currentDecision != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _onTlsDecisionsChanged();
+        });
+      }
+    }
   }
 
   void _onAvailableUpdateChanged() {

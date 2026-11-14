@@ -10,6 +10,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/import_conflict_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
@@ -698,6 +699,8 @@ class _SettingsViewState extends State<SettingsView> {
                     ],
                   ),
                 ),
+              if (cluster.tlsVerification == TlsVerification.disabled)
+                const InsecureTlsBadge(compact: true),
             ],
           ),
           subtitle: Text(cluster.bootstrapServers),

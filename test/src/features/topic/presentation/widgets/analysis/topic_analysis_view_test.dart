@@ -159,6 +159,7 @@ void main() {
   const profile = ClusterProfile(
     name: 'prod-eu-1',
     bootstrapServers: 'localhost:9092',
+    tlsVerification: TlsVerification.enabled,
   );
 
   Widget buildView(TopicAnalysisController controller) {

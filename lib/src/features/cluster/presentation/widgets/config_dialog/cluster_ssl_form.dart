@@ -13,6 +13,8 @@ class ClusterSslForm extends StatefulWidget {
   final TextEditingController pemCertificateLocationController;
   final TextEditingController pemKeyLocationController;
   final TextEditingController pemKeyPasswordController;
+  final bool verifyTls;
+  final ValueChanged<bool>? onVerifyTlsChanged;
 
   const ClusterSslForm({
     super.key,
@@ -23,6 +25,8 @@ class ClusterSslForm extends StatefulWidget {
     required this.pemCertificateLocationController,
     required this.pemKeyLocationController,
     required this.pemKeyPasswordController,
+    this.verifyTls = true,
+    this.onVerifyTlsChanged,
   });
 
   @override
@@ -163,6 +167,45 @@ class _ClusterSslFormState extends State<ClusterSslForm> {
             ),
           ),
         ],
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
+          title: Text(
+            l10n?.tlsVerificationSwitchLabel ?? 'Verify TLS certificates',
+          ),
+          value: widget.verifyTls,
+          onChanged: widget.onVerifyTlsChanged,
+        ),
+        if (!widget.verifyTls)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n?.tlsVerificationDisabledWarning ??
+                          'Warning: Certificate and hostname verification is disabled for this profile. Connections are vulnerable to interception.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }

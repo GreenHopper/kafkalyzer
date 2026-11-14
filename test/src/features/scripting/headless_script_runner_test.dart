@@ -100,6 +100,7 @@ void main() {
           clusterProfile: const ClusterProfile(
             name: 'c',
             bootstrapServers: 'localhost:9092',
+            tlsVerification: TlsVerification.enabled,
           ),
           variables: {},
         );
@@ -147,6 +148,7 @@ void main() {
           clusterOverride: const ClusterProfile(
             name: 'prod',
             bootstrapServers: 'localhost:9092',
+            tlsVerification: TlsVerification.enabled,
           ),
           stderrSink: err,
           stdoutSink: StringBuffer(),

@@ -28,6 +28,7 @@ void main() {
   const profile = ClusterProfile(
     name: 'test',
     bootstrapServers: 'localhost:9092',
+    tlsVerification: TlsVerification.enabled,
   );
 
   group('KafkaUtils', () {

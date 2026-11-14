@@ -162,18 +162,15 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
     init_providers(&mut log_file);
     let mut config = ClientConfig::new();
     config.set("bootstrap.servers", &profile.bootstrap_servers);
-    // TEMPORARY DEBUG: Disable endpoint identification to rule out hostname mismatch
-    config.set("ssl.endpoint.identification.algorithm", "none");
-    // BYPASS VERIFICATION per user request (Root CA not available)
-    config.set("enable.ssl.certificate.verification", "false");
-
-    if let Some(protocol) = &profile.security_protocol {
-        config.set("security.protocol", protocol);
-    } else if profile.sasl_username.is_some() {
-        config.set("security.protocol", "SASL_SSL");
+    if profile.ssl_verification_disabled {
+        config.set("ssl.endpoint.identification.algorithm", "none");
+        config.set("enable.ssl.certificate.verification", "false");
     } else {
-        config.set("security.protocol", "PLAINTEXT");
+        config.set("ssl.endpoint.identification.algorithm", "https");
+        config.set("enable.ssl.certificate.verification", "true");
     }
+
+    config.set("security.protocol", &profile.effective_security_protocol());
 
     if let Some(mechanism) = &profile.mechanism {
         config.set("sasl.mechanism", mechanism);
@@ -417,31 +414,33 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
         }
     }
 
-    // Check if CA location was set. If not (e.g. no truststore or P12 failure), try fallback.
-    let ca_configured =
-        config.get("ssl.ca.location").is_some() || config.get("ssl.ca.pem").is_some();
+    #[cfg(windows)]
+    {
+        // Check if CA location was set. If not (e.g. no truststore or P12 failure), try fallback.
+        let ca_configured =
+            config.get("ssl.ca.location").is_some() || config.get("ssl.ca.pem").is_some();
 
-    if !ca_configured {
-        // FIX: Default fallback to 'cacert.pem' in the same directory as the executable on Windows
-        // This is required because OpenSSL on Windows usually has no default root store.
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(exe_dir) = exe_path.parent() {
-                let ca_path = exe_dir.join("cacert.pem");
+        if !ca_configured {
+            // Default fallback to 'cacert.pem' in the same directory as the executable on Windows.
+            if let Ok(exe_path) = std::env::current_exe() {
+                if let Some(exe_dir) = exe_path.parent() {
+                    let ca_path = exe_dir.join("cacert.pem");
 
-                if let Some(ref mut f) = log_file {
-                    writeln!(f, "Checking for bundled CA at: {:?}", ca_path).ok();
-                }
-
-                if ca_path.exists() {
-                    if let Some(s) = ca_path.to_str() {
-                        println!("Using bundled CA cert: {}", s);
-                        if let Some(ref mut f) = log_file {
-                            writeln!(f, "Found bundled CA! Setting ssl.ca.location to {}", s).ok();
-                        }
-                        config.set("ssl.ca.location", s);
+                    if let Some(ref mut f) = log_file {
+                        writeln!(f, "Checking for bundled CA at: {:?}", ca_path).ok();
                     }
-                } else if let Some(ref mut f) = log_file {
-                    writeln!(f, "Bundled CA NOT found.").ok();
+
+                    if ca_path.exists() {
+                        if let Some(s) = ca_path.to_str() {
+                            if let Some(ref mut f) = log_file {
+                                writeln!(f, "Found bundled CA! Setting ssl.ca.location to {}", s)
+                                    .ok();
+                            }
+                            config.set("ssl.ca.location", s);
+                        }
+                    } else if let Some(ref mut f) = log_file {
+                        writeln!(f, "Bundled CA NOT found.").ok();
+                    }
                 }
             }
         }
@@ -456,4 +455,64 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
     }
 
     config
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn create_config_verifies_tls_by_default() {
+        for security_protocol in [None, Some("SSL".to_string()), Some("SASL_SSL".to_string())] {
+            let profile = ClusterProfile {
+                name: "test".to_string(),
+                bootstrap_servers: "broker:9093".to_string(),
+                security_protocol,
+                ssl_truststore_location: Some("/tmp/ca.pem".to_string()),
+                ..Default::default()
+            };
+            let config = create_config(&profile);
+            assert_eq!(
+                config.get("enable.ssl.certificate.verification"),
+                Some("true")
+            );
+            assert_eq!(
+                config.get("ssl.endpoint.identification.algorithm"),
+                Some("https")
+            );
+        }
+    }
+
+    #[test]
+    fn create_config_disables_verification_only_when_profile_opts_out() {
+        let profile = ClusterProfile {
+            name: "insecure".to_string(),
+            bootstrap_servers: "broker:9093".to_string(),
+            security_protocol: Some("SASL_SSL".to_string()),
+            ssl_verification_disabled: true,
+            ..Default::default()
+        };
+        let config = create_config(&profile);
+        assert_eq!(
+            config.get("enable.ssl.certificate.verification"),
+            Some("false")
+        );
+        assert_eq!(
+            config.get("ssl.endpoint.identification.algorithm"),
+            Some("none")
+        );
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn create_config_does_not_set_ca_location_without_truststore_on_non_windows() {
+        let profile = ClusterProfile {
+            name: "linux".to_string(),
+            bootstrap_servers: "broker:9093".to_string(),
+            security_protocol: Some("SSL".to_string()),
+            ..Default::default()
+        };
+        let config = create_config(&profile);
+        assert_eq!(config.get("ssl.ca.location"), None);
+    }
 }

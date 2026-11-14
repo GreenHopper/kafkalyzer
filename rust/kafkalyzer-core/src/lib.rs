@@ -7,3 +7,4 @@ pub mod partition_health;
 pub mod report_compare;
 pub mod schema_wire;
 pub mod size_stats;
+pub mod tls;

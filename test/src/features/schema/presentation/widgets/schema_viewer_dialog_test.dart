@@ -37,6 +37,7 @@ void main() {
     schemaRegistryUrl: 'http://localhost:8081',
     securityProtocol: 'plaintext',
     mechanism: 'plain',
+    tlsVerification: TlsVerification.enabled,
   );
 
   setUp(() {

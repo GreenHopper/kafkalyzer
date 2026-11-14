@@ -24,6 +24,7 @@ void main() {
     securityProtocol: 'plaintext',
     mechanism: 'plain',
     schemaRegistryUrl: 'http://localhost:8081',
+    tlsVerification: TlsVerification.enabled,
   );
 
   Widget buildWidget({

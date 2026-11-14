@@ -298,7 +298,10 @@ mod tests {
         let null_path = FieldPath::parse("nothing").unwrap();
         let lookup_null = null_path.lookup(&val);
         assert_eq!(lookup_null, Some(&Value::Null));
-        assert_eq!(render_for_statistics(lookup_null.unwrap()), Some("null".to_string()));
+        assert_eq!(
+            render_for_statistics(lookup_null.unwrap()),
+            Some("null".to_string())
+        );
 
         let absent_path = FieldPath::parse("order.missing").unwrap();
         assert_eq!(absent_path.lookup(&val), None);
@@ -319,17 +322,27 @@ mod tests {
             let fp = FieldPath::parse(path).unwrap();
             let looked_up = fp.lookup(&val).unwrap();
             let rendered = render_for_statistics(looked_up);
-            let expected = if path.contains("items") { "B-2" } else { "shipped" };
+            let expected = if path.contains("items") {
+                "B-2"
+            } else {
+                "shipped"
+            };
             assert_eq!(rendered.as_deref(), Some(expected));
         }
     }
 
     #[test]
     fn render_for_statistics_handles_types() {
-        assert_eq!(render_for_statistics(&Value::String("hello".into())), Some("hello".into()));
+        assert_eq!(
+            render_for_statistics(&Value::String("hello".into())),
+            Some("hello".into())
+        );
         assert_eq!(render_for_statistics(&Value::Null), Some("null".into()));
         assert_eq!(render_for_statistics(&Value::from(42)), Some("42".into()));
-        assert_eq!(render_for_statistics(&Value::Bool(true)), Some("true".into()));
+        assert_eq!(
+            render_for_statistics(&Value::Bool(true)),
+            Some("true".into())
+        );
         assert_eq!(render_for_statistics(&serde_json::json!([1, 2])), None);
         assert_eq!(render_for_statistics(&serde_json::json!({"a": 1})), None);
     }

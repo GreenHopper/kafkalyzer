@@ -51,10 +51,12 @@ void main() {
   final cluster1 = ClusterProfile(
     name: 'CachedCluster',
     bootstrapServers: 'localhost:9092',
+    tlsVerification: TlsVerification.enabled,
   );
   final cluster2 = ClusterProfile(
     name: 'UncachedCluster',
     bootstrapServers: 'localhost:9093',
+    tlsVerification: TlsVerification.enabled,
   );
 
   setUp(() async {

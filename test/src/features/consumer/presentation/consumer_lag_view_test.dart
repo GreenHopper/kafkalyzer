@@ -134,6 +134,7 @@ void main() {
   final testProfile = const ClusterProfile(
     name: 'test-cluster',
     bootstrapServers: 'localhost:9092',
+    tlsVerification: TlsVerification.enabled,
   );
 
   setUp(() {
@@ -1079,6 +1080,7 @@ void main() {
       const ClusterProfile(
         name: 'other-cluster',
         bootstrapServers: 'other:9092',
+        tlsVerification: TlsVerification.enabled,
       ),
     );
     await tester.pumpAndSettle();

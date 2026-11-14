@@ -1,6 +1,41 @@
 use crate::api::kafka_types::ClusterProfile;
 use anyhow::Result;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TlsProbeOutcome {
+    NoTls,
+    Verified,
+    CertificateRejected,
+    Inconclusive,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TlsProbeResult {
+    pub outcome: TlsProbeOutcome,
+    pub message: Option<String>,
+}
+
+pub fn probe_tls_verification(profile: ClusterProfile) -> TlsProbeResult {
+    match kafkalyzer_kafka::kafka_metadata::probe_tls_verification(&profile.to_domain()) {
+        kafkalyzer_kafka::kafka_metadata::TlsProbe::NoTls => TlsProbeResult {
+            outcome: TlsProbeOutcome::NoTls,
+            message: None,
+        },
+        kafkalyzer_kafka::kafka_metadata::TlsProbe::Verified => TlsProbeResult {
+            outcome: TlsProbeOutcome::Verified,
+            message: None,
+        },
+        kafkalyzer_kafka::kafka_metadata::TlsProbe::CertificateRejected(msg) => TlsProbeResult {
+            outcome: TlsProbeOutcome::CertificateRejected,
+            message: Some(msg),
+        },
+        kafkalyzer_kafka::kafka_metadata::TlsProbe::Inconclusive(msg) => TlsProbeResult {
+            outcome: TlsProbeOutcome::Inconclusive,
+            message: Some(msg),
+        },
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct TopicMetadata {
     pub name: String,

@@ -60,6 +60,7 @@ void main() {
     schemaRegistryUrl: 'http://localhost:8081',
     securityProtocol: 'plaintext',
     mechanism: 'plain',
+    tlsVerification: TlsVerification.enabled,
   );
 
   setUp(() {
@@ -873,6 +874,79 @@ void main() {
       final sidebarFinder = find.byKey(const Key('explorer_sidebar_container'));
       expect(tester.getSize(sidebarFinder).width, equals(480.0));
     });
+
+    testWidgets(
+      'shows InsecureTlsBadge on open topic tab only for disabled tlsVerification profile',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        const disabledProfile = ClusterProfile(
+          name: 'insecure-cluster',
+          bootstrapServers: 'b:9093',
+          securityProtocol: 'SSL',
+          tlsVerification: TlsVerification.disabled,
+        );
+        const topic = TopicMetadata(
+          name: 'orders',
+          partitionCount: 1,
+          replicationFactor: 1,
+        );
+        final recordDisabled = OpenTopicRecord(
+          topic,
+          disabledProfile,
+          id: 'tab-disabled',
+        );
+        final recordEnabled = OpenTopicRecord(
+          topic,
+          testProfile,
+          id: 'tab-enabled',
+        );
+        final streamCtrl = FakeMessageStreamController();
+        final analysisCtrl = FakeTopicAnalysisController();
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([
+          disabledProfile,
+          testProfile,
+        ]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(disabledProfile);
+        when(mockActiveConnectionController.isConnecting).thenReturn(false);
+        when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
+        when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(mockActiveConnectionController.error).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('');
+        when(mockActiveConnectionController.topics).thenReturn([topic]);
+        when(
+          mockActiveConnectionController.openTopics,
+        ).thenReturn([recordDisabled, recordEnabled]);
+        when(
+          mockActiveConnectionController.activeTopic,
+        ).thenReturn(recordDisabled);
+        when(
+          mockActiveConnectionController.getStreamController(any),
+        ).thenReturn(streamCtrl);
+        when(
+          mockActiveConnectionController.getAnalysisController(any),
+        ).thenReturn(analysisCtrl);
+        when(
+          mockTopicController.hasCachedTopics(disabledProfile),
+        ).thenReturn(true);
+        when(
+          mockTopicController.getTopics(disabledProfile),
+        ).thenReturn([topic]);
+        when(mockTopicController.isLoading(disabledProfile)).thenReturn(false);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Insecure TLS'), findsOneWidget);
+      },
+    );
   });
 }
 

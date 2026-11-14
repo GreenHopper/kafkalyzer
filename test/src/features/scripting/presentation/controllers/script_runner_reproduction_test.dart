@@ -62,6 +62,7 @@ class MockClusterListController extends ClusterListController {
     const ClusterProfile(
       name: "TestCluster",
       bootstrapServers: "localhost:9092",
+      tlsVerification: TlsVerification.enabled,
     ),
   ];
 }

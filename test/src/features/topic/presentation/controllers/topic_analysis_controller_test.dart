@@ -167,7 +167,7 @@ void main() {
       expect(controller.isImported, isTrue);
 
       await controller.startAnalysis(
-        const ClusterProfile(name: 'test', bootstrapServers: 'localhost:9092'),
+        const ClusterProfile(name: 'test', bootstrapServers: 'localhost:9092', tlsVerification: TlsVerification.enabled),
         'orders',
       );
 
@@ -201,6 +201,7 @@ void main() {
           const ClusterProfile(
             name: 'test',
             bootstrapServers: 'localhost:9092',
+            tlsVerification: TlsVerification.enabled,
           ),
           'orders',
           valueFilter: invalidFilter,
@@ -233,6 +234,7 @@ void main() {
       const profile = ClusterProfile(
         name: 'staging',
         bootstrapServers: 'kafka:9092',
+        tlsVerification: TlsVerification.enabled,
       );
       const topic = 'payments';
 

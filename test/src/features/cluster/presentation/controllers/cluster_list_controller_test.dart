@@ -69,6 +69,7 @@ void main() {
       final newCluster = ClusterProfile(
         name: 'Test Cluster',
         bootstrapServers: 'localhost:9092',
+        tlsVerification: TlsVerification.enabled,
       );
 
       await controller.addCluster(newCluster);
@@ -81,6 +82,7 @@ void main() {
       final cluster = ClusterProfile(
         name: 'Initial Name',
         bootstrapServers: 'localhost:9092',
+        tlsVerification: TlsVerification.enabled,
       );
       await controller.addCluster(cluster);
 
@@ -95,6 +97,7 @@ void main() {
       final cluster = ClusterProfile(
         name: 'To Delete',
         bootstrapServers: 'localhost:9092',
+        tlsVerification: TlsVerification.enabled,
       );
       await controller.addCluster(cluster);
       expect(controller.clusters.length, 1);
@@ -115,6 +118,7 @@ void main() {
         const cluster = ClusterProfile(
           name: 'Test',
           bootstrapServers: 'localhost:9092',
+          tlsVerification: TlsVerification.enabled,
         );
         await expectLater(
           controller.addCluster(cluster),

@@ -5,9 +5,14 @@ use kafkalyzer_core::consumer_group_protocol::{
 };
 use kafkalyzer_core::kafka_types::{ClusterProfile, ConsumerGroupMember};
 use kafkalyzer_core::partition_health::{summarize_topic_health, PartitionMetadata};
+use kafkalyzer_core::tls::{classify_tls_failure, TlsFailureClassification};
 use rdkafka::admin::{AdminClient, AdminOptions, OwnedResourceSpecifier, ResourceSpecifier};
-use rdkafka::client::DefaultClientContext;
-use rdkafka::consumer::{BaseConsumer, Consumer};
+use rdkafka::client::{ClientContext, DefaultClientContext};
+use rdkafka::config::RDKafkaLogLevel;
+use rdkafka::consumer::{BaseConsumer, Consumer, ConsumerContext};
+use rdkafka::error::KafkaError;
+use std::collections::VecDeque;
+use std::sync::Mutex;
 use tokio::runtime::Runtime;
 
 #[derive(Debug, Clone)]
@@ -47,6 +52,93 @@ fn partition_metadata(p: &rdkafka::metadata::MetadataPartition) -> PartitionMeta
         },
         replicas: p.replicas().to_vec(),
         in_sync_replicas: p.isr().to_vec(),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TlsProbe {
+    NoTls,
+    Verified,
+    CertificateRejected(String),
+    Inconclusive(String),
+}
+
+struct ProbeClientContext {
+    lines: Mutex<VecDeque<String>>,
+}
+
+impl ProbeClientContext {
+    fn new() -> Self {
+        Self {
+            lines: Mutex::new(VecDeque::with_capacity(20)),
+        }
+    }
+
+    fn push_line(&self, line: String) {
+        if let Ok(mut guard) = self.lines.lock() {
+            if guard.len() >= 20 {
+                guard.pop_front();
+            }
+            guard.push_back(line);
+        }
+    }
+
+    fn snapshot(&self) -> Vec<String> {
+        self.lines
+            .lock()
+            .map(|g| g.iter().cloned().collect())
+            .unwrap_or_default()
+    }
+}
+
+impl ClientContext for ProbeClientContext {
+    fn log(&self, _level: RDKafkaLogLevel, fac: &str, log_message: &str) {
+        self.push_line(format!("{fac}: {log_message}"));
+    }
+
+    fn error(&self, error: KafkaError, reason: &str) {
+        self.push_line(format!("{error}: {reason}"));
+    }
+}
+
+impl ConsumerContext for ProbeClientContext {}
+
+/// Probes a cluster profile with TLS verification forced on, classifying
+/// failures as certificate/hostname rejections vs inconclusive errors.
+pub fn probe_tls_verification(profile: &ClusterProfile) -> TlsProbe {
+    if !profile.uses_tls() {
+        return TlsProbe::NoTls;
+    }
+
+    let mut verified_profile = profile.clone();
+    verified_profile.ssl_verification_disabled = false;
+    let config = create_config(&verified_profile);
+    let context = ProbeClientContext::new();
+
+    let consumer: BaseConsumer<ProbeClientContext> = match config.create_with_context(context) {
+        Ok(c) => c,
+        Err(e) => {
+            return match classify_tls_failure(&[e.to_string()]) {
+                TlsFailureClassification::CertificateRejected(msg) => {
+                    TlsProbe::CertificateRejected(msg)
+                }
+                TlsFailureClassification::Inconclusive(msg) => TlsProbe::Inconclusive(msg),
+            };
+        }
+    };
+
+    match consumer.fetch_metadata(None, std::time::Duration::from_secs(10)) {
+        Ok(_) => TlsProbe::Verified,
+        Err(err) => {
+            let mut lines = consumer.context().snapshot();
+            lines.push(err.to_string());
+            match classify_tls_failure(&lines) {
+                TlsFailureClassification::CertificateRejected(msg) => {
+                    TlsProbe::CertificateRejected(msg)
+                }
+                TlsFailureClassification::Inconclusive(msg) => TlsProbe::Inconclusive(msg),
+            }
+        }
     }
 }
 
@@ -692,5 +784,34 @@ mod tests {
 
         assert_eq!(unowned.len(), 2);
         assert_eq!(unowned[0].partition, 1);
+    }
+
+    #[test]
+    fn probe_tls_verification_returns_no_tls_for_plaintext_without_network() {
+        let profile = ClusterProfile {
+            name: "plain".to_string(),
+            bootstrap_servers: "127.0.0.1:1".to_string(),
+            security_protocol: Some("PLAINTEXT".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(probe_tls_verification(&profile), TlsProbe::NoTls);
+    }
+
+    #[test]
+    fn probe_client_context_caps_captured_lines_and_classifies() {
+        let ctx = ProbeClientContext::new();
+        for i in 0..25 {
+            ctx.push_line(format!("line {i}"));
+        }
+        let snap = ctx.snapshot();
+        assert_eq!(snap.len(), 20);
+        assert_eq!(snap.first().unwrap(), "line 5");
+
+        ctx.push_line("SSL handshake failed: certificate verify failed".to_string());
+        let classified = classify_tls_failure(&ctx.snapshot());
+        assert!(matches!(
+            classified,
+            TlsFailureClassification::CertificateRejected(_)
+        ));
     }
 }

@@ -355,7 +355,8 @@ impl AnalyzerAccumulator {
                 }
             }
         }
-        self.capped_value_fields.extend(other.capped_value_fields.clone());
+        self.capped_value_fields
+            .extend(other.capped_value_fields.clone());
 
         // Value filter accumulator merge
         if let Some(ref mut self_filt) = self.filter_accumulator {
@@ -371,7 +372,11 @@ impl AnalyzerAccumulator {
         // Duplicate detection merge
         for fp in &other.seen_fingerprints {
             if !self.seen_fingerprints.insert(*fp) {
-                let other_cnt = other.duplicate_samples.get(fp).map(|s| s.count).unwrap_or(1);
+                let other_cnt = other
+                    .duplicate_samples
+                    .get(fp)
+                    .map(|s| s.count)
+                    .unwrap_or(1);
                 if let Some(sample) = self.duplicate_samples.get_mut(fp) {
                     sample.count += other_cnt;
                 } else if self.duplicate_samples.len() < 1000 {
@@ -384,9 +389,21 @@ impl AnalyzerAccumulator {
                             s.sample_timestamp_ms,
                         )
                     } else if let Some(recent) = other.recent_previews.get(fp) {
-                        (recent.0.clone(), recent.1.clone(), recent.2, recent.3, recent.4)
+                        (
+                            recent.0.clone(),
+                            recent.1.clone(),
+                            recent.2,
+                            recent.3,
+                            recent.4,
+                        )
                     } else if let Some(recent) = self.recent_previews.get(fp) {
-                        (recent.0.clone(), recent.1.clone(), recent.2, recent.3, recent.4)
+                        (
+                            recent.0.clone(),
+                            recent.1.clone(),
+                            recent.2,
+                            recent.3,
+                            recent.4,
+                        )
                     } else {
                         (None, "[Duplicate payload]".to_string(), 0, 0, 0)
                     };
@@ -410,7 +427,9 @@ impl AnalyzerAccumulator {
         }
         for (fp, recent) in &other.recent_previews {
             if self.recent_previews.len() < 1000 {
-                self.recent_previews.entry(*fp).or_insert_with(|| recent.clone());
+                self.recent_previews
+                    .entry(*fp)
+                    .or_insert_with(|| recent.clone());
             }
         }
     }
@@ -569,13 +588,20 @@ impl AnalyzerAccumulator {
             if let Some(sample) = self.duplicate_samples.get_mut(&fp) {
                 sample.count += 1;
             } else if self.duplicate_samples.len() < 1000 {
-                let (prev_key, prev_payload, p, o, ts) =
-                    if let Some(recent) = self.recent_previews.get(&fp) {
-                        (recent.0.clone(), recent.1.clone(), recent.2, recent.3, recent.4)
-                    } else {
-                        let preview = extract_duplicate_preview(parsed_payload, payload_bytes, 4000);
-                        (key_str.clone(), preview, partition, offset, timestamp_ms)
-                    };
+                let (prev_key, prev_payload, p, o, ts) = if let Some(recent) =
+                    self.recent_previews.get(&fp)
+                {
+                    (
+                        recent.0.clone(),
+                        recent.1.clone(),
+                        recent.2,
+                        recent.3,
+                        recent.4,
+                    )
+                } else {
+                    let preview = extract_duplicate_preview(parsed_payload, payload_bytes, 4000);
+                    (key_str.clone(), preview, partition, offset, timestamp_ms)
+                };
                 self.duplicate_samples.insert(
                     fp,
                     DuplicateSample {
@@ -674,7 +700,8 @@ impl AnalyzerAccumulator {
                             if rendered == filter.target_value {
                                 filter_acc.matched_messages += 1;
                                 if timestamp_ms > 0 {
-                                    let in_range = if let Some(ref_ms) = self.scan_reference_time_ms {
+                                    let in_range = if let Some(ref_ms) = self.scan_reference_time_ms
+                                    {
                                         let min_ts = ref_ms - 366 * 24 * 3_600_000;
                                         let max_ts = ref_ms + 24 * 3_600_000;
                                         timestamp_ms >= min_ts && timestamp_ms <= max_ts
@@ -683,7 +710,10 @@ impl AnalyzerAccumulator {
                                     };
                                     if in_range {
                                         let epoch_hour = timestamp_ms.div_euclid(3_600_000);
-                                        *filter_acc.matched_timeline.entry(epoch_hour).or_insert(0) += 1;
+                                        *filter_acc
+                                            .matched_timeline
+                                            .entry(epoch_hour)
+                                            .or_insert(0) += 1;
                                     }
                                 }
                             }
@@ -1951,9 +1981,27 @@ mod tests {
         acc1.record_message(0, 3, 0, None, Some(b"{}"), None, None, false);
         acc1.record_message(0, 4, -100, None, Some(b"{}"), None, None, false);
         // Timestamp > ref + 1 day
-        acc1.record_message(0, 5, ts_day2 + 100_000_000, None, Some(b"{}"), None, None, false);
+        acc1.record_message(
+            0,
+            5,
+            ts_day2 + 100_000_000,
+            None,
+            Some(b"{}"),
+            None,
+            None,
+            false,
+        );
         // Timestamp < ref - 366 days
-        acc1.record_message(0, 6, ts_day2 - 32_000_000_000, None, Some(b"{}"), None, None, false);
+        acc1.record_message(
+            0,
+            6,
+            ts_day2 - 32_000_000_000,
+            None,
+            Some(b"{}"),
+            None,
+            None,
+            false,
+        );
 
         acc1.merge(&acc2);
 
@@ -1962,7 +2010,11 @@ mod tests {
         assert_eq!(report.timeline_outside_count, 2);
 
         // Hourly distribution (24h UTC) folds both days into hour 14
-        let h14 = report.hourly_distribution.iter().find(|h| h.hour == 14).unwrap();
+        let h14 = report
+            .hourly_distribution
+            .iter()
+            .find(|h| h.hour == 14)
+            .unwrap();
         assert_eq!(h14.count, 2);
 
         // Timeline has two separate epoch hour buckets
@@ -2049,26 +2101,24 @@ mod tests {
             "items": [1, 2, 3]
         });
 
-        acc.record_message(
-            0,
-            0,
-            1000,
-            None,
-            None,
-            None,
-            Some(&deep_json),
-            false,
-        );
+        acc.record_message(0, 0, 1000, None, None, None, Some(&deep_json), false);
 
         let report = acc.to_report(5);
-        let names: Vec<&str> = report.field_frequencies.iter().map(|f| f.field_name.as_str()).collect();
+        let names: Vec<&str> = report
+            .field_frequencies
+            .iter()
+            .map(|f| f.field_name.as_str())
+            .collect();
         assert!(names.contains(&"order"));
         assert!(names.contains(&"order.id"));
         assert!(names.contains(&"attributes.region"));
         assert!(names.contains(&"/labels/app.kubernetes.io~1name"));
         assert!(names.contains(&"items"));
         assert!(names.contains(&"order.nested.l3.l4.l5"));
-        assert!(!names.contains(&"order.nested.l3.l4.l5.l6_hidden"), "Depth > 5 should not be descended");
+        assert!(
+            !names.contains(&"order.nested.l3.l4.l5.l6_hidden"),
+            "Depth > 5 should not be descended"
+        );
 
         // Test multi-byte string > 80 chars truncation
         let long_str = "äöü-".repeat(25); // 100 chars, multibyte
@@ -2078,7 +2128,11 @@ mod tests {
         });
         acc.record_message(0, 1, 1000, None, None, None, Some(&long_payload), false);
         let report2 = acc.to_report(5);
-        let desc_field = report2.field_frequencies.iter().find(|f| f.field_name == "desc").unwrap();
+        let desc_field = report2
+            .field_frequencies
+            .iter()
+            .find(|f| f.field_name == "desc")
+            .unwrap();
         assert_eq!(desc_field.top_values[0].truncated, true);
         assert!(desc_field.top_values[0].value.ends_with("..."));
 
@@ -2088,7 +2142,11 @@ mod tests {
             acc.record_message(0, 2 + i, 1000, None, None, None, Some(&p), false);
         }
         let report3 = acc.to_report(5);
-        let mv_field = report3.field_frequencies.iter().find(|f| f.field_name == "many_vals").unwrap();
+        let mv_field = report3
+            .field_frequencies
+            .iter()
+            .find(|f| f.field_name == "many_vals")
+            .unwrap();
         assert_eq!(mv_field.values_capped, true);
     }
 
@@ -2122,30 +2180,92 @@ mod tests {
 
         // 1. Matches: attributes.region = "EU"
         let p_match = serde_json::json!({ "attributes": { "region": "EU" } });
-        acc1.record_message_with_filter(0, 0, 3_600_000, None, None, None, Some(&p_match), false, Some(&compiled));
+        acc1.record_message_with_filter(
+            0,
+            0,
+            3_600_000,
+            None,
+            None,
+            None,
+            Some(&p_match),
+            false,
+            Some(&compiled),
+        );
 
         // 2. Case mismatch: attributes.region = "eu"
         let p_case = serde_json::json!({ "attributes": { "region": "eu" } });
-        acc1.record_message_with_filter(0, 1, 3_600_000, None, None, None, Some(&p_case), false, Some(&compiled));
+        acc1.record_message_with_filter(
+            0,
+            1,
+            3_600_000,
+            None,
+            None,
+            None,
+            Some(&p_case),
+            false,
+            Some(&compiled),
+        );
 
         // 3. Different value: attributes.region = "US"
         let p_us = serde_json::json!({ "attributes": { "region": "US" } });
-        acc2.record_message_with_filter(0, 2, 7_200_000, None, None, None, Some(&p_us), false, Some(&compiled));
+        acc2.record_message_with_filter(
+            0,
+            2,
+            7_200_000,
+            None,
+            None,
+            None,
+            Some(&p_us),
+            false,
+            Some(&compiled),
+        );
 
         // 4. Absent field
         let p_other = serde_json::json!({ "status": "OK" });
-        acc2.record_message_with_filter(0, 3, 7_200_000, None, None, None, Some(&p_other), false, Some(&compiled));
+        acc2.record_message_with_filter(
+            0,
+            3,
+            7_200_000,
+            None,
+            None,
+            None,
+            Some(&p_other),
+            false,
+            Some(&compiled),
+        );
 
         // 5. Tombstone
-        acc2.record_message_with_filter(0, 4, 7_200_000, None, None, None, None, false, Some(&compiled));
+        acc2.record_message_with_filter(
+            0,
+            4,
+            7_200_000,
+            None,
+            None,
+            None,
+            None,
+            false,
+            Some(&compiled),
+        );
 
         // 6. Non-JSON text
-        acc2.record_message_with_filter(0, 5, 7_200_000, None, Some(b"non-json-plain-text"), None, None, false, Some(&compiled));
+        acc2.record_message_with_filter(
+            0,
+            5,
+            7_200_000,
+            None,
+            Some(b"non-json-plain-text"),
+            None,
+            None,
+            false,
+            Some(&compiled),
+        );
 
         acc1.merge(&acc2);
 
         let report = acc1.to_report(10);
-        let res = report.value_filter_result.expect("Value filter result should be present");
+        let res = report
+            .value_filter_result
+            .expect("Value filter result should be present");
         assert_eq!(res.field_path, "attributes.region");
         assert_eq!(res.value, "EU");
         assert_eq!(res.messages_with_field, 3); // EU, eu, US
@@ -2172,7 +2292,17 @@ mod tests {
             None,
         );
         let p_null = serde_json::json!({ "deletedAt": null });
-        acc_null.record_message_with_filter(0, 0, 1000, None, None, None, Some(&p_null), false, Some(&null_compiled));
+        acc_null.record_message_with_filter(
+            0,
+            0,
+            1000,
+            None,
+            None,
+            None,
+            Some(&p_null),
+            false,
+            Some(&null_compiled),
+        );
         let rep_null = acc_null.to_report(5);
         let res_null = rep_null.value_filter_result.unwrap();
         assert_eq!(res_null.messages_with_field, 1);
@@ -2191,18 +2321,47 @@ mod tests {
         );
 
         // Msg 1: Key "k1", payload A
-        acc.record_message(0, 0, 1000, Some(b"k1"), Some(b"{\"id\":100}"), None, None, false);
+        acc.record_message(
+            0,
+            0,
+            1000,
+            Some(b"k1"),
+            Some(b"{\"id\":100}"),
+            None,
+            None,
+            false,
+        );
         // Msg 2: Key "k2", payload A (Duplicate under PayloadOnly!)
-        acc.record_message(0, 1, 2000, Some(b"k2"), Some(b"{\"id\":100}"), None, None, false);
+        acc.record_message(
+            0,
+            1,
+            2000,
+            Some(b"k2"),
+            Some(b"{\"id\":100}"),
+            None,
+            None,
+            false,
+        );
         // Msg 3: Key None, payload A (Duplicate under PayloadOnly!)
         acc.record_message(0, 2, 3000, None, Some(b"{\"id\":100}"), None, None, false);
         // Msg 4: Key "k1", payload B (Unique)
-        acc.record_message(0, 3, 4000, Some(b"k1"), Some(b"{\"id\":200}"), None, None, false);
+        acc.record_message(
+            0,
+            3,
+            4000,
+            Some(b"k1"),
+            Some(b"{\"id\":200}"),
+            None,
+            None,
+            false,
+        );
 
         let report = acc.to_report(10);
         assert_eq!(report.total_messages, 4);
 
-        let dup_res = report.duplicate_analysis_result.expect("duplicate result present");
+        let dup_res = report
+            .duplicate_analysis_result
+            .expect("duplicate result present");
         assert_eq!(dup_res.scope, DuplicateDetectionScope::PayloadOnly);
         assert_eq!(dup_res.total_messages, 4);
         assert_eq!(dup_res.unique_messages, 2);
@@ -2226,16 +2385,45 @@ mod tests {
         );
 
         // Msg 1: Key "k1", payload A
-        acc.record_message(0, 0, 1000, Some(b"k1"), Some(b"{\"id\":100}"), None, None, false);
+        acc.record_message(
+            0,
+            0,
+            1000,
+            Some(b"k1"),
+            Some(b"{\"id\":100}"),
+            None,
+            None,
+            false,
+        );
         // Msg 2: Key "k2", payload A (NOT duplicate under KeyAndPayload)
-        acc.record_message(0, 1, 2000, Some(b"k2"), Some(b"{\"id\":100}"), None, None, false);
+        acc.record_message(
+            0,
+            1,
+            2000,
+            Some(b"k2"),
+            Some(b"{\"id\":100}"),
+            None,
+            None,
+            false,
+        );
         // Msg 3: Key "k1", payload A (Duplicate under KeyAndPayload)
-        acc.record_message(0, 2, 3000, Some(b"k1"), Some(b"{\"id\":100}"), None, None, false);
+        acc.record_message(
+            0,
+            2,
+            3000,
+            Some(b"k1"),
+            Some(b"{\"id\":100}"),
+            None,
+            None,
+            false,
+        );
 
         let report = acc.to_report(10);
         assert_eq!(report.total_messages, 3);
 
-        let dup_res = report.duplicate_analysis_result.expect("duplicate result present");
+        let dup_res = report
+            .duplicate_analysis_result
+            .expect("duplicate result present");
         assert_eq!(dup_res.scope, DuplicateDetectionScope::KeyAndPayload);
         assert_eq!(dup_res.total_messages, 3);
         assert_eq!(dup_res.unique_messages, 2);
@@ -2266,15 +2454,35 @@ mod tests {
         );
 
         // Worker 1 receives payload X
-        acc1.record_message(0, 0, 1000, Some(b"k1"), Some(b"payload-X"), None, None, false);
+        acc1.record_message(
+            0,
+            0,
+            1000,
+            Some(b"k1"),
+            Some(b"payload-X"),
+            None,
+            None,
+            false,
+        );
         // Worker 2 receives payload X
-        acc2.record_message(1, 0, 2000, Some(b"k2"), Some(b"payload-X"), None, None, false);
+        acc2.record_message(
+            1,
+            0,
+            2000,
+            Some(b"k2"),
+            Some(b"payload-X"),
+            None,
+            None,
+            false,
+        );
 
         acc1.merge(&acc2);
 
         let report = acc1.to_report(10);
         assert_eq!(report.total_messages, 2);
-        let dup_res = report.duplicate_analysis_result.expect("duplicate result present");
+        let dup_res = report
+            .duplicate_analysis_result
+            .expect("duplicate result present");
         assert_eq!(dup_res.unique_messages, 1);
         assert_eq!(dup_res.duplicate_messages, 1);
         assert_eq!(dup_res.top_duplicates.len(), 1);
@@ -2347,7 +2555,9 @@ mod tests {
         );
 
         let report = acc.to_report(10);
-        let dup_res = report.duplicate_analysis_result.expect("duplicate result present");
+        let dup_res = report
+            .duplicate_analysis_result
+            .expect("duplicate result present");
         assert_eq!(dup_res.total_messages, 4);
         assert_eq!(dup_res.unique_messages, 2);
         assert_eq!(dup_res.duplicate_messages, 2);
@@ -2360,7 +2570,9 @@ mod tests {
             .find(|d| d.key.as_deref() == Some("k1"))
             .expect("Avro duplicate found");
         assert!(
-            avro_dup.payload_preview.contains("\"COR_ID\":\"COR-12345\""),
+            avro_dup
+                .payload_preview
+                .contains("\"COR_ID\":\"COR-12345\""),
             "Expected decoded JSON, got: {}",
             avro_dup.payload_preview
         );

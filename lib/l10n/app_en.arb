@@ -1254,5 +1254,25 @@
   "discardUnreadableConfirm": "This will permanently delete the unreadable stored data so you can save new items. Continue?",
   "copyBackupPath": "Copy backup path",
   "storeUnreadableActionRefused": "Action refused while stored data is unreadable. Discard unreadable data or restore the backup first.",
-  "passwordsNotPersistedTooltip": "System keyring is unavailable. This password will not be persisted across restarts."
+  "passwordsNotPersistedTooltip": "System keyring is unavailable. This password will not be persisted across restarts.",
+  "insecureTlsBadgeLabel": "Insecure TLS",
+  "insecureTlsBadgeTooltip": "TLS certificate verification is disabled for this cluster profile.",
+  "tlsVerificationSwitchLabel": "Verify TLS certificates",
+  "tlsVerificationDisabledWarning": "Warning: Certificate and hostname verification is disabled for this profile. Connections are vulnerable to interception.",
+  "tlsTransitionDialogTitle": "TLS certificate verification failed",
+  "tlsTransitionDialogBody": "Certificate verification failed when checking cluster \"{clusterName}\". Choose whether to keep TLS verification enabled (recommended) or disable it for this profile.\n\nDetails: {error}",
+  "@tlsTransitionDialogBody": {
+    "placeholders": {
+      "clusterName": { "type": "String" },
+      "error": { "type": "String" }
+    }
+  },
+  "tlsTransitionKeepEnabled": "Keep verification on",
+  "tlsTransitionDisable": "Disable verification (insecure)",
+  "tlsVerificationFailedConnectError": "TLS certificate verification failed: {error}",
+  "@tlsVerificationFailedConnectError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  }
 }

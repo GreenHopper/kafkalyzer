@@ -2423,4 +2423,38 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get passwordsNotPersistedTooltip =>
       'Der System-Schlüsselbund ist nicht verfügbar. Dieses Passwort wird nicht über Neustarts hinweg gespeichert.';
+
+  @override
+  String get insecureTlsBadgeLabel => 'Unsicheres TLS';
+
+  @override
+  String get insecureTlsBadgeTooltip =>
+      'Die TLS-Zertifikatsprüfung ist für dieses Cluster-Profil deaktiviert.';
+
+  @override
+  String get tlsVerificationSwitchLabel => 'TLS-Zertifikate prüfen';
+
+  @override
+  String get tlsVerificationDisabledWarning =>
+      'Warnung: Zertifikats- und Hostname-Prüfung ist für dieses Profil deaktiviert. Verbindungen sind anfällig für Abfangen.';
+
+  @override
+  String get tlsTransitionDialogTitle =>
+      'TLS-Zertifikatsprüfung fehlgeschlagen';
+
+  @override
+  String tlsTransitionDialogBody(String clusterName, String error) {
+    return 'Die Zertifikatsprüfung für das Cluster \"$clusterName\" ist fehlgeschlagen. Wählen Sie, ob die TLS-Prüfung aktiviert bleiben soll (empfohlen) oder für dieses Profil deaktiviert werden soll.\n\nDetails: $error';
+  }
+
+  @override
+  String get tlsTransitionKeepEnabled => 'Prüfung aktiviert lassen';
+
+  @override
+  String get tlsTransitionDisable => 'Prüfung deaktivieren (unsicher)';
+
+  @override
+  String tlsVerificationFailedConnectError(String error) {
+    return 'TLS-Zertifikatsprüfung fehlgeschlagen: $error';
+  }
 }

@@ -20,6 +20,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_it
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/topic/utils/dlq_topic_detector.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/cluster_overview_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -922,14 +923,24 @@ class _ExplorerViewState extends State<ExplorerView> {
                 ],
               ],
             ),
-            Text(
-              record.profile.name,
-              style: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                fontSize: 10,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  record.profile.name,
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    fontSize: 10,
+                  ),
+                ),
+                if (record.profile.tlsVerification ==
+                    TlsVerification.disabled) ...[
+                  const SizedBox(width: 4),
+                  const InsecureTlsBadge(compact: true),
+                ],
+              ],
             ),
           ],
         ),

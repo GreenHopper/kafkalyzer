@@ -8,6 +8,7 @@ import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_o
 import 'package:kafkalyzer/src/theme_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
@@ -263,4 +264,86 @@ void main() {
 
     expect(themeController.isDarkMode, isTrue);
   });
+
+  testWidgets(
+    'hosts TlsTransitionDialog sequentially for queued decisions, handling keep/disable/dismiss',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const p1 = ClusterProfile(
+        name: 'Cluster One',
+        bootstrapServers: 'b1:9093',
+        securityProtocol: 'SSL',
+        tlsVerification: TlsVerification.unreviewed,
+      );
+      const p2 = ClusterProfile(
+        name: 'Cluster Two',
+        bootstrapServers: 'b2:9093',
+        securityProtocol: 'SSL',
+        tlsVerification: TlsVerification.unreviewed,
+      );
+
+      final tlsController = TlsTransitionController(
+        probeFn: (p) async => TlsProbeResult(
+          outcome: TlsProbeOutcome.certificateRejected,
+          message: 'cert error ${p.name}',
+        ),
+      );
+      getIt.registerSingleton<TlsTransitionController>(tlsController);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Queue two decisions via resolveBeforeConnect
+      final f1 = tlsController.resolveBeforeConnect(p1);
+      final f2 = tlsController.resolveBeforeConnect(p2);
+      await tester.pumpAndSettle();
+
+      // First dialog is shown for Cluster One
+      expect(find.text('TLS certificate verification failed'), findsOneWidget);
+      expect(find.textContaining('Cluster One'), findsOneWidget);
+
+      // Tap "Keep verification on"
+      await tester.tap(find.text('Keep verification on'));
+      await tester.pumpAndSettle();
+
+      final r1 = await f1;
+      expect(r1.profile.tlsVerification, TlsVerification.enabled);
+      expect(r1.blockedByCertificateRejection, isTrue);
+
+      // Second dialog is now shown for Cluster Two
+      expect(find.text('TLS certificate verification failed'), findsOneWidget);
+      expect(find.textContaining('Cluster Two'), findsOneWidget);
+
+      // Tap "Disable verification (insecure)"
+      await tester.tap(find.text('Disable verification (insecure)'));
+      await tester.pumpAndSettle();
+
+      final r2 = await f2;
+      expect(r2.profile.tlsVerification, TlsVerification.disabled);
+      expect(r2.blockedByCertificateRejection, isFalse);
+
+      // Dismissal leaves profile unreviewed
+      const p3 = ClusterProfile(
+        name: 'Cluster Three',
+        bootstrapServers: 'b3:9093',
+        securityProtocol: 'SSL',
+        tlsVerification: TlsVerification.unreviewed,
+      );
+      final f3 = tlsController.resolveBeforeConnect(p3);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Cluster Three'), findsOneWidget);
+
+      // Dismiss dialog by tapping barrier outside
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      final r3 = await f3;
+      expect(r3.profile.tlsVerification, TlsVerification.unreviewed);
+      expect(r3.blockedByCertificateRejection, isTrue);
+    },
+  );
 }

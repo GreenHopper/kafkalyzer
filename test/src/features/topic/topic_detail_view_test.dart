@@ -216,6 +216,7 @@ void main() {
         schemaRegistryUrl: 'http://localhost:8081',
         securityProtocol: 'plaintext',
         mechanism: 'plain',
+        tlsVerification: TlsVerification.enabled,
       );
 
       tester.view.physicalSize = const Size(1200, 800);
@@ -242,6 +243,7 @@ void main() {
                   schemaRegistryUrl: 'http://localhost:8081',
                   securityProtocol: 'plaintext',
                   mechanism: 'plain',
+                  tlsVerification: TlsVerification.enabled,
                 ),
               ),
             ),
@@ -279,6 +281,7 @@ void main() {
       schemaRegistryUrl: 'http://localhost:8081',
       securityProtocol: 'plaintext',
       mechanism: 'plain',
+      tlsVerification: TlsVerification.enabled,
     );
     fakeActiveController.topic = topic;
     fakeActiveController.activeProfile = profile;
@@ -324,6 +327,7 @@ void main() {
         schemaRegistryUrl: 'http://localhost:8081',
         securityProtocol: 'plaintext',
         mechanism: 'plain',
+        tlsVerification: TlsVerification.enabled,
       );
       fakeActiveController.topic = topic;
       fakeActiveController.activeProfile = profile;
@@ -383,6 +387,7 @@ void main() {
         schemaRegistryUrl: 'http://localhost:8081',
         securityProtocol: 'plaintext',
         mechanism: 'plain',
+        tlsVerification: TlsVerification.enabled,
       );
       fakeActiveController.topic = topic;
       fakeActiveController.activeProfile = profile;
@@ -434,6 +439,7 @@ void main() {
           profile: const ClusterProfile(
             name: 'Test Cluster',
             bootstrapServers: 'localhost:9092',
+            tlsVerification: TlsVerification.enabled,
           ),
         ),
       ),

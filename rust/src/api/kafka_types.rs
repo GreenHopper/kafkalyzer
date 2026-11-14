@@ -1,5 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TlsVerification {
+    #[default]
+    Unreviewed,
+    Enabled,
+    Disabled,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 // `default` keeps profiles stored before the advanced auth fields existed readable.
 #[serde(rename_all = "camelCase", default)]
@@ -28,6 +37,7 @@ pub struct ClusterProfile {
     pub ssl_pem_certificate_location: Option<String>,
     pub ssl_pem_key_location: Option<String>,
     pub ssl_pem_key_password: Option<String>,
+    pub tls_verification: TlsVerification,
 }
 
 impl ClusterProfile {
@@ -54,6 +64,7 @@ impl ClusterProfile {
             ssl_pem_certificate_location: self.ssl_pem_certificate_location.clone(),
             ssl_pem_key_location: self.ssl_pem_key_location.clone(),
             ssl_pem_key_password: self.ssl_pem_key_password.clone(),
+            ssl_verification_disabled: matches!(self.tls_verification, TlsVerification::Disabled),
         }
     }
 }

@@ -8,10 +8,12 @@ void main() {
   const clusterA = ClusterProfile(
     name: 'prod-kafka',
     bootstrapServers: 'localhost:9092',
+    tlsVerification: TlsVerification.enabled,
   );
   const clusterB = ClusterProfile(
     name: 'staging-kafka',
     bootstrapServers: 'localhost:9093',
+    tlsVerification: TlsVerification.enabled,
   );
 
   Widget createWidget({

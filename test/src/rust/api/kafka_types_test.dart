@@ -16,6 +16,7 @@ void main() {
         sslKeystorePassword: 'pass',
         sslTruststoreLocation: 'trust.jks',
         sslTruststorePassword: 'pass',
+        tlsVerification: TlsVerification.enabled,
       );
 
       const profile2 = ClusterProfile(
@@ -30,6 +31,7 @@ void main() {
         sslKeystorePassword: 'pass',
         sslTruststoreLocation: 'trust.jks',
         sslTruststorePassword: 'pass',
+        tlsVerification: TlsVerification.enabled,
       );
 
       expect(profile1 == profile1, isTrue);
@@ -53,6 +55,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -71,6 +74,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -89,6 +93,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -107,6 +112,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -125,6 +131,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -143,6 +150,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -161,6 +169,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -179,6 +188,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -197,6 +207,7 @@ void main() {
               sslKeystorePassword: 'pass2',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -215,6 +226,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust2.jks',
               sslTruststorePassword: 'pass',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );
@@ -233,6 +245,7 @@ void main() {
               sslKeystorePassword: 'pass',
               sslTruststoreLocation: 'trust.jks',
               sslTruststorePassword: 'pass2',
+              tlsVerification: TlsVerification.enabled,
             ),
         isFalse,
       );

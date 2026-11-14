@@ -2407,4 +2407,37 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get passwordsNotPersistedTooltip =>
       'System keyring is unavailable. This password will not be persisted across restarts.';
+
+  @override
+  String get insecureTlsBadgeLabel => 'Insecure TLS';
+
+  @override
+  String get insecureTlsBadgeTooltip =>
+      'TLS certificate verification is disabled for this cluster profile.';
+
+  @override
+  String get tlsVerificationSwitchLabel => 'Verify TLS certificates';
+
+  @override
+  String get tlsVerificationDisabledWarning =>
+      'Warning: Certificate and hostname verification is disabled for this profile. Connections are vulnerable to interception.';
+
+  @override
+  String get tlsTransitionDialogTitle => 'TLS certificate verification failed';
+
+  @override
+  String tlsTransitionDialogBody(String clusterName, String error) {
+    return 'Certificate verification failed when checking cluster \"$clusterName\". Choose whether to keep TLS verification enabled (recommended) or disable it for this profile.\n\nDetails: $error';
+  }
+
+  @override
+  String get tlsTransitionKeepEnabled => 'Keep verification on';
+
+  @override
+  String get tlsTransitionDisable => 'Disable verification (insecure)';
+
+  @override
+  String tlsVerificationFailedConnectError(String error) {
+    return 'TLS certificate verification failed: $error';
+  }
 }

@@ -42,6 +42,7 @@ void main() {
   const testProfile = ClusterProfile(
     name: 'local-cluster',
     bootstrapServers: 'localhost:9092',
+    tlsVerification: TlsVerification.enabled,
   );
 
   setUp(() async {

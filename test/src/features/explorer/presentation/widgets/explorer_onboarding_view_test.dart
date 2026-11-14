@@ -24,6 +24,7 @@ void main() {
     securityProtocol: 'sasl_ssl',
     mechanism: 'scram_sha_512',
     schemaRegistryUrl: 'http://registry:8081',
+    tlsVerification: TlsVerification.enabled,
   );
 
   Widget buildWidget({

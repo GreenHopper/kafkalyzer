@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -97,6 +98,7 @@ void main() {
     final validProfile = ClusterProfile(
       name: 'Test Cluster',
       bootstrapServers: 'localhost:9092',
+      tlsVerification: TlsVerification.enabled,
     );
 
     test('connects successfully to a valid cluster', () async {
@@ -443,6 +445,137 @@ void main() {
       // Restoration disabled, so openTopics should remain empty
       expect(newController.openTopics, isEmpty);
       expect(newController.activeTopic, isNull);
+    });
+
+    group('TLS transition integration in connect()', () {
+      const unreviewedProfile = ClusterProfile(
+        name: 'Legacy TLS',
+        bootstrapServers: 'broker:9093',
+        securityProtocol: 'SSL',
+        tlsVerification: TlsVerification.unreviewed,
+      );
+
+      test('verified probe updates profile to enabled before validateConnection', () async {
+        final validatedProfiles = <ClusterProfile>[];
+        mockMetadataService.onValidate = ({required profile}) async {
+          validatedProfiles.add(profile);
+          return true;
+        };
+
+        final tlsController = TlsTransitionController(
+          probeFn: (_) async =>
+              const TlsProbeResult(outcome: TlsProbeOutcome.verified),
+        );
+        getIt.registerSingleton<TlsTransitionController>(tlsController);
+
+        await controller.connect(unreviewedProfile);
+
+        expect(validatedProfiles, hasLength(1));
+        expect(
+          validatedProfiles.first.tlsVerification,
+          TlsVerification.enabled,
+        );
+        expect(
+          controller.activeProfile?.tlsVerification,
+          TlsVerification.enabled,
+        );
+        expect(controller.error, isNull);
+      });
+
+      test('rejected probe + keep verification on blocks connect without calling validateConnection', () async {
+        var validateCalled = false;
+        mockMetadataService.onValidate = ({required profile}) async {
+          validateCalled = true;
+          return true;
+        };
+
+        final tlsController = TlsTransitionController(
+          probeFn: (_) async => const TlsProbeResult(
+            outcome: TlsProbeOutcome.certificateRejected,
+            message: 'self-signed cert',
+          ),
+        );
+        getIt.registerSingleton<TlsTransitionController>(tlsController);
+
+        final connectFuture = controller.connect(unreviewedProfile);
+        await Future<void>.delayed(Duration.zero);
+        expect(tlsController.currentDecision, isNotNull);
+
+        await tlsController.resolveDecision(
+          tlsController.currentDecision!,
+          keepVerificationEnabled: true,
+        );
+        await connectFuture;
+
+        expect(validateCalled, isFalse);
+        expect(controller.activeProfile, isNull);
+        expect(controller.error, contains('self-signed cert'));
+      });
+
+      test('rejected probe + disable connects with disabled profile', () async {
+        final validatedProfiles = <ClusterProfile>[];
+        mockMetadataService.onValidate = ({required profile}) async {
+          validatedProfiles.add(profile);
+          return true;
+        };
+
+        final tlsController = TlsTransitionController(
+          probeFn: (_) async => const TlsProbeResult(
+            outcome: TlsProbeOutcome.certificateRejected,
+            message: 'self-signed cert',
+          ),
+        );
+        getIt.registerSingleton<TlsTransitionController>(tlsController);
+
+        final connectFuture = controller.connect(unreviewedProfile);
+        await Future<void>.delayed(Duration.zero);
+        expect(tlsController.currentDecision, isNotNull);
+
+        await tlsController.resolveDecision(
+          tlsController.currentDecision!,
+          keepVerificationEnabled: false,
+        );
+        await connectFuture;
+
+        expect(validatedProfiles, hasLength(1));
+        expect(
+          validatedProfiles.first.tlsVerification,
+          TlsVerification.disabled,
+        );
+        expect(
+          controller.activeProfile?.tlsVerification,
+          TlsVerification.disabled,
+        );
+        expect(controller.error, isNull);
+      });
+
+      test('inconclusive probe keeps verification on during validateConnection and marks enabled on success', () async {
+        final validatedProfiles = <ClusterProfile>[];
+        mockMetadataService.onValidate = ({required profile}) async {
+          validatedProfiles.add(profile);
+          return true;
+        };
+
+        final tlsController = TlsTransitionController(
+          probeFn: (_) async => const TlsProbeResult(
+            outcome: TlsProbeOutcome.inconclusive,
+            message: 'timed out',
+          ),
+        );
+        getIt.registerSingleton<TlsTransitionController>(tlsController);
+
+        await controller.connect(unreviewedProfile);
+
+        expect(validatedProfiles, hasLength(1));
+        expect(
+          validatedProfiles.first.tlsVerification,
+          isNot(TlsVerification.disabled),
+        );
+        expect(
+          controller.activeProfile?.tlsVerification,
+          TlsVerification.enabled,
+        );
+      });
     });
   });
 }

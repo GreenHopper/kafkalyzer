@@ -28,6 +28,33 @@ pub struct ClusterProfile {
     pub ssl_pem_certificate_location: Option<String>,
     pub ssl_pem_key_location: Option<String>,
     pub ssl_pem_key_password: Option<String>,
+    #[serde(default)]
+    pub ssl_verification_disabled: bool,
+}
+
+impl ClusterProfile {
+    /// Returns the effective Kafka security protocol for this profile:
+    /// explicit `security_protocol` if non-empty, else `SASL_SSL` when a
+    /// `sasl_username` is configured, else `PLAINTEXT`.
+    pub fn effective_security_protocol(&self) -> String {
+        if let Some(proto) = self.security_protocol.as_deref() {
+            let trimmed = proto.trim();
+            if !trimmed.is_empty() {
+                return trimmed.to_string();
+            }
+        }
+        if self.sasl_username.as_deref().is_some_and(|u| !u.is_empty()) {
+            return "SASL_SSL".to_string();
+        }
+        "PLAINTEXT".to_string()
+    }
+
+    /// Returns `true` when the effective security protocol uses TLS
+    /// (`SSL` or `SASL_SSL`, matched case-insensitively).
+    pub fn uses_tls(&self) -> bool {
+        let proto = self.effective_security_protocol();
+        proto.eq_ignore_ascii_case("SSL") || proto.eq_ignore_ascii_case("SASL_SSL")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -323,5 +350,42 @@ mod tests {
         assert!(report.value_filter_result.is_none());
         assert!(!report.field_frequencies[0].values_capped);
         assert!(!report.field_frequencies[0].top_values[0].truncated);
+    }
+
+    #[test]
+    fn effective_security_protocol_and_uses_tls() {
+        let plaintext = ClusterProfile::default();
+        assert_eq!(plaintext.effective_security_protocol(), "PLAINTEXT");
+        assert!(!plaintext.uses_tls());
+
+        let implicit_sasl = ClusterProfile {
+            sasl_username: Some("alice".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(implicit_sasl.effective_security_protocol(), "SASL_SSL");
+        assert!(implicit_sasl.uses_tls());
+
+        let explicit_sasl_plaintext = ClusterProfile {
+            security_protocol: Some("SASL_PLAINTEXT".to_string()),
+            sasl_username: Some("alice".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            explicit_sasl_plaintext.effective_security_protocol(),
+            "SASL_PLAINTEXT"
+        );
+        assert!(!explicit_sasl_plaintext.uses_tls());
+
+        let lowercase_ssl = ClusterProfile {
+            security_protocol: Some("ssl".to_string()),
+            ..Default::default()
+        };
+        assert!(lowercase_ssl.uses_tls());
+
+        let lowercase_sasl_ssl = ClusterProfile {
+            security_protocol: Some("sasl_ssl".to_string()),
+            ..Default::default()
+        };
+        assert!(lowercase_sasl_ssl.uses_tls());
     }
 }

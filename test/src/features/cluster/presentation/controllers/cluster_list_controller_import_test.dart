@@ -59,6 +59,7 @@ void main() {
       return jsonEncode({
         'name': profile.name,
         'bootstrapServers': profile.bootstrapServers,
+        'tlsVerification': profile.tlsVerification.name,
         if (profile.saslPassword != null) 'saslPassword': profile.saslPassword,
         if (profile.saslOauthbearerToken != null)
           'saslOauthbearerToken': profile.saslOauthbearerToken,
@@ -74,6 +75,11 @@ void main() {
       ),
     ).thenAnswer((inv) async {
       final m = jsonDecode(inv.namedArguments[#json] as String) as Map;
+      final tlsRaw = m['tlsVerification'] as String?;
+      final tlsVerification = TlsVerification.values.firstWhere(
+        (v) => v.name == tlsRaw,
+        orElse: () => TlsVerification.unreviewed,
+      );
       return ClusterProfile(
         name: (m['name'] as String?) ?? '',
         bootstrapServers:
@@ -82,6 +88,7 @@ void main() {
         saslOauthbearerToken: m['saslOauthbearerToken'] as String?,
         sslPemKeyPassword: m['sslPemKeyPassword'] as String?,
         schemaRegistryPassword: m['schemaRegistryPassword'] as String?,
+        tlsVerification: tlsVerification,
       );
     });
     tempRoot = Directory.systemTemp.createTempSync(
@@ -105,6 +112,7 @@ void main() {
       const ClusterProfile(
         name: 'Existing',
         bootstrapServers: 'localhost:9092',
+        tlsVerification: TlsVerification.enabled,
       ),
     ];
     fakeService = _FakeClusterService(initial);
@@ -198,6 +206,7 @@ void main() {
           name: 'Prod',
           bootstrapServers: 'old-broker:9092',
           saslPassword: 'existing-secret-password',
+          tlsVerification: TlsVerification.enabled,
         ),
       ];
       await controller.loadClusters();
@@ -237,6 +246,7 @@ void main() {
         saslOauthbearerToken: 'oauth-secret',
         sslPemKeyPassword: 'pem-secret',
         schemaRegistryPassword: 'sr-secret',
+        tlsVerification: TlsVerification.enabled,
       );
 
       // Default export scrubs all secrets.
@@ -280,4 +290,23 @@ void main() {
       expect(optInClustersJson, contains('sr-secret'));
     },
   );
+
+  test('ZIP export and import preserves tlsVerification', () async {
+    final disabledProfile = const ClusterProfile(
+      name: 'Insecure',
+      bootstrapServers: 'broker:9093',
+      tlsVerification: TlsVerification.disabled,
+    );
+    final controller = ClusterListController();
+    final zipBytes = await controller.exportClustersZip([disabledProfile]);
+
+    final target = ClusterListController();
+    final summary = await target.importClustersZip(
+      zipBytes,
+      onConflict: (_, _) async => const ImportConflictChoice.replace(),
+    );
+    expect(summary, isNotNull);
+    final imported = target.clusters.firstWhere((c) => c.name == 'Insecure');
+    expect(imported.tlsVerification, TlsVerification.disabled);
+  });
 }

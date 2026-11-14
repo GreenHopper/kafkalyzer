@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:material_ui/material_ui.dart';
 import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
@@ -43,6 +45,10 @@ class ClusterListController extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+    if (getIt.isRegistered<TlsTransitionController>() &&
+        _clusters.any((c) => c.tlsVerification == TlsVerification.unreviewed)) {
+      unawaited(getIt<TlsTransitionController>().runStartupSweep());
     }
   }
 

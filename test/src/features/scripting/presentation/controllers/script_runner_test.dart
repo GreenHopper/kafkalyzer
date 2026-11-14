@@ -51,6 +51,13 @@ class MockClusterListController extends ClusterListController {
     const ClusterProfile(
       name: "TestCluster",
       bootstrapServers: "localhost:9092",
+      tlsVerification: TlsVerification.enabled,
+    ),
+    const ClusterProfile(
+      name: "UnreviewedCluster",
+      bootstrapServers: "localhost:9093",
+      securityProtocol: "SSL",
+      tlsVerification: TlsVerification.unreviewed,
     ),
   ];
 }
@@ -620,6 +627,32 @@ void main() {
               );
           tempDir.deleteSync(recursive: true);
         }
+      },
+    );
+
+    test(
+      'runScript leaves unreviewed cluster tlsVerification unchanged',
+      () async {
+        final script = Script(
+          id: 'unreviewed-tls-check',
+          name: 'Unreviewed TLS Check',
+          steps: [
+            const ScriptStep(
+              id: 's1',
+              name: 'Step 1',
+              clusterName: 'UnreviewedCluster',
+              topicNames: ['test-topic'],
+            ),
+          ],
+        );
+
+        await scriptRunner.runScript(script, {});
+
+        expect(mockMultiSearchController.addedTargets, hasLength(1));
+        expect(
+          mockMultiSearchController.addedTargets.first.profile.tlsVerification,
+          TlsVerification.unreviewed,
+        );
       },
     );
   });

@@ -7,7 +7,13 @@ import '../frb_generated.dart';
 import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+
+Future<TlsProbeResult> probeTlsVerification({
+  required ClusterProfile profile,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataProbeTlsVerification(
+  profile: profile,
+);
 
 Future<bool> validateConnection({required ClusterProfile profile}) =>
     KafkalyzerRustLib.instance.api.crateApiKafkaMetadataValidateConnection(
@@ -110,6 +116,26 @@ class PartitionRow {
           inSyncReplicas == other.inSyncReplicas &&
           underReplicated == other.underReplicated &&
           leaderless == other.leaderless;
+}
+
+enum TlsProbeOutcome { noTls, verified, certificateRejected, inconclusive }
+
+class TlsProbeResult {
+  final TlsProbeOutcome outcome;
+  final String? message;
+
+  const TlsProbeResult({required this.outcome, this.message});
+
+  @override
+  int get hashCode => outcome.hashCode ^ message.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TlsProbeResult &&
+          runtimeType == other.runtimeType &&
+          outcome == other.outcome &&
+          message == other.message;
 }
 
 class TopicMetadata {

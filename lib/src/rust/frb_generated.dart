@@ -78,7 +78,7 @@ class KafkalyzerRustLib
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 116515548;
+  int get rustContentHash => 334722752;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -185,6 +185,10 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
 
   Future<int> crateApiKafkaUtilsMurmur2({required List<int> data});
 
+  Future<TlsProbeResult> crateApiKafkaMetadataProbeTlsVerification({
+    required ClusterProfile profile,
+  });
+
   Future<List<String>> crateApiSchemaRegistryResolveAssociatedTopicsForSubject({
     required String subject,
     required List<String> availableTopics,
@@ -203,6 +207,8 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
   Future<String> crateApiJsonPathSerializeClusterProfile({
     required ClusterProfile profile,
   });
+
+  Future<TlsVerification> crateApiKafkaTypesTlsVerificationDefault();
 
   Future<int> crateApiKafkaUtilsToPositive({required int number});
 
@@ -919,6 +925,39 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       const TaskConstMeta(debugName: "murmur2", argNames: ["data"]);
 
   @override
+  Future<TlsProbeResult> crateApiKafkaMetadataProbeTlsVerification({
+    required ClusterProfile profile,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cluster_profile(profile, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 19,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tls_probe_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiKafkaMetadataProbeTlsVerificationConstMeta,
+        argValues: [profile],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaMetadataProbeTlsVerificationConstMeta =>
+      const TaskConstMeta(
+        debugName: "probe_tls_verification",
+        argNames: ["profile"],
+      );
+
+  @override
   Future<List<String>> crateApiSchemaRegistryResolveAssociatedTopicsForSubject({
     required String subject,
     required List<String> availableTopics,
@@ -932,7 +971,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 20,
             port: port_,
           );
         },
@@ -969,7 +1008,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 21,
             port: port_,
           );
         },
@@ -1004,7 +1043,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 22,
             port: port_,
           );
         },
@@ -1037,7 +1076,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 23,
             port: port_,
           );
         },
@@ -1059,6 +1098,33 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       );
 
   @override
+  Future<TlsVerification> crateApiKafkaTypesTlsVerificationDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 24,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tls_verification,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiKafkaTypesTlsVerificationDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaTypesTlsVerificationDefaultConstMeta =>
+      const TaskConstMeta(debugName: "tls_verification_default", argNames: []);
+
+  @override
   Future<int> crateApiKafkaUtilsToPositive({required int number}) {
     return handler.executeNormal(
       NormalTask(
@@ -1068,7 +1134,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 25,
             port: port_,
           );
         },
@@ -1095,7 +1161,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 26,
             port: port_,
           );
         },
@@ -1128,7 +1194,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 25,
+            funcId: 27,
             port: port_,
           );
         },
@@ -1161,7 +1227,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 26,
+            funcId: 28,
             port: port_,
           );
         },
@@ -1344,8 +1410,8 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   ClusterProfile dco_decode_cluster_profile(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 21)
-      throw Exception('unexpected arr length: expect 21 but see ${arr.length}');
+    if (arr.length != 22)
+      throw Exception('unexpected arr length: expect 22 but see ${arr.length}');
     return ClusterProfile(
       name: dco_decode_String(arr[0]),
       bootstrapServers: dco_decode_String(arr[1]),
@@ -1368,6 +1434,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       sslPemCertificateLocation: dco_decode_opt_String(arr[18]),
       sslPemKeyLocation: dco_decode_opt_String(arr[19]),
       sslPemKeyPassword: dco_decode_opt_String(arr[20]),
+      tlsVerification: dco_decode_tls_verification(arr[21]),
     );
   }
 
@@ -1931,6 +1998,30 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  TlsProbeOutcome dco_decode_tls_probe_outcome(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return TlsProbeOutcome.values[raw as int];
+  }
+
+  @protected
+  TlsProbeResult dco_decode_tls_probe_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return TlsProbeResult(
+      outcome: dco_decode_tls_probe_outcome(arr[0]),
+      message: dco_decode_opt_String(arr[1]),
+    );
+  }
+
+  @protected
+  TlsVerification dco_decode_tls_verification(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return TlsVerification.values[raw as int];
+  }
+
+  @protected
   TopDuplicateOccurrence dco_decode_top_duplicate_occurrence(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -2320,6 +2411,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     var var_sslPemCertificateLocation = sse_decode_opt_String(deserializer);
     var var_sslPemKeyLocation = sse_decode_opt_String(deserializer);
     var var_sslPemKeyPassword = sse_decode_opt_String(deserializer);
+    var var_tlsVerification = sse_decode_tls_verification(deserializer);
     return ClusterProfile(
       name: var_name,
       bootstrapServers: var_bootstrapServers,
@@ -2342,6 +2434,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       sslPemCertificateLocation: var_sslPemCertificateLocation,
       sslPemKeyLocation: var_sslPemKeyLocation,
       sslPemKeyPassword: var_sslPemKeyPassword,
+      tlsVerification: var_tlsVerification,
     );
   }
 
@@ -3150,6 +3243,28 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  TlsProbeOutcome sse_decode_tls_probe_outcome(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return TlsProbeOutcome.values[inner];
+  }
+
+  @protected
+  TlsProbeResult sse_decode_tls_probe_result(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_outcome = sse_decode_tls_probe_outcome(deserializer);
+    var var_message = sse_decode_opt_String(deserializer);
+    return TlsProbeResult(outcome: var_outcome, message: var_message);
+  }
+
+  @protected
+  TlsVerification sse_decode_tls_verification(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return TlsVerification.values[inner];
+  }
+
+  @protected
   TopDuplicateOccurrence sse_decode_top_duplicate_occurrence(
     SseDeserializer deserializer,
   ) {
@@ -3633,6 +3748,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_opt_String(self.sslPemCertificateLocation, serializer);
     sse_encode_opt_String(self.sslPemKeyLocation, serializer);
     sse_encode_opt_String(self.sslPemKeyPassword, serializer);
+    sse_encode_tls_verification(self.tlsVerification, serializer);
   }
 
   @protected
@@ -4321,6 +4437,34 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_i_64(self.p50, serializer);
     sse_encode_i_64(self.p95, serializer);
     sse_encode_i_64(self.p99, serializer);
+  }
+
+  @protected
+  void sse_encode_tls_probe_outcome(
+    TlsProbeOutcome self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_tls_probe_result(
+    TlsProbeResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_tls_probe_outcome(self.outcome, serializer);
+    sse_encode_opt_String(self.message, serializer);
+  }
+
+  @protected
+  void sse_encode_tls_verification(
+    TlsVerification self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected

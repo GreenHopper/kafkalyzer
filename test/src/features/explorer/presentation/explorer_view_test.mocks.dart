@@ -154,7 +154,7 @@ class MockClusterListController extends _i1.Mock
   @override
   _i8.Future<_i9.ImportSummary?> importClustersZip(
     List<int>? zipBytes, {
-    dynamic onConflict,
+    _i9.ImportConflictResolver? onConflict,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -169,7 +169,7 @@ class MockClusterListController extends _i1.Mock
   @override
   _i8.Future<_i9.ImportSummary?> importClusters(
     String? jsonString, {
-    dynamic onConflict,
+    _i9.ImportConflictResolver? onConflict,
   }) =>
       (super.noSuchMethod(
             Invocation.method(

@@ -103,6 +103,7 @@ mod tests {
             ssl_pem_certificate_location: Some("/cert.pem".to_string()),
             ssl_pem_key_location: Some("/key.pem".to_string()),
             ssl_pem_key_password: Some("pempw".to_string()),
+            tls_verification: crate::api::kafka_types::TlsVerification::Disabled,
         }
     }
 
@@ -132,5 +133,32 @@ mod tests {
         let json = serialize_cluster_profile(full_profile()).unwrap();
         assert!(json.contains("\"bootstrapServers\""));
         assert!(json.contains("\"sslPemKeyPassword\""));
+        assert!(json.contains("\"tlsVerification\":\"disabled\""));
+    }
+
+    #[test]
+    fn legacy_json_without_tls_verification_defaults_to_unreviewed() {
+        let legacy = r#"{"name":"legacy","bootstrapServers":"localhost:9092"}"#;
+        let profile = deserialize_cluster_profile(legacy.to_string()).unwrap();
+        assert_eq!(
+            profile.tls_verification,
+            crate::api::kafka_types::TlsVerification::Unreviewed
+        );
+        assert!(!profile.to_domain().ssl_verification_disabled);
+    }
+
+    #[test]
+    fn tls_verification_round_trip_and_domain_mapping() {
+        let mut profile = full_profile();
+        assert!(profile.to_domain().ssl_verification_disabled);
+
+        profile.tls_verification = crate::api::kafka_types::TlsVerification::Enabled;
+        assert!(!profile.to_domain().ssl_verification_disabled);
+        let round_tripped =
+            deserialize_cluster_profile(serialize_cluster_profile(profile).unwrap()).unwrap();
+        assert_eq!(
+            round_tripped.tls_verification,
+            crate::api::kafka_types::TlsVerification::Enabled
+        );
     }
 }

@@ -167,6 +167,7 @@ void main() {
   const testProfile = ClusterProfile(
     name: 'test-cluster',
     bootstrapServers: 'localhost:9092',
+    tlsVerification: TlsVerification.enabled,
   );
 
   const testTopic = TopicMetadata(

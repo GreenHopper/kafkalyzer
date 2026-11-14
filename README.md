@@ -162,12 +162,19 @@ We use **GitHub Actions** for continuous integration and automated release packa
 - **Automated Releases**: Pushing a version tag (`v*`) automatically builds release binaries for all target platforms and creates a GitHub Release.
 - **Artifacts**: You can find the latest binaries in the "Actions" tab or the "Releases" section of the repository.
 
+### 🔒 TLS Verification
+
+- **Enabled by Default**: TLS certificate and hostname verification are enabled by default for all `SSL` / `SASL_SSL` Kafka connections and `https://` Schema Registry connections.
+- **Private CAs**: Configure a custom CA bundle or truststore via **Truststore Location (PEM or JKS)** in the cluster configuration dialog.
+- **Per-Profile Opt-Out (Insecure)**: If you need to connect to a broker or registry with an untrusted or self-signed certificate without configuring a truststore, you can disable **Verify TLS certificates** in the cluster's SSL settings. Profiles with verification disabled are marked with an **Insecure TLS** badge in cluster settings, the configuration dialog, and open topic tabs.
+- **Upgrade Transition**: Existing profiles created before TLS verification was restored are checked once on upgrade; if certificate verification fails, Kafkalyzer prompts you to either keep verification enabled or explicitly disable it for that profile.
+
 ### ⚠️ Windows SSL Requirements
 
-On Windows, the Kafka client (`librdkafka` with OpenSSL) requires an explicit CA bundle for SSL connections.
+On Windows, when no custom truststore is configured in the cluster profile, `librdkafka` falls back to `cacert.pem` next to the executable (pending final Windows/macOS spike confirmation).
 
 - **Release Builds**: The automated build scripts bundle `cacert.pem` automatically.
-- **Debug/Local Runs**: Ensure a `cacert.pem` file is present in the same directory as the executable. Without this, SSL verification will fail even if disabled in the cluster profile.
+- **Debug/Local Runs**: Place `cacert.pem` next to the executable if connecting to public-CA TLS brokers without an explicit truststore.
 
 ## 📄 License
 

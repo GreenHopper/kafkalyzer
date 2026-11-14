@@ -311,6 +311,15 @@ abstract class KafkalyzerRustLibApiImplPlatform
   SizePercentiles dco_decode_size_percentiles(dynamic raw);
 
   @protected
+  TlsProbeOutcome dco_decode_tls_probe_outcome(dynamic raw);
+
+  @protected
+  TlsProbeResult dco_decode_tls_probe_result(dynamic raw);
+
+  @protected
+  TlsVerification dco_decode_tls_verification(dynamic raw);
+
+  @protected
   TopDuplicateOccurrence dco_decode_top_duplicate_occurrence(dynamic raw);
 
   @protected
@@ -684,6 +693,15 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   SizePercentiles sse_decode_size_percentiles(SseDeserializer deserializer);
+
+  @protected
+  TlsProbeOutcome sse_decode_tls_probe_outcome(SseDeserializer deserializer);
+
+  @protected
+  TlsProbeResult sse_decode_tls_probe_result(SseDeserializer deserializer);
+
+  @protected
+  TlsVerification sse_decode_tls_verification(SseDeserializer deserializer);
 
   @protected
   TopDuplicateOccurrence sse_decode_top_duplicate_occurrence(
@@ -1163,6 +1181,24 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_size_percentiles(
     SizePercentiles self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_tls_probe_outcome(
+    TlsProbeOutcome self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_tls_probe_result(
+    TlsProbeResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_tls_verification(
+    TlsVerification self,
     SseSerializer serializer,
   );
 

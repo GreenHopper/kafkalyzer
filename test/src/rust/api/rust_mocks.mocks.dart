@@ -70,9 +70,15 @@ class _FakeTopicPartitionDetails_5 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-class _FakeTopicAnalysisOptions_6 extends _i1.SmartFake
+class _FakeTlsProbeResult_6 extends _i1.SmartFake
+    implements _i6.TlsProbeResult {
+  _FakeTlsProbeResult_6(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeTopicAnalysisOptions_7 extends _i1.SmartFake
     implements _i3.TopicAnalysisOptions {
-  _FakeTopicAnalysisOptions_6(Object parent, Invocation parentInvocation)
+  _FakeTopicAnalysisOptions_7(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -472,6 +478,27 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
           as _i11.Future<int>);
 
   @override
+  _i11.Future<_i6.TlsProbeResult> crateApiKafkaMetadataProbeTlsVerification({
+    required _i3.ClusterProfile? profile,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#crateApiKafkaMetadataProbeTlsVerification, [], {
+              #profile: profile,
+            }),
+            returnValue: _i11.Future<_i6.TlsProbeResult>.value(
+              _FakeTlsProbeResult_6(
+                this,
+                Invocation.method(
+                  #crateApiKafkaMetadataProbeTlsVerification,
+                  [],
+                  {#profile: profile},
+                ),
+              ),
+            ),
+          )
+          as _i11.Future<_i6.TlsProbeResult>);
+
+  @override
   _i11.Future<List<String>>
   crateApiSchemaRegistryResolveAssociatedTopicsForSubject({
     required String? subject,
@@ -537,6 +564,16 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
           as _i11.Future<String>);
 
   @override
+  _i11.Future<_i3.TlsVerification> crateApiKafkaTypesTlsVerificationDefault() =>
+      (super.noSuchMethod(
+            Invocation.method(#crateApiKafkaTypesTlsVerificationDefault, []),
+            returnValue: _i11.Future<_i3.TlsVerification>.value(
+              _i3.TlsVerification.unreviewed,
+            ),
+          )
+          as _i11.Future<_i3.TlsVerification>);
+
+  @override
   _i11.Future<int> crateApiKafkaUtilsToPositive({required int? number}) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaUtilsToPositive, [], {
@@ -555,7 +592,7 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
               [],
             ),
             returnValue: _i11.Future<_i3.TopicAnalysisOptions>.value(
-              _FakeTopicAnalysisOptions_6(
+              _FakeTopicAnalysisOptions_7(
                 this,
                 Invocation.method(
                   #crateApiKafkaTypesTopicAnalysisOptionsDefault,

@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
@@ -42,6 +43,9 @@ void setupDependencyInjection() {
   );
   getIt.registerLazySingleton<ClusterListController>(
     () => ClusterListController(),
+  );
+  getIt.registerLazySingleton<TlsTransitionController>(
+    () => TlsTransitionController(),
   );
   getIt.registerLazySingleton<ActiveConnectionController>(
     () => ActiveConnectionController(),

@@ -4218,6 +4218,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'System keyring is unavailable. This password will not be persisted across restarts.'**
   String get passwordsNotPersistedTooltip;
+
+  /// No description provided for @insecureTlsBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Insecure TLS'**
+  String get insecureTlsBadgeLabel;
+
+  /// No description provided for @insecureTlsBadgeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'TLS certificate verification is disabled for this cluster profile.'**
+  String get insecureTlsBadgeTooltip;
+
+  /// No description provided for @tlsVerificationSwitchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify TLS certificates'**
+  String get tlsVerificationSwitchLabel;
+
+  /// No description provided for @tlsVerificationDisabledWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning: Certificate and hostname verification is disabled for this profile. Connections are vulnerable to interception.'**
+  String get tlsVerificationDisabledWarning;
+
+  /// No description provided for @tlsTransitionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'TLS certificate verification failed'**
+  String get tlsTransitionDialogTitle;
+
+  /// No description provided for @tlsTransitionDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate verification failed when checking cluster \"{clusterName}\". Choose whether to keep TLS verification enabled (recommended) or disable it for this profile.\n\nDetails: {error}'**
+  String tlsTransitionDialogBody(String clusterName, String error);
+
+  /// No description provided for @tlsTransitionKeepEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep verification on'**
+  String get tlsTransitionKeepEnabled;
+
+  /// No description provided for @tlsTransitionDisable.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable verification (insecure)'**
+  String get tlsTransitionDisable;
+
+  /// No description provided for @tlsVerificationFailedConnectError.
+  ///
+  /// In en, this message translates to:
+  /// **'TLS certificate verification failed: {error}'**
+  String tlsVerificationFailedConnectError(String error);
 }
 
 class _AppLocalizationsDelegate

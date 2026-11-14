@@ -11,15 +11,13 @@ pub fn compute_message_fingerprint(
 ) -> MessageFingerprint {
     let mut hasher = Sha256::new();
     match scope {
-        DuplicateDetectionScope::PayloadOnly => {
-            match payload_bytes {
-                None => hasher.update([0x00]),
-                Some(payload) => {
-                    hasher.update([0x01]);
-                    hasher.update(payload);
-                }
+        DuplicateDetectionScope::PayloadOnly => match payload_bytes {
+            None => hasher.update([0x00]),
+            Some(payload) => {
+                hasher.update([0x01]);
+                hasher.update(payload);
             }
-        }
+        },
         DuplicateDetectionScope::KeyAndPayload => {
             match key_bytes {
                 None => hasher.update([0x00]),
@@ -123,16 +121,10 @@ mod tests {
 
     #[test]
     fn handles_tombstones_correctly() {
-        let fp_tomb1 = compute_message_fingerprint(
-            DuplicateDetectionScope::PayloadOnly,
-            Some(b"key1"),
-            None,
-        );
-        let fp_tomb2 = compute_message_fingerprint(
-            DuplicateDetectionScope::PayloadOnly,
-            Some(b"key2"),
-            None,
-        );
+        let fp_tomb1 =
+            compute_message_fingerprint(DuplicateDetectionScope::PayloadOnly, Some(b"key1"), None);
+        let fp_tomb2 =
+            compute_message_fingerprint(DuplicateDetectionScope::PayloadOnly, Some(b"key2"), None);
         let fp_empty = compute_message_fingerprint(
             DuplicateDetectionScope::PayloadOnly,
             Some(b"key1"),

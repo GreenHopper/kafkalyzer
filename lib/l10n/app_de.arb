@@ -870,5 +870,14 @@
   "discardUnreadableConfirm": "Dadurch werden die nicht lesbaren gespeicherten Daten dauerhaft gelöscht, sodass neue Einträge gespeichert werden können. Fortfahren?",
   "copyBackupPath": "Sicherungspfad kopieren",
   "storeUnreadableActionRefused": "Aktion abgelehnt, solange gespeicherte Daten nicht lesbar sind. Verwerfen Sie zuerst die unlesbaren Daten oder stellen Sie die Sicherung wieder her.",
-  "passwordsNotPersistedTooltip": "Der System-Schlüsselbund ist nicht verfügbar. Dieses Passwort wird nicht über Neustarts hinweg gespeichert."
+  "passwordsNotPersistedTooltip": "Der System-Schlüsselbund ist nicht verfügbar. Dieses Passwort wird nicht über Neustarts hinweg gespeichert.",
+  "insecureTlsBadgeLabel": "Unsicheres TLS",
+  "insecureTlsBadgeTooltip": "Die TLS-Zertifikatsprüfung ist für dieses Cluster-Profil deaktiviert.",
+  "tlsVerificationSwitchLabel": "TLS-Zertifikate prüfen",
+  "tlsVerificationDisabledWarning": "Warnung: Zertifikats- und Hostname-Prüfung ist für dieses Profil deaktiviert. Verbindungen sind anfällig für Abfangen.",
+  "tlsTransitionDialogTitle": "TLS-Zertifikatsprüfung fehlgeschlagen",
+  "tlsTransitionDialogBody": "Die Zertifikatsprüfung für das Cluster \"{clusterName}\" ist fehlgeschlagen. Wählen Sie, ob die TLS-Prüfung aktiviert bleiben soll (empfohlen) oder für dieses Profil deaktiviert werden soll.\n\nDetails: {error}",
+  "tlsTransitionKeepEnabled": "Prüfung aktiviert lassen",
+  "tlsTransitionDisable": "Prüfung deaktivieren (unsicher)",
+  "tlsVerificationFailedConnectError": "TLS-Zertifikatsprüfung fehlgeschlagen: {error}"
 }

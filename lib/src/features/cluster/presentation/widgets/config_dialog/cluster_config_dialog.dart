@@ -4,6 +4,7 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_basic_info_form.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_ssl_form.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
@@ -47,6 +48,8 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
 
   late String _securityProtocol;
   String? _mechanism;
+  late bool _verifyTls;
+  bool _tlsVerificationTouched = false;
 
   bool _isTestingConnection = false;
   String? _testConnectionStatus;
@@ -114,6 +117,7 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
 
     _securityProtocol = c?.securityProtocol ?? 'PLAINTEXT';
     _mechanism = c?.mechanism ?? 'PLAIN';
+    _verifyTls = c?.tlsVerification != TlsVerification.disabled;
   }
 
   @override
@@ -200,6 +204,9 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
       sslPemKeyPassword: _sslPemKeyPasswordController.text.isNotEmpty
           ? _sslPemKeyPasswordController.text
           : null,
+      tlsVerification: _tlsVerificationTouched
+          ? (_verifyTls ? TlsVerification.enabled : TlsVerification.disabled)
+          : (widget.cluster?.tlsVerification ?? TlsVerification.enabled),
     );
   }
 
@@ -255,6 +262,10 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
             ),
           ),
           const SizedBox(width: 8),
+          if (!_verifyTls) ...[
+            const InsecureTlsBadge(compact: true),
+            const SizedBox(width: 8),
+          ],
           const ReadOnlySecurityBadge(),
         ],
       ),
@@ -335,6 +346,13 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                         _sslPemCertificateLocationController,
                     pemKeyLocationController: _sslPemKeyLocationController,
                     pemKeyPasswordController: _sslPemKeyPasswordController,
+                    verifyTls: _verifyTls,
+                    onVerifyTlsChanged: (value) {
+                      setState(() {
+                        _verifyTls = value;
+                        _tlsVerificationTouched = true;
+                      });
+                    },
                   ),
                 ],
                 if (_isTestingConnection || _testConnectionStatus != null) ...[

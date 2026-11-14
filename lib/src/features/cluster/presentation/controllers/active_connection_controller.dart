@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
@@ -350,32 +351,53 @@ class ActiveConnectionController extends ChangeNotifier {
     _error = null;
     notifyListeners();
 
+    var effectiveProfile = profile;
     try {
-      debugPrint('🔌 Connecting to: ${profile.name}');
+      if (effectiveProfile.tlsVerification == TlsVerification.unreviewed &&
+          getIt.isRegistered<TlsTransitionController>()) {
+        final resolution = await getIt<TlsTransitionController>()
+            .resolveBeforeConnect(effectiveProfile);
+        effectiveProfile = resolution.profile;
+        if (resolution.blockedByCertificateRejection) {
+          _error = resolution.errorMessage?.isNotEmpty == true
+              ? 'TLS certificate verification failed: ${resolution.errorMessage}'
+              : 'TLS certificate verification failed.';
+          return;
+        }
+      }
+
+      debugPrint('🔌 Connecting to: ${effectiveProfile.name}');
 
       // check if we have cached topics for this profile
-      final cachedTopics = _topicController.getTopics(profile);
+      final cachedTopics = _topicController.getTopics(effectiveProfile);
       if (cachedTopics != null && cachedTopics.isNotEmpty) {
         debugPrint('   Found cached topics, skipping validation');
-        _activeProfile = profile;
+        _activeProfile = effectiveProfile;
         // This will update listeners but won't fetch if not forced
-        await _topicController.fetchTopics(profile);
-        await _restoreSessionTabs(profile);
+        await _topicController.fetchTopics(effectiveProfile);
+        await _restoreSessionTabs(effectiveProfile);
         return;
       }
 
-      debugPrint('   Bootstrap Servers: ${profile.bootstrapServers}');
-      debugPrint('   Keystore Path: ${profile.sslKeystoreLocation}');
-      debugPrint('   Truststore Path: ${profile.sslTruststoreLocation}');
+      debugPrint('   Bootstrap Servers: ${effectiveProfile.bootstrapServers}');
+      debugPrint('   Keystore Path: ${effectiveProfile.sslKeystoreLocation}');
+      debugPrint(
+        '   Truststore Path: ${effectiveProfile.sslTruststoreLocation}',
+      );
 
       final isValid = await _metadataService.validateConnection(
-        profile: profile,
+        profile: effectiveProfile,
       );
       if (isValid) {
-        _activeProfile = profile;
+        if (effectiveProfile.tlsVerification == TlsVerification.unreviewed &&
+            getIt.isRegistered<TlsTransitionController>()) {
+          effectiveProfile = await getIt<TlsTransitionController>()
+              .markVerifiedIfUnreviewed(effectiveProfile);
+        }
+        _activeProfile = effectiveProfile;
         // Fetch topics via controller
-        await _topicController.fetchTopics(profile);
-        await _restoreSessionTabs(profile);
+        await _topicController.fetchTopics(effectiveProfile);
+        await _restoreSessionTabs(effectiveProfile);
       } else {
         _error = "Connection failed validation";
       }

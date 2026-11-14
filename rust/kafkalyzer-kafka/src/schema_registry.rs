@@ -80,7 +80,10 @@ impl SchemaProvenance {
         if let (Some(username), Some(password)) = (&self.username, &self.password) {
             request = request.basic_auth(username, Some(password));
         }
-        let Ok(response) = request.send().await else { // allow_read_only_exception: reqwest HTTP
+        let Ok(req) = request.build() else {
+            return unresolved();
+        };
+        let Ok(response) = self.client.execute(req).await else {
             return unresolved();
         };
         let entries = match response.json::<serde_json::Value>().await {
@@ -114,7 +117,7 @@ fn parse_versions_response(body: serde_json::Value, schema_id: u32) -> MessageSc
     }
 }
 
-fn build_schema_registry_client(profile: &ClusterProfile) -> Result<reqwest::Client> {
+pub(crate) fn schema_registry_client_builder(profile: &ClusterProfile) -> reqwest::ClientBuilder {
     let mut builder = reqwest::Client::builder();
 
     // 1. SSL Truststore Configuration
@@ -161,7 +164,17 @@ fn build_schema_registry_client(profile: &ClusterProfile) -> Result<reqwest::Cli
         }
     }
 
-    Ok(builder.build()?)
+    if profile.ssl_verification_disabled {
+        builder = builder
+            .danger_accept_invalid_certs(true)
+            .danger_accept_invalid_hostnames(true);
+    }
+
+    builder
+}
+
+fn build_schema_registry_client(profile: &ClusterProfile) -> Result<reqwest::Client> {
+    Ok(schema_registry_client_builder(profile).build()?)
 }
 
 pub fn fetch_subjects(profile: ClusterProfile) -> Result<Vec<String>> {
@@ -416,7 +429,10 @@ mod tests {
         });
         let res2 = parse_compatibility_response(failure_json);
         assert!(!res2.is_compatible);
-        assert_eq!(res2.messages, vec!["Schema field 'id' removed in incompatible mode"]);
+        assert_eq!(
+            res2.messages,
+            vec!["Schema field 'id' removed in incompatible mode"]
+        );
     }
 
     #[test]
@@ -464,5 +480,88 @@ mod provenance_cache_tests {
             1,
             "three messages of the same schema must not ask the registry three times"
         );
+    }
+
+    #[test]
+    fn schema_registry_client_verifies_by_default_and_skips_only_when_disabled() {
+        use openssl::asn1::Asn1Time;
+        use openssl::hash::MessageDigest;
+        use openssl::pkey::PKey;
+        use openssl::rsa::Rsa;
+        use openssl::ssl::{SslAcceptor, SslMethod};
+        use openssl::x509::X509Builder;
+        use std::io::{Read, Write};
+        use std::net::TcpListener;
+
+        let rsa = Rsa::generate(2048).unwrap();
+        let pkey = PKey::from_rsa(rsa).unwrap();
+        let mut x509 = X509Builder::new().unwrap();
+        x509.set_version(2).unwrap();
+        x509.set_pubkey(&pkey).unwrap();
+        let not_before = Asn1Time::days_from_now(0).unwrap();
+        let not_after = Asn1Time::days_from_now(1).unwrap();
+        x509.set_not_before(&not_before).unwrap();
+        x509.set_not_after(&not_after).unwrap();
+        x509.sign(&pkey, MessageDigest::sha256()).unwrap();
+        let cert = x509.build();
+
+        let mut acceptor = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+        acceptor.set_private_key(&pkey).unwrap();
+        acceptor.set_certificate(&cert).unwrap();
+        let acceptor = std::sync::Arc::new(acceptor.build());
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        let handle = std::thread::spawn(move || {
+            for stream in listener.incoming().take(2) {
+                if let Ok(stream) = stream {
+                    let acceptor = acceptor.clone();
+                    std::thread::spawn(move || {
+                        if let Ok(mut ssl_stream) = acceptor.accept(stream) {
+                            let mut buf = [0u8; 512];
+                            let _ = ssl_stream.read(&mut buf);
+                            let _ = ssl_stream
+                                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n[]");
+                        }
+                    });
+                }
+            }
+        });
+
+        let url = format!("https://127.0.0.1:{port}/subjects");
+        let rt = Runtime::new().unwrap();
+
+        let verified_profile = ClusterProfile {
+            name: "verified".to_string(),
+            bootstrap_servers: "localhost:9092".to_string(),
+            schema_registry_url: Some(url.clone()),
+            ssl_verification_disabled: false,
+            ..Default::default()
+        };
+        let verified_client = schema_registry_client_builder(&verified_profile)
+            .build()
+            .unwrap();
+        let verified_req = verified_client.get(&url).build().unwrap();
+        let verified_res = rt.block_on(verified_client.execute(verified_req));
+        assert!(
+            verified_res.is_err(),
+            "self-signed HTTPS registry must be rejected when verification is enabled"
+        );
+
+        let insecure_profile = ClusterProfile {
+            ssl_verification_disabled: true,
+            ..verified_profile
+        };
+        let insecure_client = schema_registry_client_builder(&insecure_profile)
+            .build()
+            .unwrap();
+        let insecure_req = insecure_client.get(&url).build().unwrap();
+        let insecure_res = rt
+            .block_on(insecure_client.execute(insecure_req))
+            .expect("self-signed HTTPS registry must succeed when verification is disabled");
+        assert!(insecure_res.status().is_success());
+
+        drop(handle);
     }
 }

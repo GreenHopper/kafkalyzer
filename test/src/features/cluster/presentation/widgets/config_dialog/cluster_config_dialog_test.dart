@@ -38,6 +38,7 @@ void main() {
         saslPassword: 'pass',
         mechanism: 'PLAIN',
         sslKeystoreLocation: '/path/to/keystore',
+        tlsVerification: TlsVerification.enabled,
       );
 
       await tester.pumpWidget(
@@ -226,6 +227,7 @@ void main() {
           mechanism: 'PLAIN',
           saslUsername: 'test-user',
           saslPassword: 'secret-password',
+          tlsVerification: TlsVerification.enabled,
         );
 
         await tester.pumpWidget(
@@ -270,5 +272,88 @@ void main() {
       expect(find.byType(ReadOnlySecurityBadge), findsOneWidget);
       expect(find.text('Read-Only'), findsOneWidget);
     });
+
+    testWidgets(
+      'TLS verification switch is hidden on PLAINTEXT, defaults to enabled on new SSL profile, and toggles disabled/enabled',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 1000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        ClusterProfile? saved;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              useMaterial3: true,
+              splashFactory: InkRipple.splashFactory,
+            ),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (ctx) => ElevatedButton(
+                  onPressed: () async {
+                    saved = await showDialog<ClusterProfile>(
+                      context: ctx,
+                      builder: (_) => const ClusterConfigDialog(),
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+
+        // Hidden on default PLAINTEXT
+        expect(find.text('Verify TLS certificates'), findsNothing);
+
+        // Fill name and bootstrap
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Cluster Name'),
+          'My SSL Cluster',
+        );
+        await tester.enterText(
+          find.widgetWithText(
+            TextFormField,
+            'Bootstrap Servers (e.g. localhost:9092)',
+          ),
+          'broker:9093',
+        );
+
+        // Switch security protocol to SSL
+        await tester.tap(find.text('PLAINTEXT'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('SSL').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Verify TLS certificates'), findsOneWidget);
+        expect(find.text('Insecure TLS'), findsNothing);
+
+        // Toggle off -> shows warning and badge
+        await tester.ensureVisible(find.text('Verify TLS certificates'));
+        await tester.tap(find.text('Verify TLS certificates'));
+        await tester.pumpAndSettle();
+        expect(find.text('Insecure TLS'), findsOneWidget);
+        expect(
+          find.textContaining('Certificate and hostname verification is disabled'),
+          findsOneWidget,
+        );
+
+        // Toggle back on -> hides warning and badge
+        await tester.tap(find.text('Verify TLS certificates'));
+        await tester.pumpAndSettle();
+        expect(find.text('Insecure TLS'), findsNothing);
+
+        // Save -> new profile has TlsVerification.enabled
+        await tester.tap(find.text('Add'));
+        await tester.pumpAndSettle();
+        expect(saved?.tlsVerification, TlsVerification.enabled);
+      },
+    );
   });
 }

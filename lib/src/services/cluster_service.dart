@@ -383,6 +383,7 @@ extension ClusterProfileExtension on ClusterProfile {
       sslPemCertificateLocation: sslPemCertificateLocation,
       sslPemKeyLocation: sslPemKeyLocation,
       sslPemKeyPassword: null,
+      tlsVerification: tlsVerification,
     );
   }
 
@@ -413,6 +414,7 @@ extension ClusterProfileExtension on ClusterProfile {
       sslPemCertificateLocation: sslPemCertificateLocation,
       sslPemKeyLocation: sslPemKeyLocation,
       sslPemKeyPassword: secrets['sslPemKeyPassword'] ?? sslPemKeyPassword,
+      tlsVerification: tlsVerification,
     );
   }
 
@@ -438,6 +440,7 @@ extension ClusterProfileExtension on ClusterProfile {
     String? sslPemCertificateLocation,
     String? sslPemKeyLocation,
     String? sslPemKeyPassword,
+    TlsVerification? tlsVerification,
   }) {
     return ClusterProfile(
       name: name ?? this.name,
@@ -468,6 +471,7 @@ extension ClusterProfileExtension on ClusterProfile {
           sslPemCertificateLocation ?? this.sslPemCertificateLocation,
       sslPemKeyLocation: sslPemKeyLocation ?? this.sslPemKeyLocation,
       sslPemKeyPassword: sslPemKeyPassword ?? this.sslPemKeyPassword,
+      tlsVerification: tlsVerification ?? this.tlsVerification,
     );
   }
 }

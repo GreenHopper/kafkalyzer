@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 class ClusterProfile {
   final String name;
@@ -31,6 +31,7 @@ class ClusterProfile {
   final String? sslPemCertificateLocation;
   final String? sslPemKeyLocation;
   final String? sslPemKeyPassword;
+  final TlsVerification tlsVerification;
 
   const ClusterProfile({
     required this.name,
@@ -54,6 +55,7 @@ class ClusterProfile {
     this.sslPemCertificateLocation,
     this.sslPemKeyLocation,
     this.sslPemKeyPassword,
+    required this.tlsVerification,
   });
 
   static Future<ClusterProfile> default_() =>
@@ -81,7 +83,8 @@ class ClusterProfile {
       saslOauthbearerToken.hashCode ^
       sslPemCertificateLocation.hashCode ^
       sslPemKeyLocation.hashCode ^
-      sslPemKeyPassword.hashCode;
+      sslPemKeyPassword.hashCode ^
+      tlsVerification.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -108,7 +111,8 @@ class ClusterProfile {
           saslOauthbearerToken == other.saslOauthbearerToken &&
           sslPemCertificateLocation == other.sslPemCertificateLocation &&
           sslPemKeyLocation == other.sslPemKeyLocation &&
-          sslPemKeyPassword == other.sslPemKeyPassword;
+          sslPemKeyPassword == other.sslPemKeyPassword &&
+          tlsVerification == other.tlsVerification;
 }
 
 class ConsumerGroupLag {
@@ -454,6 +458,15 @@ class SizePercentiles {
           p50 == other.p50 &&
           p95 == other.p95 &&
           p99 == other.p99;
+}
+
+enum TlsVerification {
+  unreviewed,
+  enabled,
+  disabled;
+
+  static Future<TlsVerification> default_() =>
+      KafkalyzerRustLib.instance.api.crateApiKafkaTypesTlsVerificationDefault();
 }
 
 class TopDuplicateOccurrence {

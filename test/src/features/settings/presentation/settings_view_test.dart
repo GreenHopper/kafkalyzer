@@ -32,6 +32,7 @@ void main() {
     schemaRegistryUrl: 'http://localhost:8081',
     securityProtocol: 'plaintext',
     mechanism: 'plain',
+    tlsVerification: TlsVerification.enabled,
   );
 
   setUp(() {
@@ -305,5 +306,42 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'shows InsecureTlsBadge only for disabled tlsVerification profiles',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+        when(mockClusterListController.clusters).thenReturn([
+          const ClusterProfile(
+            name: 'disabled-cluster',
+            bootstrapServers: 'b1:9093',
+            securityProtocol: 'SSL',
+            tlsVerification: TlsVerification.disabled,
+          ),
+          const ClusterProfile(
+            name: 'enabled-cluster',
+            bootstrapServers: 'b2:9093',
+            securityProtocol: 'SSL',
+            tlsVerification: TlsVerification.enabled,
+          ),
+          const ClusterProfile(
+            name: 'unreviewed-cluster',
+            bootstrapServers: 'b3:9093',
+            securityProtocol: 'SSL',
+            tlsVerification: TlsVerification.unreviewed,
+          ),
+        ]);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        expect(find.text('Insecure TLS'), findsOneWidget);
+      },
+    );
   });
 }
