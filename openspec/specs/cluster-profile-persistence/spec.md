@@ -26,12 +26,16 @@ The system SHALL store and restore every configured field of a cluster profile w
 
 ### Requirement: Stored Profiles Survive Configuration Export And Import
 
-The system SHALL allow exporting cluster profiles to a configuration bundle, supporting both sanitized exports with sensitive credentials excluded and passphrase-encrypted exports with credentials included, restoring configurations accurately upon import.
+The system SHALL allow exporting cluster profiles to a configuration bundle, supporting both sanitized exports with sensitive credentials excluded and passphrase-encrypted exports with credentials included, restoring configurations accurately upon import without dropping existing profiles that are absent from the bundle.
 
 #### Scenario: Import reproduces the source profile authentication
 - **WHEN** the user exports the configuration of a cluster profile that uses an enterprise SASL mechanism and imports the bundle into a fresh installation
 - **THEN** the imported profile SHALL carry the same mechanism, credentials and certificate paths as the exported profile
 - **AND** a connection test against the cluster SHALL produce the same result as on the source installation
+
+#### Scenario: Configuration import preserves existing profiles not in the bundle
+- **WHEN** the user has profile "Prod" configured and imports a configuration bundle containing only profile "Test"
+- **THEN** both "Prod" and "Test" SHALL be present after the import
 
 #### Scenario: Sanitized export omits passwords for safe sharing
 - **WHEN** a cluster profile is exported using the default safe export mode

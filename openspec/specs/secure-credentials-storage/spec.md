@@ -68,6 +68,11 @@ When exporting cluster profiles or the configuration to an archive bundle, the s
 - **THEN** the written configuration file SHALL be encrypted with that passphrase
 - **AND** exporting the configuration without that option SHALL produce an unencrypted bundle without credentials, as before
 
+#### Scenario: Configuration export does not bundle legacy GCS key files
+
+- **WHEN** a legacy `gcs_credentials.json` file exists in the application support directory and the user exports configuration
+- **THEN** the exported zip SHALL contain only `preferences.json` and configured `files/` keystore/truststore entries
+
 #### Scenario: Encrypted bundle is readable with the standard age tool
 
 - **WHEN** an encrypted export is decrypted with the age command-line tool and the same passphrase
