@@ -298,7 +298,7 @@ pub fn check_schema_compatibility(
             None => format!("{}/compatibility/subjects/{}/versions/latest", url, subject),
         };
         let mut req = client
-            .post(endpoint)
+            .post(endpoint) // allow_read_only_exception: Schema Registry compatibility check, stores nothing
             .header("Content-Type", "application/vnd.schemaregistry.v1+json");
         if let (Some(username), Some(password)) = (
             &profile.schema_registry_username,

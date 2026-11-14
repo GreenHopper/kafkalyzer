@@ -3,66 +3,290 @@ schema: spec-driven
 # Project context
 # This is shown to AI when creating artifacts.
 context: |
+  Product:
+    - kafkalyzer is a cross-platform desktop tool (Linux, macOS, Windows) for
+      ANALYZING Apache Kafka clusters.
+    - It is strictly READ-ONLY by design so it can be used safely against
+      production clusters.
+    - Planned work, decisions and the roadmap live in
+      `design/kafkalyzer_verbesserungskonzept_und_roadmap.md`. Every change
+      listed there has a fixed change id (section 5); use that id as the
+      OpenSpec change name and follow the guardrails (L1-L7) and decisions
+      (E1-E20) of that document. Entries marked as deferred or listed under
+      non-goals there MUST NOT be proposed.
+
   Tech Stack:
-    - Frontend: Flutter (Dart 3.x) targeting cross-platform desktop (Linux, macOS, Windows).
+    - Frontend: Flutter (Dart SDK >= 3.9) targeting desktop only. Flutter Web
+      and mobile are not targets.
       - State Management & DI: get_it, watch_it, ChangeNotifier, ValueNotifier.
-      - Navigation & Routing: go_router.
-      - Data Storage & Persistence: shared_preferences (local JSON/plist stores).
+      - Navigation & Routing: go_router. The navigation rail has exactly four
+        destinations (Explorer, Consumer Lag, Scripts, Settings); new features
+        live inside one of them.
+      - Persistence: shared_preferences for non-sensitive settings and profiles;
+        flutter_secure_storage (OS keyring) for every secret.
       - Styling & Theming: flex_color_scheme, google_fonts, Material 3.
-      - UI Libraries: material_ui, data_table_2, timelines_plus, json_explorer, file_picker.
-    - Backend: Rust Cargo Workspace located under `rust/`.
-      - `rust_lib_kafkalyzer`: Main bridge crate / API wrapper for Dart integration.
-      - `kafkalyzer-core`: Pure Rust library for AS400 decoding and Avro conversions.
-      - `kafkalyzer-kafka`: Native Kafka transport library (connection, consumer, rdkafka wrapper).
-    - Bridge Layer: communication generated via flutter_rust_bridge v2.
+      - UI building blocks: material_ui, two_dimensional_scrollables (message
+        table), scrollable_positioned_list, timelines_plus, file_picker, and the
+        in-house `SmartVirtualJsonTree` (`lib/src/ui/smart_tree/`).
+      - Code generation: freezed / json_serializable (build_runner), mockito
+        mocks for the Rust bridge (`test/src/rust/api/rust_mocks.mocks.dart`,
+        checked in).
+      - Source layout:
+        `lib/src/features/<feature>/{presentation,domain,data,application}`,
+        shared widgets in `lib/src/ui/`, services in `lib/src/services/`,
+        generated bridge code in `lib/src/rust/` (never edit).
+    - Backend: Rust Cargo workspace under `rust/`.
+      - `kafkalyzer-core` (`rust/kafkalyzer-core`): pure computation with serde
+        domain types - canonical field path resolution (`json_path`), Avro
+        helpers, Confluent wire-format parsing, partition health, consumer group
+        protocol decoding, duplicate fingerprints, size statistics, report
+        comparison. No rdkafka, no network, no flutter_rust_bridge.
+      - `kafkalyzer-kafka` (`rust/kafkalyzer-kafka`): all I/O - rdkafka
+        consumers and describe-only admin calls, Schema Registry HTTP client
+        (reqwest), message consumption, topic analysis. The ONLY crate that may
+        depend on rdkafka or reqwest.
+      - `rust_lib_kafkalyzer` (`rust/`, sources in `rust/src`): the
+        flutter_rust_bridge crate. Bridge functions and DTOs live in
+        `rust/src/api/`. The ONLY crate that may depend on flutter_rust_bridge.
+        Do not move or rename existing crates; add new crates as siblings under
+        `rust/`.
+    - Bridge Layer: flutter_rust_bridge v2 (pinned), configured in
+      `flutter_rust_bridge.yaml`.
+
+  Read-Only Invariant (highest priority, overrides every other requirement):
+    - No Kafka producer, no produce/replay, no offset commit or offset reset, no
+      `subscribe()` / consumer group membership, no topic, partition, config,
+      ACL or consumer-group mutation.
+    - Consumers use manual `assign()` with `enable.auto.commit=false`. Admin
+      usage is limited to describe calls.
+    - Schema Registry access is read-only: GET requests, plus POST to
+      `/compatibility` only (a check that stores nothing). Never register,
+      update or delete schemas, subjects or registry config.
+    - `scripts/check_read_only.sh` is the CI gate. A change that needs a new
+      exception must state and justify it in the proposal; otherwise the gate
+      must pass unchanged.
+    - The same invariant applies to every entry point: GUI, headless script
+      runner, MCP server.
+    - Never claim read-only is "guaranteed"; it is enforced by the CI gate,
+      crate layering and broker ACLs.
 
   Key Guidelines & Architecture:
-    - Separation of Concerns: Decouple purely computational logic (e.g., kafkalyzer-core decoding, schemas) from platform-dependent native/I/O libraries like rdkafka and openssl (kafkalyzer-kafka) to ease compilation, cross-compilation (e.g., Docker-based Windows builds), and unit testing.
-    - Bridge Boundary Type Isolation (Orphan Rule): All structs passed directly between Rust and Dart (e.g., ClusterProfile, KafkaMessage, ConsumerLag) must be defined locally in the main bridge crate (rust_lib_kafkalyzer under `rust/src/api/`) and mapped to/from domain types at the boundary.
+    - Separation of Concerns: Put computational logic into `kafkalyzer-core`
+      (unit-testable without a broker) and platform-dependent I/O (rdkafka,
+      openssl, HTTP) into `kafkalyzer-kafka`.
+    - Move logic from Dart into the Rust core only when a second caller exists
+      (e.g. GUI plus MCP) or the logic is already duplicated; view state and
+      presentation stay in Dart.
+    - Bridge Boundary Type Isolation (Orphan Rule): All structs passed directly
+      between Rust and Dart (e.g., ClusterProfile, KafkaMessage, ConsumerLag)
+      must be defined locally in the bridge crate under `rust/src/api/` and
+      mapped to/from domain types at the boundary.
+    - Bridge DTOs that are persisted as JSON use `#[serde(rename_all =
+      "camelCase", default)]` so stored data from older versions stays readable.
+      Extend DTOs additively.
+    - Field Paths: `kafkalyzer_core::json_path` is the single path grammar (dot,
+      `[n]`, `$.` prefix, JSON Pointer). Do not add a second resolver or a
+      second path syntax in Dart or Rust.
     - Code Quality & Style:
-      - Limit line length to a maximum of 120 characters for both Dart and Rust source files.
+      - Limit line length to a maximum of 120 characters for both Dart and Rust
+        source files.
       - Format Dart code strictly using `dart format`.
       - Format Rust code strictly using `cargo fmt`.
-      - Use structured logging (via Dart's `logger` or `developer.log`) instead of plain `print` statements.
-      - Handle all potential exceptions and errors gracefully; do not let operations fail silently.
+      - Use structured logging via the Dart `logger` package and the Rust `log`
+        crate instead of `print`, `debugPrint` or ad-hoc log files. Never log
+        secrets or message payloads.
+      - Handle all potential exceptions and errors gracefully; do not let
+        operations fail silently. A failed operation must never look like an
+        empty result (e.g. "no messages", "lag 0", "no clusters"). Unknown
+        values are shown as unknown, never as 0 or as a made-up default.
+
+    - Security & Data Safety:
+      - Secrets (passwords, tokens, key passwords) are stored only in the OS
+        keyring, never in shared_preferences, logs, exports without encryption,
+        or error messages.
+      - TLS certificate and hostname verification is on by default; it may only
+        be disabled per profile through an explicit, visibly flagged option. No
+        code path may disable it globally.
+      - Archive imports must reject entries that resolve outside the target
+        directory.
+      - Unreadable stored data (profiles, scripts, settings) must be reported
+        and preserved, never silently replaced by an empty list on the next
+        save.
 
     - Performance & High-Throughput Engineering:
-      - Hot Loops & Polling: Never compile regular expressions (`Regex::new`), perform blocking async operations (`block_on`), or execute sync file I/O (`writeAsStringSync`) inside message consumption or polling loops. Pre-compile patterns once outside the loop.
-      - Stream Throttling: Streaming data from native Rust streams to Dart UI must be throttled or batched (e.g. 50ms–100ms intervals). Never invoke `notifyListeners()` or trigger widget re-renders per individual message at Kafka throughput.
-      - Data Structures: Avoid $O(N)$ list operations (such as prepending via `insert(0, ...)`) on message collections in Dart. Prefer append operations, ring buffers, or reversed indexing.
-      - Shared Runtimes & Caches: Prefer shared or static Tokio runtimes and thread-safe caches (e.g., for Schema Registry schema lookups) over creating new runtime instances per invocation.
-      - Lazy UI Formatting: Avoid eager string transformations, date formatting, or pretty-printing across entire datasets upfront; defer formatting lazily to viewport item builders.
+      - Hot Loops & Polling: Never compile regular expressions (`Regex::new`) or
+        filter expressions, perform blocking async operations (`block_on`), or
+        execute sync file I/O (`writeAsStringSync`) inside message consumption
+        or polling loops. Pre-compile patterns once outside the loop.
+      - Stream Throttling: Streaming data from native Rust streams to Dart UI
+        must be throttled or batched (e.g. 50ms-100ms intervals). Never invoke
+        `notifyListeners()` or trigger widget re-renders per individual message
+        at Kafka throughput.
+      - Data Structures: Avoid O(N) list operations (such as prepending via
+        `insert(0, ...)`) on message collections in Dart. Prefer append
+        operations, ring buffers, or reversed indexing.
+      - Bounded Memory: Every buffer, cache or tracking set that grows with the
+        number of messages needs an explicit cap, and the UI must show when the
+        cap was reached.
+      - Shared Runtimes & Caches: Prefer shared or static Tokio runtimes and
+        thread-safe caches (e.g., for Schema Registry schema lookups) over
+        creating new runtime instances per invocation.
+      - Lazy UI Formatting: Avoid eager string transformations, date formatting,
+        or pretty-printing across entire datasets upfront; defer formatting
+        lazily to viewport item builders.
+      - Bridge Calls: Never call a bridge function per table cell or per row;
+        resolve per batch and cache.
 
     - Kafka Consumer Resilience:
-      - Partition Completion: Always set `enable.partition.eof=true` and treat `PartitionEOF` as the authoritative end-of-partition signal. Never infer completion from offset arithmetic (`last_offset + 1 >= high_watermark`) — compacted (`compact,delete`) and transactional topics contain offset gaps (compaction, transaction control markers, aborted records) where offsets are never delivered to clients.
-      - Idle Is Not Done: Never abandon a partition because it was idle for N seconds; under fetch skew or broker throttling, sparse partitions can starve while data is still pending. On prolonged idle, re-query watermarks to distinguish "range deleted by retention" (finalize) from "data still pending" (keep polling).
-      - No Blocking RPCs in Poll Loops: Completion checks and progress reporting inside poll loops must operate on in-memory state only; per-iteration network calls (e.g. `fetch_watermarks` per partition) starve `consumer.poll()` and freeze intake.
-      - Prefetch Memory: Cap `queued.max.messages.kbytes` explicitly (librdkafka defaults to 64MB per partition, which can balloon to hundreds of MB on many-partition topics).
-      - Closed Sink Handling: When a `StreamSink` to Dart reports a closed channel (user stopped the stream), exit the poll loop cleanly and immediately; never attempt further sends or log through the closed sink.
+      - Partition Completion: Always set `enable.partition.eof=true` and treat
+        `PartitionEOF` as the authoritative end-of-partition signal. Never infer
+        completion or message counts from offset arithmetic (`last_offset + 1 >=
+        high_watermark`, `high - low`) - compacted (`compact,delete`) and
+        transactional topics contain offset gaps (compaction, transaction
+        control markers, aborted records) where offsets are never delivered to
+        clients. Values derived from offset ranges must be labelled as
+        estimates.
+      - Idle Is Not Done: Never abandon a partition because it was idle for N
+        seconds; under fetch skew or broker throttling, sparse partitions can
+        starve while data is still pending. On prolonged idle, re-query
+        watermarks to distinguish "range deleted by retention" (finalize) from
+        "data still pending" (keep polling).
+      - No Blocking RPCs in Poll Loops: Completion checks and progress reporting
+        inside poll loops must operate on in-memory state only; per-iteration
+        network calls (e.g. `fetch_watermarks` per partition) starve
+        `consumer.poll()` and freeze intake.
+      - Prefetch Memory: Cap `queued.max.messages.kbytes` explicitly (librdkafka
+        defaults to 64MB per partition, which can balloon to hundreds of MB on
+        many-partition topics).
+      - Closed Sink Handling: When a `StreamSink` to Dart reports a closed
+        channel (user stopped the stream), exit the poll loop cleanly and
+        immediately; never attempt further sends or log through the closed sink.
+      - Missing Permissions: A denied describe/read (ACL) must surface as "not
+        readable", not as a missing value or a silently skipped topic or group.
 
     - UI & UX:
-        - Material UI Elements: The Flutter package `package:material_ui/material_ui.dart` MUST be used for all Material UI elements.
-        - All asynchronous UI actions (e.g., fetching Kafka messages, cluster connection) MUST provide visual feedback (e.g., CircularProgressIndicator or loading states).
-        - Errors during UI actions must be reported to the user via SnackBars or dialogs instead of failing silently in the logs.
-        - Reuse: Existing UI components like `MessageDetailsDialog` should be reused to maintain visual and functional consistency.
+      - Material UI Elements: The Flutter package
+        `package:material_ui/material_ui.dart` MUST be used for all Material UI
+        elements.
+      - All asynchronous UI actions (e.g., fetching Kafka messages, cluster
+        connection) MUST provide visual feedback (e.g.,
+        CircularProgressIndicator or loading states).
+      - Errors during UI actions must be reported to the user via SnackBars,
+        dialogs or an inline error state with a retry action instead of failing
+        silently in the logs.
+      - Reuse: Existing UI components such as `MessageInspectorPanel`,
+        `MessagesView`, `SmartVirtualJsonTree` and `JsonOrStringViewer` should
+        be reused to maintain visual and functional consistency.
+      - Icon-only controls need a tooltip and a semantic label. State must not
+        be conveyed by colour alone; status colours come from the theme's colour
+        scheme.
+      - Global state (active cluster, settings) is accessed through
+        `ActiveConnectionController` or `getIt`.
 
     - Localization:
-        - All user-facing strings must be localized using `AppLocalizations` (via `.arb` files). Hardcoded strings in UI code are prohibited.
+      - All user-facing strings must be localized using `AppLocalizations` (via
+        `.arb` files). Hardcoded strings in UI code are prohibited.
+      - Every new key is added to both `lib/l10n/app_en.arb` (template) and
+        `lib/l10n/app_de.arb`.
+
+    - Verification (run in this order; the bridge steps only when
+      `rust/src/api/` changed):
+      1. `cargo fmt --all`, `cargo clippy --workspace --all-targets`, `cargo
+         test --workspace` (in `rust/`)
+      2. `flutter_rust_bridge_codegen generate`
+      3. `dart run build_runner build` (regenerates the checked-in bridge mocks)
+      4. `flutter analyze`, `flutter test`
+      5. `scripts/check_read_only.sh`
 
 # Per-artifact generation rules
 rules:
   proposal:
-    - 'Clearly document the "Why", "What", and "How" of the changes.'
-    - 'Explicitly detail any new, modified, or deleted capabilities.'
+    - >-
+      Clearly document the "Why", "What", and "How" of the changes.
+    - >-
+      Explicitly detail any new, modified, or deleted capabilities, using the
+      existing capability names under openspec/specs/ for modifications.
+    - >-
+      If the change comes from
+      design/kafkalyzer_verbesserungskonzept_und_roadmap.md, use its change id,
+      cite the section, and take over its listed capabilities, dependencies and
+      non-goals.
+    - >-
+      Check openspec/specs/ first: do not re-specify behaviour that an existing
+      spec already requires; if the code deviates from an existing spec,
+      describe the change as a fix without a spec delta.
+    - >-
+      State the read-only impact explicitly: either "no new Kafka or Schema
+      Registry calls" or the exact read-only calls that are added.
+    - >-
+      List non-goals, and name prerequisite changes that must be implemented
+      first.
   design:
-    - 'Material UI Elements: Ensure all Material UI elements use package:material_ui/material_ui.dart.'
-    - 'Do not modify existing Dart/Flutter UI code unless explicitly requested or necessary.'
-    - 'Performance Guardrails: Design streaming APIs and UI consumers with throttling/batching, amortized $O(1)$ updates, and non-blocking I/O.'
-    - 'Maintain backwards compatibility of all existing Flutter/Dart integrations and Rust-Dart API signatures.'
-    - 'Status Access: For accessing global state (like the active cluster or settings), prefer using ActiveConnectionController or getIt over deep prop-drilling unless a widget is purely presentational.'
-    - 'Detail design choices, state flow, and any alternatives considered.'
+    - >-
+      Material UI Elements: Ensure all Material UI elements use
+      package:material_ui/material_ui.dart.
+    - >-
+      Do not modify existing Dart/Flutter UI code unless explicitly requested or
+      necessary.
+    - >-
+      Performance Guardrails: Design streaming APIs and UI consumers with
+      throttling/batching, amortized O(1) updates, bounded memory, and
+      non-blocking I/O.
+    - >-
+      Maintain backwards compatibility of all existing Flutter/Dart integrations
+      and Rust-Dart API signatures; extend bridge functions and DTOs additively,
+      and keep previously stored data (profiles, saved searches, scripts,
+      reports) loadable.
+    - >-
+      Status Access: For accessing global state (like the active cluster or
+      settings), prefer using ActiveConnectionController or getIt over deep
+      prop-drilling unless a widget is purely presentational.
+    - >-
+      Detail design choices, state flow, and any alternatives considered.
+    - >-
+      Assign every piece of new logic to a layer (kafkalyzer-core,
+      kafkalyzer-kafka, bridge crate, Dart) and justify anything placed outside
+      kafkalyzer-core that could be pure computation.
+    - >-
+      Justify every new dependency (Rust crate or Dart package) and confirm it
+      builds on Linux, macOS and Windows; prefer existing dependencies.
+    - >-
+      Describe failure and edge cases: missing ACLs, unreachable broker or
+      registry, compacted or transactional topics with offset gaps, empty
+      topics, very large topics and payloads.
+    - >-
+      When a technical question can only be answered by trying it, plan it as an
+      explicit spike task instead of assuming the answer.
   specs:
-    - 'Delta Documentation: When modifying existing capabilities, clearly distinguish between ADDED Requirements, MODIFIED Requirements, and DELETED Requirements.'
+    - >-
+      Delta Documentation: When modifying existing capabilities, clearly
+      distinguish between ADDED Requirements, MODIFIED Requirements, and DELETED
+      Requirements.
+    - >-
+      Write specs in English, using SHALL/MUST for normative statements and at
+      least one WHEN/THEN scenario per requirement.
+    - >-
+      Describe observable behaviour, not implementation; do not name classes,
+      files or libraries in requirements.
+    - >-
+      Include a scenario for the error or unavailable case of every requirement
+      that performs I/O, and state that unknown values are shown as unknown.
+    - >-
+      Every capability that reads from Kafka or the Schema Registry includes a
+      requirement that the operation stays read-only.
   tasks:
-    - 'Break down execution steps logically by Rust workspace crates first, then bridge generation, and finally Dart/Flutter integration.'
-    - 'Verify compilation and run tests at each incremental step to avoid cumulative errors.'
+    - >-
+      Break down execution steps logically by Rust workspace crates first, then
+      bridge generation, and finally Dart/Flutter integration.
+    - >-
+      Verify compilation and run tests at each incremental step to avoid
+      cumulative errors.
+    - >-
+      Put spike tasks first when the design lists open technical questions.
+    - >-
+      Include tasks for unit tests of new kafkalyzer-core logic, for
+      regenerating bridge code and mocks when rust/src/api/ changes, and for
+      adding en and de ARB keys.
+    - >-
+      End with a verification task: cargo fmt, cargo clippy, cargo test, flutter
+      analyze, flutter test and scripts/check_read_only.sh.
