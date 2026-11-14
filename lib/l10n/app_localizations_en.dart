@@ -1974,10 +1974,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get jumpToOriginalMessage => 'Jump to Original Message';
 
   @override
-  String get copyKcatReplayCommand => 'Copy kcat Replay Command';
+  String get copyFailedMessage => 'Copy failed message';
 
   @override
-  String get kcatCommandCopied => 'kcat replay command copied to clipboard';
+  String get failedMessageCopied => 'Failed message copied to clipboard';
 
   @override
   String get copyShareableLink => 'Copy Shareable Link';

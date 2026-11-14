@@ -34,9 +34,9 @@ The Explorer topic sidebar and topic detail headers SHALL visually distinguish r
 - **THEN** the header SHALL display a badge identifying it as a Dead-Letter Queue
 - **AND** provide a direct link to open the primary origin topic
 
-### Requirement: DLQ Message Failure Diagnostics and Original Message Navigation
+### Requirement: DLQ Failure Diagnostics, Original Navigation and Failed Message Copy
 
-When inspecting a message that contains standard failure headers, the message inspector SHALL render a dedicated Failure Diagnostics panel presenting exception details and providing one-click navigation to the origin message.
+When inspecting a message that contains standard failure headers, the message inspector SHALL render a dedicated Failure Diagnostics panel presenting exception details, providing one-click navigation to the origin message, and offering a copy of the failed message for external reprocessing, without offering any command that writes to Kafka.
 
 #### Scenario: Inspecting message with exception headers displays diagnostics card
 - **WHEN** a message contains failure headers such as `x-exception-message`, `kafka_dlt-exception-message`, or `x-exception-stacktrace`
@@ -48,7 +48,12 @@ When inspecting a message that contains standard failure headers, the message in
 - **THEN** the Failure Diagnostics card SHALL provide a "Jump to Original Message" action
 - **AND** tapping the action SHALL open the original topic and seek directly to the specified partition and offset
 
-#### Scenario: Copying external replay command for message remediation
-- **WHEN** the user chooses to remediate or replay a DLQ message externally
-- **THEN** the Failure Diagnostics card SHALL provide a "Copy Replay Command" action
-- **AND** copy a pre-formatted CLI command (such as `kcat`) targeting the original topic with message key and payload
+#### Scenario: Copying the failed message for external reprocessing
+- **WHEN** the user chooses "Copy failed message" on the Failure Diagnostics card
+- **THEN** the system SHALL copy a JSON document containing the DLQ message's topic, partition, offset, timestamp, key, value and headers, the original topic, partition and offset when known, and the exception message and class when present
+- **AND** a null key or value SHALL appear as JSON `null`, distinct from an empty string
+- **AND** the system SHALL confirm the copy with a short localized notice
+
+#### Scenario: No producer command is offered
+- **WHEN** the Failure Diagnostics card is shown for any message
+- **THEN** the card SHALL NOT offer any action that copies or runs a command which writes to Kafka

@@ -58,6 +58,7 @@ CHECKS=(
     "HTTP PUT/DELETE/PATCH:::rs:::\.(put|delete|patch)[[:space:]]*\(|Method::(PUT|DELETE|PATCH):::"
     "HTTP POST:::rs:::\.post[[:space:]]*\(|Method::POST:::allow_read_only_exception:[[:space:]]*[^[:space:]]"
     "Native mutating calls:::rs:::rd_kafka_(produce|producev|produceva|produce_batch|send_offsets_to_transaction|commit|commit_message|commit_queue|offset_store|offsets_store|subscribe|CreateTopics|DeleteTopics|CreatePartitions|AlterConfigs|IncrementalAlterConfigs|DeleteRecords|DeleteGroups|DeleteConsumerGroupOffsets|AlterConsumerGroupOffsets|CreateAcls|DeleteAcls|AlterUserScramCredentials)[^A-Za-z_]:::"
+    'Producer-mode kcat command:::all:::(kcat|kafkacat)[^"'\''`]*[[:space:]]-P([^A-Za-z]|$):::'
 )
 
 echo "=========================================================="

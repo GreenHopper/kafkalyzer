@@ -965,8 +965,8 @@
     }
   },
   "jumpToOriginalMessage": "Jump to Original Message",
-  "copyKcatReplayCommand": "Copy kcat Replay Command",
-  "kcatCommandCopied": "kcat replay command copied to clipboard",
+  "copyFailedMessage": "Copy failed message",
+  "failedMessageCopied": "Failed message copied to clipboard",
   "copyShareableLink": "Copy Shareable Link",
   "shareableLinkCopied": "Shareable link copied to clipboard",
   "quickJumpTitle": "Quick Jump / Open Reference",

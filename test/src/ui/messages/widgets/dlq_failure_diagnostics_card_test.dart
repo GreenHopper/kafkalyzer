@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -95,7 +96,9 @@ void main() {
       expect(jumpedOffset, equals(42));
     });
 
-    testWidgets('copies kcat replay command to clipboard', (tester) async {
+    testWidgets('copies failed message JSON report to clipboard without kcat', (
+      tester,
+    ) async {
       final List<MethodCall> log = [];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (
@@ -104,14 +107,27 @@ void main() {
             log.add(methodCall);
             return null;
           });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
 
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('dlq_copy_kcat_button')));
+      expect(find.byKey(const Key('dlq_copy_kcat_button')), findsNothing);
+      await tester.tap(find.byKey(const Key('dlq_copy_failed_message_button')));
       await tester.pumpAndSettle();
 
-      expect(log.any((call) => call.method == 'Clipboard.setData'), isTrue);
+      final setCall = log.firstWhere(
+        (call) => call.method == 'Clipboard.setData',
+      );
+      final text = (setCall.arguments as Map)['text'] as String;
+      expect(text, isNot(contains('kcat')));
+
+      final decoded = jsonDecode(text) as Map<String, dynamic>;
+      expect((decoded['dlqMessage'] as Map)['offset'], 200);
+      expect((decoded['original'] as Map)['topic'], 'orders');
     });
 
     testWidgets('toggles stacktrace visibility', (tester) async {

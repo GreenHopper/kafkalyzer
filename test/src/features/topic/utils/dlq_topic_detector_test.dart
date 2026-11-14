@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/features/topic/utils/dlq_topic_detector.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 
 void main() {
   group('DlqTopicDetector', () {
@@ -115,22 +116,101 @@ void main() {
       expect(meta, isNull);
     });
 
-    test('generates valid kcat replay command', () {
-      final meta = const DlqFailureMetadata(
-        originalTopic: 'orders',
-        originalPartition: 0,
-        originalOffset: 123,
+    test(
+      'toFailureReport includes full metadata, dlqMessage, original, and exception',
+      () {
+        const meta = DlqFailureMetadata(
+          originalTopic: 'orders',
+          originalPartition: 0,
+          originalOffset: 123,
+          exceptionMessage: 'Boom',
+          exceptionClass: 'java.lang.IllegalStateException',
+        );
+        final msg = KafkaMessage(
+          topic: 'orders-dlq',
+          partition: 1,
+          offset: 42,
+          timestamp: 1700000000000,
+          key: 'order-1',
+          payload: '{"id": 1}',
+          headers: const [
+            KafkaHeader(key: 'x-exception-message', value: 'Boom'),
+          ],
+        );
+
+        final report = meta.toFailureReport(msg);
+        expect(report['dlqMessage'], {
+          'topic': 'orders-dlq',
+          'partition': 1,
+          'offset': 42,
+          'timestamp': 1700000000000,
+          'key': 'order-1',
+          'value': '{"id": 1}',
+          'headers': {'x-exception-message': 'Boom'},
+        });
+        expect(report['original'], {
+          'topic': 'orders',
+          'partition': 0,
+          'offset': 123,
+        });
+        expect(report['exception'], {
+          'message': 'Boom',
+          'class': 'java.lang.IllegalStateException',
+        });
+      },
+    );
+
+    test('toFailureReport omits original and exception when absent', () {
+      const meta = DlqFailureMetadata();
+      final msg = KafkaMessage(
+        topic: 'orders-dlq',
+        partition: 0,
+        offset: 1,
+        timestamp: 1700000000000,
       );
 
-      final cmd = meta.generateKcatReplayCommand(
-        bootstrapServers: 'localhost:9092',
-        key: 'order-1',
-        payload: '{"id": 1}',
-      );
-
-      expect(cmd, contains("kcat -b localhost:9092 -t orders -P"));
-      expect(cmd, contains("-k 'order-1'"));
-      expect(cmd, contains("printf '%s' '{\"id\": 1}'"));
+      final report = meta.toFailureReport(msg);
+      expect(report.containsKey('original'), isFalse);
+      expect(report.containsKey('exception'), isFalse);
     });
+
+    test(
+      'toFailureReport distinguishes null key vs empty key and null value tombstone',
+      () {
+        const meta = DlqFailureMetadata(
+          originalTopic: 'orders',
+          originalPartition: 0,
+          originalOffset: 10,
+        );
+        final nullKeyTombstone = KafkaMessage(
+          topic: 'orders-dlq',
+          partition: 0,
+          offset: 2,
+          timestamp: 1700000000000,
+          key: null,
+          payload: null,
+        );
+        final emptyKeyMsg = KafkaMessage(
+          topic: 'orders-dlq',
+          partition: 0,
+          offset: 3,
+          timestamp: 1700000000000,
+          key: '',
+          payload: '',
+        );
+
+        final r1 = meta.toFailureReport(nullKeyTombstone);
+        final d1 = r1['dlqMessage'] as Map<String, Object?>;
+        expect(d1.containsKey('key'), isTrue);
+        expect(d1['key'], isNull);
+        expect(d1.containsKey('value'), isTrue);
+        expect(d1['value'], isNull);
+
+        final r2 = meta.toFailureReport(emptyKeyMsg);
+        final d2 = r2['dlqMessage'] as Map<String, Object?>;
+        expect(d2['key'], '');
+        expect(d2['value'], '');
+      },
+    );
   });
 }

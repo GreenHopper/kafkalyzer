@@ -3524,17 +3524,17 @@ abstract class AppLocalizations {
   /// **'Jump to Original Message'**
   String get jumpToOriginalMessage;
 
-  /// No description provided for @copyKcatReplayCommand.
+  /// No description provided for @copyFailedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Copy kcat Replay Command'**
-  String get copyKcatReplayCommand;
+  /// **'Copy failed message'**
+  String get copyFailedMessage;
 
-  /// No description provided for @kcatCommandCopied.
+  /// No description provided for @failedMessageCopied.
   ///
   /// In en, this message translates to:
-  /// **'kcat replay command copied to clipboard'**
-  String get kcatCommandCopied;
+  /// **'Failed message copied to clipboard'**
+  String get failedMessageCopied;
 
   /// No description provided for @copyShareableLink.
   ///

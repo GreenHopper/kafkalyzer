@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -28,20 +29,15 @@ class DlqFailureDiagnosticsCard extends StatefulWidget {
 class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
   bool _isStacktraceExpanded = false;
 
-  void _copyKcatCommand(BuildContext context, AppLocalizations? l10n) {
-    final bootstrapServers =
-        widget.profile?.bootstrapServers ?? 'localhost:9092';
-    final cmd = widget.metadata.generateKcatReplayCommand(
-      bootstrapServers: bootstrapServers,
-      key: widget.message.key,
-      payload: widget.message.payload,
-    );
+  void _copyFailedMessage(BuildContext context, AppLocalizations? l10n) {
+    final report = widget.metadata.toFailureReport(widget.message);
+    final jsonText = const JsonEncoder.withIndent('  ').convert(report);
 
-    Clipboard.setData(ClipboardData(text: cmd));
+    Clipboard.setData(ClipboardData(text: jsonText));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          l10n?.kcatCommandCopied ?? 'kcat replay command copied to clipboard',
+          l10n?.failedMessageCopied ?? 'Failed message copied to clipboard',
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -88,10 +84,10 @@ class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
                   ),
                 ),
                 OutlinedButton.icon(
-                  key: const Key('dlq_copy_kcat_button'),
-                  icon: const Icon(Icons.terminal, size: 14),
+                  key: const Key('dlq_copy_failed_message_button'),
+                  icon: const Icon(Icons.content_copy, size: 14),
                   label: Text(
-                    l10n?.copyKcatReplayCommand ?? 'Copy kcat Replay Command',
+                    l10n?.copyFailedMessage ?? 'Copy failed message',
                     style: const TextStyle(fontSize: 11),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -101,7 +97,7 @@ class _DlqFailureDiagnosticsCardState extends State<DlqFailureDiagnosticsCard> {
                       vertical: 4,
                     ),
                   ),
-                  onPressed: () => _copyKcatCommand(context, l10n),
+                  onPressed: () => _copyFailedMessage(context, l10n),
                 ),
               ],
             ),

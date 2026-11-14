@@ -1,3 +1,5 @@
+import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+
 /// Utility for detecting DLQ and retry topics and extracting failure metadata from message headers.
 class DlqFailureMetadata {
   final String? originalTopic;
@@ -29,27 +31,45 @@ class DlqFailureMetadata {
 
   bool get hasFailureInfo => hasCoordinates || hasException;
 
-  /// Generates a ready-to-run kcat CLI replay command to produce the message payload back to the origin topic.
-  String generateKcatReplayCommand({
-    required String bootstrapServers,
-    String? key,
-    String? payload,
-  }) {
-    final targetTopic = originalTopic ?? 'TOPIC_NAME';
-    final buffer = StringBuffer();
+  /// Builds a structured JSON-serializable failure report for [message].
+  ///
+  /// Preserves `null` vs empty string for `key` and `value`, and omits
+  /// `original` and `exception` when unknown.
+  Map<String, Object?> toFailureReport(KafkaMessage message) {
+    final headersMap = <String, String>{
+      for (final h in message.headers ?? const <KafkaHeader>[]) h.key: h.value,
+    };
 
-    // Escape single quotes for bash
-    final escapedPayload = (payload ?? '').replaceAll("'", "'\\''");
-    buffer.write(
-      "printf '%s' '$escapedPayload' | kcat -b $bootstrapServers -t $targetTopic -P",
-    );
+    final report = <String, Object?>{
+      'dlqMessage': <String, Object?>{
+        'topic': message.topic,
+        'partition': message.partition,
+        'offset': message.offset,
+        'timestamp': message.timestamp,
+        'key': message.key,
+        'value': message.payload,
+        'headers': headersMap,
+      },
+    };
 
-    if (key != null && key.isNotEmpty) {
-      final escapedKey = key.replaceAll("'", "'\\''");
-      buffer.write(" -k '$escapedKey'");
+    if (hasCoordinates) {
+      report['original'] = <String, Object?>{
+        'topic': originalTopic,
+        'partition': originalPartition,
+        'offset': originalOffset,
+      };
     }
 
-    return buffer.toString();
+    if (hasException) {
+      report['exception'] = <String, Object?>{
+        if (exceptionMessage != null && exceptionMessage!.isNotEmpty)
+          'message': exceptionMessage,
+        if (exceptionClass != null && exceptionClass!.isNotEmpty)
+          'class': exceptionClass,
+      };
+    }
+
+    return report;
   }
 
   static DlqFailureMetadata? fromHeaders(Map<String, String>? headers) {

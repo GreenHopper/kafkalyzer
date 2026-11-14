@@ -1989,11 +1989,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get jumpToOriginalMessage => 'Zu Originalnachricht springen';
 
   @override
-  String get copyKcatReplayCommand => 'kcat-Replay-Befehl kopieren';
+  String get copyFailedMessage => 'Fehlgeschlagene Nachricht kopieren';
 
   @override
-  String get kcatCommandCopied =>
-      'kcat-Replay-Befehl in Zwischenablage kopiert';
+  String get failedMessageCopied =>
+      'Fehlgeschlagene Nachricht in die Zwischenablage kopiert';
 
   @override
   String get copyShareableLink => 'Teilbaren Link kopieren';
