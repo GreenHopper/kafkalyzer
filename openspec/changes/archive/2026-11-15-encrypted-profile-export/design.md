@@ -103,15 +103,13 @@ If (1) fails on a platform and cannot be fixed with features or a version pin, t
 `rust/src/api/profile_crypto.rs`:
 
 ```rust
-pub fn encrypt_bundle_with_passphrase(plaintext: Vec<u8>, passphrase: String) -> Result<Vec<u8>, BundleCryptoError>;
-pub fn decrypt_bundle_with_passphrase(ciphertext: Vec<u8>, passphrase: String) -> Result<Vec<u8>, BundleCryptoError>;
-pub enum BundleCryptoError { WrongPassphrase, NotPassphraseEncrypted, Corrupt, ExcessiveWork, PassphraseTooShort, Internal(String) }
+pub fn encrypt_bundle_with_passphrase(plaintext: Vec<u8>, passphrase: String) -> BundleCryptoResult;
+pub fn decrypt_bundle_with_passphrase(ciphertext: Vec<u8>, passphrase: String) -> BundleCryptoResult;
+pub enum BundleCryptoErrorKind { WrongPassphrase, NotPassphraseEncrypted, Corrupt, ExcessiveWork, PassphraseTooShort, Internal }
+pub struct BundleCryptoResult { pub data: Option<Vec<u8>>, pub error: Option<BundleCryptoErrorKind>, pub message: Option<String> }
 ```
 
-`BundleCryptoError` is defined in the bridge crate and mapped from the core enum (orphan rule, L3). frb v2 turns a
-custom `Result` error into a thrown Dart exception of that type, so Dart matches on the variant instead of parsing
-`AnyhowException` text. The functions are async on the Dart side (frb default, worker thread pool), so the ~1 s scrypt
-work does not block the UI isolate. `Internal` carries no passphrase or plaintext. No existing signature changes.
+Note (from Spike 1.7): `frb v2.11.1` rejects `Result<Vec<u8>, BundleCryptoError>` with data-carrying variants (`Internal(String)`) because it requires `@freezed >= 1.0.0`, so the bridge returns `BundleCryptoResult` with a unit `BundleCryptoErrorKind` enum and optional `message` instead, and `encrypted_bundle.dart` maps non-null `error` into `EncryptedBundleException` (or retries on `WrongPassphrase`). Both `BundleCryptoErrorKind` and `BundleCryptoResult` are defined in the bridge crate and mapped from the core enum (orphan rule, L3). The functions are async on the Dart side (frb default, worker thread pool), so the ~1 s scrypt work does not block the UI isolate. `message` carries no passphrase or plaintext. No existing signature changes.
 
 Detection stays in Dart as a byte prefix check (`encrypted_bundle.dart`, constant `ageHeaderPrefix`): it is needed
 before any bridge call and lets the Dart tests (bridge mocked) cover dispatch. The core `is_age_encrypted` is used by
