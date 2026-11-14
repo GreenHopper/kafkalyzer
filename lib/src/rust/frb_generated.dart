@@ -5,6 +5,7 @@
 
 import 'api.dart';
 import 'api/connection_diagnostics.dart';
+import 'api/diagnostics.dart';
 import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
@@ -79,7 +80,7 @@ class KafkalyzerRustLib
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 2031879414;
+  int get rustContentHash => -887867212;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -192,6 +193,11 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
   });
 
   Future<void> crateApiInitApp();
+
+  Stream<RustLogRecord> crateApiDiagnosticsInitRustLogging({
+    required RustLogLevel maxLevel,
+    required String logFilePath,
+  });
 
   Future<int> crateApiKafkaUtilsMurmur2({required List<int> data});
 
@@ -977,6 +983,46 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
   @override
+  Stream<RustLogRecord> crateApiDiagnosticsInitRustLogging({
+    required RustLogLevel maxLevel,
+    required String logFilePath,
+  }) {
+    final sink = RustStreamSink<RustLogRecord>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_StreamSink_rust_log_record_Sse(sink, serializer);
+            sse_encode_rust_log_level(maxLevel, serializer);
+            sse_encode_String(logFilePath, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 20,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiDiagnosticsInitRustLoggingConstMeta,
+          argValues: [sink, maxLevel, logFilePath],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiDiagnosticsInitRustLoggingConstMeta =>
+      const TaskConstMeta(
+        debugName: "init_rust_logging",
+        argNames: ["sink", "maxLevel", "logFilePath"],
+      );
+
+  @override
   Future<int> crateApiKafkaUtilsMurmur2({required List<int> data}) {
     return handler.executeNormal(
       NormalTask(
@@ -986,7 +1032,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 21,
             port: port_,
           );
         },
@@ -1013,7 +1059,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 22,
             port: port_,
           );
         },
@@ -1046,7 +1092,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 23,
             port: port_,
           );
         },
@@ -1081,7 +1127,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 24,
             port: port_,
           );
         },
@@ -1118,7 +1164,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 25,
             port: port_,
           );
         },
@@ -1153,7 +1199,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 25,
+            funcId: 26,
             port: port_,
           );
         },
@@ -1186,7 +1232,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 26,
+            funcId: 27,
             port: port_,
           );
         },
@@ -1216,7 +1262,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 27,
+            funcId: 28,
             port: port_,
           );
         },
@@ -1244,7 +1290,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 28,
+            funcId: 29,
             port: port_,
           );
         },
@@ -1271,7 +1317,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 29,
+            funcId: 30,
             port: port_,
           );
         },
@@ -1304,7 +1350,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 30,
+            funcId: 31,
             port: port_,
           );
         },
@@ -1337,7 +1383,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 31,
+            funcId: 32,
             port: port_,
           );
         },
@@ -1392,6 +1438,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
 
   @protected
   RustStreamSink<KafkaMessage> dco_decode_StreamSink_kafka_message_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<RustLogRecord> dco_decode_StreamSink_rust_log_record_Sse(
     dynamic raw,
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -2169,6 +2223,26 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  RustLogLevel dco_decode_rust_log_level(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RustLogLevel.values[raw as int];
+  }
+
+  @protected
+  RustLogRecord dco_decode_rust_log_record(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return RustLogRecord(
+      level: dco_decode_rust_log_level(arr[0]),
+      target: dco_decode_String(arr[1]),
+      message: dco_decode_String(arr[2]),
+      timestampMs: dco_decode_i_64(arr[3]),
+    );
+  }
+
+  @protected
   SchemaCompatibilityResult dco_decode_schema_compatibility_result(
     dynamic raw,
   ) {
@@ -2518,6 +2592,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
 
   @protected
   RustStreamSink<KafkaMessage> sse_decode_StreamSink_kafka_message_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<RustLogRecord> sse_decode_StreamSink_rust_log_record_Sse(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -3619,6 +3701,28 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  RustLogLevel sse_decode_rust_log_level(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return RustLogLevel.values[inner];
+  }
+
+  @protected
+  RustLogRecord sse_decode_rust_log_record(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_level = sse_decode_rust_log_level(deserializer);
+    var var_target = sse_decode_String(deserializer);
+    var var_message = sse_decode_String(deserializer);
+    var var_timestampMs = sse_decode_i_64(deserializer);
+    return RustLogRecord(
+      level: var_level,
+      target: var_target,
+      message: var_message,
+      timestampMs: var_timestampMs,
+    );
+  }
+
+  @protected
   SchemaCompatibilityResult sse_decode_schema_compatibility_result(
     SseDeserializer deserializer,
   ) {
@@ -4045,6 +4149,23 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       self.setupAndSerialize(
         codec: SseCodec(
           decodeSuccessData: sse_decode_kafka_message,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_rust_log_record_Sse(
+    RustStreamSink<RustLogRecord> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_rust_log_record,
           decodeErrorData: sse_decode_AnyhowException,
         ),
       ),
@@ -5029,6 +5150,24 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_String(self.topic, serializer);
     sse_encode_list_metric_delta(self.metrics, serializer);
     sse_encode_list_field_delta(self.fields, serializer);
+  }
+
+  @protected
+  void sse_encode_rust_log_level(RustLogLevel self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_rust_log_record(
+    RustLogRecord self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_rust_log_level(self.level, serializer);
+    sse_encode_String(self.target, serializer);
+    sse_encode_String(self.message, serializer);
+    sse_encode_i_64(self.timestampMs, serializer);
   }
 
   @protected

@@ -10,6 +10,7 @@ import 'dart:typed_data' as _i14;
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
     as _i9;
 import 'package:kafkalyzer/src/rust/api/connection_diagnostics.dart' as _i6;
+import 'package:kafkalyzer/src/rust/api/diagnostics.dart' as _i15;
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as _i13;
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as _i7;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i3;
@@ -519,6 +520,20 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
             returnValueForMissingStub: _i12.Future<void>.value(),
           )
           as _i12.Future<void>);
+
+  @override
+  _i12.Stream<_i15.RustLogRecord> crateApiDiagnosticsInitRustLogging({
+    required _i15.RustLogLevel? maxLevel,
+    required String? logFilePath,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#crateApiDiagnosticsInitRustLogging, [], {
+              #maxLevel: maxLevel,
+              #logFilePath: logFilePath,
+            }),
+            returnValue: _i12.Stream<_i15.RustLogRecord>.empty(),
+          )
+          as _i12.Stream<_i15.RustLogRecord>);
 
   @override
   _i12.Future<int> crateApiKafkaUtilsMurmur2({required List<int>? data}) =>

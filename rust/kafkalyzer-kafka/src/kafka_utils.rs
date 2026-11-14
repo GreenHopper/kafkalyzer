@@ -2,7 +2,7 @@ use kafkalyzer_core::kafka_types::ClusterProfile;
 use openssl::pkcs12::Pkcs12;
 pub use rdkafka::config::ClientConfig;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::Read;
 
 pub fn murmur2(data: &[u8]) -> u32 {
     let length = data.len();
@@ -58,7 +58,7 @@ pub fn to_positive(number: u32) -> u32 {
 
 // ... (imports)
 
-fn init_providers(log_file: &mut Option<std::fs::File>) {
+fn init_providers() {
     static ONCE: std::sync::Once = std::sync::Once::new();
     ONCE.call_once(|| {
         let mut legacy_loaded = false;
@@ -73,9 +73,7 @@ fn init_providers(log_file: &mut Option<std::fs::File>) {
                 if modules_path.exists() {
                     if let Some(s) = modules_path.to_str() {
                         std::env::set_var("OPENSSL_MODULES", s);
-                        if let Some(ref mut f) = log_file {
-                            writeln!(f, "Set OPENSSL_MODULES to: {}", s).ok();
-                        }
+                        log::debug!("Set OPENSSL_MODULES to: {}", s);
                     }
                 }
 
@@ -83,35 +81,23 @@ fn init_providers(log_file: &mut Option<std::fs::File>) {
                 let legacy_dll = modules_path.join("legacy.dll");
                 if legacy_dll.exists() {
                     if let Some(dll_path_str) = legacy_dll.to_str() {
-                        if let Some(ref mut f) = log_file {
-                            writeln!(
-                                f,
-                                "Attempting to load legacy provider from path: {}",
-                                dll_path_str
-                            )
-                            .ok();
-                        }
+                        log::debug!(
+                            "Attempting to load legacy provider from path: {}",
+                            dll_path_str
+                        );
                         let params =
                             openssl::provider::Provider::try_load(None, dll_path_str, true);
                         match &params {
                             Ok(_) => {
                                 legacy_loaded = true;
-                                if let Some(ref mut f) = log_file {
-                                    writeln!(
-                                        f,
-                                        "Success: Legacy provider loaded from absolute path."
-                                    )
-                                    .ok();
-                                }
+                                log::debug!("Success: Legacy provider loaded from absolute path.");
                                 // Prevent unloading
                                 if let Ok(p) = params {
                                     std::mem::forget(p);
                                 }
                             }
                             Err(e) => {
-                                if let Some(ref mut f) = log_file {
-                                    writeln!(f, "Failed to load from path: {}", e).ok();
-                                }
+                                log::warn!("Failed to load legacy provider from path: {}", e);
                             }
                         }
                     }
@@ -120,19 +106,11 @@ fn init_providers(log_file: &mut Option<std::fs::File>) {
         }
 
         if !legacy_loaded {
-            if let Some(ref mut f) = log_file {
-                writeln!(f, "Fallback: Loading 'legacy' provider by name...").ok();
-            }
+            log::debug!("Fallback: Loading 'legacy' provider by name...");
             let legacy = openssl::provider::Provider::try_load(None, "legacy", true);
-            if let Some(ref mut f) = log_file {
-                match &legacy {
-                    Ok(_) => {
-                        writeln!(f, "Legacy OpenSSL provider loaded successfully (by name).").ok()
-                    }
-                    Err(e) => {
-                        writeln!(f, "Failed to load Legacy OpenSSL provider (by name): {}", e).ok()
-                    }
-                };
+            match &legacy {
+                Ok(_) => log::debug!("Legacy OpenSSL provider loaded successfully (by name)."),
+                Err(e) => log::warn!("Failed to load Legacy OpenSSL provider (by name): {}", e),
             }
             if let Ok(p) = legacy {
                 std::mem::forget(p);
@@ -147,19 +125,7 @@ fn init_providers(log_file: &mut Option<std::fs::File>) {
 }
 
 pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
-    // --- DEBUG LOGGING (v2) ---
-
-    // Log to Temp directory to be 100% sure of write permissions
-    let mut log_path = std::env::temp_dir();
-    log_path.push("rust_debug_v2.log");
-
-    let mut log_file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_path)
-        .ok();
-
-    init_providers(&mut log_file);
+    init_providers();
     let mut config = ClientConfig::new();
     config.set("bootstrap.servers", &profile.bootstrap_servers);
     if profile.ssl_verification_disabled {
@@ -260,31 +226,27 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
                                     }
                                 }
                                 Err(e) => {
-                                    if let Some(ref mut f) = log_file {
-                                        writeln!(f, "PKCS12 parse error: {}", e).ok();
-                                    }
+                                    log::warn!("PKCS12 parse error: {}", e);
                                 }
                             }
                         }
                         Err(e) => {
-                            if let Some(ref mut f) = log_file {
-                                writeln!(f, "PKCS12 decode error: {}", e).ok();
-                            }
+                            log::warn!("PKCS12 decode error: {}", e);
                         }
                     }
-                } else if let Some(ref mut f) = log_file {
-                    writeln!(f, "Failed to read keystore file via read_to_end.").ok();
+                } else {
+                    log::warn!("Failed to read keystore file via read_to_end.");
                 }
-            } else if let Some(ref mut f) = log_file {
-                writeln!(f, "Keystore file not found or unreadable: {}", location).ok();
+            } else {
+                log::warn!("Keystore file not found or unreadable: {}", location);
             }
 
             // Fallback: If we failed to set the key PEM (parsing failed), let rdkafka try to load the P12 directly.
             // This is critical if manual parsing fails (e.g. on Linux without configured providers).
             if config.get("ssl.key.pem").is_none() {
-                if let Some(ref mut f) = log_file {
-                    writeln!(f, "Manual P12 parsing failed or produced no key. Falling back to letting rdkafka load the P12.").ok();
-                }
+                log::debug!(
+                    "Manual P12 parsing failed or produced no key. Falling back to letting rdkafka load the P12."
+                );
                 config.set("ssl.keystore.location", location);
                 if let Some(password) = &profile.ssl_keystore_password {
                     config.set("ssl.keystore.password", password);
@@ -314,31 +276,11 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
     if let Some(password) = &profile.ssl_keystore_password { ... }
     We removed it from top level and put it inside the ELSE (non-P12) block.
     */
-    // --- DEBUG LOGGING (v2) ---
-    use std::io::Write;
-
-    // Log to Temp directory to be 100% sure of write permissions
-    let mut log_path = std::env::temp_dir();
-    log_path.push("rust_debug_v2.log");
-
-    let mut log_file = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_path)
-        .ok();
-
-    if let Some(ref mut f) = log_file {
-        writeln!(f, "--- Creating Config [v2] ---").ok();
-        writeln!(f, "Log file location: {:?}", log_path).ok();
-        if let Ok(exe) = std::env::current_exe() {
-            writeln!(f, "Executable path: {:?}", exe).ok();
-        } else {
-            writeln!(f, "Failed to get exe path").ok();
-        }
-        writeln!(f, "Bootstrap: {}", profile.bootstrap_servers).ok();
-        writeln!(f, "Protocol: {:?}", profile.security_protocol).ok();
-        writeln!(f, "Truststore Loc: {:?}", profile.ssl_truststore_location).ok();
-    }
+    log::debug!(
+        "Creating Kafka config: protocol={:?}, truststore={:?}",
+        profile.security_protocol,
+        profile.ssl_truststore_location
+    );
 
     // Harden check: treat empty string as None
     let truststore_loc = match &profile.ssl_truststore_location {
@@ -347,9 +289,7 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
     };
 
     if let Some(location) = truststore_loc {
-        if let Some(ref mut f) = log_file {
-            writeln!(f, "User provided truststore: {}", location).ok();
-        }
+        log::debug!("User provided truststore: {}", location);
         // Check if it's a P12 file
         if location.to_lowercase().ends_with(".p12") || location.to_lowercase().ends_with(".pfx") {
             let password = profile.ssl_truststore_password.as_deref().unwrap_or("");
@@ -389,24 +329,20 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
                                 }
                             }
                             Err(e) => {
-                                if let Some(ref mut f) = log_file {
-                                    writeln!(f, "P12 Parse Error: {}", e).ok();
-                                    writeln!(f, "Attempting fallback to bundled CA...").ok();
-                                }
+                                log::warn!("P12 Parse Error: {}", e);
+                                log::debug!("Attempting fallback to bundled CA...");
                             }
                         },
                         Err(e) => {
-                            if let Some(ref mut f) = log_file {
-                                writeln!(f, "P12 DER Error: {}", e).ok();
-                                writeln!(f, "Attempting fallback to bundled CA...").ok();
-                            }
+                            log::warn!("P12 DER Error: {}", e);
+                            log::debug!("Attempting fallback to bundled CA...");
                         }
                     }
-                } else if let Some(ref mut f) = log_file {
-                    writeln!(f, "Failed to read truststore file: {}", location).ok();
+                } else {
+                    log::warn!("Failed to read truststore file: {}", location);
                 }
-            } else if let Some(ref mut f) = log_file {
-                writeln!(f, "Truststore file not found: {}", location).ok();
+            } else {
+                log::warn!("Truststore file not found: {}", location);
             }
         } else {
             // Standard PEM file
@@ -426,20 +362,15 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
                 if let Some(exe_dir) = exe_path.parent() {
                     let ca_path = exe_dir.join("cacert.pem");
 
-                    if let Some(ref mut f) = log_file {
-                        writeln!(f, "Checking for bundled CA at: {:?}", ca_path).ok();
-                    }
+                    log::debug!("Checking for bundled CA at: {:?}", ca_path);
 
                     if ca_path.exists() {
                         if let Some(s) = ca_path.to_str() {
-                            if let Some(ref mut f) = log_file {
-                                writeln!(f, "Found bundled CA! Setting ssl.ca.location to {}", s)
-                                    .ok();
-                            }
+                            log::info!("Using bundled CA cert at: {}", s);
                             config.set("ssl.ca.location", s);
                         }
-                    } else if let Some(ref mut f) = log_file {
-                        writeln!(f, "Bundled CA NOT found.").ok();
+                    } else {
+                        log::debug!("Bundled CA NOT found.");
                     }
                 }
             }
@@ -449,10 +380,7 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
     // If user provided a password but used PEM, it might be for a PEM Key, but that's keystore.
     // So we don't set ssl.truststore.password property on config because it doesn't exist for librdkafka.
 
-    // Log final config keys (blindly, without values for security)
-    if let Some(ref mut f) = log_file {
-        writeln!(f, "Config created.").ok();
-    }
+    log::debug!("Kafka config created.");
 
     config
 }

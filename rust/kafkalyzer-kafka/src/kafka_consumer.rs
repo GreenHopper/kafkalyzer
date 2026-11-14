@@ -479,9 +479,11 @@ fn pause_partition(consumer: &BaseConsumer, topic: &str, partition: i32) {
     let mut tpl = rdkafka::TopicPartitionList::new();
     tpl.add_partition(topic, partition);
     if let Err(error) = consumer.pause(&tpl) {
-        eprintln!(
+        log::warn!(
             "Failed to pause partition {}-{}: {}",
-            topic, partition, error
+            topic,
+            partition,
+            error
         );
     }
 }
@@ -490,9 +492,11 @@ fn resume_partition(consumer: &BaseConsumer, topic: &str, partition: i32) {
     let mut tpl = rdkafka::TopicPartitionList::new();
     tpl.add_partition(topic, partition);
     if let Err(error) = consumer.resume(&tpl) {
-        eprintln!(
+        log::warn!(
             "Failed to resume partition {}-{}: {}",
-            topic, partition, error
+            topic,
+            partition,
+            error
         );
     }
 }
@@ -904,7 +908,7 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
 }
 
 fn all_done_log(topic: &str) {
-    println!("All partitions done for topic {}", topic);
+    log::debug!("All partitions done for topic {}", topic);
 }
 
 fn is_partition_done(high: i64, tracked: i64) -> bool {
@@ -957,10 +961,7 @@ pub(crate) fn setup_schema_registry<'a>(
             )
         }
         Err(error) => {
-            println!(
-                "Warning: Could not fetch subjects from Schema Registry: {}",
-                error
-            );
+            log::warn!("Could not fetch subjects from Schema Registry: {}", error);
             (false, false)
         }
     };
@@ -984,9 +985,11 @@ fn resolve_target_partitions(
                 if partition_count > 0 {
                     let hash = to_positive(murmur2(key.as_bytes()));
                     let p_id = (hash % partition_count as u32) as i32;
-                    println!(
-                        "Fast Trace: Key '{}' hashes to {} % {} = Partition {}",
-                        key, hash, partition_count, p_id
+                    log::debug!(
+                        "Fast Trace: topic='{}', partitions={}, target_partition={}",
+                        topic,
+                        partition_count,
+                        p_id
                     );
                     target_partition_id = Some(p_id);
                 }
@@ -1984,7 +1987,7 @@ mod tests {
 }
 
 fn log_to_dart(sink: &StreamSink<KafkaMessage>, message: String) {
-    println!("{}", message);
+    log::debug!("{}", message);
     let msg = KafkaMessage {
         topic: "".to_string(),
         partition: -1,

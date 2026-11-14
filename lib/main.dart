@@ -1,47 +1,76 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
-import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/app.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/application/headless_script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
+import 'package:kafkalyzer/src/rust/api/diagnostics.dart';
+import 'package:kafkalyzer/src/rust/frb_generated.dart';
+import 'package:kafkalyzer/src/services/diagnostics/app_logging.dart';
+import 'package:kafkalyzer/src/services/diagnostics/error_handlers.dart';
+import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
+import 'package:kafkalyzer/src/services/diagnostics/redaction.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:kafkalyzer/src/ui/startup_error_app.dart';
 import 'package:kafkalyzer/src/utils/app_version_helper.dart';
+import 'package:logger/logger.dart';
 
-Future<void> main([List<String> args = const []]) async {
-  debugPrint('DEBUG: main() started');
-  WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('DEBUG: WidgetsFlutterBinding initialized');
-  await KafkalyzerRustLib.init();
-  debugPrint('DEBUG: KafkalyzerRustLib initialized');
-  setupDependencyInjection();
-  debugPrint('DEBUG: DI setup complete');
-
-  if (args.isNotEmpty &&
+bool isHeadlessInvocation(List<String> args) {
+  return args.isNotEmpty &&
       (args.first == 'script' ||
           args.contains('--script') ||
           args.contains('--help') ||
-          args.contains('-h'))) {
-    await HeadlessScriptRunner.runCli(args);
+          args.contains('-h'));
+}
+
+Future<void> main([List<String> args = const []]) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final headless = isHeadlessInvocation(args);
+
+  await AppLogging.init(headless: headless);
+  final reporter = ErrorReporter()..attachLoggerListener();
+  final logger = Logger();
+  installErrorHandlers(headless: headless, reporter: reporter, logger: logger);
+
+  try {
+    await KafkalyzerRustLib.init();
+    AppLogging.attachRust(
+      initRustLogging(
+        maxLevel: AppLogging.currentRustMaxLevel(),
+        logFilePath: AppLogging.fileLogPath ?? '',
+      ),
+    );
+    setupDependencyInjection(errorReporter: reporter);
+
+    if (headless) {
+      await HeadlessScriptRunner.runCli(args);
+      return;
+    }
+
+    await getIt<SettingsService>().initializeSettings();
+    await AppVersionHelper.init();
+    await getIt<UpdateService>().initialize();
+  } catch (e, st) {
+    logger.f(
+      'Fatal startup error: ${formatSafeError(e)}',
+      error: e,
+      stackTrace: st,
+    );
+    if (headless) {
+      stderr.writeln('Startup failed: ${formatSafeError(e)}');
+      exit(3);
+    }
+    runApp(
+      StartupErrorApp(error: e, stack: st, logPath: AppLogging.fileLogPath),
+    );
     return;
   }
 
-  // Initialize settings (like default output directory)
-  await getIt<SettingsService>().initializeSettings();
-
-  await AppVersionHelper.init();
-
-  // Initialize update service in background / safely
-  await getIt<UpdateService>().initialize();
-
-  // Non-blocking background update check (delayed inside the service)
   unawaited(getIt<UpdateService>().runBackgroundCheck());
-
-  // Clean up old script runs in background
   getIt<ScriptRunner>().cleanupHistory();
 
   runApp(const KafkalyzerApp());
-  debugPrint('DEBUG: runApp called');
 }

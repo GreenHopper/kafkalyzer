@@ -13,6 +13,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/theme_controller.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/connection_diagnostics_service.dart';
+import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
@@ -27,7 +28,7 @@ import 'package:kafkalyzer/src/services/secure_storage_service.dart';
 
 final getIt = GetIt.instance;
 
-void setupDependencyInjection() {
+void setupDependencyInjection({ErrorReporter? errorReporter}) {
   getIt.registerLazySingleton<Logger>(() => Logger());
   getIt.registerLazySingleton<SecureStorageService>(
     () => SecureStorageService(logger: getIt<Logger>()),
@@ -67,6 +68,9 @@ void setupDependencyInjection() {
   getIt.registerLazySingleton<ScriptRepository>(() => ScriptRepository());
   getIt.registerLazySingleton<ScriptController>(() => ScriptController());
   getIt.registerLazySingleton<ScriptRunner>(() => ScriptRunner());
+  getIt.registerLazySingleton<ErrorReporter>(
+    () => errorReporter ?? ErrorReporter(),
+  );
 
   getIt.registerLazySingleton<SettingsService>(() => SettingsService());
   getIt.registerLazySingleton<MessageExportService>(

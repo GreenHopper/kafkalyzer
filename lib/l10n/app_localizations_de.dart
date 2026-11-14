@@ -2639,4 +2639,159 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get diagRawErrorLabel => 'Roher Fehler';
+
+  @override
+  String get errorUnexpectedNotice =>
+      'Ein unerwarteter Fehler ist aufgetreten.';
+
+  @override
+  String get errorDetailsAction => 'Details';
+
+  @override
+  String get errorDetailsDialogTitle => 'Fehlerdetails';
+
+  @override
+  String get errorCopyDetails => 'Details kopieren';
+
+  @override
+  String get errorDetailsCopied =>
+      'Fehlerdetails in die Zwischenablage kopiert';
+
+  @override
+  String get errorDetailsCopyFailed =>
+      'Fehlerdetails konnten nicht in die Zwischenablage kopiert werden. Sie können den Text manuell markieren und kopieren.';
+
+  @override
+  String get startupFailureTitle => 'Kafkalyzer konnte nicht gestartet werden';
+
+  @override
+  String get startupFailureBody =>
+      'Ein unerwarteter Fehler hat den Start von Kafkalyzer verhindert. Kopieren Sie die Details unten oder öffnen Sie den Log-Ordner.';
+
+  @override
+  String get startupFailureLogPathLabel => 'Logdatei';
+
+  @override
+  String get diagnosticsUnavailable => 'nicht verfügbar';
+
+  @override
+  String get diagnosticsUnknown => 'unbekannt';
+
+  @override
+  String get settingsDiagnosticsTitle => 'Diagnose';
+
+  @override
+  String get settingsDiagnosticsLogPathLabel => 'Logdatei';
+
+  @override
+  String get settingsOpenLogFolder => 'Log-Ordner öffnen';
+
+  @override
+  String get settingsCopyDiagnostics => 'Diagnose kopieren';
+
+  @override
+  String get settingsDiagnosticsCopied =>
+      'Diagnosebericht in die Zwischenablage kopiert';
+
+  @override
+  String settingsOpenLogFolderFailed(String path) {
+    return 'Log-Ordner konnte nicht geöffnet werden: $path';
+  }
+
+  @override
+  String get settingsFileLoggingUnavailable =>
+      'Dateiprotokollierung ist nicht verfügbar';
+
+  @override
+  String get settingsAboutButton => 'Über Kafkalyzer';
+
+  @override
+  String get aboutLegalese =>
+      'Schreibgeschützter Apache-Kafka-Analyzer. Lizenziert unter Apache-2.0.';
+
+  @override
+  String get aboutRepositoryLabel => 'Quellcode-Repository';
+
+  @override
+  String get aboutLogFolderLabel => 'Log-Ordner';
+
+  @override
+  String get aboutDataFolderLabel => 'Einstellungs- und Datenordner';
+
+  @override
+  String get aboutOutputFolderLabel => 'Standard-Ausgabeordner';
+
+  @override
+  String get aboutOpenLinkFailed =>
+      'Repository-Link konnte nicht im Browser geöffnet werden';
+
+  @override
+  String get settingsKeyboardShortcutsButton => 'Tastaturkürzel';
+
+  @override
+  String get shortcutOverviewTitle => 'Tastaturkürzel';
+
+  @override
+  String get shortcutContextGlobal => 'Global';
+
+  @override
+  String get shortcutContextExplorer => 'Explorer';
+
+  @override
+  String get shortcutContextScripts => 'Skripte';
+
+  @override
+  String get shortcutContextMessages => 'Nachrichten';
+
+  @override
+  String get shortcutContextInspector => 'Nachrichteninspektor';
+
+  @override
+  String get shortcutContextInspectorSearch => 'Inspektor-Suche';
+
+  @override
+  String get shortcutToggleSidebar => 'Seitenleiste umschalten';
+
+  @override
+  String get shortcutQuickJump => 'Schnellsprung';
+
+  @override
+  String get shortcutNextMessage => 'Nächste Nachricht';
+
+  @override
+  String get shortcutPreviousMessage => 'Vorherige Nachricht';
+
+  @override
+  String get shortcutToggleFocusMode => 'Fokusmodus umschalten';
+
+  @override
+  String get shortcutCloseInspectorOrExitFocus =>
+      'Inspektor schließen oder Fokusmodus verlassen';
+
+  @override
+  String get shortcutNextSearchMatch => 'Nächster Suchtreffer';
+
+  @override
+  String get shortcutPreviousSearchMatch => 'Vorheriger Suchtreffer';
+
+  @override
+  String get shortcutCloseInspectorSearch => 'Inspektor-Suche schließen';
+
+  @override
+  String get shortcutShowOverview => 'Tastaturkürzel anzeigen';
+
+  @override
+  String get shortcutKeyEscape => 'Escape';
+
+  @override
+  String get shortcutKeyEnter => 'Enter';
+
+  @override
+  String get shortcutKeyArrowDown => 'Pfeil nach unten';
+
+  @override
+  String get shortcutKeyArrowUp => 'Pfeil nach oben';
+
+  @override
+  String get shortcutKeyShift => 'Umschalt';
 }

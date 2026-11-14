@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
@@ -7,10 +8,14 @@ import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart
 import 'package:kafkalyzer/src/features/consumer/presentation/consumer_lag_view.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/script_manager_view.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
+import 'package:kafkalyzer/src/ui/focus_utils.dart';
+import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
 import 'package:kafkalyzer/src/ui/storage_notice_banner.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
+import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
+import 'package:kafkalyzer/src/ui/error_details_dialog.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -23,32 +28,91 @@ class _MainLayoutState extends State<MainLayout> {
   int _selectedIndex = 0;
   bool _updateSnackBarShown = false;
   bool _showingTlsDialog = false;
+  bool _showingShortcutOverview = false;
 
   @override
   void initState() {
     super.initState();
+    HardwareKeyboard.instance.addHandler(_handleGlobalShortcut);
     getIt<UpdateService>().availableUpdateNotifier.addListener(
       _onAvailableUpdateChanged,
     );
     if (getIt.isRegistered<TlsTransitionController>()) {
       getIt<TlsTransitionController>().addListener(_onTlsDecisionsChanged);
     }
-    // Handle update already discovered before this widget mounted.
+    if (getIt.isRegistered<ErrorReporter>()) {
+      getIt<ErrorReporter>().pendingNotice.addListener(_onErrorNoticeChanged);
+    }
+    // Handle update or error already discovered before this widget mounted.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _onAvailableUpdateChanged();
       _onTlsDecisionsChanged();
+      _onErrorNoticeChanged();
     });
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleGlobalShortcut);
     getIt<UpdateService>().availableUpdateNotifier.removeListener(
       _onAvailableUpdateChanged,
     );
     if (getIt.isRegistered<TlsTransitionController>()) {
       getIt<TlsTransitionController>().removeListener(_onTlsDecisionsChanged);
     }
+    if (getIt.isRegistered<ErrorReporter>()) {
+      getIt<ErrorReporter>().pendingNotice.removeListener(
+        _onErrorNoticeChanged,
+      );
+    }
     super.dispose();
+  }
+
+  bool _handleGlobalShortcut(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    if (!mounted || _showingShortcutOverview) return false;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return false;
+
+    final isF1 = event.logicalKey == LogicalKeyboardKey.f1;
+    final isQuestion = event.character == '?';
+    if (!isF1 && (!isQuestion || isTextInputFocused())) {
+      return false;
+    }
+
+    _openShortcutOverview();
+    return true;
+  }
+
+  Future<void> _openShortcutOverview() async {
+    if (_showingShortcutOverview) return;
+    _showingShortcutOverview = true;
+    try {
+      await ShortcutOverviewDialog.show(context);
+    } finally {
+      _showingShortcutOverview = false;
+    }
+  }
+
+  void _onErrorNoticeChanged() {
+    if (!mounted || !getIt.isRegistered<ErrorReporter>()) return;
+    final reporter = getIt<ErrorReporter>();
+    final record = reporter.pendingNotice.value;
+    if (record == null) return;
+
+    reporter.clearPendingNotice();
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(l10n.errorUnexpectedNotice),
+        action: SnackBarAction(
+          label: l10n.errorDetailsAction,
+          onPressed: () => ErrorDetailsDialog.show(context, record),
+        ),
+        duration: const Duration(seconds: 8),
+      ),
+    );
   }
 
   Future<void> _onTlsDecisionsChanged() async {

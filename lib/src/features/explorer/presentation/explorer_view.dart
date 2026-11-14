@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:watch_it/watch_it.dart';
@@ -10,6 +9,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/features/navigation/widgets/quick_jump_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
@@ -107,14 +107,8 @@ class _ExplorerViewState extends State<ExplorerView> {
 
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyB, control: true):
-            _toggleSidebar,
-        const SingleActivator(LogicalKeyboardKey.keyB, meta: true):
-            _toggleSidebar,
-        const SingleActivator(LogicalKeyboardKey.keyG, control: true): () =>
-            _showQuickJumpDialog(context),
-        const SingleActivator(LogicalKeyboardKey.keyG, meta: true): () =>
-            _showQuickJumpDialog(context),
+        ...AppShortcuts.toggleExplorerSidebar.bind(_toggleSidebar),
+        ...AppShortcuts.quickJump.bind(() => _showQuickJumpDialog(context)),
       },
       child: Focus(
         autofocus: true,

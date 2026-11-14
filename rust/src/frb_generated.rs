@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2031879414;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -887867212;
 
 // Section: executor
 
@@ -828,6 +828,51 @@ fn wire__crate__api__init_app_impl(
         },
     )
 }
+fn wire__crate__api__diagnostics__init_rust_logging_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "init_rust_logging",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_sink = <StreamSink<
+                crate::api::diagnostics::RustLogRecord,
+                flutter_rust_bridge::for_generated::SseCodec,
+            >>::sse_decode(&mut deserializer);
+            let api_max_level =
+                <crate::api::diagnostics::RustLogLevel>::sse_decode(&mut deserializer);
+            let api_log_file_path = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok({
+                        crate::api::diagnostics::init_rust_logging(
+                            api_sink,
+                            api_max_level,
+                            api_log_file_path,
+                        );
+                    })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__kafka_utils__murmur2_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1294,6 +1339,19 @@ impl SseDecode
 impl SseDecode
     for StreamSink<
         crate::api::kafka_consumer::KafkaMessage,
+        flutter_rust_bridge::for_generated::SseCodec,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
+impl SseDecode
+    for StreamSink<
+        crate::api::diagnostics::RustLogRecord,
         flutter_rust_bridge::for_generated::SseCodec,
     >
 {
@@ -2382,6 +2440,37 @@ impl SseDecode for crate::api::report_compare::ReportComparison {
     }
 }
 
+impl SseDecode for crate::api::diagnostics::RustLogLevel {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::diagnostics::RustLogLevel::Error,
+            1 => crate::api::diagnostics::RustLogLevel::Warn,
+            2 => crate::api::diagnostics::RustLogLevel::Info,
+            3 => crate::api::diagnostics::RustLogLevel::Debug,
+            4 => crate::api::diagnostics::RustLogLevel::Trace,
+            _ => unreachable!("Invalid variant for RustLogLevel: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::diagnostics::RustLogRecord {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_level = <crate::api::diagnostics::RustLogLevel>::sse_decode(deserializer);
+        let mut var_target = <String>::sse_decode(deserializer);
+        let mut var_message = <String>::sse_decode(deserializer);
+        let mut var_timestampMs = <i64>::sse_decode(deserializer);
+        return crate::api::diagnostics::RustLogRecord {
+            level: var_level,
+            target: var_target,
+            message: var_message,
+            timestamp_ms: var_timestampMs,
+        };
+    }
+}
+
 impl SseDecode for crate::api::schema_registry::SchemaCompatibilityResult {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2926,60 +3015,63 @@ fn pde_ffi_dispatcher_primary_impl(
             wire__crate__api__kafka_metadata__fetch_topics_impl(port, ptr, rust_vec_len, data_len)
         }
         19 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
+        20 => {
+            wire__crate__api__diagnostics__init_rust_logging_impl(port, ptr, rust_vec_len, data_len)
+        }
+        21 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        22 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
+        23 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        23 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+        24 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        24 => {
+        25 => {
             wire__crate__api__json_path__resolve_json_path_impl(port, ptr, rust_vec_len, data_len)
         }
-        25 => wire__crate__api__json_path__resolve_json_path_batch_impl(
+        26 => wire__crate__api__json_path__resolve_json_path_batch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        26 => wire__crate__api__json_path__serialize_cluster_profile_impl(
+        27 => wire__crate__api__json_path__serialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        27 => wire__crate__api__kafka_types__tls_verification_default_impl(
+        28 => wire__crate__api__kafka_types__tls_verification_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        28 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
-        29 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
+        29 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        30 => wire__crate__api__kafka_metadata__validate_connection_impl(
+        31 => wire__crate__api__kafka_metadata__validate_connection_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        31 => wire__crate__api__json_path__validate_filter_patterns_impl(
+        32 => wire__crate__api__json_path__validate_filter_patterns_impl(
             port,
             ptr,
             rust_vec_len,
@@ -3678,6 +3770,53 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::report_compare::ReportCompari
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::diagnostics::RustLogLevel {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Error => 0.into_dart(),
+            Self::Warn => 1.into_dart(),
+            Self::Info => 2.into_dart(),
+            Self::Debug => 3.into_dart(),
+            Self::Trace => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::diagnostics::RustLogLevel
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::diagnostics::RustLogLevel>
+    for crate::api::diagnostics::RustLogLevel
+{
+    fn into_into_dart(self) -> crate::api::diagnostics::RustLogLevel {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::diagnostics::RustLogRecord {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.level.into_into_dart().into_dart(),
+            self.target.into_into_dart().into_dart(),
+            self.message.into_into_dart().into_dart(),
+            self.timestamp_ms.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::diagnostics::RustLogRecord
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::diagnostics::RustLogRecord>
+    for crate::api::diagnostics::RustLogRecord
+{
+    fn into_into_dart(self) -> crate::api::diagnostics::RustLogRecord {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SchemaCompatibilityResult {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4198,6 +4337,18 @@ impl SseEncode
 impl SseEncode
     for StreamSink<
         crate::api::kafka_consumer::KafkaMessage,
+        flutter_rust_bridge::for_generated::SseCodec,
+    >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
+impl SseEncode
+    for StreamSink<
+        crate::api::diagnostics::RustLogRecord,
         flutter_rust_bridge::for_generated::SseCodec,
     >
 {
@@ -5047,6 +5198,35 @@ impl SseEncode for crate::api::report_compare::ReportComparison {
         <String>::sse_encode(self.topic, serializer);
         <Vec<crate::api::report_compare::MetricDelta>>::sse_encode(self.metrics, serializer);
         <Vec<crate::api::report_compare::FieldDelta>>::sse_encode(self.fields, serializer);
+    }
+}
+
+impl SseEncode for crate::api::diagnostics::RustLogLevel {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::diagnostics::RustLogLevel::Error => 0,
+                crate::api::diagnostics::RustLogLevel::Warn => 1,
+                crate::api::diagnostics::RustLogLevel::Info => 2,
+                crate::api::diagnostics::RustLogLevel::Debug => 3,
+                crate::api::diagnostics::RustLogLevel::Trace => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::diagnostics::RustLogRecord {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::diagnostics::RustLogLevel>::sse_encode(self.level, serializer);
+        <String>::sse_encode(self.target, serializer);
+        <String>::sse_encode(self.message, serializer);
+        <i64>::sse_encode(self.timestamp_ms, serializer);
     }
 }
 

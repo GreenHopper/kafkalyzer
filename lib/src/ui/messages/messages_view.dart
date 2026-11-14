@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kafkalyzer/src/ui/focus_utils.dart';
+import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_diff_view.dart';
@@ -513,15 +515,6 @@ class MessagesViewState extends State<MessagesView> {
     });
   }
 
-  bool _isTextInputFocused() {
-    final primaryFocus = FocusManager.instance.primaryFocus;
-    if (primaryFocus == null) return false;
-    final context = primaryFocus.context;
-    if (context == null) return false;
-    return context.widget is EditableText ||
-        context.findAncestorWidgetOfExactType<EditableText>() != null;
-  }
-
   /// Whether this view should own inspector shortcuts right now.
   ///
   /// Shortcuts are intentionally focus-independent while the inspector is open
@@ -548,9 +541,9 @@ class MessagesViewState extends State<MessagesView> {
     if (!_shouldHandleInspectorShortcuts()) return false;
 
     final key = event.logicalKey;
-    final textFocused = _isTextInputFocused();
+    final textFocused = isTextInputFocused();
 
-    if (key == LogicalKeyboardKey.escape) {
+    if (AppShortcuts.closeInspectorOrExitFocus.matchesLogicalKey(key)) {
       if (textFocused) {
         FocusManager.instance.primaryFocus?.unfocus();
         _requestShortcutFocus();
@@ -574,15 +567,15 @@ class MessagesViewState extends State<MessagesView> {
     // Arrow up/down always step messages while the inspector is open so
     // focus traversal cannot move between search-bar controls or topic
     // tiles instead. Left/right are left alone for caret movement.
-    if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.keyJ) {
+    if (AppShortcuts.nextMessage.matchesLogicalKey(key)) {
       _stepNext();
       return true;
     }
-    if (key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.keyK) {
+    if (AppShortcuts.previousMessage.matchesLogicalKey(key)) {
       _stepPrevious();
       return true;
     }
-    if (key == LogicalKeyboardKey.keyF) {
+    if (AppShortcuts.toggleFocusMode.matchesLogicalKey(key)) {
       _toggleMaximize();
       return true;
     }

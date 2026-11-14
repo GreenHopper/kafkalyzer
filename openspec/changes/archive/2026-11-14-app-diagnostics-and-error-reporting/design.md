@@ -110,7 +110,9 @@ control never panics with credentials. Recorded as a risk.
 - If the log directory cannot be created, the file output is replaced by a no-op output and `AppLogging.fileLogPath`
   is `null`. Settings and the startup screen then show "unavailable".
 - Alternative: a hand-written rotating writer (~80 lines). Rejected unless spike 1.2 shows `AdvancedFileOutput`
-  does not keep the rotated-file count bounded or cannot use a fixed active file name.
+  does not keep the rotated-file count bounded or cannot use a fixed active file name. (Spike 1.2 confirmed
+  `AdvancedFileOutput` with `latestFileName: 'kafkalyzer.log'`, `maxFileSizeKB`, and `maxRotatedFilesCount: 3` keeps
+  at most 1 + 3 files, rotating to `YYYY-MM-DD-HH-mm-ss-SSS.log` on `init()` when the existing file exceeds the limit.)
 
 ### D4 — Redaction and payload exclusion
 
@@ -261,5 +263,6 @@ package is needed.
 
 ## Open Questions
 
-- Whether `AdvancedFileOutput` reuses the existing `kafkalyzer.log` on restart or rotates it first. Spike 1.2
-  settles this. Either behaviour satisfies the spec. Only the rotation trigger in the test changes.
+- Settled by spike 1.2: `AdvancedFileOutput` rotates an existing `kafkalyzer.log` on `init()` when it exceeds
+  `maxFileSizeKB` (creating `YYYY-MM-DD-HH-mm-ss-SSS.log` and keeping at most 3 rotated files plus `kafkalyzer.log`),
+  and otherwise appends to it.

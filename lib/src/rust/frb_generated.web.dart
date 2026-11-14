@@ -8,6 +8,7 @@
 
 import 'api.dart';
 import 'api/connection_diagnostics.dart';
+import 'api/diagnostics.dart';
 import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
@@ -51,6 +52,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   RustStreamSink<KafkaMessage> dco_decode_StreamSink_kafka_message_Sse(
+    dynamic raw,
+  );
+
+  @protected
+  RustStreamSink<RustLogRecord> dco_decode_StreamSink_rust_log_record_Sse(
     dynamic raw,
   );
 
@@ -347,6 +353,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ReportComparison dco_decode_report_comparison(dynamic raw);
 
   @protected
+  RustLogLevel dco_decode_rust_log_level(dynamic raw);
+
+  @protected
+  RustLogRecord dco_decode_rust_log_record(dynamic raw);
+
+  @protected
   SchemaCompatibilityResult dco_decode_schema_compatibility_result(dynamic raw);
 
   @protected
@@ -441,6 +453,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   RustStreamSink<KafkaMessage> sse_decode_StreamSink_kafka_message_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<RustLogRecord> sse_decode_StreamSink_rust_log_record_Sse(
     SseDeserializer deserializer,
   );
 
@@ -801,6 +818,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ReportComparison sse_decode_report_comparison(SseDeserializer deserializer);
 
   @protected
+  RustLogLevel sse_decode_rust_log_level(SseDeserializer deserializer);
+
+  @protected
+  RustLogRecord sse_decode_rust_log_record(SseDeserializer deserializer);
+
+  @protected
   SchemaCompatibilityResult sse_decode_schema_compatibility_result(
     SseDeserializer deserializer,
   );
@@ -917,6 +940,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_StreamSink_kafka_message_Sse(
     RustStreamSink<KafkaMessage> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_rust_log_record_Sse(
+    RustStreamSink<RustLogRecord> self,
     SseSerializer serializer,
   );
 
@@ -1378,6 +1407,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
     ReportComparison self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_rust_log_level(RustLogLevel self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_rust_log_record(RustLogRecord self, SseSerializer serializer);
 
   @protected
   void sse_encode_schema_compatibility_result(

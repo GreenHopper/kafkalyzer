@@ -273,6 +273,9 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
+      await tester.drag(find.byType(ListView).first, const Offset(0, -800));
+      await tester.pumpAndSettle();
+
       expect(find.byType(ReadOnlySecurityBadge), findsOneWidget);
       expect(find.text('Read-Only'), findsOneWidget);
     });

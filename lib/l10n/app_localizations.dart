@@ -4578,6 +4578,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Raw error'**
   String get diagRawErrorLabel;
+
+  /// No description provided for @errorUnexpectedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred.'**
+  String get errorUnexpectedNotice;
+
+  /// No description provided for @errorDetailsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get errorDetailsAction;
+
+  /// No description provided for @errorDetailsDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Error Details'**
+  String get errorDetailsDialogTitle;
+
+  /// No description provided for @errorCopyDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy details'**
+  String get errorCopyDetails;
+
+  /// No description provided for @errorDetailsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Error details copied to clipboard'**
+  String get errorDetailsCopied;
+
+  /// No description provided for @errorDetailsCopyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy error details to clipboard. You can select and copy the text manually.'**
+  String get errorDetailsCopyFailed;
+
+  /// No description provided for @startupFailureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Kafkalyzer could not start'**
+  String get startupFailureTitle;
+
+  /// No description provided for @startupFailureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error prevented Kafkalyzer from starting. Copy the details below or open the log folder to inspect the full log.'**
+  String get startupFailureBody;
+
+  /// No description provided for @startupFailureLogPathLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Log file'**
+  String get startupFailureLogPathLabel;
+
+  /// No description provided for @diagnosticsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'unavailable'**
+  String get diagnosticsUnavailable;
+
+  /// No description provided for @diagnosticsUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get diagnosticsUnknown;
+
+  /// No description provided for @settingsDiagnosticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics'**
+  String get settingsDiagnosticsTitle;
+
+  /// No description provided for @settingsDiagnosticsLogPathLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Log file'**
+  String get settingsDiagnosticsLogPathLabel;
+
+  /// No description provided for @settingsOpenLogFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open log folder'**
+  String get settingsOpenLogFolder;
+
+  /// No description provided for @settingsCopyDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy diagnostics'**
+  String get settingsCopyDiagnostics;
+
+  /// No description provided for @settingsDiagnosticsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics report copied to clipboard'**
+  String get settingsDiagnosticsCopied;
+
+  /// No description provided for @settingsOpenLogFolderFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open log folder at {path}'**
+  String settingsOpenLogFolderFailed(String path);
+
+  /// No description provided for @settingsFileLoggingUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'File logging is unavailable'**
+  String get settingsFileLoggingUnavailable;
+
+  /// No description provided for @settingsAboutButton.
+  ///
+  /// In en, this message translates to:
+  /// **'About Kafkalyzer'**
+  String get settingsAboutButton;
+
+  /// No description provided for @aboutLegalese.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only Apache Kafka analyzer. Licensed under Apache-2.0.'**
+  String get aboutLegalese;
+
+  /// No description provided for @aboutRepositoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source repository'**
+  String get aboutRepositoryLabel;
+
+  /// No description provided for @aboutLogFolderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Log folder'**
+  String get aboutLogFolderLabel;
+
+  /// No description provided for @aboutDataFolderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings and data folder'**
+  String get aboutDataFolderLabel;
+
+  /// No description provided for @aboutOutputFolderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default output folder'**
+  String get aboutOutputFolderLabel;
+
+  /// No description provided for @aboutOpenLinkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the repository link in your browser'**
+  String get aboutOpenLinkFailed;
+
+  /// No description provided for @settingsKeyboardShortcutsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get settingsKeyboardShortcutsButton;
+
+  /// No description provided for @shortcutOverviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard Shortcuts'**
+  String get shortcutOverviewTitle;
+
+  /// No description provided for @shortcutContextGlobal.
+  ///
+  /// In en, this message translates to:
+  /// **'Global'**
+  String get shortcutContextGlobal;
+
+  /// No description provided for @shortcutContextExplorer.
+  ///
+  /// In en, this message translates to:
+  /// **'Explorer'**
+  String get shortcutContextExplorer;
+
+  /// No description provided for @shortcutContextScripts.
+  ///
+  /// In en, this message translates to:
+  /// **'Scripts'**
+  String get shortcutContextScripts;
+
+  /// No description provided for @shortcutContextMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get shortcutContextMessages;
+
+  /// No description provided for @shortcutContextInspector.
+  ///
+  /// In en, this message translates to:
+  /// **'Message Inspector'**
+  String get shortcutContextInspector;
+
+  /// No description provided for @shortcutContextInspectorSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspector Search'**
+  String get shortcutContextInspectorSearch;
+
+  /// No description provided for @shortcutToggleSidebar.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle sidebar'**
+  String get shortcutToggleSidebar;
+
+  /// No description provided for @shortcutQuickJump.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Jump'**
+  String get shortcutQuickJump;
+
+  /// No description provided for @shortcutNextMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Next message'**
+  String get shortcutNextMessage;
+
+  /// No description provided for @shortcutPreviousMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous message'**
+  String get shortcutPreviousMessage;
+
+  /// No description provided for @shortcutToggleFocusMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Focus Mode'**
+  String get shortcutToggleFocusMode;
+
+  /// No description provided for @shortcutCloseInspectorOrExitFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'Close inspector or exit Focus Mode'**
+  String get shortcutCloseInspectorOrExitFocus;
+
+  /// No description provided for @shortcutNextSearchMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Next search match'**
+  String get shortcutNextSearchMatch;
+
+  /// No description provided for @shortcutPreviousSearchMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous search match'**
+  String get shortcutPreviousSearchMatch;
+
+  /// No description provided for @shortcutCloseInspectorSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close inspector search'**
+  String get shortcutCloseInspectorSearch;
+
+  /// No description provided for @shortcutShowOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Show keyboard shortcuts'**
+  String get shortcutShowOverview;
+
+  /// No description provided for @shortcutKeyEscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Escape'**
+  String get shortcutKeyEscape;
+
+  /// No description provided for @shortcutKeyEnter.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter'**
+  String get shortcutKeyEnter;
+
+  /// No description provided for @shortcutKeyArrowDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down Arrow'**
+  String get shortcutKeyArrowDown;
+
+  /// No description provided for @shortcutKeyArrowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Up Arrow'**
+  String get shortcutKeyArrowUp;
+
+  /// No description provided for @shortcutKeyShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift'**
+  String get shortcutKeyShift;
 }
 
 class _AppLocalizationsDelegate

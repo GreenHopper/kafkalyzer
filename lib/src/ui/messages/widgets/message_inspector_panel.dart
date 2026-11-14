@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
@@ -570,18 +571,18 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
               height: 32,
               child: CallbackShortcuts(
                 bindings: {
-                  const SingleActivator(LogicalKeyboardKey.enter):
-                      _jumpToNextMatch,
-                  const SingleActivator(LogicalKeyboardKey.enter, shift: true):
-                      _jumpToPreviousMatch,
-                  const SingleActivator(LogicalKeyboardKey.escape): () {
+                  ...AppShortcuts.nextSearchMatch.bind(_jumpToNextMatch),
+                  ...AppShortcuts.previousSearchMatch.bind(
+                    _jumpToPreviousMatch,
+                  ),
+                  ...AppShortcuts.closeInspectorSearch.bind(() {
                     setState(() {
                       _isSearchOpen = false;
                       _searchController.clear();
                       _totalMatches = 0;
                       _currentMatchIndex = 0;
                     });
-                  },
+                  }),
                 },
                 child: TextField(
                   controller: _searchController,

@@ -1,4 +1,7 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
+import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -344,6 +347,143 @@ void main() {
       final r3 = await f3;
       expect(r3.profile.tlsVerification, TlsVerification.unreviewed);
       expect(r3.blockedByCertificateRejection, isTrue);
+    },
+  );
+
+  testWidgets(
+    'shows error SnackBar on ErrorReporter notice, opens ErrorDetailsDialog, and copies redacted details',
+    (tester) async {
+      final reporter = ErrorReporter();
+      addTearDown(reporter.dispose);
+      GetIt.I.registerSingleton<ErrorReporter>(reporter);
+
+      String? copiedText;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async {
+          if (call.method == 'Clipboard.setData') {
+            copiedText = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const MainLayout(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      reporter.reportUncaught(
+        StateError('Unhandled failure sasl.password=secret_val'),
+        StackTrace.current,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('An unexpected error occurred.'), findsOneWidget);
+      expect(find.text('Details'), findsOneWidget);
+
+      await tester.tap(find.text('Details'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Error Details'), findsOneWidget);
+      expect(find.textContaining('sasl.password=***'), findsOneWidget);
+      expect(find.textContaining('secret_val'), findsNothing);
+
+      await tester.tap(find.text('Copy details'));
+      await tester.pumpAndSettle();
+
+      expect(copiedText, contains('sasl.password=***'));
+      expect(copiedText, isNot(contains('secret_val')));
+      expect(find.text('Error details copied to clipboard'), findsOneWidget);
+    },
+  );
+
+  testWidgets('F1 opens ShortcutOverviewDialog once and Escape closes it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const MainLayout(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.f1);
+    await tester.pumpAndSettle();
+    expect(find.byType(ShortcutOverviewDialog), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.f1);
+    await tester.pumpAndSettle();
+    expect(find.byType(ShortcutOverviewDialog), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(ShortcutOverviewDialog), findsNothing);
+  });
+
+  testWidgets(
+    '? outside TextField opens ShortcutOverviewDialog, inside does not',
+    (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Column(
+            children: [
+              Material(child: TextField(controller: controller)),
+              const Expanded(child: MainLayout()),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Outside TextField: ? opens overview
+      HardwareKeyboard.instance.handleKeyEvent(
+        const KeyDownEvent(
+          physicalKey: PhysicalKeyboardKey.slash,
+          logicalKey: LogicalKeyboardKey.question,
+          character: '?',
+          timeStamp: Duration.zero,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(ShortcutOverviewDialog), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(ShortcutOverviewDialog), findsNothing);
+
+      // Inside TextField: ? is typed, overview does not open
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '?');
+      HardwareKeyboard.instance.handleKeyEvent(
+        const KeyDownEvent(
+          physicalKey: PhysicalKeyboardKey.slash,
+          logicalKey: LogicalKeyboardKey.question,
+          character: '?',
+          timeStamp: Duration.zero,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(controller.text, '?');
+      expect(find.byType(ShortcutOverviewDialog), findsNothing);
     },
   );
 }

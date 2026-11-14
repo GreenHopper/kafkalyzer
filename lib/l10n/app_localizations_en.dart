@@ -2617,4 +2617,156 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get diagRawErrorLabel => 'Raw error';
+
+  @override
+  String get errorUnexpectedNotice => 'An unexpected error occurred.';
+
+  @override
+  String get errorDetailsAction => 'Details';
+
+  @override
+  String get errorDetailsDialogTitle => 'Error Details';
+
+  @override
+  String get errorCopyDetails => 'Copy details';
+
+  @override
+  String get errorDetailsCopied => 'Error details copied to clipboard';
+
+  @override
+  String get errorDetailsCopyFailed =>
+      'Could not copy error details to clipboard. You can select and copy the text manually.';
+
+  @override
+  String get startupFailureTitle => 'Kafkalyzer could not start';
+
+  @override
+  String get startupFailureBody =>
+      'An unexpected error prevented Kafkalyzer from starting. Copy the details below or open the log folder to inspect the full log.';
+
+  @override
+  String get startupFailureLogPathLabel => 'Log file';
+
+  @override
+  String get diagnosticsUnavailable => 'unavailable';
+
+  @override
+  String get diagnosticsUnknown => 'unknown';
+
+  @override
+  String get settingsDiagnosticsTitle => 'Diagnostics';
+
+  @override
+  String get settingsDiagnosticsLogPathLabel => 'Log file';
+
+  @override
+  String get settingsOpenLogFolder => 'Open log folder';
+
+  @override
+  String get settingsCopyDiagnostics => 'Copy diagnostics';
+
+  @override
+  String get settingsDiagnosticsCopied =>
+      'Diagnostics report copied to clipboard';
+
+  @override
+  String settingsOpenLogFolderFailed(String path) {
+    return 'Could not open log folder at $path';
+  }
+
+  @override
+  String get settingsFileLoggingUnavailable => 'File logging is unavailable';
+
+  @override
+  String get settingsAboutButton => 'About Kafkalyzer';
+
+  @override
+  String get aboutLegalese =>
+      'Read-only Apache Kafka analyzer. Licensed under Apache-2.0.';
+
+  @override
+  String get aboutRepositoryLabel => 'Source repository';
+
+  @override
+  String get aboutLogFolderLabel => 'Log folder';
+
+  @override
+  String get aboutDataFolderLabel => 'Settings and data folder';
+
+  @override
+  String get aboutOutputFolderLabel => 'Default output folder';
+
+  @override
+  String get aboutOpenLinkFailed =>
+      'Could not open the repository link in your browser';
+
+  @override
+  String get settingsKeyboardShortcutsButton => 'Keyboard shortcuts';
+
+  @override
+  String get shortcutOverviewTitle => 'Keyboard Shortcuts';
+
+  @override
+  String get shortcutContextGlobal => 'Global';
+
+  @override
+  String get shortcutContextExplorer => 'Explorer';
+
+  @override
+  String get shortcutContextScripts => 'Scripts';
+
+  @override
+  String get shortcutContextMessages => 'Messages';
+
+  @override
+  String get shortcutContextInspector => 'Message Inspector';
+
+  @override
+  String get shortcutContextInspectorSearch => 'Inspector Search';
+
+  @override
+  String get shortcutToggleSidebar => 'Toggle sidebar';
+
+  @override
+  String get shortcutQuickJump => 'Quick Jump';
+
+  @override
+  String get shortcutNextMessage => 'Next message';
+
+  @override
+  String get shortcutPreviousMessage => 'Previous message';
+
+  @override
+  String get shortcutToggleFocusMode => 'Toggle Focus Mode';
+
+  @override
+  String get shortcutCloseInspectorOrExitFocus =>
+      'Close inspector or exit Focus Mode';
+
+  @override
+  String get shortcutNextSearchMatch => 'Next search match';
+
+  @override
+  String get shortcutPreviousSearchMatch => 'Previous search match';
+
+  @override
+  String get shortcutCloseInspectorSearch => 'Close inspector search';
+
+  @override
+  String get shortcutShowOverview => 'Show keyboard shortcuts';
+
+  @override
+  String get shortcutKeyEscape => 'Escape';
+
+  @override
+  String get shortcutKeyEnter => 'Enter';
+
+  @override
+  String get shortcutKeyArrowDown => 'Down Arrow';
+
+  @override
+  String get shortcutKeyArrowUp => 'Up Arrow';
+
+  @override
+  String get shortcutKeyShift => 'Shift';
 }

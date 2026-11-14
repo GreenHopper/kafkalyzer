@@ -1,10 +1,19 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/services/diagnostics/app_logging.dart';
+import 'package:kafkalyzer/src/services/diagnostics/diagnostics_report.dart';
+import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
+import 'package:kafkalyzer/src/services/file_opener_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
+import 'package:kafkalyzer/src/services/update_service.dart';
+import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
 import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
@@ -93,10 +102,210 @@ class _SettingsViewState extends State<SettingsView> {
               ),
               const SizedBox(height: 16),
               const Divider(),
+              _buildDiagnosticsSection(context, l10n),
+              const SizedBox(height: 16),
+              const Divider(),
               _buildAboutAndUpdates(context, l10n),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDiagnosticsSection(BuildContext context, AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final logPath = AppLogging.fileLogPath;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.settingsDiagnosticsTitle, style: theme.textTheme.titleLarge),
+        const SizedBox(height: 8),
+        Text(
+          '${l10n.settingsDiagnosticsLogPathLabel}: '
+          '${logPath ?? l10n.settingsFileLoggingUnavailable}',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                if (logPath == null || logPath.isEmpty) {
+                  messenger
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          l10n.settingsOpenLogFolderFailed(
+                            l10n.diagnosticsUnavailable,
+                          ),
+                        ),
+                      ),
+                    );
+                  return;
+                }
+                final ok = await getIt<FileOpenerService>().showInFolder(
+                  logPath,
+                );
+                if (!ok) {
+                  messenger
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          l10n.settingsOpenLogFolderFailed(logPath),
+                        ),
+                      ),
+                    );
+                }
+              },
+              icon: const Icon(Icons.folder_open, size: 18),
+              label: Text(l10n.settingsOpenLogFolder),
+            ),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final activeProfile =
+                    getIt.isRegistered<ActiveConnectionController>()
+                    ? getIt<ActiveConnectionController>().activeProfile
+                    : null;
+                final recentErrors = getIt.isRegistered<ErrorReporter>()
+                    ? getIt<ErrorReporter>().recent
+                    : const <ErrorRecord>[];
+                final report = DiagnosticsReport.build(
+                  appVersion: AppVersionHelper.version,
+                  osName: Platform.operatingSystem,
+                  osVersion: Platform.operatingSystemVersion,
+                  locale: Localizations.localeOf(context).toLanguageTag(),
+                  logPath: logPath,
+                  activeProfile: activeProfile,
+                  recentErrors: recentErrors,
+                );
+                try {
+                  await Clipboard.setData(ClipboardData(text: report));
+                  messenger
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                      SnackBar(content: Text(l10n.settingsDiagnosticsCopied)),
+                    );
+                } catch (_) {
+                  messenger
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                      SnackBar(content: Text(l10n.errorDetailsCopyFailed)),
+                    );
+                }
+              },
+              icon: const Icon(Icons.copy, size: 18),
+              label: Text(l10n.settingsCopyDiagnostics),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openAboutDialog(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) async {
+    String dataFolder;
+    try {
+      dataFolder = (await getApplicationSupportDirectory()).path;
+    } catch (_) {
+      dataFolder = l10n.diagnosticsUnknown;
+    }
+
+    String outputFolder;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final dir = prefs.getString('general_default_output_dir');
+      outputFolder = (dir != null && dir.trim().isNotEmpty)
+          ? dir
+          : l10n.diagnosticsUnknown;
+    } catch (_) {
+      outputFolder = l10n.diagnosticsUnknown;
+    }
+
+    final logFolder = AppLogging.logDirectoryPath ?? l10n.diagnosticsUnknown;
+    if (!context.mounted) return;
+
+    showAboutDialog(
+      context: context,
+      applicationName: 'Kafkalyzer',
+      applicationVersion: 'v${AppVersionHelper.version}',
+      applicationLegalese: l10n.aboutLegalese,
+      children: [
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Text(
+              '${l10n.aboutRepositoryLabel}: ',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            TextButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  final ok = await launchUrl(
+                    Uri.parse(UpdateService.defaultRepositoryUrl),
+                  );
+                  if (!ok) {
+                    messenger
+                      ..clearSnackBars()
+                      ..showSnackBar(
+                        SnackBar(content: Text(l10n.aboutOpenLinkFailed)),
+                      );
+                  }
+                } catch (_) {
+                  messenger
+                    ..clearSnackBars()
+                    ..showSnackBar(
+                      SnackBar(content: Text(l10n.aboutOpenLinkFailed)),
+                    );
+                }
+              },
+              child: const Text(UpdateService.defaultRepositoryUrl),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _buildAboutPathRow(context, l10n.aboutLogFolderLabel, logFolder),
+        _buildAboutPathRow(context, l10n.aboutDataFolderLabel, dataFolder),
+        _buildAboutPathRow(context, l10n.aboutOutputFolderLabel, outputFolder),
+      ],
+    );
+  }
+
+  Widget _buildAboutPathRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -118,10 +327,27 @@ class _SettingsViewState extends State<SettingsView> {
             const SizedBox(height: 8),
             const ReadOnlySecurityBadge(),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => UpdateDialog.show(context),
-              icon: const Icon(Icons.system_update_alt, size: 18),
-              label: Text(l10n.checkForUpdates),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => UpdateDialog.show(context),
+                  icon: const Icon(Icons.system_update_alt, size: 18),
+                  label: Text(l10n.checkForUpdates),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _openAboutDialog(context, l10n),
+                  icon: const Icon(Icons.info_outline, size: 18),
+                  label: Text(l10n.settingsAboutButton),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => ShortcutOverviewDialog.show(context),
+                  icon: const Icon(Icons.keyboard_outlined, size: 18),
+                  label: Text(l10n.settingsKeyboardShortcutsButton),
+                ),
+              ],
             ),
           ],
         ),

@@ -2,12 +2,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/services.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_editor.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_run_view.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history_view.dart';
@@ -118,12 +118,7 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
     final controller = getIt<ScriptController>();
 
     return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyB, control: true):
-            _toggleSidebar,
-        const SingleActivator(LogicalKeyboardKey.keyB, meta: true):
-            _toggleSidebar,
-      },
+      bindings: AppShortcuts.toggleScriptsSidebar.bind(_toggleSidebar),
       child: Focus(
         autofocus: true,
         child: Row(
