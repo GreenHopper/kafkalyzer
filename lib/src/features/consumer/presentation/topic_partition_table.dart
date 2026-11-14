@@ -350,32 +350,79 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
             ),
           ),
           ...sortedParts.map((part) {
+            final scheme = Theme.of(context).colorScheme;
             final lagVal = part.lag.toInt();
-            final committedStr = part.currentOffset.toInt() == -1
+            final logEndStr = part.logEndOffset.toInt() < 0
+                ? "-"
+                : _formatNum(part.logEndOffset.toInt());
+            final committedStr =
+                part.status != PartitionLagStatus.known ||
+                    part.currentOffset.toInt() < 0
                 ? "-"
                 : _formatNum(part.currentOffset.toInt());
             final isLoading = _loadingPartitions.contains(part.partition);
+            final canViewMessage =
+                part.status == PartitionLagStatus.known &&
+                part.currentOffset.toInt() >= 0;
+
+            Widget lagCell;
+            if (part.status == PartitionLagStatus.noCommit) {
+              lagCell = Expanded(
+                flex: 2,
+                child: Text(
+                  widget.l10n.lagNoCommit,
+                  key: Key('partition_lag_${part.topic}-${part.partition}'),
+                  style: TextStyle(color: scheme.outline, fontSize: 12),
+                ),
+              );
+            } else if (part.status == PartitionLagStatus.unknown) {
+              final reason = part.error ?? widget.l10n.lagUnknown;
+              lagCell = Expanded(
+                flex: 2,
+                child: Tooltip(
+                  message: reason,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.help_outline, size: 14, color: scheme.error),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          widget.l10n.lagUnknown,
+                          key: Key(
+                            'partition_lag_${part.topic}-${part.partition}',
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: scheme.error,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              lagCell = _buildLagCell(part, lagVal);
+            }
 
             return Container(
               padding: const EdgeInsets.only(left: 24, right: 24),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    color: scheme.outlineVariant.withValues(alpha: 0.3),
                   ),
                 ),
               ),
               child: Row(
                 children: [
                   _buildTableCell(part.partition.toString(), flex: 3),
-                  _buildTableCell(
-                    _formatNum(part.logEndOffset.toInt()),
-                    flex: 4,
-                  ),
+                  _buildTableCell(logEndStr, flex: 4),
                   _buildTableCell(committedStr, flex: 4),
-                  _buildLagCell(part, lagVal),
+                  lagCell,
                   _buildDeltaCell(part, flex: 2),
                   SizedBox(
                     width: 48,
@@ -392,7 +439,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                               tooltip: isGerman
                                   ? 'Message am Offset anzeigen'
                                   : 'View message at offset',
-                              onPressed: part.currentOffset.toInt() >= 0
+                              onPressed: canViewMessage
                                   ? () => _viewLaggingMessage(part)
                                   : null,
                             ),

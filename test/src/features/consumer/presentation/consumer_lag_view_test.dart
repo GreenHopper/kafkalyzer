@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -20,6 +21,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class FakeKafkaMetadataService implements KafkaMetadataService {
   List<ConsumerGroupLag> lags = [];
   bool shouldFail = false;
+  int fetchConsumerGroupsCallCount = 0;
+  List<List<String>> fetchConsumerGroupLagsCalls = [];
+  int inFlightChunkCalls = 0;
+  int maxConcurrentChunkCalls = 0;
+  Completer<void>? groupsCompleter;
+  Completer<void>? chunkCompleter;
+  Set<String> failingGroupIds = {};
+  Duration chunkDelay = const Duration(milliseconds: 10);
 
   @override
   Future<api.TopicPartitionDetails> fetchTopicPartitions({
@@ -45,6 +54,10 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
   Future<List<ConsumerGroupLag>> fetchConsumerGroups({
     required ClusterProfile profile,
   }) async {
+    fetchConsumerGroupsCallCount++;
+    if (groupsCompleter != null) {
+      await groupsCompleter!.future;
+    }
     if (shouldFail) {
       throw Exception("Failed to fetch groups");
     }
@@ -59,6 +72,7 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
             topicsCount: l.topicsCount,
             members: l.members,
             unassignedPartitions: l.unassignedPartitions,
+            ownershipKnown: l.ownershipKnown,
           ),
         )
         .toList();
@@ -72,8 +86,62 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
     if (shouldFail) {
       throw Exception("Failed to fetch lag");
     }
-    await Future.delayed(const Duration(milliseconds: 10));
+    await Future.delayed(chunkDelay);
+    if (failingGroupIds.contains(groupId)) {
+      return ConsumerGroupLag(
+        groupId: groupId,
+        state: 'Empty',
+        protocolType: 'consumer',
+        partitionLags: const [],
+        membersCount: 0,
+        topicsCount: 0,
+        members: const [],
+        unassignedPartitions: const [],
+        ownershipKnown: false,
+        lagError: 'Broker timeout for $groupId',
+      );
+    }
     return lags.firstWhere((l) => l.groupId == groupId);
+  }
+
+  @override
+  Future<List<ConsumerGroupLag>> fetchConsumerGroupLags({
+    required ClusterProfile profile,
+    required List<String> groupIds,
+  }) async {
+    fetchConsumerGroupLagsCalls.add(List.of(groupIds));
+    inFlightChunkCalls++;
+    if (inFlightChunkCalls > maxConcurrentChunkCalls) {
+      maxConcurrentChunkCalls = inFlightChunkCalls;
+    }
+    try {
+      if (chunkCompleter != null) {
+        await chunkCompleter!.future;
+      }
+      if (shouldFail) {
+        throw Exception("Failed to fetch lags");
+      }
+      await Future.delayed(chunkDelay);
+      return groupIds.map((id) {
+        if (failingGroupIds.contains(id)) {
+          return ConsumerGroupLag(
+            groupId: id,
+            state: 'Empty',
+            protocolType: 'consumer',
+            partitionLags: const [],
+            membersCount: 0,
+            topicsCount: 0,
+            members: const [],
+            unassignedPartitions: const [],
+            ownershipKnown: false,
+            lagError: 'Broker timeout for $id',
+          );
+        }
+        return lags.firstWhere((l) => l.groupId == id);
+      }).toList();
+    } finally {
+      inFlightChunkCalls--;
+    }
   }
 
   @override
@@ -112,12 +180,14 @@ ConsumerGroupLag _groupWithLag(int lag) => ConsumerGroupLag(
       logEndOffset: 1000,
       currentOffset: 1000 - lag,
       lag: lag,
+      status: PartitionLagStatus.known,
     ),
   ],
   membersCount: 1,
   topicsCount: 1,
   members: const [],
   unassignedPartitions: const [],
+  ownershipKnown: true,
 );
 
 /// Readings the trend of `groupId` currently retains.
@@ -191,12 +261,15 @@ void main() {
             logEndOffset: 100,
             currentOffset: 90,
             lag: 10,
+
+            status: PartitionLagStatus.known,
           ),
         ],
         membersCount: 1,
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
     ];
 
@@ -232,12 +305,15 @@ void main() {
             logEndOffset: 100,
             currentOffset: 50,
             lag: 50,
+
+            status: PartitionLagStatus.known,
           ),
         ],
         membersCount: 2,
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
       const ConsumerGroupLag(
         groupId: 'group-a',
@@ -250,12 +326,15 @@ void main() {
             logEndOffset: 100,
             currentOffset: 90,
             lag: 10,
+
+            status: PartitionLagStatus.known,
           ),
         ],
         membersCount: 3,
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
     ];
 
@@ -308,6 +387,7 @@ void main() {
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
       const ConsumerGroupLag(
         groupId: 'group-empty',
@@ -318,6 +398,7 @@ void main() {
         topicsCount: 0,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
     ];
 
@@ -368,6 +449,7 @@ void main() {
         topicsCount: 5,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
       const ConsumerGroupLag(
         groupId: 'group-a',
@@ -378,6 +460,7 @@ void main() {
         topicsCount: 2,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
     ];
 
@@ -474,6 +557,8 @@ void main() {
             logEndOffset: 100,
             currentOffset: 95,
             lag: 5,
+
+            status: PartitionLagStatus.known,
           ),
           TopicPartitionLag(
             topic: 'topic-z',
@@ -481,12 +566,15 @@ void main() {
             logEndOffset: 200,
             currentOffset: 180,
             lag: 20,
+
+            status: PartitionLagStatus.known,
           ),
         ],
         membersCount: 1,
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
     ];
 
@@ -542,12 +630,15 @@ void main() {
             logEndOffset: 100,
             currentOffset: 90,
             lag: 10,
+
+            status: PartitionLagStatus.known,
           ),
         ],
         membersCount: 1,
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
     ];
 
@@ -595,18 +686,11 @@ void main() {
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
-      'consumer_max_concurrent_queries': 3,
-    });
-
-    tester.view.physicalSize = const Size(1000, 1200);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
+      'consumer_max_concurrent_queries': 2,
     });
 
     fakeMetadataService.lags = List.generate(
-      4,
+      45,
       (i) => ConsumerGroupLag(
         groupId: 'group-$i',
         state: 'Stable',
@@ -618,44 +702,28 @@ void main() {
             logEndOffset: 100,
             currentOffset: 90,
             lag: 10,
+            status: PartitionLagStatus.known,
           ),
         ],
         membersCount: 1,
         topicsCount: 1,
         members: const [],
         unassignedPartitions: const [],
+        ownershipKnown: true,
       ),
     );
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();
-
-    // Trigger connection
     await activeConnectionController.connect(testProfile);
-
-    // Pump to resolve fetchConsumerGroups and trigger build
-    await tester.pump();
-
-    // Pump to render list and trigger post-frame callbacks
-    await tester.pump();
-
-    // Pump to run _loadGroupLag's synchronous setState
-    // (adds first 3 to _loadingGroupIds, queues others)
-    await tester.pump();
-
-    // Expect 3 loading indicators (with strokeWidth == 2)
-    final loadingSpinners = find.byWidgetPredicate(
-      (widget) =>
-          widget is CircularProgressIndicator && widget.strokeWidth == 2,
-    );
-    expect(loadingSpinners, findsNWidgets(3));
-
-    // Wait for everything to resolve
     await tester.pumpAndSettle();
 
-    // Verify all 4 resolved and show Lag: 10
-    expect(find.text('Lag: 10'), findsNWidgets(4));
-    expect(loadingSpinners, findsNothing);
+    expect(fakeMetadataService.maxConcurrentChunkCalls, lessThanOrEqualTo(2));
+    expect(fakeMetadataService.fetchConsumerGroupLagsCalls.length, 3);
+    expect(
+      fakeMetadataService.fetchConsumerGroupLagsCalls.expand((c) => c).length,
+      45,
+    );
   });
 
   testWidgets('defaults refresh interval to 30s', (tester) async {
@@ -687,12 +755,15 @@ void main() {
               logEndOffset: 100,
               currentOffset: 90,
               lag: 10,
+
+              status: PartitionLagStatus.known,
             ),
           ],
           membersCount: 1,
           topicsCount: 1,
           members: [],
           unassignedPartitions: [],
+          ownershipKnown: true,
         ),
       ];
 
@@ -721,12 +792,15 @@ void main() {
               logEndOffset: 100,
               currentOffset: 95,
               lag: 5,
+
+              status: PartitionLagStatus.known,
             ),
           ],
           membersCount: 1,
           topicsCount: 1,
           members: [],
           unassignedPartitions: [],
+          ownershipKnown: true,
         ),
       ];
 
@@ -756,12 +830,15 @@ void main() {
               logEndOffset: 107,
               currentOffset: 95,
               lag: 12,
+
+              status: PartitionLagStatus.known,
             ),
           ],
           membersCount: 1,
           topicsCount: 1,
           members: [],
           unassignedPartitions: [],
+          ownershipKnown: true,
         ),
       ];
 
@@ -801,6 +878,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: 90,
               lag: 10,
+
+              status: PartitionLagStatus.known,
             ),
             TopicPartitionLag(
               topic: 'test-topic',
@@ -808,12 +887,15 @@ void main() {
               logEndOffset: 100,
               currentOffset: 80,
               lag: 20,
+
+              status: PartitionLagStatus.known,
             ),
           ],
           membersCount: 1,
           topicsCount: 1,
           members: [],
           unassignedPartitions: [],
+          ownershipKnown: true,
         ),
       ];
 
@@ -849,6 +931,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: 97,
               lag: 3,
+
+              status: PartitionLagStatus.known,
             ),
             TopicPartitionLag(
               topic: 'test-topic',
@@ -856,12 +940,15 @@ void main() {
               logEndOffset: 100,
               currentOffset: 82,
               lag: 18,
+
+              status: PartitionLagStatus.known,
             ),
           ],
           membersCount: 1,
           topicsCount: 1,
           members: [],
           unassignedPartitions: [],
+          ownershipKnown: true,
         ),
       ];
 
@@ -912,12 +999,15 @@ void main() {
             logEndOffset: 1000000,
             currentOffset: 900000,
             lag: 100000,
+
+            status: PartitionLagStatus.known,
           ),
         ],
         membersCount: 2000,
         topicsCount: 1500,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       ),
     ];
 
@@ -964,12 +1054,15 @@ void main() {
             logEndOffset: 100,
             currentOffset: 90,
             lag: 10,
+
+            status: PartitionLagStatus.known,
           ),
         ],
         membersCount: 1,
         topicsCount: 1,
         members: const [],
         unassignedPartitions: const [],
+        ownershipKnown: true,
       ),
     );
 
@@ -1131,4 +1224,316 @@ void main() {
 
     expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
   });
+
+  testWidgets(
+    'single-flight refresh skips overlapping timer tick and cluster switch discards late results',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({'consumer_refresh_interval': 5});
+      final completer = Completer<void>();
+      fakeMetadataService.groupsCompleter = completer;
+      fakeMetadataService.lags = [
+        ConsumerGroupLag(
+          groupId: 'old-cluster-group',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 't',
+              partition: 0,
+              logEndOffset: 10,
+              currentOffset: 5,
+              lag: 5,
+              status: PartitionLagStatus.known,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+          members: const [],
+          unassignedPartitions: const [],
+          ownershipKnown: true,
+        ),
+      ];
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await activeConnectionController.connect(testProfile);
+      await tester.pump();
+
+      expect(fakeMetadataService.fetchConsumerGroupsCallCount, 1);
+
+      // Advance past the 5s timer while the first fetch is still in flight.
+      await tester.pump(const Duration(seconds: 6));
+      expect(fakeMetadataService.fetchConsumerGroupsCallCount, 1);
+
+      // Switch to a new cluster while the old fetch is still pending.
+      final newCluster = ClusterProfile(
+        name: 'other-cluster',
+        bootstrapServers: 'other:9092',
+        tlsVerification: TlsVerification.enabled,
+      );
+      fakeMetadataService.groupsCompleter = null;
+      fakeMetadataService.lags = [
+        ConsumerGroupLag(
+          groupId: 'new-cluster-group',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 't',
+              partition: 0,
+              logEndOffset: 20,
+              currentOffset: 10,
+              lag: 10,
+              status: PartitionLagStatus.known,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+          members: const [],
+          unassignedPartitions: const [],
+          ownershipKnown: true,
+        ),
+      ];
+      await activeConnectionController.connect(newCluster);
+      await tester.pump();
+
+      // Complete the stale first request; its results must be discarded.
+      completer.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('new-cluster-group'), findsOneWidget);
+      expect(find.text('old-cluster-group'), findsNothing);
+    },
+  );
+
+  testWidgets('eager chunked loading loads all 40 groups even off-screen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    fakeMetadataService.lags = List.generate(
+      40,
+      (i) => ConsumerGroupLag(
+        groupId: 'eager-group-${i.toString().padLeft(2, '0')}',
+        state: 'Stable',
+        protocolType: 'consumer',
+        partitionLags: [
+          TopicPartitionLag(
+            topic: 'topic-1',
+            partition: 0,
+            logEndOffset: 100,
+            currentOffset: 90,
+            lag: 10,
+            status: PartitionLagStatus.known,
+          ),
+        ],
+        membersCount: 1,
+        topicsCount: 1,
+        members: const [],
+        unassignedPartitions: const [],
+        ownershipKnown: true,
+      ),
+    );
+
+    await tester.pumpWidget(createWidgetUnderTest());
+    await tester.pump();
+    await activeConnectionController.connect(testProfile);
+    await tester.pumpAndSettle();
+
+    expect(fakeMetadataService.fetchConsumerGroupLagsCalls.length, 2);
+    expect(
+      fakeMetadataService.fetchConsumerGroupLagsCalls.expand((c) => c).length,
+      40,
+    );
+    expect(find.text('400'), findsOneWidget);
+  });
+
+  testWidgets(
+    'KPI shows loaded progress while loading, Total incomplete on error, and sorts unknown last',
+    (tester) async {
+      final chunkGate = Completer<void>();
+      fakeMetadataService.chunkCompleter = chunkGate;
+      fakeMetadataService.lags = List.generate(
+        25,
+        (i) => ConsumerGroupLag(
+          groupId: 'grp-${i.toString().padLeft(2, '0')}',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 't',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 100 - (i + 1),
+              lag: i + 1,
+              status: PartitionLagStatus.known,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+          members: const [],
+          unassignedPartitions: const [],
+          ownershipKnown: true,
+        ),
+      );
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await activeConnectionController.connect(testProfile);
+      await tester.pump();
+      await tester.pump();
+
+      // While chunks are still pending, progress is shown (0 of 25 loaded)
+      expect(find.text('0 of 25 loaded'), findsOneWidget);
+
+      // Fail one group and release gate
+      fakeMetadataService.failingGroupIds = {'grp-00'};
+      fakeMetadataService.chunkCompleter = null;
+      chunkGate.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Total incomplete'), findsOneWidget);
+      expect(find.text('Error'), findsWidgets);
+
+      // Sort by Lag ascending: grp-01 (lag 2) < grp-02 (lag 3), and grp-00 (unknown) is at the bottom
+      await tester.tap(find.text('Total Lag').last);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(find.text('grp-01')).dy,
+        lessThan(tester.getTopLeft(find.text('grp-02')).dy),
+      );
+      final listScrollable = find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('grp-00'),
+        300,
+        scrollable: listScrollable,
+      );
+      expect(
+        tester.getTopLeft(find.text('grp-24')).dy,
+        lessThan(tester.getTopLeft(find.text('grp-00')).dy),
+      );
+
+      // Sort by Lag descending: grp-24 (lag 25) > grp-23 (lag 24), and grp-00 (unknown) is still at the bottom
+      await tester.tap(find.text('Total Lag').last);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('grp-24'),
+        -300,
+        scrollable: listScrollable,
+      );
+      expect(
+        tester.getTopLeft(find.text('grp-24')).dy,
+        lessThan(tester.getTopLeft(find.text('grp-23')).dy),
+      );
+      await tester.scrollUntilVisible(
+        find.text('grp-00'),
+        300,
+        scrollable: listScrollable,
+      );
+      expect(
+        tester.getTopLeft(find.text('grp-01')).dy,
+        lessThan(tester.getTopLeft(find.text('grp-00')).dy),
+      );
+    },
+  );
+
+  testWidgets(
+    'failed group shows Error badge, expands error card, and retries only that group',
+    (tester) async {
+      fakeMetadataService.failingGroupIds = {'bad-group'};
+      fakeMetadataService.lags = [
+        ConsumerGroupLag(
+          groupId: 'good-group',
+          state: 'Stable',
+          protocolType: 'consumer',
+          partitionLags: [
+            TopicPartitionLag(
+              topic: 't',
+              partition: 0,
+              logEndOffset: 100,
+              currentOffset: 95,
+              lag: 5,
+              status: PartitionLagStatus.known,
+            ),
+          ],
+          membersCount: 1,
+          topicsCount: 1,
+          members: const [],
+          unassignedPartitions: const [],
+          ownershipKnown: true,
+        ),
+        ConsumerGroupLag(
+          groupId: 'bad-group',
+          state: 'Empty',
+          protocolType: 'consumer',
+          partitionLags: const [],
+          membersCount: 0,
+          topicsCount: 0,
+          members: const [],
+          unassignedPartitions: const [],
+          ownershipKnown: false,
+        ),
+      ];
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+      await activeConnectionController.connect(testProfile);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Error'), findsOneWidget);
+      expect(find.text('Lag: 5'), findsOneWidget);
+
+      // Expand bad-group to see error card and retry button
+      await tester.tap(find.text('bad-group'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('group_lag_error_card')), findsOneWidget);
+      expect(
+        find.textContaining('Broker timeout for bad-group'),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('group_lag_retry_button')), findsOneWidget);
+
+      // Clear failure and retry only bad-group
+      fakeMetadataService.fetchConsumerGroupLagsCalls.clear();
+      fakeMetadataService.failingGroupIds.clear();
+      fakeMetadataService.lags[1] = ConsumerGroupLag(
+        groupId: 'bad-group',
+        state: 'Empty',
+        protocolType: 'consumer',
+        partitionLags: [
+          TopicPartitionLag(
+            topic: 't',
+            partition: 0,
+            logEndOffset: 50,
+            currentOffset: 40,
+            lag: 10,
+            status: PartitionLagStatus.known,
+          ),
+        ],
+        membersCount: 0,
+        topicsCount: 1,
+        members: const [],
+        unassignedPartitions: const [],
+        ownershipKnown: false,
+      );
+
+      await tester.tap(find.byKey(const Key('group_lag_retry_button')));
+      await tester.pumpAndSettle();
+
+      expect(fakeMetadataService.fetchConsumerGroupLagsCalls, [
+        ['bad-group'],
+      ]);
+      expect(find.text('Error'), findsNothing);
+      expect(find.text('Lag: 10'), findsWidgets);
+    },
+  );
 }

@@ -29,6 +29,7 @@ void main() {
   ConsumerGroupLag group({
     List<ConsumerGroupMember> members = const [],
     List<TopicPartition> unassigned = const [],
+    bool ownershipKnown = true,
   }) => ConsumerGroupLag(
     groupId: 'orders-consumers',
     state: 'Stable',
@@ -38,6 +39,7 @@ void main() {
     topicsCount: 1,
     members: members,
     unassignedPartitions: unassigned,
+    ownershipKnown: ownershipKnown,
   );
 
   Widget createWidgetUnderTest(ConsumerGroupLag groupLag) {
@@ -254,4 +256,43 @@ void main() {
 
     expect(find.text('Assignment could not be decoded'), findsOneWidget);
   });
+
+  testWidgets(
+    'hides unassigned chip and shows ownership unknown badge when ownershipKnown is false with members',
+    (tester) async {
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          group(
+            members: [member('m-1', decodable: false)],
+            unassigned: const [TopicPartition(topic: 'orders', partition: 0)],
+            ownershipKnown: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('group_ownership_unknown')), findsOneWidget);
+      expect(find.byKey(const Key('group_unassigned_chip')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'hides unassigned chip and shows empty members state for empty group with ownershipKnown false',
+    (tester) async {
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          group(
+            members: const [],
+            unassigned: const [TopicPartition(topic: 'orders', partition: 0)],
+            ownershipKnown: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('group_member_empty')), findsOneWidget);
+      expect(find.byKey(const Key('group_unassigned_chip')), findsNothing);
+      expect(find.byKey(const Key('group_ownership_unknown')), findsNothing);
+    },
+  );
 }

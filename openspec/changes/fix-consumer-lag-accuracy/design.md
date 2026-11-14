@@ -154,8 +154,8 @@ stored state to migrate.
 
 ## Open Questions
 
-- Spike outcome A vs. B vs. fallback (D1). Does not change specs or task order; only the body of task 2.x/3.x.
-- Exact chunk size and candidate-B partition cap; set from spike measurements against the local broker.
+- **Resolved by spike (`spike.md`):** **Candidate A (`rd_kafka_ListConsumerGroupOffsets` with `partitions = NULL`)** is selected. It returns all committed partitions of an `Empty` or active group in ~4 ms without scanning cluster partitions and without joining the group or triggering rebalances.
+- **Chunk size:** `20` group IDs per `fetchConsumerGroupLags` batch call. Candidate-B partition cap is not needed.
 - `consumer-lag-dashboard` describes the Total Lag KPI as covering "all consumer groups", while the view sums the
   filtered list. This change keeps the filtered set and only adds completeness; reconciling the wording is left to
   `consumer-lag-insights`, which modifies that capability.

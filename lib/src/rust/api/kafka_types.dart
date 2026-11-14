@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 class ClusterProfile {
   final String name;
@@ -124,6 +124,8 @@ class ConsumerGroupLag {
   final int topicsCount;
   final List<ConsumerGroupMember> members;
   final List<TopicPartition> unassignedPartitions;
+  final String? lagError;
+  final bool ownershipKnown;
 
   const ConsumerGroupLag({
     required this.groupId,
@@ -134,6 +136,8 @@ class ConsumerGroupLag {
     required this.topicsCount,
     required this.members,
     required this.unassignedPartitions,
+    this.lagError,
+    required this.ownershipKnown,
   });
 
   @override
@@ -145,7 +149,9 @@ class ConsumerGroupLag {
       membersCount.hashCode ^
       topicsCount.hashCode ^
       members.hashCode ^
-      unassignedPartitions.hashCode;
+      unassignedPartitions.hashCode ^
+      lagError.hashCode ^
+      ownershipKnown.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -159,7 +165,9 @@ class ConsumerGroupLag {
           membersCount == other.membersCount &&
           topicsCount == other.topicsCount &&
           members == other.members &&
-          unassignedPartitions == other.unassignedPartitions;
+          unassignedPartitions == other.unassignedPartitions &&
+          lagError == other.lagError &&
+          ownershipKnown == other.ownershipKnown;
 }
 
 class ConsumerGroupMember {
@@ -431,6 +439,15 @@ class PartitionAnalysis {
           percentage == other.percentage &&
           earliestOffset == other.earliestOffset &&
           latestOffset == other.latestOffset;
+}
+
+enum PartitionLagStatus {
+  known,
+  noCommit,
+  unknown;
+
+  static Future<PartitionLagStatus> default_() => KafkalyzerRustLib.instance.api
+      .crateApiKafkaTypesPartitionLagStatusDefault();
 }
 
 enum SearchScope { key, value, both }
@@ -736,6 +753,8 @@ class TopicPartitionLag {
   final PlatformInt64 logEndOffset;
   final PlatformInt64 currentOffset;
   final PlatformInt64 lag;
+  final PartitionLagStatus status;
+  final String? error;
 
   const TopicPartitionLag({
     required this.topic,
@@ -743,6 +762,8 @@ class TopicPartitionLag {
     required this.logEndOffset,
     required this.currentOffset,
     required this.lag,
+    required this.status,
+    this.error,
   });
 
   @override
@@ -751,7 +772,9 @@ class TopicPartitionLag {
       partition.hashCode ^
       logEndOffset.hashCode ^
       currentOffset.hashCode ^
-      lag.hashCode;
+      lag.hashCode ^
+      status.hashCode ^
+      error.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -762,7 +785,9 @@ class TopicPartitionLag {
           partition == other.partition &&
           logEndOffset == other.logEndOffset &&
           currentOffset == other.currentOffset &&
-          lag == other.lag;
+          lag == other.lag &&
+          status == other.status &&
+          error == other.error;
 }
 
 class TypeOccurrence {

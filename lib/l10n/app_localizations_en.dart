@@ -2457,4 +2457,164 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resetColumnFilters => 'Reset filters';
+
+  @override
+  String get lagUnknown => 'Unknown';
+
+  @override
+  String get lagNoCommit => 'No commit';
+
+  @override
+  String get lagNoCommittedOffsets => 'No committed offsets';
+
+  @override
+  String lagGroupsLoadedProgress(int loaded, int total) {
+    return '$loaded of $total loaded';
+  }
+
+  @override
+  String get lagTotalIncomplete => 'Total incomplete';
+
+  @override
+  String get lagErrorLabel => 'Error';
+
+  @override
+  String lagErrorTooltip(String error) {
+    return 'Lag error: $error';
+  }
+
+  @override
+  String get lagRetryAction => 'Retry';
+
+  @override
+  String get lagRefreshInProgress => 'Refresh in progress';
+
+  @override
+  String get partitionOwnershipUnknown => 'Partition ownership unknown';
+
+  @override
+  String get topicNotReadable => 'Topic not readable';
+
+  @override
+  String get diagStageNetwork => 'Network';
+
+  @override
+  String get diagStageTls => 'TLS';
+
+  @override
+  String get diagStageAuthentication => 'Authentication';
+
+  @override
+  String get diagStageMetadata => 'Metadata';
+
+  @override
+  String get diagStageSchemaRegistry => 'Schema Registry';
+
+  @override
+  String get diagStateOk => 'OK';
+
+  @override
+  String get diagStateFailed => 'Failed';
+
+  @override
+  String get diagStateNotChecked => 'Not checked';
+
+  @override
+  String get diagStateNotApplicable => 'Not applicable';
+
+  @override
+  String get diagStateUndetermined => 'Undetermined';
+
+  @override
+  String diagNotCheckedPreviousFailed(String stage) {
+    return 'Skipped because $stage failed';
+  }
+
+  @override
+  String get diagNotCheckedBudgetExhausted =>
+      'Skipped because the diagnosis time budget ran out';
+
+  @override
+  String get diagOverallOk =>
+      'Connection succeeded across all applicable stages';
+
+  @override
+  String diagOverallFailedAtStage(String stage) {
+    return 'Connection failed at stage: $stage';
+  }
+
+  @override
+  String get diagOverallStageUnknown => 'Connection failed, stage unknown';
+
+  @override
+  String get diagHintInvalidEntry =>
+      'Bootstrap entry is invalid (expected host:port without scheme)';
+
+  @override
+  String get diagHintHostUnknown => 'Host name could not be resolved';
+
+  @override
+  String get diagHintConnectionRefused => 'Connection refused by host';
+
+  @override
+  String get diagHintConnectTimeout => 'Connection timed out';
+
+  @override
+  String get diagHintCertificateRejected =>
+      'Certificate verification failed — check truststore/CA or hostname';
+
+  @override
+  String get diagHintTlsHandshakeFailed =>
+      'TLS handshake failed — check client/server certificates and TLS settings';
+
+  @override
+  String get diagHintProtocolMismatch =>
+      'Security protocol does not match the broker listener';
+
+  @override
+  String get diagHintAuthenticationFailed =>
+      'Authentication failed — check SASL username and password';
+
+  @override
+  String get diagHintMechanismRejected =>
+      'SASL mechanism rejected or not supported by broker listener';
+
+  @override
+  String get diagHintNotAuthorized =>
+      'Not authorized to describe cluster metadata (check ACLs)';
+
+  @override
+  String get diagHintRequestTimeout => 'Request timed out';
+
+  @override
+  String get diagHintRegistryUnreachable => 'Schema Registry is unreachable';
+
+  @override
+  String get diagHintRegistryUnauthorized =>
+      'Schema Registry rejected credentials';
+
+  @override
+  String diagHintRegistryHttpError(int status) {
+    return 'Schema Registry returned HTTP $status';
+  }
+
+  @override
+  String get diagHintGeneric => 'Connection check failed';
+
+  @override
+  String get diagServerDnsLabel => 'DNS';
+
+  @override
+  String get diagServerTcpLabel => 'TCP';
+
+  @override
+  String get diagServerResolvedLabel => 'Resolved';
+
+  @override
+  String diagServerConnectedTo(String address) {
+    return 'Connected to $address';
+  }
+
+  @override
+  String get diagRawErrorLabel => 'Raw error';
 }

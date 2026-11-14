@@ -1,0 +1,1 @@
+-195	ssl://localhost:19095/bootstrap: Receive failed: error:0A000416:SSL routines::ssl/tls alert certificate unknown: SSL alert number 46 (after 1ms in state APIVERSION_QUERY)

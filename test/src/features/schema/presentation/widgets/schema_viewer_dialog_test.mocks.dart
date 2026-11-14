@@ -62,6 +62,10 @@ class MockSchemaController extends _i1.Mock implements _i3.SchemaController {
           as bool);
 
   @override
+  String? errorFor(_i4.ClusterProfile? cluster) =>
+      (super.noSuchMethod(Invocation.method(#errorFor, [cluster])) as String?);
+
+  @override
   _i5.Future<void> fetchSchemas(
     _i4.ClusterProfile? cluster, {
     bool? force = false,

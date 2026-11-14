@@ -519,6 +519,10 @@ class MockTopicController extends _i1.Mock implements _i14.TopicController {
           as bool);
 
   @override
+  String? errorFor(_i7.ClusterProfile? cluster) =>
+      (super.noSuchMethod(Invocation.method(#errorFor, [cluster])) as String?);
+
+  @override
   _i8.Future<void> fetchTopics(
     _i7.ClusterProfile? cluster, {
     bool? force = false,
@@ -586,6 +590,10 @@ class MockSchemaController extends _i1.Mock implements _i15.SchemaController {
             returnValue: false,
           )
           as bool);
+
+  @override
+  String? errorFor(_i7.ClusterProfile? cluster) =>
+      (super.noSuchMethod(Invocation.method(#errorFor, [cluster])) as String?);
 
   @override
   _i8.Future<void> fetchSchemas(

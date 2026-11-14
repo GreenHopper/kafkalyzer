@@ -12,6 +12,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_ana
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/theme_controller.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
+import 'package:kafkalyzer/src/services/connection_diagnostics_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
@@ -37,6 +38,9 @@ void setupDependencyInjection() {
   getIt.registerLazySingleton<ClusterService>(() => ClusterService());
   getIt.registerLazySingleton<KafkaMetadataService>(
     () => KafkaMetadataService(),
+  );
+  getIt.registerLazySingleton<ConnectionDiagnosticsService>(
+    () => ConnectionDiagnosticsService(),
   );
   getIt.registerLazySingleton<SchemaRegistryService>(
     () => SchemaRegistryService(),

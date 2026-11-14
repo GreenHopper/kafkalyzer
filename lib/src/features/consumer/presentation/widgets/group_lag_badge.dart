@@ -1,4 +1,6 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
+import '../../domain/consumer_lag_calculator.dart';
 
 class GroupLagBadge extends StatelessWidget {
   final int totalLag;
@@ -7,6 +9,9 @@ class GroupLagBadge extends StatelessWidget {
   final bool isFailed;
   final bool hasPreviousValue;
   final String labelText;
+  final GroupLagOutcome? outcome;
+  final String? errorReason;
+  final AppLocalizations? l10n;
 
   /// Lag in messages at which the badge warns; 0 disables the warning.
   final int warnThreshold;
@@ -20,6 +25,9 @@ class GroupLagBadge extends StatelessWidget {
     required this.isFailed,
     required this.hasPreviousValue,
     required this.labelText,
+    this.outcome,
+    this.errorReason,
+    this.l10n,
     this.warnThreshold = 0,
     this.warnTooltip,
   });
@@ -43,19 +51,65 @@ class GroupLagBadge extends StatelessWidget {
       );
     }
 
-    if (isFailed) {
+    if (isFailed || outcome == GroupLagOutcome.unknown) {
+      final scheme = Theme.of(context).colorScheme;
+      final label = isFailed
+          ? (l10n?.lagErrorLabel ?? 'Error')
+          : (l10n?.lagUnknown ?? 'Unknown');
+      final reason = errorReason ?? label;
+      final tooltipMsg = l10n != null ? l10n!.lagErrorTooltip(reason) : reason;
+
+      return Semantics(
+        label: tooltipMsg,
+        child: Tooltip(
+          message: tooltipMsg,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: scheme.errorContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isFailed ? Icons.error_outline : Icons.help_outline,
+                  size: 14,
+                  color: scheme.onErrorContainer,
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: scheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (outcome == GroupLagOutcome.noCommittedOffsets && isLoaded) {
+      final scheme = Theme.of(context).colorScheme;
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.errorContainer,
+          color: scheme.outlineVariant.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
-          "Error",
+          labelText,
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onErrorContainer,
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+            color: scheme.onSurfaceVariant,
           ),
         ),
       );

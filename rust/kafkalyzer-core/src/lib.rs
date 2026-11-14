@@ -1,5 +1,8 @@
 pub mod avro_utils;
+pub mod bootstrap;
+pub mod connection_diagnostics;
 pub mod consumer_group_protocol;
+pub mod consumer_lag;
 pub mod duplicate_fingerprint;
 pub mod json_path;
 pub mod kafka_types;

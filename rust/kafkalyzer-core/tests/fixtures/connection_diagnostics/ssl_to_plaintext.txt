@@ -1,0 +1,1 @@
+-195	ssl://localhost:19092/bootstrap: SSL handshake failed: Disconnected: connecting to a PLAINTEXT broker listener? (after 1ms in state SSL_HANDSHAKE)

@@ -1,9 +1,97 @@
+import 'dart:async';
+
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/connection_diagnostics_panel.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
+import 'package:kafkalyzer/src/rust/api/connection_diagnostics.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/connection_diagnostics_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+class _FakeConnectionDiagnosticsService extends ConnectionDiagnosticsService {
+  final Future<ConnectionDiagnosis> Function(ClusterProfile profile) _handler;
+
+  _FakeConnectionDiagnosticsService(this._handler);
+
+  @override
+  Future<ConnectionDiagnosis> diagnose(ClusterProfile profile) =>
+      _handler(profile);
+}
+
+ConnectionDiagnosis _okDiagnosis() => ConnectionDiagnosis(
+  outcome: DiagnosisOutcome.ok,
+  stages: const [
+    StageResult(
+      stage: DiagnosisStage.network,
+      state: StageState.ok,
+      servers: [],
+    ),
+    StageResult(
+      stage: DiagnosisStage.tls,
+      state: StageState.notApplicable,
+      servers: [],
+    ),
+    StageResult(
+      stage: DiagnosisStage.authentication,
+      state: StageState.notApplicable,
+      servers: [],
+    ),
+    StageResult(
+      stage: DiagnosisStage.metadata,
+      state: StageState.ok,
+      servers: [],
+    ),
+    StageResult(
+      stage: DiagnosisStage.schemaRegistry,
+      state: StageState.notApplicable,
+      servers: [],
+    ),
+  ],
+  unattributed: const [],
+  elapsedMs: BigInt.from(12),
+);
+
+ConnectionDiagnosis _failedDiagnosis() => ConnectionDiagnosis(
+  outcome: DiagnosisOutcome.failed,
+  stages: const [
+    StageResult(
+      stage: DiagnosisStage.network,
+      state: StageState.failed,
+      hint: DiagnosisHint.connectionRefused,
+      raw: 'Connection refused (os error 111)',
+      servers: [],
+    ),
+    StageResult(
+      stage: DiagnosisStage.tls,
+      state: StageState.notChecked,
+      notCheckedReason: NotCheckedReason.previousStageFailed,
+      servers: [],
+    ),
+    StageResult(
+      stage: DiagnosisStage.authentication,
+      state: StageState.notChecked,
+      notCheckedReason: NotCheckedReason.previousStageFailed,
+      servers: [],
+    ),
+    StageResult(
+      stage: DiagnosisStage.metadata,
+      state: StageState.notChecked,
+      notCheckedReason: NotCheckedReason.previousStageFailed,
+      servers: [],
+    ),
+    StageResult(
+      stage: DiagnosisStage.schemaRegistry,
+      state: StageState.notChecked,
+      notCheckedReason: NotCheckedReason.previousStageFailed,
+      servers: [],
+    ),
+  ],
+  unattributed: const [],
+  elapsedMs: BigInt.from(25),
+);
 
 void main() {
   group('ClusterConfigDialog', () {
@@ -166,7 +254,7 @@ void main() {
       expect(result!.bootstrapServers, 'localhost:9092');
     });
 
-    testWidgets('triggers connection test and shows result banner', (
+    testWidgets('triggers connection test and shows diagnostics panel', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -175,6 +263,8 @@ void main() {
             useMaterial3: true,
             splashFactory: InkRipple.splashFactory,
           ),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: ClusterConfigDialog()),
         ),
       );
@@ -205,16 +295,8 @@ void main() {
       await tester.tap(find.text('Test Connection'));
       await tester.pumpAndSettle();
 
-      // Either success or connection error banner should appear without crashing or closing
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Text &&
-              (w.data == 'Connection successful!' ||
-                  (w.data != null && w.data!.startsWith('Connection failed'))),
-        ),
-        findsOneWidget,
-      );
+      // Diagnostics panel should appear without crashing or closing
+      expect(find.byType(ConnectionDiagnosticsPanel), findsOneWidget);
     });
 
     testWidgets(
@@ -357,5 +439,145 @@ void main() {
         expect(saved?.tlsVerification, TlsVerification.enabled);
       },
     );
+  });
+
+  group('ClusterConfigDialog connection diagnostics', () {
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    Future<ClusterProfile? Function()> openDialogApp(
+      WidgetTester tester,
+    ) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      ClusterProfile? saved;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            useMaterial3: true,
+            splashFactory: InkRipple.splashFactory,
+          ),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () async {
+                  saved = await showDialog<ClusterProfile>(
+                    context: ctx,
+                    builder: (_) => const ClusterConfigDialog(),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Cluster Name'),
+        'Local Kafka',
+      );
+      await tester.enterText(
+        find.widgetWithText(
+          TextFormField,
+          'Bootstrap Servers (e.g. localhost:9092)',
+        ),
+        'localhost:9092',
+      );
+
+      return () => saved;
+    }
+
+    testWidgets('success shows ConnectionDiagnosticsPanel', (tester) async {
+      getIt.registerSingleton<ConnectionDiagnosticsService>(
+        _FakeConnectionDiagnosticsService((_) async => _okDiagnosis()),
+      );
+
+      await openDialogApp(tester);
+
+      await tester.tap(find.text('Test Connection'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ConnectionDiagnosticsPanel), findsOneWidget);
+      expect(
+        find.text('Connection succeeded across all applicable stages'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('failure keeps dialog open without saving', (tester) async {
+      getIt.registerSingleton<ConnectionDiagnosticsService>(
+        _FakeConnectionDiagnosticsService((_) async => _failedDiagnosis()),
+      );
+
+      final getSaved = await openDialogApp(tester);
+
+      await tester.tap(find.text('Test Connection'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ClusterConfigDialog), findsOneWidget);
+      expect(find.byType(ConnectionDiagnosticsPanel), findsOneWidget);
+      expect(find.text('Connection failed at stage: Network'), findsOneWidget);
+      expect(getSaved(), isNull);
+    });
+
+    testWidgets('disables Test Connection button while running', (
+      tester,
+    ) async {
+      final completer = Completer<ConnectionDiagnosis>();
+      getIt.registerSingleton<ConnectionDiagnosticsService>(
+        _FakeConnectionDiagnosticsService((_) => completer.future),
+      );
+
+      await openDialogApp(tester);
+
+      await tester.tap(find.text('Test Connection'));
+      await tester.pump();
+
+      expect(find.text('Testing Connection...'), findsOneWidget);
+      final button = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Test Connection'),
+      );
+      expect(button.onPressed, isNull);
+
+      completer.complete(_okDiagnosis());
+      await tester.pumpAndSettle();
+
+      final buttonAfter = tester.widget<OutlinedButton>(
+        find.widgetWithText(OutlinedButton, 'Test Connection'),
+      );
+      expect(buttonAfter.onPressed, isNotNull);
+    });
+
+    testWidgets('closing dialog during pending test throws nothing', (
+      tester,
+    ) async {
+      final completer = Completer<ConnectionDiagnosis>();
+      getIt.registerSingleton<ConnectionDiagnosticsService>(
+        _FakeConnectionDiagnosticsService((_) => completer.future),
+      );
+
+      await openDialogApp(tester);
+
+      await tester.tap(find.text('Test Connection'));
+      await tester.pump();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ClusterConfigDialog), findsNothing);
+
+      completer.complete(_okDiagnosis());
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
   });
 }

@@ -1,0 +1,1 @@
+-169	sasl_ssl://localhost:19094/bootstrap: SASL SCRAM-SHA-512 mechanism handshake failed: Broker: Unsupported SASL mechanism: broker's supported mechanisms: PLAIN,SCRAM-SHA-256 (after 301ms in state AUTH_HANDSHAKE)

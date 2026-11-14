@@ -4,10 +4,12 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_basic_info_form.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_ssl_form.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/connection_diagnostics_panel.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
+import 'package:kafkalyzer/src/rust/api/connection_diagnostics.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:kafkalyzer/src/services/connection_diagnostics_service.dart';
 
 class ClusterConfigDialog extends StatefulWidget {
   final ClusterProfile? cluster;
@@ -52,8 +54,7 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
   bool _tlsVerificationTouched = false;
 
   bool _isTestingConnection = false;
-  String? _testConnectionStatus;
-  bool? _testConnectionSuccess;
+  ConnectionDiagnosis? _diagnosis;
 
   @override
   void initState() {
@@ -215,34 +216,31 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
       return;
     }
 
-    final l10n = AppLocalizations.of(context);
     setState(() {
       _isTestingConnection = true;
-      _testConnectionStatus = null;
-      _testConnectionSuccess = null;
+      _diagnosis = null;
     });
 
     try {
       final candidate = _buildCandidateProfile();
-      final success = await getIt<KafkaMetadataService>().validateConnection(
-        profile: candidate,
+      final diagnosis = await getIt<ConnectionDiagnosticsService>().diagnose(
+        candidate,
       );
       if (!mounted) return;
       setState(() {
         _isTestingConnection = false;
-        _testConnectionSuccess = success;
-        _testConnectionStatus = success
-            ? (l10n?.connectionSuccessful ?? 'Connection successful!')
-            : (l10n?.connectionFailed('Connection check returned false') ??
-                  'Connection failed');
+        _diagnosis = diagnosis;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isTestingConnection = false;
-        _testConnectionSuccess = false;
-        _testConnectionStatus =
-            l10n?.connectionFailed(e.toString()) ?? 'Connection failed: $e';
+        _diagnosis = ConnectionDiagnosis(
+          outcome: DiagnosisOutcome.failedStageUnknown,
+          stages: const [],
+          unattributed: [e.toString()],
+          elapsedMs: BigInt.zero,
+        );
       });
     }
   }
@@ -355,65 +353,39 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
                     },
                   ),
                 ],
-                if (_isTestingConnection || _testConnectionStatus != null) ...[
+                if (_isTestingConnection) ...[
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _isTestingConnection
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest
-                          : (_testConnectionSuccess == true
-                                ? Colors.green.withValues(alpha: 0.15)
-                                : Colors.red.withValues(alpha: 0.15)),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: _isTestingConnection
-                            ? Theme.of(context).colorScheme.outlineVariant
-                            : (_testConnectionSuccess == true
-                                  ? Colors.green
-                                  : Colors.red),
+                        color: Theme.of(context).colorScheme.outlineVariant,
                       ),
                     ),
                     child: Row(
                       children: [
-                        if (_isTestingConnection)
-                          const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        else
-                          Icon(
-                            _testConnectionSuccess == true
-                                ? Icons.check_circle_outline
-                                : Icons.error_outline,
-                            color: _testConnectionSuccess == true
-                                ? Colors.green
-                                : Colors.red,
-                            size: 20,
-                          ),
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _isTestingConnection
-                                ? (l10n?.testingConnection ??
-                                      'Testing Connection...')
-                                : (_testConnectionStatus ?? ''),
-                            style: TextStyle(
-                              color: _isTestingConnection
-                                  ? null
-                                  : (_testConnectionSuccess == true
-                                        ? Colors.green[800]
-                                        : Colors.red[800]),
-                              fontWeight: FontWeight.w500,
-                            ),
+                            l10n?.testingConnection ?? 'Testing Connection...',
+                            style: const TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],
                     ),
                   ),
+                ] else if (_diagnosis != null) ...[
+                  const SizedBox(height: 16),
+                  ConnectionDiagnosticsPanel(diagnosis: _diagnosis!),
                 ],
               ],
             ),

@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import '../domain/consumer_lag_calculator.dart';
 import 'topic_partition_table.dart';
 
 /// Group detail: the members with the partitions they own, then the per-topic lag.
@@ -16,6 +17,8 @@ class GroupDetailsView extends StatefulWidget {
   /// Lag in messages at which a partition is marked; 0 disables the marking.
   final int lagWarnThreshold;
   final AppLocalizations l10n;
+  final String? lagError;
+  final VoidCallback? onRetry;
 
   const GroupDetailsView({
     super.key,
@@ -25,6 +28,8 @@ class GroupDetailsView extends StatefulWidget {
     this.partitionTrends,
     this.lagWarnThreshold = 0,
     required this.l10n,
+    this.lagError,
+    this.onRetry,
   });
 
   @override
@@ -40,8 +45,8 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
     return NumberFormat.decimalPattern(locale).format(value);
   }
 
-  int _calculateTopicLag(List<TopicPartitionLag> partitionLags) {
-    return partitionLags.fold(0, (sum, item) => sum + item.lag.toInt());
+  GroupLagSummary _summarizeTopicLag(List<TopicPartitionLag> partitionLags) {
+    return summarizePartitionLags(partitionLags);
   }
 
   int? _calculateTopicDelta(
@@ -87,7 +92,7 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
               '${l10n.groupMembersTitle} (${members.length})',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
-            if (unassigned.isNotEmpty) ...[
+            if (widget.group.ownershipKnown && unassigned.isNotEmpty) ...[
               const SizedBox(width: 12),
               Container(
                 key: const Key('group_unassigned_chip'),
@@ -102,6 +107,24 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ] else if (!widget.group.ownershipKnown && members.isNotEmpty) ...[
+              const SizedBox(width: 12),
+              Container(
+                key: const Key('group_ownership_unknown'),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  l10n.partitionOwnershipUnknown,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -187,17 +210,21 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                     ),
                 ],
               ),
-          for (final partition in unassigned)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
-              child: Text(
-                '${partition.topic}-${partition.partition}',
-                key: Key(
-                  'group_unassigned_${partition.topic}-${partition.partition}',
+          if (widget.group.ownershipKnown)
+            for (final partition in unassigned)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 2,
                 ),
-                style: TextStyle(fontSize: 12, color: colorScheme.error),
+                child: Text(
+                  '${partition.topic}-${partition.partition}',
+                  key: Key(
+                    'group_unassigned_${partition.topic}-${partition.partition}',
+                  ),
+                  style: TextStyle(fontSize: 12, color: colorScheme.error),
+                ),
               ),
-            ),
         ],
       ),
     );
@@ -264,14 +291,16 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
     final topicsList = topicGroups.keys.toList();
 
     topicsList.sort((a, b) {
-      int cmp;
       if (_sortByLag) {
-        final lagA = _calculateTopicLag(topicGroups[a]!);
-        final lagB = _calculateTopicLag(topicGroups[b]!);
-        cmp = lagA.compareTo(lagB);
-      } else {
-        cmp = a.toLowerCase().compareTo(b.toLowerCase());
+        final lagA = _summarizeTopicLag(topicGroups[a]!).totalLag;
+        final lagB = _summarizeTopicLag(topicGroups[b]!).totalLag;
+        if (lagA == null && lagB == null) return 0;
+        if (lagA == null) return 1;
+        if (lagB == null) return -1;
+        final cmp = lagA.compareTo(lagB);
+        return _sortTopicsAscending ? cmp : -cmp;
       }
+      final cmp = a.toLowerCase().compareTo(b.toLowerCase());
       return _sortTopicsAscending ? cmp : -cmp;
     });
 
@@ -315,11 +344,50 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
       );
     }
 
+    final effectiveError = widget.lagError ?? widget.group.lagError;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (effectiveError != null && effectiveError.isNotEmpty) ...[
+            Card(
+              key: const Key('group_lag_error_card'),
+              margin: const EdgeInsets.only(bottom: 12),
+              elevation: 0,
+              color: colorScheme.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: colorScheme.onErrorContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.l10n.lagErrorTooltip(effectiveError),
+                        style: TextStyle(color: colorScheme.onErrorContainer),
+                      ),
+                    ),
+                    if (widget.onRetry != null)
+                      OutlinedButton.icon(
+                        key: const Key('group_lag_retry_button'),
+                        onPressed: widget.onRetry,
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: Text(widget.l10n.lagRetryAction),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           _buildMembersCard(context),
           const SizedBox(height: 16),
           Padding(
@@ -398,8 +466,31 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
             ),
           ...topicsList.map((topic) {
             final parts = topicGroups[topic]!;
-            final totalLag = _calculateTopicLag(parts);
+            final topicSummary = _summarizeTopicLag(parts);
             final topicDelta = _calculateTopicDelta(topic, parts);
+            final scheme = Theme.of(context).colorScheme;
+            final Color badgeBg;
+            final Color badgeFg;
+            final String badgeText;
+            if (topicSummary.outcome == GroupLagOutcome.unknown) {
+              badgeBg = scheme.errorContainer;
+              badgeFg = scheme.onErrorContainer;
+              badgeText = widget.l10n.lagUnknown;
+            } else if (topicSummary.outcome ==
+                GroupLagOutcome.noCommittedOffsets) {
+              badgeBg = scheme.outlineVariant.withValues(alpha: 0.2);
+              badgeFg = scheme.onSurfaceVariant;
+              badgeText = widget.l10n.lagNoCommittedOffsets;
+            } else {
+              final lag = topicSummary.totalLag!;
+              badgeBg = lag > 0
+                  ? scheme.errorContainer
+                  : scheme.primaryContainer;
+              badgeFg = lag > 0
+                  ? scheme.onErrorContainer
+                  : scheme.onPrimaryContainer;
+              badgeText = "${widget.l10n.lagCol}: ${_formatNum(lag)}";
+            }
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               elevation: 0,
@@ -432,31 +523,24 @@ class _GroupDetailsViewState extends State<GroupDetailsView> {
                       flex: 2,
                       child: Align(
                         alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: totalLag > 0
-                                ? Theme.of(context).colorScheme.errorContainer
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            "${widget.l10n.lagCol}: ${_formatNum(totalLag)}",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              color: totalLag > 0
-                                  ? Theme.of(
-                                      context,
-                                    ).colorScheme.onErrorContainer
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer,
+                        child: Tooltip(
+                          message: topicSummary.unknownReason ?? badgeText,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: badgeBg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              badgeText,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                                color: badgeFg,
+                              ),
                             ),
                           ),
                         ),

@@ -76,6 +76,7 @@ void main() {
           topicsCount: 1,
           members: [],
           unassignedPartitions: [],
+          ownershipKnown: true,
         ),
       ];
       when(
@@ -102,6 +103,7 @@ void main() {
           topicsCount: 1,
           members: [],
           unassignedPartitions: [],
+          ownershipKnown: true,
         ),
       ];
       when(
@@ -127,6 +129,7 @@ void main() {
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       );
       when(
         mockApi.crateApiKafkaMetadataFetchConsumerGroupLag(
@@ -146,6 +149,42 @@ void main() {
         mockApi.crateApiKafkaMetadataFetchConsumerGroupLag(
           profile: profile,
           groupId: 'g1',
+        ),
+      ).called(1);
+    });
+
+    test('fetchConsumerGroupLags delegates to API', () async {
+      const lags = [
+        ConsumerGroupLag(
+          groupId: 'g1',
+          state: 'Empty',
+          protocolType: 'consumer',
+          partitionLags: [],
+          membersCount: 0,
+          topicsCount: 1,
+          members: [],
+          unassignedPartitions: [],
+          ownershipKnown: false,
+        ),
+      ];
+      when(
+        mockApi.crateApiKafkaMetadataFetchConsumerGroupLags(
+          profile: profile,
+          groupIds: ['g1'],
+        ),
+      ).thenAnswer((_) async => lags);
+
+      final service = KafkaMetadataService();
+      final result = await service.fetchConsumerGroupLags(
+        profile: profile,
+        groupIds: ['g1'],
+      );
+
+      expect(result, lags);
+      verify(
+        mockApi.crateApiKafkaMetadataFetchConsumerGroupLags(
+          profile: profile,
+          groupIds: ['g1'],
         ),
       ).called(1);
     });

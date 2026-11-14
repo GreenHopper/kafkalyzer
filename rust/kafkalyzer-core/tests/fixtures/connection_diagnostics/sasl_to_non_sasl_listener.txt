@@ -1,0 +1,1 @@
+-169	sasl_ssl://localhost:19093/bootstrap: SASL PLAIN mechanism handshake failed: Broker: Request not valid in current SASL state: broker's supported mechanisms:  (after 0ms in state AUTH_HANDSHAKE)

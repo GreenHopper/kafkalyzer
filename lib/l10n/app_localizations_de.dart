@@ -2476,4 +2476,167 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get resetColumnFilters => 'Filter zurücksetzen';
+
+  @override
+  String get lagUnknown => 'Unbekannt';
+
+  @override
+  String get lagNoCommit => 'Kein Commit';
+
+  @override
+  String get lagNoCommittedOffsets => 'Keine gespeicherten Offsets';
+
+  @override
+  String lagGroupsLoadedProgress(int loaded, int total) {
+    return '$loaded von $total geladen';
+  }
+
+  @override
+  String get lagTotalIncomplete => 'Summe unvollständig';
+
+  @override
+  String get lagErrorLabel => 'Fehler';
+
+  @override
+  String lagErrorTooltip(String error) {
+    return 'Lag-Fehler: $error';
+  }
+
+  @override
+  String get lagRetryAction => 'Erneut versuchen';
+
+  @override
+  String get lagRefreshInProgress => 'Aktualisierung läuft';
+
+  @override
+  String get partitionOwnershipUnknown => 'Partitionszuordnung unbekannt';
+
+  @override
+  String get topicNotReadable => 'Topic nicht lesbar';
+
+  @override
+  String get diagStageNetwork => 'Netzwerk';
+
+  @override
+  String get diagStageTls => 'TLS';
+
+  @override
+  String get diagStageAuthentication => 'Authentifizierung';
+
+  @override
+  String get diagStageMetadata => 'Metadaten';
+
+  @override
+  String get diagStageSchemaRegistry => 'Schema Registry';
+
+  @override
+  String get diagStateOk => 'OK';
+
+  @override
+  String get diagStateFailed => 'Fehlgeschlagen';
+
+  @override
+  String get diagStateNotChecked => 'Nicht geprüft';
+
+  @override
+  String get diagStateNotApplicable => 'Nicht zutreffend';
+
+  @override
+  String get diagStateUndetermined => 'Unbestimmt';
+
+  @override
+  String diagNotCheckedPreviousFailed(String stage) {
+    return 'Übersprungen, da $stage fehlgeschlagen ist';
+  }
+
+  @override
+  String get diagNotCheckedBudgetExhausted =>
+      'Übersprungen, da das Zeitbudget abgelaufen ist';
+
+  @override
+  String get diagOverallOk =>
+      'Verbindung über alle zutreffenden Phasen erfolgreich';
+
+  @override
+  String diagOverallFailedAtStage(String stage) {
+    return 'Verbindung fehlgeschlagen in Phase: $stage';
+  }
+
+  @override
+  String get diagOverallStageUnknown =>
+      'Verbindung fehlgeschlagen, Phase unbekannt';
+
+  @override
+  String get diagHintInvalidEntry =>
+      'Bootstrap-Eintrag ist ungültig (erwartet host:port ohne Schema)';
+
+  @override
+  String get diagHintHostUnknown => 'Hostname konnte nicht aufgelöst werden';
+
+  @override
+  String get diagHintConnectionRefused => 'Verbindung vom Host abgelehnt';
+
+  @override
+  String get diagHintConnectTimeout =>
+      'Zeitüberschreitung beim Verbindungsaufbau';
+
+  @override
+  String get diagHintCertificateRejected =>
+      'Zertifikatsprüfung fehlgeschlagen — Truststore/CA oder Hostname prüfen';
+
+  @override
+  String get diagHintTlsHandshakeFailed =>
+      'TLS-Handshake fehlgeschlagen — Client-/Server-Zertifikate und TLS-Einstellungen prüfen';
+
+  @override
+  String get diagHintProtocolMismatch =>
+      'Sicherheitsprotokoll passt nicht zum Broker-Listener';
+
+  @override
+  String get diagHintAuthenticationFailed =>
+      'Authentifizierung fehlgeschlagen — SASL-Benutzername und Passwort prüfen';
+
+  @override
+  String get diagHintMechanismRejected =>
+      'SASL-Mechanismus abgelehnt oder vom Broker-Listener nicht unterstützt';
+
+  @override
+  String get diagHintNotAuthorized =>
+      'Keine Berechtigung zum Abrufen der Cluster-Metadaten (ACLs prüfen)';
+
+  @override
+  String get diagHintRequestTimeout => 'Zeitüberschreitung der Anfrage';
+
+  @override
+  String get diagHintRegistryUnreachable =>
+      'Schema Registry ist nicht erreichbar';
+
+  @override
+  String get diagHintRegistryUnauthorized =>
+      'Schema Registry hat Zugangsdaten abgelehnt';
+
+  @override
+  String diagHintRegistryHttpError(int status) {
+    return 'Schema Registry antwortete mit HTTP $status';
+  }
+
+  @override
+  String get diagHintGeneric => 'Verbindungsprüfung fehlgeschlagen';
+
+  @override
+  String get diagServerDnsLabel => 'DNS';
+
+  @override
+  String get diagServerTcpLabel => 'TCP';
+
+  @override
+  String get diagServerResolvedLabel => 'Aufgelöst';
+
+  @override
+  String diagServerConnectedTo(String address) {
+    return 'Verbunden mit $address';
+  }
+
+  @override
+  String get diagRawErrorLabel => 'Roher Fehler';
 }

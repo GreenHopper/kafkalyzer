@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api.dart';
+import 'api/connection_diagnostics.dart';
 import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
@@ -78,7 +79,7 @@ class KafkalyzerRustLib
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 334722752;
+  int get rustContentHash => 2031879414;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -144,9 +145,18 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
     required String json,
   });
 
+  Future<ConnectionDiagnosis> crateApiConnectionDiagnosticsDiagnoseConnection({
+    required ClusterProfile profile,
+  });
+
   Future<ConsumerGroupLag> crateApiKafkaMetadataFetchConsumerGroupLag({
     required ClusterProfile profile,
     required String groupId,
+  });
+
+  Future<List<ConsumerGroupLag>> crateApiKafkaMetadataFetchConsumerGroupLags({
+    required ClusterProfile profile,
+    required List<String> groupIds,
   });
 
   Future<List<ConsumerGroupLag>> crateApiKafkaMetadataFetchConsumerGroups({
@@ -184,6 +194,8 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
   Future<void> crateApiInitApp();
 
   Future<int> crateApiKafkaUtilsMurmur2({required List<int> data});
+
+  Future<PartitionLagStatus> crateApiKafkaTypesPartitionLagStatusDefault();
 
   Future<TlsProbeResult> crateApiKafkaMetadataProbeTlsVerification({
     required ClusterProfile profile,
@@ -602,6 +614,39 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       );
 
   @override
+  Future<ConnectionDiagnosis> crateApiConnectionDiagnosticsDiagnoseConnection({
+    required ClusterProfile profile,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cluster_profile(profile, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 9,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_connection_diagnosis,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiConnectionDiagnosticsDiagnoseConnectionConstMeta,
+        argValues: [profile],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiConnectionDiagnosticsDiagnoseConnectionConstMeta =>
+      const TaskConstMeta(
+        debugName: "diagnose_connection",
+        argNames: ["profile"],
+      );
+
+  @override
   Future<ConsumerGroupLag> crateApiKafkaMetadataFetchConsumerGroupLag({
     required ClusterProfile profile,
     required String groupId,
@@ -615,7 +660,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 10,
             port: port_,
           );
         },
@@ -637,6 +682,41 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       );
 
   @override
+  Future<List<ConsumerGroupLag>> crateApiKafkaMetadataFetchConsumerGroupLags({
+    required ClusterProfile profile,
+    required List<String> groupIds,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cluster_profile(profile, serializer);
+          sse_encode_list_String(groupIds, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_consumer_group_lag,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiKafkaMetadataFetchConsumerGroupLagsConstMeta,
+        argValues: [profile, groupIds],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaMetadataFetchConsumerGroupLagsConstMeta =>
+      const TaskConstMeta(
+        debugName: "fetch_consumer_group_lags",
+        argNames: ["profile", "groupIds"],
+      );
+
+  @override
   Future<List<ConsumerGroupLag>> crateApiKafkaMetadataFetchConsumerGroups({
     required ClusterProfile profile,
   }) {
@@ -648,7 +728,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 12,
             port: port_,
           );
         },
@@ -681,7 +761,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 13,
             port: port_,
           );
         },
@@ -718,7 +798,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 14,
             port: port_,
           );
         },
@@ -753,7 +833,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 15,
             port: port_,
           );
         },
@@ -786,7 +866,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 16,
             port: port_,
           );
         },
@@ -818,7 +898,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 17,
             port: port_,
           );
         },
@@ -851,7 +931,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 18,
             port: port_,
           );
         },
@@ -878,7 +958,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 19,
             port: port_,
           );
         },
@@ -906,7 +986,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 20,
             port: port_,
           );
         },
@@ -925,6 +1005,36 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       const TaskConstMeta(debugName: "murmur2", argNames: ["data"]);
 
   @override
+  Future<PartitionLagStatus> crateApiKafkaTypesPartitionLagStatusDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 21,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_partition_lag_status,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiKafkaTypesPartitionLagStatusDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiKafkaTypesPartitionLagStatusDefaultConstMeta =>
+      const TaskConstMeta(
+        debugName: "partition_lag_status_default",
+        argNames: [],
+      );
+
+  @override
   Future<TlsProbeResult> crateApiKafkaMetadataProbeTlsVerification({
     required ClusterProfile profile,
   }) {
@@ -936,7 +1046,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 22,
             port: port_,
           );
         },
@@ -971,7 +1081,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 23,
             port: port_,
           );
         },
@@ -1008,7 +1118,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 24,
             port: port_,
           );
         },
@@ -1043,7 +1153,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 25,
             port: port_,
           );
         },
@@ -1076,7 +1186,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 26,
             port: port_,
           );
         },
@@ -1106,7 +1216,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 27,
             port: port_,
           );
         },
@@ -1134,7 +1244,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 25,
+            funcId: 28,
             port: port_,
           );
         },
@@ -1161,7 +1271,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 26,
+            funcId: 29,
             port: port_,
           );
         },
@@ -1194,7 +1304,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 27,
+            funcId: 30,
             port: port_,
           );
         },
@@ -1227,7 +1337,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 28,
+            funcId: 31,
             port: port_,
           );
         },
@@ -1320,6 +1430,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  DiagnosisHint dco_decode_box_autoadd_diagnosis_hint(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_diagnosis_hint(raw);
+  }
+
+  @protected
   DuplicateAnalysisResult dco_decode_box_autoadd_duplicate_analysis_result(
     dynamic raw,
   ) {
@@ -1366,6 +1482,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  NotCheckedReason dco_decode_box_autoadd_not_checked_reason(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_not_checked_reason(raw);
+  }
+
+  @protected
   SizePercentiles dco_decode_box_autoadd_size_percentiles(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_size_percentiles(raw);
@@ -1385,6 +1507,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_topic_analysis_report(raw);
+  }
+
+  @protected
+  int dco_decode_box_autoadd_u_16(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -1439,11 +1567,25 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  ConnectionDiagnosis dco_decode_connection_diagnosis(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return ConnectionDiagnosis(
+      outcome: dco_decode_diagnosis_outcome(arr[0]),
+      stages: dco_decode_list_stage_result(arr[1]),
+      unattributed: dco_decode_list_String(arr[2]),
+      elapsedMs: dco_decode_u_64(arr[3]),
+    );
+  }
+
+  @protected
   ConsumerGroupLag dco_decode_consumer_group_lag(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 8)
-      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return ConsumerGroupLag(
       groupId: dco_decode_String(arr[0]),
       state: dco_decode_String(arr[1]),
@@ -1453,6 +1595,8 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       topicsCount: dco_decode_i_32(arr[5]),
       members: dco_decode_list_consumer_group_member(arr[6]),
       unassignedPartitions: dco_decode_list_topic_partition(arr[7]),
+      lagError: dco_decode_opt_String(arr[8]),
+      ownershipKnown: dco_decode_bool(arr[9]),
     );
   }
 
@@ -1470,6 +1614,24 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       assignments: dco_decode_list_topic_partition(arr[4]),
       assignmentDecodable: dco_decode_bool(arr[5]),
     );
+  }
+
+  @protected
+  DiagnosisHint dco_decode_diagnosis_hint(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DiagnosisHint.values[raw as int];
+  }
+
+  @protected
+  DiagnosisOutcome dco_decode_diagnosis_outcome(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DiagnosisOutcome.values[raw as int];
+  }
+
+  @protected
+  DiagnosisStage dco_decode_diagnosis_stage(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DiagnosisStage.values[raw as int];
   }
 
   @protected
@@ -1759,6 +1921,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  List<ServerCheck> dco_decode_list_server_check(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_server_check).toList();
+  }
+
+  @protected
+  List<StageResult> dco_decode_list_stage_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_stage_result).toList();
+  }
+
+  @protected
   List<TopDuplicateOccurrence> dco_decode_list_top_duplicate_occurrence(
     dynamic raw,
   ) {
@@ -1822,6 +1996,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  NotCheckedReason dco_decode_not_checked_reason(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return NotCheckedReason.values[raw as int];
+  }
+
+  @protected
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
@@ -1831,6 +2011,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_bool(raw);
+  }
+
+  @protected
+  DiagnosisHint? dco_decode_opt_box_autoadd_diagnosis_hint(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_diagnosis_hint(raw);
   }
 
   @protected
@@ -1884,6 +2070,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  NotCheckedReason? dco_decode_opt_box_autoadd_not_checked_reason(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_not_checked_reason(raw);
+  }
+
+  @protected
   SizePercentiles? dco_decode_opt_box_autoadd_size_percentiles(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_size_percentiles(raw);
@@ -1897,6 +2089,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     return raw == null
         ? null
         : dco_decode_box_autoadd_topic_analysis_report(raw);
+  }
+
+  @protected
+  int? dco_decode_opt_box_autoadd_u_16(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_u_16(raw);
   }
 
   @protected
@@ -1933,6 +2131,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       earliestOffset: dco_decode_i_64(arr[4]),
       latestOffset: dco_decode_i_64(arr[5]),
     );
+  }
+
+  @protected
+  PartitionLagStatus dco_decode_partition_lag_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return PartitionLagStatus.values[raw as int];
   }
 
   @protected
@@ -1985,6 +2189,23 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  ServerCheck dco_decode_server_check(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return ServerCheck(
+      entry: dco_decode_String(arr[0]),
+      dns: dco_decode_step_state(arr[1]),
+      addresses: dco_decode_list_String(arr[2]),
+      tcp: dco_decode_step_state(arr[3]),
+      connectedAddress: dco_decode_opt_String(arr[4]),
+      hint: dco_decode_opt_box_autoadd_diagnosis_hint(arr[5]),
+      raw: dco_decode_opt_String(arr[6]),
+    );
+  }
+
+  @protected
   SizePercentiles dco_decode_size_percentiles(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -1995,6 +2216,35 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       p95: dco_decode_i_64(arr[1]),
       p99: dco_decode_i_64(arr[2]),
     );
+  }
+
+  @protected
+  StageResult dco_decode_stage_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return StageResult(
+      stage: dco_decode_diagnosis_stage(arr[0]),
+      state: dco_decode_stage_state(arr[1]),
+      notCheckedReason: dco_decode_opt_box_autoadd_not_checked_reason(arr[2]),
+      hint: dco_decode_opt_box_autoadd_diagnosis_hint(arr[3]),
+      httpStatus: dco_decode_opt_box_autoadd_u_16(arr[4]),
+      raw: dco_decode_opt_String(arr[5]),
+      servers: dco_decode_list_server_check(arr[6]),
+    );
+  }
+
+  @protected
+  StageState dco_decode_stage_state(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return StageState.values[raw as int];
+  }
+
+  @protected
+  StepState dco_decode_step_state(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return StepState.values[raw as int];
   }
 
   @protected
@@ -2158,14 +2408,16 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   TopicPartitionLag dco_decode_topic_partition_lag(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 5)
-      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
     return TopicPartitionLag(
       topic: dco_decode_String(arr[0]),
       partition: dco_decode_i_32(arr[1]),
       logEndOffset: dco_decode_i_64(arr[2]),
       currentOffset: dco_decode_i_64(arr[3]),
       lag: dco_decode_i_64(arr[4]),
+      status: dco_decode_partition_lag_status(arr[5]),
+      error: dco_decode_opt_String(arr[6]),
     );
   }
 
@@ -2183,9 +2435,21 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  int dco_decode_u_16(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
   int dco_decode_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
+  }
+
+  @protected
+  BigInt dco_decode_u_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeU64(raw);
   }
 
   @protected
@@ -2297,6 +2561,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  DiagnosisHint sse_decode_box_autoadd_diagnosis_hint(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_diagnosis_hint(deserializer));
+  }
+
+  @protected
   DuplicateAnalysisResult sse_decode_box_autoadd_duplicate_analysis_result(
     SseDeserializer deserializer,
   ) {
@@ -2347,6 +2619,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  NotCheckedReason sse_decode_box_autoadd_not_checked_reason(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_not_checked_reason(deserializer));
+  }
+
+  @protected
   SizePercentiles sse_decode_box_autoadd_size_percentiles(
     SseDeserializer deserializer,
   ) {
@@ -2368,6 +2648,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_topic_analysis_report(deserializer));
+  }
+
+  @protected
+  int sse_decode_box_autoadd_u_16(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_u_16(deserializer));
   }
 
   @protected
@@ -2439,6 +2725,23 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  ConnectionDiagnosis sse_decode_connection_diagnosis(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_outcome = sse_decode_diagnosis_outcome(deserializer);
+    var var_stages = sse_decode_list_stage_result(deserializer);
+    var var_unattributed = sse_decode_list_String(deserializer);
+    var var_elapsedMs = sse_decode_u_64(deserializer);
+    return ConnectionDiagnosis(
+      outcome: var_outcome,
+      stages: var_stages,
+      unattributed: var_unattributed,
+      elapsedMs: var_elapsedMs,
+    );
+  }
+
+  @protected
   ConsumerGroupLag sse_decode_consumer_group_lag(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_groupId = sse_decode_String(deserializer);
@@ -2451,6 +2754,8 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     var var_unassignedPartitions = sse_decode_list_topic_partition(
       deserializer,
     );
+    var var_lagError = sse_decode_opt_String(deserializer);
+    var var_ownershipKnown = sse_decode_bool(deserializer);
     return ConsumerGroupLag(
       groupId: var_groupId,
       state: var_state,
@@ -2460,6 +2765,8 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       topicsCount: var_topicsCount,
       members: var_members,
       unassignedPartitions: var_unassignedPartitions,
+      lagError: var_lagError,
+      ownershipKnown: var_ownershipKnown,
     );
   }
 
@@ -2482,6 +2789,27 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       assignments: var_assignments,
       assignmentDecodable: var_assignmentDecodable,
     );
+  }
+
+  @protected
+  DiagnosisHint sse_decode_diagnosis_hint(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return DiagnosisHint.values[inner];
+  }
+
+  @protected
+  DiagnosisOutcome sse_decode_diagnosis_outcome(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return DiagnosisOutcome.values[inner];
+  }
+
+  @protected
+  DiagnosisStage sse_decode_diagnosis_stage(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return DiagnosisStage.values[inner];
   }
 
   @protected
@@ -2889,6 +3217,30 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  List<ServerCheck> sse_decode_list_server_check(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <ServerCheck>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_server_check(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<StageResult> sse_decode_list_stage_result(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <StageResult>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_stage_result(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<TopDuplicateOccurrence> sse_decode_list_top_duplicate_occurrence(
     SseDeserializer deserializer,
   ) {
@@ -2991,6 +3343,13 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  NotCheckedReason sse_decode_not_checked_reason(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return NotCheckedReason.values[inner];
+  }
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -3007,6 +3366,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_bool(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  DiagnosisHint? sse_decode_opt_box_autoadd_diagnosis_hint(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_diagnosis_hint(deserializer));
     } else {
       return null;
     }
@@ -3098,6 +3470,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  NotCheckedReason? sse_decode_opt_box_autoadd_not_checked_reason(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_not_checked_reason(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   SizePercentiles? sse_decode_opt_box_autoadd_size_percentiles(
     SseDeserializer deserializer,
   ) {
@@ -3118,6 +3503,17 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_topic_analysis_report(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  int? sse_decode_opt_box_autoadd_u_16(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_u_16(deserializer));
     } else {
       return null;
     }
@@ -3182,6 +3578,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  PartitionLagStatus sse_decode_partition_lag_status(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return PartitionLagStatus.values[inner];
+  }
+
+  @protected
   PartitionRow sse_decode_partition_row(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_partition = sse_decode_i_32(deserializer);
@@ -3234,12 +3639,70 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  ServerCheck sse_decode_server_check(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_entry = sse_decode_String(deserializer);
+    var var_dns = sse_decode_step_state(deserializer);
+    var var_addresses = sse_decode_list_String(deserializer);
+    var var_tcp = sse_decode_step_state(deserializer);
+    var var_connectedAddress = sse_decode_opt_String(deserializer);
+    var var_hint = sse_decode_opt_box_autoadd_diagnosis_hint(deserializer);
+    var var_raw = sse_decode_opt_String(deserializer);
+    return ServerCheck(
+      entry: var_entry,
+      dns: var_dns,
+      addresses: var_addresses,
+      tcp: var_tcp,
+      connectedAddress: var_connectedAddress,
+      hint: var_hint,
+      raw: var_raw,
+    );
+  }
+
+  @protected
   SizePercentiles sse_decode_size_percentiles(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_p50 = sse_decode_i_64(deserializer);
     var var_p95 = sse_decode_i_64(deserializer);
     var var_p99 = sse_decode_i_64(deserializer);
     return SizePercentiles(p50: var_p50, p95: var_p95, p99: var_p99);
+  }
+
+  @protected
+  StageResult sse_decode_stage_result(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_stage = sse_decode_diagnosis_stage(deserializer);
+    var var_state = sse_decode_stage_state(deserializer);
+    var var_notCheckedReason = sse_decode_opt_box_autoadd_not_checked_reason(
+      deserializer,
+    );
+    var var_hint = sse_decode_opt_box_autoadd_diagnosis_hint(deserializer);
+    var var_httpStatus = sse_decode_opt_box_autoadd_u_16(deserializer);
+    var var_raw = sse_decode_opt_String(deserializer);
+    var var_servers = sse_decode_list_server_check(deserializer);
+    return StageResult(
+      stage: var_stage,
+      state: var_state,
+      notCheckedReason: var_notCheckedReason,
+      hint: var_hint,
+      httpStatus: var_httpStatus,
+      raw: var_raw,
+      servers: var_servers,
+    );
+  }
+
+  @protected
+  StageState sse_decode_stage_state(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return StageState.values[inner];
+  }
+
+  @protected
+  StepState sse_decode_step_state(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return StepState.values[inner];
   }
 
   @protected
@@ -3457,12 +3920,16 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     var var_logEndOffset = sse_decode_i_64(deserializer);
     var var_currentOffset = sse_decode_i_64(deserializer);
     var var_lag = sse_decode_i_64(deserializer);
+    var var_status = sse_decode_partition_lag_status(deserializer);
+    var var_error = sse_decode_opt_String(deserializer);
     return TopicPartitionLag(
       topic: var_topic,
       partition: var_partition,
       logEndOffset: var_logEndOffset,
       currentOffset: var_currentOffset,
       lag: var_lag,
+      status: var_status,
+      error: var_error,
     );
   }
 
@@ -3480,9 +3947,21 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  int sse_decode_u_16(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint16();
+  }
+
+  @protected
   int sse_decode_u_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint32();
+  }
+
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getBigUint64();
   }
 
   @protected
@@ -3618,6 +4097,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_box_autoadd_diagnosis_hint(
+    DiagnosisHint self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_diagnosis_hint(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_duplicate_analysis_result(
     DuplicateAnalysisResult self,
     SseSerializer serializer,
@@ -3675,6 +4163,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_box_autoadd_not_checked_reason(
+    NotCheckedReason self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_not_checked_reason(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_size_percentiles(
     SizePercentiles self,
     SseSerializer serializer,
@@ -3699,6 +4196,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_topic_analysis_report(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_u_16(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_16(self, serializer);
   }
 
   @protected
@@ -3752,6 +4255,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_connection_diagnosis(
+    ConnectionDiagnosis self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_diagnosis_outcome(self.outcome, serializer);
+    sse_encode_list_stage_result(self.stages, serializer);
+    sse_encode_list_String(self.unattributed, serializer);
+    sse_encode_u_64(self.elapsedMs, serializer);
+  }
+
+  @protected
   void sse_encode_consumer_group_lag(
     ConsumerGroupLag self,
     SseSerializer serializer,
@@ -3765,6 +4280,8 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_i_32(self.topicsCount, serializer);
     sse_encode_list_consumer_group_member(self.members, serializer);
     sse_encode_list_topic_partition(self.unassignedPartitions, serializer);
+    sse_encode_opt_String(self.lagError, serializer);
+    sse_encode_bool(self.ownershipKnown, serializer);
   }
 
   @protected
@@ -3779,6 +4296,30 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_list_String(self.subscriptions, serializer);
     sse_encode_list_topic_partition(self.assignments, serializer);
     sse_encode_bool(self.assignmentDecodable, serializer);
+  }
+
+  @protected
+  void sse_encode_diagnosis_hint(DiagnosisHint self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_diagnosis_outcome(
+    DiagnosisOutcome self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_diagnosis_stage(
+    DiagnosisStage self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected
@@ -4128,6 +4669,30 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_list_server_check(
+    List<ServerCheck> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_server_check(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_stage_result(
+    List<StageResult> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_stage_result(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_top_duplicate_occurrence(
     List<TopDuplicateOccurrence> self,
     SseSerializer serializer,
@@ -4207,6 +4772,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_not_checked_reason(
+    NotCheckedReason self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -4223,6 +4797,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_bool(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_diagnosis_hint(
+    DiagnosisHint? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_diagnosis_hint(self, serializer);
     }
   }
 
@@ -4312,6 +4899,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_not_checked_reason(
+    NotCheckedReason? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_not_checked_reason(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_box_autoadd_size_percentiles(
     SizePercentiles? self,
     SseSerializer serializer,
@@ -4334,6 +4934,16 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_topic_analysis_report(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_16(int? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_u_16(self, serializer);
     }
   }
 
@@ -4391,6 +5001,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_partition_lag_status(
+    PartitionLagStatus self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_partition_row(PartitionRow self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.partition, serializer);
@@ -4429,6 +5048,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_server_check(ServerCheck self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.entry, serializer);
+    sse_encode_step_state(self.dns, serializer);
+    sse_encode_list_String(self.addresses, serializer);
+    sse_encode_step_state(self.tcp, serializer);
+    sse_encode_opt_String(self.connectedAddress, serializer);
+    sse_encode_opt_box_autoadd_diagnosis_hint(self.hint, serializer);
+    sse_encode_opt_String(self.raw, serializer);
+  }
+
+  @protected
   void sse_encode_size_percentiles(
     SizePercentiles self,
     SseSerializer serializer,
@@ -4437,6 +5068,33 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_i_64(self.p50, serializer);
     sse_encode_i_64(self.p95, serializer);
     sse_encode_i_64(self.p99, serializer);
+  }
+
+  @protected
+  void sse_encode_stage_result(StageResult self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_diagnosis_stage(self.stage, serializer);
+    sse_encode_stage_state(self.state, serializer);
+    sse_encode_opt_box_autoadd_not_checked_reason(
+      self.notCheckedReason,
+      serializer,
+    );
+    sse_encode_opt_box_autoadd_diagnosis_hint(self.hint, serializer);
+    sse_encode_opt_box_autoadd_u_16(self.httpStatus, serializer);
+    sse_encode_opt_String(self.raw, serializer);
+    sse_encode_list_server_check(self.servers, serializer);
+  }
+
+  @protected
+  void sse_encode_stage_state(StageState self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_step_state(StepState self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected
@@ -4602,6 +5260,8 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_i_64(self.logEndOffset, serializer);
     sse_encode_i_64(self.currentOffset, serializer);
     sse_encode_i_64(self.lag, serializer);
+    sse_encode_partition_lag_status(self.status, serializer);
+    sse_encode_opt_String(self.error, serializer);
   }
 
   @protected
@@ -4616,9 +5276,21 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_u_16(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint16(self);
+  }
+
+  @protected
   void sse_encode_u_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint32(self);
+  }
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putBigUint64(self);
   }
 
   @protected

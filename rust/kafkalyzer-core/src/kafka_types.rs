@@ -107,6 +107,14 @@ pub struct KafkaMessage {
     pub value_schema: Option<MessageSchema>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum PartitionLagStatus {
+    #[default]
+    Known,
+    NoCommit,
+    Unknown,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TopicPartitionLag {
     pub topic: String,
@@ -114,6 +122,10 @@ pub struct TopicPartitionLag {
     pub log_end_offset: i64,
     pub current_offset: i64,
     pub lag: i64,
+    #[serde(default)]
+    pub status: PartitionLagStatus,
+    #[serde(default)]
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -139,6 +151,10 @@ pub struct ConsumerGroupLag {
     pub members: Vec<ConsumerGroupMember>,
     /// Partitions of the group's topics that no member owns.
     pub unassigned_partitions: Vec<TopicPartition>,
+    #[serde(default)]
+    pub lag_error: Option<String>,
+    #[serde(default)]
+    pub ownership_known: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

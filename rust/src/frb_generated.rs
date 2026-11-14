@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 334722752;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2031879414;
 
 // Section: executor
 
@@ -409,6 +409,43 @@ fn wire__crate__api__json_path__deserialize_cluster_profile_impl(
         },
     )
 }
+fn wire__crate__api__connection_diagnostics__diagnose_connection_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "diagnose_connection",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok =
+                            crate::api::connection_diagnostics::diagnose_connection(api_profile)?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -441,6 +478,46 @@ fn wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
                         let output_ok = crate::api::kafka_metadata::fetch_consumer_group_lag(
                             api_profile,
                             api_group_id,
+                        )?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_metadata__fetch_consumer_group_lags_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_consumer_group_lags",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_group_ids = <Vec<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::kafka_metadata::fetch_consumer_group_lags(
+                            api_profile,
+                            api_group_ids,
                         )?;
                         Ok(output_ok)
                     })(),
@@ -779,6 +856,40 @@ fn wire__crate__api__kafka_utils__murmur2_impl(
                 transform_result_sse::<_, ()>((move || {
                     let output_ok =
                         Result::<_, ()>::Ok(crate::api::kafka_utils::murmur2(&api_data))?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_types__partition_lag_status_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "partition_lag_status_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::kafka_types::PartitionLagStatus::default(),
+                    )?;
                     Ok(output_ok)
                 })())
             }
@@ -1288,6 +1399,24 @@ impl SseDecode for crate::api::kafka_types::ClusterProfile {
     }
 }
 
+impl SseDecode for crate::api::connection_diagnostics::ConnectionDiagnosis {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_outcome =
+            <crate::api::connection_diagnostics::DiagnosisOutcome>::sse_decode(deserializer);
+        let mut var_stages =
+            <Vec<crate::api::connection_diagnostics::StageResult>>::sse_decode(deserializer);
+        let mut var_unattributed = <Vec<String>>::sse_decode(deserializer);
+        let mut var_elapsedMs = <u64>::sse_decode(deserializer);
+        return crate::api::connection_diagnostics::ConnectionDiagnosis {
+            outcome: var_outcome,
+            stages: var_stages,
+            unattributed: var_unattributed,
+            elapsed_ms: var_elapsedMs,
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_types::ConsumerGroupLag {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1302,6 +1431,8 @@ impl SseDecode for crate::api::kafka_types::ConsumerGroupLag {
             <Vec<crate::api::kafka_types::ConsumerGroupMember>>::sse_decode(deserializer);
         let mut var_unassignedPartitions =
             <Vec<crate::api::kafka_types::TopicPartition>>::sse_decode(deserializer);
+        let mut var_lagError = <Option<String>>::sse_decode(deserializer);
+        let mut var_ownershipKnown = <bool>::sse_decode(deserializer);
         return crate::api::kafka_types::ConsumerGroupLag {
             group_id: var_groupId,
             state: var_state,
@@ -1311,6 +1442,8 @@ impl SseDecode for crate::api::kafka_types::ConsumerGroupLag {
             topics_count: var_topicsCount,
             members: var_members,
             unassigned_partitions: var_unassignedPartitions,
+            lag_error: var_lagError,
+            ownership_known: var_ownershipKnown,
         };
     }
 }
@@ -1332,6 +1465,59 @@ impl SseDecode for crate::api::kafka_types::ConsumerGroupMember {
             subscriptions: var_subscriptions,
             assignments: var_assignments,
             assignment_decodable: var_assignmentDecodable,
+        };
+    }
+}
+
+impl SseDecode for crate::api::connection_diagnostics::DiagnosisHint {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::connection_diagnostics::DiagnosisHint::InvalidEntry,
+            1 => crate::api::connection_diagnostics::DiagnosisHint::HostUnknown,
+            2 => crate::api::connection_diagnostics::DiagnosisHint::ConnectionRefused,
+            3 => crate::api::connection_diagnostics::DiagnosisHint::ConnectTimeout,
+            4 => crate::api::connection_diagnostics::DiagnosisHint::CertificateRejected,
+            5 => crate::api::connection_diagnostics::DiagnosisHint::TlsHandshakeFailed,
+            6 => crate::api::connection_diagnostics::DiagnosisHint::ProtocolMismatch,
+            7 => crate::api::connection_diagnostics::DiagnosisHint::AuthenticationFailed,
+            8 => crate::api::connection_diagnostics::DiagnosisHint::MechanismRejected,
+            9 => crate::api::connection_diagnostics::DiagnosisHint::NotAuthorized,
+            10 => crate::api::connection_diagnostics::DiagnosisHint::RequestTimeout,
+            11 => crate::api::connection_diagnostics::DiagnosisHint::RegistryUnreachable,
+            12 => crate::api::connection_diagnostics::DiagnosisHint::RegistryUnauthorized,
+            13 => crate::api::connection_diagnostics::DiagnosisHint::RegistryHttpError,
+            14 => crate::api::connection_diagnostics::DiagnosisHint::Generic,
+            _ => unreachable!("Invalid variant for DiagnosisHint: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::connection_diagnostics::DiagnosisOutcome {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::connection_diagnostics::DiagnosisOutcome::Ok,
+            1 => crate::api::connection_diagnostics::DiagnosisOutcome::Failed,
+            2 => crate::api::connection_diagnostics::DiagnosisOutcome::FailedStageUnknown,
+            _ => unreachable!("Invalid variant for DiagnosisOutcome: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::connection_diagnostics::DiagnosisStage {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::connection_diagnostics::DiagnosisStage::Network,
+            1 => crate::api::connection_diagnostics::DiagnosisStage::Tls,
+            2 => crate::api::connection_diagnostics::DiagnosisStage::Authentication,
+            3 => crate::api::connection_diagnostics::DiagnosisStage::Metadata,
+            4 => crate::api::connection_diagnostics::DiagnosisStage::SchemaRegistry,
+            _ => unreachable!("Invalid variant for DiagnosisStage: {}", inner),
         };
     }
 }
@@ -1782,6 +1968,30 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for Vec<crate::api::connection_diagnostics::ServerCheck> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::connection_diagnostics::ServerCheck>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::connection_diagnostics::StageResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::connection_diagnostics::StageResult>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_types::TopDuplicateOccurrence> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1884,6 +2094,18 @@ impl SseDecode for crate::api::report_compare::MetricDelta {
     }
 }
 
+impl SseDecode for crate::api::connection_diagnostics::NotCheckedReason {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::connection_diagnostics::NotCheckedReason::PreviousStageFailed,
+            1 => crate::api::connection_diagnostics::NotCheckedReason::BudgetExhausted,
+            _ => unreachable!("Invalid variant for NotCheckedReason: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for Option<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1900,6 +2122,19 @@ impl SseDecode for Option<bool> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<bool>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::connection_diagnostics::DiagnosisHint> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::connection_diagnostics::DiagnosisHint>::sse_decode(deserializer),
+            );
         } else {
             return None;
         }
@@ -1991,6 +2226,19 @@ impl SseDecode for Option<crate::api::kafka_consumer::MessageSchema> {
     }
 }
 
+impl SseDecode for Option<crate::api::connection_diagnostics::NotCheckedReason> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::connection_diagnostics::NotCheckedReason>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<crate::api::kafka_types::SizePercentiles> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2011,6 +2259,17 @@ impl SseDecode for Option<crate::api::kafka_types::TopicAnalysisReport> {
             return Some(<crate::api::kafka_types::TopicAnalysisReport>::sse_decode(
                 deserializer,
             ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<u16> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<u16>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -2070,6 +2329,19 @@ impl SseDecode for crate::api::kafka_types::PartitionAnalysis {
             percentage: var_percentage,
             earliest_offset: var_earliestOffset,
             latest_offset: var_latestOffset,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::PartitionLagStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_types::PartitionLagStatus::Known,
+            1 => crate::api::kafka_types::PartitionLagStatus::NoCommit,
+            2 => crate::api::kafka_types::PartitionLagStatus::Unknown,
+            _ => unreachable!("Invalid variant for PartitionLagStatus: {}", inner),
         };
     }
 }
@@ -2135,6 +2407,29 @@ impl SseDecode for crate::api::kafka_types::SearchScope {
     }
 }
 
+impl SseDecode for crate::api::connection_diagnostics::ServerCheck {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_entry = <String>::sse_decode(deserializer);
+        let mut var_dns = <crate::api::connection_diagnostics::StepState>::sse_decode(deserializer);
+        let mut var_addresses = <Vec<String>>::sse_decode(deserializer);
+        let mut var_tcp = <crate::api::connection_diagnostics::StepState>::sse_decode(deserializer);
+        let mut var_connectedAddress = <Option<String>>::sse_decode(deserializer);
+        let mut var_hint =
+            <Option<crate::api::connection_diagnostics::DiagnosisHint>>::sse_decode(deserializer);
+        let mut var_raw = <Option<String>>::sse_decode(deserializer);
+        return crate::api::connection_diagnostics::ServerCheck {
+            entry: var_entry,
+            dns: var_dns,
+            addresses: var_addresses,
+            tcp: var_tcp,
+            connected_address: var_connectedAddress,
+            hint: var_hint,
+            raw: var_raw,
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_types::SizePercentiles {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2145,6 +2440,63 @@ impl SseDecode for crate::api::kafka_types::SizePercentiles {
             p50: var_p50,
             p95: var_p95,
             p99: var_p99,
+        };
+    }
+}
+
+impl SseDecode for crate::api::connection_diagnostics::StageResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_stage =
+            <crate::api::connection_diagnostics::DiagnosisStage>::sse_decode(deserializer);
+        let mut var_state =
+            <crate::api::connection_diagnostics::StageState>::sse_decode(deserializer);
+        let mut var_notCheckedReason =
+            <Option<crate::api::connection_diagnostics::NotCheckedReason>>::sse_decode(
+                deserializer,
+            );
+        let mut var_hint =
+            <Option<crate::api::connection_diagnostics::DiagnosisHint>>::sse_decode(deserializer);
+        let mut var_httpStatus = <Option<u16>>::sse_decode(deserializer);
+        let mut var_raw = <Option<String>>::sse_decode(deserializer);
+        let mut var_servers =
+            <Vec<crate::api::connection_diagnostics::ServerCheck>>::sse_decode(deserializer);
+        return crate::api::connection_diagnostics::StageResult {
+            stage: var_stage,
+            state: var_state,
+            not_checked_reason: var_notCheckedReason,
+            hint: var_hint,
+            http_status: var_httpStatus,
+            raw: var_raw,
+            servers: var_servers,
+        };
+    }
+}
+
+impl SseDecode for crate::api::connection_diagnostics::StageState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::connection_diagnostics::StageState::Ok,
+            1 => crate::api::connection_diagnostics::StageState::Failed,
+            2 => crate::api::connection_diagnostics::StageState::NotChecked,
+            3 => crate::api::connection_diagnostics::StageState::NotApplicable,
+            4 => crate::api::connection_diagnostics::StageState::Undetermined,
+            _ => unreachable!("Invalid variant for StageState: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::connection_diagnostics::StepState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::connection_diagnostics::StepState::Ok,
+            1 => crate::api::connection_diagnostics::StepState::Failed,
+            2 => crate::api::connection_diagnostics::StepState::NotChecked,
+            _ => unreachable!("Invalid variant for StepState: {}", inner),
         };
     }
 }
@@ -2379,12 +2731,17 @@ impl SseDecode for crate::api::kafka_types::TopicPartitionLag {
         let mut var_logEndOffset = <i64>::sse_decode(deserializer);
         let mut var_currentOffset = <i64>::sse_decode(deserializer);
         let mut var_lag = <i64>::sse_decode(deserializer);
+        let mut var_status =
+            <crate::api::kafka_types::PartitionLagStatus>::sse_decode(deserializer);
+        let mut var_error = <Option<String>>::sse_decode(deserializer);
         return crate::api::kafka_types::TopicPartitionLag {
             topic: var_topic,
             partition: var_partition,
             log_end_offset: var_logEndOffset,
             current_offset: var_currentOffset,
             lag: var_lag,
+            status: var_status,
+            error: var_error,
         };
     }
 }
@@ -2403,10 +2760,24 @@ impl SseDecode for crate::api::kafka_types::TypeOccurrence {
     }
 }
 
+impl SseDecode for u16 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u16::<NativeEndian>().unwrap()
+    }
+}
+
 impl SseDecode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_u32::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u64::<NativeEndian>().unwrap()
     }
 }
 
@@ -2500,97 +2871,115 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        9 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
+        9 => wire__crate__api__connection_diagnostics__diagnose_connection_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+        10 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        11 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+        11 => wire__crate__api__kafka_metadata__fetch_consumer_group_lags_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        12 => {
+        12 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        13 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        14 => {
             wire__crate__api__schema_registry__fetch_schema_impl(port, ptr, rust_vec_len, data_len)
         }
-        13 => wire__crate__api__schema_registry__fetch_schema_versions_impl(
+        15 => wire__crate__api__schema_registry__fetch_schema_versions_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => wire__crate__api__schema_registry__fetch_subjects_impl(
+        16 => wire__crate__api__schema_registry__fetch_subjects_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        15 => wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
+        17 => wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        16 => {
+        18 => {
             wire__crate__api__kafka_metadata__fetch_topics_impl(port, ptr, rust_vec_len, data_len)
         }
-        17 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
+        19 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        20 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+        22 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        21 => {
+        23 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        24 => {
             wire__crate__api__json_path__resolve_json_path_impl(port, ptr, rust_vec_len, data_len)
         }
-        22 => wire__crate__api__json_path__resolve_json_path_batch_impl(
+        25 => wire__crate__api__json_path__resolve_json_path_batch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        23 => wire__crate__api__json_path__serialize_cluster_profile_impl(
+        26 => wire__crate__api__json_path__serialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        24 => wire__crate__api__kafka_types__tls_verification_default_impl(
+        27 => wire__crate__api__kafka_types__tls_verification_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        25 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
+        28 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        27 => wire__crate__api__kafka_metadata__validate_connection_impl(
+        30 => wire__crate__api__kafka_metadata__validate_connection_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        28 => wire__crate__api__json_path__validate_filter_patterns_impl(
+        31 => wire__crate__api__json_path__validate_filter_patterns_impl(
             port,
             ptr,
             rust_vec_len,
@@ -2695,6 +3084,29 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::ClusterProfile>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::ConnectionDiagnosis {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.outcome.into_into_dart().into_dart(),
+            self.stages.into_into_dart().into_dart(),
+            self.unattributed.into_into_dart().into_dart(),
+            self.elapsed_ms.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::ConnectionDiagnosis
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::ConnectionDiagnosis>
+    for crate::api::connection_diagnostics::ConnectionDiagnosis
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::ConnectionDiagnosis {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ConsumerGroupLag {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -2706,6 +3118,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ConsumerGroupLag
             self.topics_count.into_into_dart().into_dart(),
             self.members.into_into_dart().into_dart(),
             self.unassigned_partitions.into_into_dart().into_dart(),
+            self.lag_error.into_into_dart().into_dart(),
+            self.ownership_known.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -2743,6 +3157,86 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::ConsumerGroupMem
     for crate::api::kafka_types::ConsumerGroupMember
 {
     fn into_into_dart(self) -> crate::api::kafka_types::ConsumerGroupMember {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::DiagnosisHint {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::InvalidEntry => 0.into_dart(),
+            Self::HostUnknown => 1.into_dart(),
+            Self::ConnectionRefused => 2.into_dart(),
+            Self::ConnectTimeout => 3.into_dart(),
+            Self::CertificateRejected => 4.into_dart(),
+            Self::TlsHandshakeFailed => 5.into_dart(),
+            Self::ProtocolMismatch => 6.into_dart(),
+            Self::AuthenticationFailed => 7.into_dart(),
+            Self::MechanismRejected => 8.into_dart(),
+            Self::NotAuthorized => 9.into_dart(),
+            Self::RequestTimeout => 10.into_dart(),
+            Self::RegistryUnreachable => 11.into_dart(),
+            Self::RegistryUnauthorized => 12.into_dart(),
+            Self::RegistryHttpError => 13.into_dart(),
+            Self::Generic => 14.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::DiagnosisHint
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::DiagnosisHint>
+    for crate::api::connection_diagnostics::DiagnosisHint
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::DiagnosisHint {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::DiagnosisOutcome {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Ok => 0.into_dart(),
+            Self::Failed => 1.into_dart(),
+            Self::FailedStageUnknown => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::DiagnosisOutcome
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::DiagnosisOutcome>
+    for crate::api::connection_diagnostics::DiagnosisOutcome
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::DiagnosisOutcome {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::DiagnosisStage {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Network => 0.into_dart(),
+            Self::Tls => 1.into_dart(),
+            Self::Authentication => 2.into_dart(),
+            Self::Metadata => 3.into_dart(),
+            Self::SchemaRegistry => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::DiagnosisStage
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::DiagnosisStage>
+    for crate::api::connection_diagnostics::DiagnosisStage
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::DiagnosisStage {
         self
     }
 }
@@ -3069,6 +3563,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::report_compare::MetricDelta>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::NotCheckedReason {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::PreviousStageFailed => 0.into_dart(),
+            Self::BudgetExhausted => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::NotCheckedReason
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::NotCheckedReason>
+    for crate::api::connection_diagnostics::NotCheckedReason
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::NotCheckedReason {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::PartitionAnalysis {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -3090,6 +3605,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::PartitionAnalysi
     for crate::api::kafka_types::PartitionAnalysis
 {
     fn into_into_dart(self) -> crate::api::kafka_types::PartitionAnalysis {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::PartitionLagStatus {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Known => 0.into_dart(),
+            Self::NoCommit => 1.into_dart(),
+            Self::Unknown => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::PartitionLagStatus
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::PartitionLagStatus>
+    for crate::api::kafka_types::PartitionLagStatus
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::PartitionLagStatus {
         self
     }
 }
@@ -3184,6 +3721,32 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::SearchScope>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::ServerCheck {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.entry.into_into_dart().into_dart(),
+            self.dns.into_into_dart().into_dart(),
+            self.addresses.into_into_dart().into_dart(),
+            self.tcp.into_into_dart().into_dart(),
+            self.connected_address.into_into_dart().into_dart(),
+            self.hint.into_into_dart().into_dart(),
+            self.raw.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::ServerCheck
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::ServerCheck>
+    for crate::api::connection_diagnostics::ServerCheck
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::ServerCheck {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::SizePercentiles {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -3202,6 +3765,78 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::SizePercentiles>
     for crate::api::kafka_types::SizePercentiles
 {
     fn into_into_dart(self) -> crate::api::kafka_types::SizePercentiles {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::StageResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.stage.into_into_dart().into_dart(),
+            self.state.into_into_dart().into_dart(),
+            self.not_checked_reason.into_into_dart().into_dart(),
+            self.hint.into_into_dart().into_dart(),
+            self.http_status.into_into_dart().into_dart(),
+            self.raw.into_into_dart().into_dart(),
+            self.servers.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::StageResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::StageResult>
+    for crate::api::connection_diagnostics::StageResult
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::StageResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::StageState {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Ok => 0.into_dart(),
+            Self::Failed => 1.into_dart(),
+            Self::NotChecked => 2.into_dart(),
+            Self::NotApplicable => 3.into_dart(),
+            Self::Undetermined => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::StageState
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::StageState>
+    for crate::api::connection_diagnostics::StageState
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::StageState {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::connection_diagnostics::StepState {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Ok => 0.into_dart(),
+            Self::Failed => 1.into_dart(),
+            Self::NotChecked => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::connection_diagnostics::StepState
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::StepState>
+    for crate::api::connection_diagnostics::StepState
+{
+    fn into_into_dart(self) -> crate::api::connection_diagnostics::StepState {
         self
     }
 }
@@ -3471,6 +4106,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::TopicPartitionLa
             self.log_end_offset.into_into_dart().into_dart(),
             self.current_offset.into_into_dart().into_dart(),
             self.lag.into_into_dart().into_dart(),
+            self.status.into_into_dart().into_dart(),
+            self.error.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -3633,6 +4270,19 @@ impl SseEncode for crate::api::kafka_types::ClusterProfile {
     }
 }
 
+impl SseEncode for crate::api::connection_diagnostics::ConnectionDiagnosis {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::connection_diagnostics::DiagnosisOutcome>::sse_encode(
+            self.outcome,
+            serializer,
+        );
+        <Vec<crate::api::connection_diagnostics::StageResult>>::sse_encode(self.stages, serializer);
+        <Vec<String>>::sse_encode(self.unattributed, serializer);
+        <u64>::sse_encode(self.elapsed_ms, serializer);
+    }
+}
+
 impl SseEncode for crate::api::kafka_types::ConsumerGroupLag {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -3650,6 +4300,8 @@ impl SseEncode for crate::api::kafka_types::ConsumerGroupLag {
             self.unassigned_partitions,
             serializer,
         );
+        <Option<String>>::sse_encode(self.lag_error, serializer);
+        <bool>::sse_encode(self.ownership_known, serializer);
     }
 }
 
@@ -3662,6 +4314,71 @@ impl SseEncode for crate::api::kafka_types::ConsumerGroupMember {
         <Vec<String>>::sse_encode(self.subscriptions, serializer);
         <Vec<crate::api::kafka_types::TopicPartition>>::sse_encode(self.assignments, serializer);
         <bool>::sse_encode(self.assignment_decodable, serializer);
+    }
+}
+
+impl SseEncode for crate::api::connection_diagnostics::DiagnosisHint {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::connection_diagnostics::DiagnosisHint::InvalidEntry => 0,
+                crate::api::connection_diagnostics::DiagnosisHint::HostUnknown => 1,
+                crate::api::connection_diagnostics::DiagnosisHint::ConnectionRefused => 2,
+                crate::api::connection_diagnostics::DiagnosisHint::ConnectTimeout => 3,
+                crate::api::connection_diagnostics::DiagnosisHint::CertificateRejected => 4,
+                crate::api::connection_diagnostics::DiagnosisHint::TlsHandshakeFailed => 5,
+                crate::api::connection_diagnostics::DiagnosisHint::ProtocolMismatch => 6,
+                crate::api::connection_diagnostics::DiagnosisHint::AuthenticationFailed => 7,
+                crate::api::connection_diagnostics::DiagnosisHint::MechanismRejected => 8,
+                crate::api::connection_diagnostics::DiagnosisHint::NotAuthorized => 9,
+                crate::api::connection_diagnostics::DiagnosisHint::RequestTimeout => 10,
+                crate::api::connection_diagnostics::DiagnosisHint::RegistryUnreachable => 11,
+                crate::api::connection_diagnostics::DiagnosisHint::RegistryUnauthorized => 12,
+                crate::api::connection_diagnostics::DiagnosisHint::RegistryHttpError => 13,
+                crate::api::connection_diagnostics::DiagnosisHint::Generic => 14,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::connection_diagnostics::DiagnosisOutcome {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::connection_diagnostics::DiagnosisOutcome::Ok => 0,
+                crate::api::connection_diagnostics::DiagnosisOutcome::Failed => 1,
+                crate::api::connection_diagnostics::DiagnosisOutcome::FailedStageUnknown => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::connection_diagnostics::DiagnosisStage {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::connection_diagnostics::DiagnosisStage::Network => 0,
+                crate::api::connection_diagnostics::DiagnosisStage::Tls => 1,
+                crate::api::connection_diagnostics::DiagnosisStage::Authentication => 2,
+                crate::api::connection_diagnostics::DiagnosisStage::Metadata => 3,
+                crate::api::connection_diagnostics::DiagnosisStage::SchemaRegistry => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -4006,6 +4723,26 @@ impl SseEncode for Vec<u8> {
     }
 }
 
+impl SseEncode for Vec<crate::api::connection_diagnostics::ServerCheck> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::connection_diagnostics::ServerCheck>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::connection_diagnostics::StageResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::connection_diagnostics::StageResult>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::kafka_types::TopDuplicateOccurrence> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4077,6 +4814,22 @@ impl SseEncode for crate::api::report_compare::MetricDelta {
     }
 }
 
+impl SseEncode for crate::api::connection_diagnostics::NotCheckedReason {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::connection_diagnostics::NotCheckedReason::PreviousStageFailed => 0,
+                crate::api::connection_diagnostics::NotCheckedReason::BudgetExhausted => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for Option<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4093,6 +4846,16 @@ impl SseEncode for Option<bool> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <bool>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::connection_diagnostics::DiagnosisHint> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::connection_diagnostics::DiagnosisHint>::sse_encode(value, serializer);
         }
     }
 }
@@ -4167,6 +4930,16 @@ impl SseEncode for Option<crate::api::kafka_consumer::MessageSchema> {
     }
 }
 
+impl SseEncode for Option<crate::api::connection_diagnostics::NotCheckedReason> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::connection_diagnostics::NotCheckedReason>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<crate::api::kafka_types::SizePercentiles> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -4183,6 +4956,16 @@ impl SseEncode for Option<crate::api::kafka_types::TopicAnalysisReport> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::api::kafka_types::TopicAnalysisReport>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<u16> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <u16>::sse_encode(value, serializer);
         }
     }
 }
@@ -4226,6 +5009,23 @@ impl SseEncode for crate::api::kafka_types::PartitionAnalysis {
         <f64>::sse_encode(self.percentage, serializer);
         <i64>::sse_encode(self.earliest_offset, serializer);
         <i64>::sse_encode(self.latest_offset, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::PartitionLagStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_types::PartitionLagStatus::Known => 0,
+                crate::api::kafka_types::PartitionLagStatus::NoCommit => 1,
+                crate::api::kafka_types::PartitionLagStatus::Unknown => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -4275,12 +5075,84 @@ impl SseEncode for crate::api::kafka_types::SearchScope {
     }
 }
 
+impl SseEncode for crate::api::connection_diagnostics::ServerCheck {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.entry, serializer);
+        <crate::api::connection_diagnostics::StepState>::sse_encode(self.dns, serializer);
+        <Vec<String>>::sse_encode(self.addresses, serializer);
+        <crate::api::connection_diagnostics::StepState>::sse_encode(self.tcp, serializer);
+        <Option<String>>::sse_encode(self.connected_address, serializer);
+        <Option<crate::api::connection_diagnostics::DiagnosisHint>>::sse_encode(
+            self.hint, serializer,
+        );
+        <Option<String>>::sse_encode(self.raw, serializer);
+    }
+}
+
 impl SseEncode for crate::api::kafka_types::SizePercentiles {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <i64>::sse_encode(self.p50, serializer);
         <i64>::sse_encode(self.p95, serializer);
         <i64>::sse_encode(self.p99, serializer);
+    }
+}
+
+impl SseEncode for crate::api::connection_diagnostics::StageResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::connection_diagnostics::DiagnosisStage>::sse_encode(self.stage, serializer);
+        <crate::api::connection_diagnostics::StageState>::sse_encode(self.state, serializer);
+        <Option<crate::api::connection_diagnostics::NotCheckedReason>>::sse_encode(
+            self.not_checked_reason,
+            serializer,
+        );
+        <Option<crate::api::connection_diagnostics::DiagnosisHint>>::sse_encode(
+            self.hint, serializer,
+        );
+        <Option<u16>>::sse_encode(self.http_status, serializer);
+        <Option<String>>::sse_encode(self.raw, serializer);
+        <Vec<crate::api::connection_diagnostics::ServerCheck>>::sse_encode(
+            self.servers,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::connection_diagnostics::StageState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::connection_diagnostics::StageState::Ok => 0,
+                crate::api::connection_diagnostics::StageState::Failed => 1,
+                crate::api::connection_diagnostics::StageState::NotChecked => 2,
+                crate::api::connection_diagnostics::StageState::NotApplicable => 3,
+                crate::api::connection_diagnostics::StageState::Undetermined => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::connection_diagnostics::StepState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::connection_diagnostics::StepState::Ok => 0,
+                crate::api::connection_diagnostics::StepState::Failed => 1,
+                crate::api::connection_diagnostics::StepState::NotChecked => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -4463,6 +5335,8 @@ impl SseEncode for crate::api::kafka_types::TopicPartitionLag {
         <i64>::sse_encode(self.log_end_offset, serializer);
         <i64>::sse_encode(self.current_offset, serializer);
         <i64>::sse_encode(self.lag, serializer);
+        <crate::api::kafka_types::PartitionLagStatus>::sse_encode(self.status, serializer);
+        <Option<String>>::sse_encode(self.error, serializer);
     }
 }
 
@@ -4475,10 +5349,24 @@ impl SseEncode for crate::api::kafka_types::TypeOccurrence {
     }
 }
 
+impl SseEncode for u16 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u16::<NativeEndian>(self).unwrap();
+    }
+}
+
 impl SseEncode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u64::<NativeEndian>(self).unwrap();
     }
 }
 

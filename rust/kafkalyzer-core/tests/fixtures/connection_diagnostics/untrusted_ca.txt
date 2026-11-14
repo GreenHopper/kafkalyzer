@@ -1,0 +1,1 @@
+-181	ssl://localhost:19093/bootstrap: SSL handshake failed: error:0A000086:SSL routines::certificate verify failed: broker certificate could not be verified, verify that ssl.ca.location is correctly configured or root CA certificates are installed (install ca-certificates package) (after 4ms in state SSL_HANDSHAKE)

@@ -87,9 +87,7 @@ hint set is trimmed to what the spike can actually distinguish (task 1.4).
 - Context: reuse the 5.21 capturing `ClientContext` (move it to `pub(crate)` in `kafkalyzer-kafka` if it is private),
   extended to keep the `RDKafkaErrorCode` of `error()` callbacks next to the text. It does not forward lines to the
   `log` crate, so nothing unredacted reaches a log.
-- `consumer.fetch_metadata(None, min(10 s, remaining budget))`, run via `spawn_blocking`; the client is dropped
-  afterwards. Spike decides whether `debug=security,broker` is set on this one client to obtain distinguishable lines
-  (5.26 also excludes `conf`/`all`, which may print config values; the probe never sets those).
+- `consumer.fetch_metadata(None, min(10 s, remaining budget))`, run via `spawn_blocking`, followed by `consumer.poll(Duration::from_millis(10))` to drain queued `error()` callbacks (spike finding: `BaseConsumer::fetch_metadata` leaves `error()` callbacks on the main event queue until `poll()` runs); the client is dropped afterwards (measured drop time: 0–2 ms). `debug=security,broker` is **not** set on the probe client: all SSL/SASL/protocol-mismatch cases already emit distinguishing `error()` codes/reasons without `debug`, and `debug=security,broker` adds only file-path noise without distinguishing silent packet drops.
 - Evidence classifier (core, pure): input = list of `(Option<code>, text)` plus the `MetadataFetch` result; output =
   set of evidence tags `{Tls(CertificateRejected|Handshake|ProtocolMismatch), Auth(Failed|Mechanism),
   Authorization, None}`. Certificate tagging delegates to `tls::classify_tls_failure` (no second pattern list);
@@ -169,8 +167,27 @@ changed.
 
 ## Open Questions
 
-1. Which librdkafka 2.3.0 codes/log lines appear for: SSL client → PLAINTEXT listener, PLAINTEXT client → SSL
-   listener, untrusted CA, hostname mismatch, client certificate rejected (mTLS), wrong SASL/PLAIN and SCRAM password,
-   unsupported mechanism, SASL client → non-SASL listener, metadata without `DESCRIBE` ACL, filtered port? Answered
-   by spike task 1; it fixes classifier rules and the final hint list, not the approach.
-2. Whether `debug=security,broker` is needed for distinguishable lines (spike task 1.3).
+1. Resolved by spike (see "Spike results" below).
+2. Resolved by spike: `debug=security,broker` is not set; `consumer.poll(Duration::from_millis(10))` is called after `fetch_metadata` to drain `error()` callbacks.
+
+## Spike results
+
+Captured against temporary local `confluentinc/cp-kafka:7.6.0` (KRaft, `PLAINTEXT`, `SSL`, `SASL_SSL`, `MTLS`, `StandardAuthorizer`):
+
+| Case | `fetch_metadata` | Captured `error()` code + reason | Classifier Tag |
+|---|---|---|---|
+| SSL → PLAINTEXT | `Err(MetadataFetch(BrokerTransportFailure))` | `-195` `SSL handshake failed: Disconnected: connecting to a PLAINTEXT broker listener?` | `Tls(ProtocolMismatch)` |
+| PLAINTEXT → SSL | `Err(MetadataFetch(BrokerTransportFailure))` | `-195` `Disconnected while requesting ApiVersion: might be caused by incorrect security.protocol configuration (connecting to a SSL listener?)` | `Tls(ProtocolMismatch)` |
+| Untrusted CA | `Err(MetadataFetch(BrokerTransportFailure))` | `-181` `SSL handshake failed: error:0A000086:SSL routines::certificate verify failed: ...` | `Tls(CertificateRejected)` |
+| Hostname mismatch | `Err(MetadataFetch(BrokerTransportFailure))` | `-181` `SSL handshake failed: error:0A000086:SSL routines::certificate verify failed: ...` | `Tls(CertificateRejected)` |
+| mTLS client cert rejected | `Err(MetadataFetch(BrokerTransportFailure))` | `-195` `Receive failed: error:0A000416:SSL routines::ssl/tls alert certificate unknown: SSL alert number 46` | `Tls(Handshake)` |
+| Wrong PLAIN password | `Err(MetadataFetch(BrokerTransportFailure))` | `-169` `SASL authentication error: Authentication failed: Invalid username or password` | `Auth(Failed)` |
+| Wrong SCRAM password | `Err(MetadataFetch(BrokerTransportFailure))` | `-169` `SASL authentication error: Authentication failed during authentication due to invalid credentials with SASL mechanism SCRAM-SHA-256` | `Auth(Failed)` |
+| Unsupported mechanism | `Err(MetadataFetch(BrokerTransportFailure))` | `-169` `SASL SCRAM-SHA-512 mechanism handshake failed: Broker: Unsupported SASL mechanism: ...` | `Auth(Mechanism)` |
+| SASL → non-SASL listener | `Err(MetadataFetch(BrokerTransportFailure))` | `-169` `SASL PLAIN mechanism handshake failed: Broker: Request not valid in current SASL state: ...` | `Auth(Mechanism)` |
+| User without topic DESCRIBE ACL | `Ok(brokers=1, topics=0)` (or `ClusterAuthorizationFailed` / `TopicAuthorizationFailed` on `MetadataFetch`) | none (or authorization error on `MetadataFetch`) | `Authorization` when `MetadataFetch` returns auth error |
+| Closed port | `Err(MetadataFetch(BrokerTransportFailure))` | `-195` `Connect to ... failed: Connection refused` (caught in Stage 1) | `None` |
+| Filtered port (`192.0.2.1`) | `Err(MetadataFetch(BrokerTransportFailure))` | none (silent timeout) | `None` → `FailedStageUnknown` |
+
+Drop time after failed `fetch_metadata`: `0–2 ms`. No secrets appeared in any `error()` or `debug=security,broker` line.
+Fixtures saved under `rust/kafkalyzer-core/tests/fixtures/connection_diagnostics/`.

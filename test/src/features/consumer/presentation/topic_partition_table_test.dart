@@ -134,6 +134,8 @@ void main() {
                 logEndOffset: 286229616,
                 currentOffset: 286228569, // Below low watermark
                 lag: 1047,
+
+                status: PartitionLagStatus.known,
               ),
             ],
           ),
@@ -195,6 +197,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: 100,
               lag: 0,
+
+              status: PartitionLagStatus.known,
             ),
           ],
         ),
@@ -249,6 +253,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: 50,
               lag: 50,
+
+              status: PartitionLagStatus.known,
             ),
           ],
         ),
@@ -276,6 +282,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: -1,
               lag: 100,
+
+              status: PartitionLagStatus.known,
             ),
           ],
         ),
@@ -285,5 +293,68 @@ void main() {
       final iconButton = tester.widget<IconButton>(find.byType(IconButton));
       expect(iconButton.onPressed, isNull);
     });
+
+    testWidgets(
+      'renders Known, NoCommit, and Unknown rows with tooltip and disabled inspector buttons',
+      (tester) async {
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            partitionLags: const [
+              TopicPartitionLag(
+                topic: 'test-topic',
+                partition: 0,
+                logEndOffset: 100,
+                currentOffset: 80,
+                lag: 20,
+                status: PartitionLagStatus.known,
+              ),
+              TopicPartitionLag(
+                topic: 'test-topic',
+                partition: 1,
+                logEndOffset: 150,
+                currentOffset: -1,
+                lag: 0,
+                status: PartitionLagStatus.noCommit,
+              ),
+              TopicPartitionLag(
+                topic: 'test-topic',
+                partition: 2,
+                logEndOffset: -1,
+                currentOffset: 50,
+                lag: 0,
+                status: PartitionLagStatus.unknown,
+                error: 'Watermark lookup timed out',
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tester
+              .widget<Text>(find.byKey(const Key('partition_lag_test-topic-0')))
+              .data,
+          '20',
+        );
+        expect(find.text('No commit'), findsOneWidget);
+        expect(find.text('Unknown'), findsOneWidget);
+
+        final tooltip = tester.widget<Tooltip>(
+          find.ancestor(
+            of: find.text('Unknown'),
+            matching: find.byType(Tooltip),
+          ),
+        );
+        expect(tooltip.message, 'Watermark lookup timed out');
+
+        final buttons = tester
+            .widgetList<IconButton>(find.byType(IconButton))
+            .toList();
+        expect(buttons, hasLength(3));
+        expect(buttons[0].onPressed, isNotNull);
+        expect(buttons[1].onPressed, isNull);
+        expect(buttons[2].onPressed, isNull);
+      },
+    );
   });
 }

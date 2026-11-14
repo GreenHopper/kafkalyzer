@@ -173,6 +173,19 @@ pub fn fetch_consumer_group_lag(
     Ok(crate::api::kafka_types::ConsumerGroupLag::from(group_lag))
 }
 
+pub fn fetch_consumer_group_lags(
+    profile: ClusterProfile,
+    group_ids: Vec<String>,
+) -> Result<Vec<crate::api::kafka_types::ConsumerGroupLag>> {
+    let domain_profile = profile.to_domain();
+    let group_lags =
+        kafkalyzer_kafka::kafka_metadata::fetch_consumer_group_lags(domain_profile, group_ids)?;
+    Ok(group_lags
+        .into_iter()
+        .map(crate::api::kafka_types::ConsumerGroupLag::from)
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

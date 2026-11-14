@@ -15,6 +15,7 @@ import 'widgets/lag_trend.dart';
 import 'widgets/group_estimate_badge.dart';
 import 'widgets/consumer_group_controls.dart';
 import 'widgets/kpi_card.dart';
+import '../domain/consumer_lag_calculator.dart';
 import '../domain/consumer_lag_estimate.dart';
 
 enum ConsumerGroupSortType {
@@ -57,10 +58,15 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   final Set<String> _loadingGroupIds = {};
   final Set<String> _loadedGroupIds = {};
   final Set<String> _failedGroupIds = {};
+  final Map<String, String> _groupErrors = {};
   final Map<String, List<TopicPartitionLag>> _cachedPartitionLags = {};
   int _activeLagQueries = 0;
-  final List<String> _lagQueryQueue = [];
+  static const int _lagChunkSize = 20;
+  final List<List<String>> _lagChunkQueue = [];
+  final Set<String> _queuedGroupIds = {};
   int _maxConcurrentLagQueries = 5;
+  bool _isCycleRunning = false;
+  int _fetchGeneration = 0;
 
   // Track previous partition lags for calculating deltas: groupId -> (topic-partition -> lag)
   final Map<String, Map<String, int>> _previousLags = {};
@@ -157,21 +163,40 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   void _onSearchChanged() {
     setState(() {
       _filterText = _searchController.text;
-      _lagQueryQueue.clear();
     });
+    final profile = getIt<ActiveConnectionController>().activeProfile;
+    if (profile != null) {
+      _enqueueUnloadedGroups(
+        _filteredLagsFor(_lags),
+        profile,
+        _fetchGeneration,
+      );
+    }
+  }
+
+  List<ConsumerGroupLag> _filteredLagsFor(List<ConsumerGroupLag> source) {
+    return source.where((group) {
+      final matchesSearch = group.groupId.toLowerCase().contains(
+        _filterText.toLowerCase(),
+      );
+      final matchesStatus =
+          _statusFilter == 'All' ||
+          group.state.toLowerCase() == _statusFilter.toLowerCase();
+      return matchesSearch && matchesStatus;
+    }).toList();
   }
 
   Future<void> _fetchLags(ClusterProfile profile) async {
-    if (!mounted) return;
+    if (!mounted || _isCycleRunning) return;
     _loadConcurrencyLimit();
+
+    final activeController = getIt<ActiveConnectionController>();
+    final generation = ++_fetchGeneration;
+    _isCycleRunning = true;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _loadingGroupIds.clear();
-      _loadedGroupIds.clear();
-      _failedGroupIds.clear();
-      _lagQueryQueue.clear();
-      _partitionDeltas.clear();
     });
 
     final stopwatch = Stopwatch()..start();
@@ -180,19 +205,40 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         profile: profile,
       );
       stopwatch.stop();
-      if (!mounted) return;
+      if (!mounted ||
+          generation != _fetchGeneration ||
+          activeController.activeProfile != profile) {
+        return;
+      }
       setState(() {
         _lags = lags;
         _lastFetchDuration = stopwatch.elapsed;
         _isLoading = false;
+        _loadingGroupIds.clear();
+        _loadedGroupIds.clear();
+        _failedGroupIds.clear();
+        _groupErrors.clear();
+        _lagChunkQueue.clear();
+        _queuedGroupIds.clear();
+        _partitionDeltas.clear();
+        _activeLagQueries = 0;
       });
+      _enqueueUnloadedGroups(_filteredLagsFor(lags), profile, generation);
     } catch (e) {
       stopwatch.stop();
-      if (!mounted) return;
+      if (!mounted ||
+          generation != _fetchGeneration ||
+          activeController.activeProfile != profile) {
+        return;
+      }
       setState(() {
         _errorMessage = e.toString();
         _isLoading = false;
       });
+    } finally {
+      if (generation == _fetchGeneration) {
+        _isCycleRunning = false;
+      }
     }
   }
 
@@ -203,6 +249,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     }
     int totalDelta = 0;
     for (final lag in newLags) {
+      if (lag.status != PartitionLagStatus.known) continue;
       final key = "${lag.topic}-${lag.partition}";
       final oldLag = oldLagsMap[key];
       if (oldLag != null) {
@@ -212,94 +259,152 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     return totalDelta;
   }
 
-  Future<void> _loadGroupLag(String groupId) async {
-    if (!mounted) return;
-    final activeController = getIt<ActiveConnectionController>();
-    final activeProfile = activeController.activeProfile;
-    if (activeProfile == null) return;
-
-    if (_loadingGroupIds.contains(groupId) ||
-        _loadedGroupIds.contains(groupId) ||
-        _failedGroupIds.contains(groupId)) {
-      return;
-    }
-
-    if (_activeLagQueries >= _maxConcurrentLagQueries) {
-      if (!_lagQueryQueue.contains(groupId)) {
-        _lagQueryQueue.add(groupId);
+  void _enqueueUnloadedGroups(
+    List<ConsumerGroupLag> groups,
+    ClusterProfile profile,
+    int generation,
+  ) {
+    if (!mounted || generation != _fetchGeneration) return;
+    final toLoad = <String>[];
+    for (final g in groups) {
+      if (_loadingGroupIds.contains(g.groupId) ||
+          _loadedGroupIds.contains(g.groupId) ||
+          _failedGroupIds.contains(g.groupId) ||
+          _queuedGroupIds.contains(g.groupId)) {
+        continue;
       }
-      return;
+      toLoad.add(g.groupId);
+      _queuedGroupIds.add(g.groupId);
     }
 
-    _activeLagQueries++;
-    setState(() {
-      _loadingGroupIds.add(groupId);
-    });
+    for (var i = 0; i < toLoad.length; i += _lagChunkSize) {
+      final end = (i + _lagChunkSize).clamp(0, toLoad.length);
+      _lagChunkQueue.add(toLoad.sublist(i, end));
+    }
+    _pumpLagChunks(profile, generation);
+  }
 
-    try {
-      final updatedGroup = await getIt<KafkaMetadataService>()
-          .fetchConsumerGroupLag(profile: activeProfile, groupId: groupId);
-      if (!mounted) return;
-      if (activeController.activeProfile != activeProfile) return;
-      setState(() {
-        final idx = _lags.indexWhere((g) => g.groupId == groupId);
+  void _pumpLagChunks(ClusterProfile profile, int generation) {
+    if (!mounted || generation != _fetchGeneration) return;
+    final activeController = getIt<ActiveConnectionController>();
+    if (activeController.activeProfile != profile) return;
 
-        final delta = _calculateLagDelta(groupId, updatedGroup.partitionLags);
-        if (delta != null) {
-          _groupDeltas[groupId] = delta;
-        }
-
-        final oldLags = _previousLags[groupId];
-        final groupPartitionDeltas = <String, int>{};
-        for (final lag in updatedGroup.partitionLags) {
-          final key = "${lag.topic}-${lag.partition}";
-          final oldLag = oldLags?[key];
-          if (oldLag != null) {
-            groupPartitionDeltas[key] = lag.lag.toInt() - oldLag;
-          }
-        }
-        if (oldLags != null) {
-          _partitionDeltas[groupId] = groupPartitionDeltas;
-        }
-
-        final newLagsMap = <String, int>{};
-        for (final lag in updatedGroup.partitionLags) {
-          newLagsMap["${lag.topic}-${lag.partition}"] = lag.lag.toInt();
-        }
-        _previousLags[groupId] = newLagsMap;
-        _appendLagReading(
-          groupId,
-          newLagsMap,
-          newLagsMap.values.fold(0, (sum, value) => sum + value),
-        );
-
-        if (idx != -1) {
-          _lags[idx] = updatedGroup;
-        }
-        _cachedPartitionLags[groupId] = updatedGroup.partitionLags;
-        _loadingGroupIds.remove(groupId);
-        _loadedGroupIds.add(groupId);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      if (activeController.activeProfile != activeProfile) return;
-      setState(() {
-        _loadingGroupIds.remove(groupId);
-        _failedGroupIds.add(groupId);
-      });
-    } finally {
-      _activeLagQueries = (_activeLagQueries - 1).clamp(0, 999);
-      _processNextLagQuery();
+    while (_lagChunkQueue.isNotEmpty &&
+        _activeLagQueries < _maxConcurrentLagQueries) {
+      final chunk = _lagChunkQueue.removeAt(0);
+      for (final id in chunk) {
+        _queuedGroupIds.remove(id);
+      }
+      _runLagChunk(chunk, profile, generation);
     }
   }
 
-  void _processNextLagQuery() {
-    if (!mounted) return;
-    if (_lagQueryQueue.isNotEmpty &&
-        _activeLagQueries < _maxConcurrentLagQueries) {
-      final nextGroupId = _lagQueryQueue.removeAt(0);
-      _loadGroupLag(nextGroupId);
+  Future<void> _runLagChunk(
+    List<String> groupIds,
+    ClusterProfile profile,
+    int generation,
+  ) async {
+    if (!mounted || generation != _fetchGeneration) return;
+    final activeController = getIt<ActiveConnectionController>();
+    if (activeController.activeProfile != profile) return;
+
+    _activeLagQueries++;
+    setState(() {
+      _loadingGroupIds.addAll(groupIds);
+    });
+
+    try {
+      final updatedGroups = await getIt<KafkaMetadataService>()
+          .fetchConsumerGroupLags(profile: profile, groupIds: groupIds);
+      if (!mounted ||
+          generation != _fetchGeneration ||
+          activeController.activeProfile != profile) {
+        return;
+      }
+      setState(() {
+        for (final updatedGroup in updatedGroups) {
+          final groupId = updatedGroup.groupId;
+          _loadingGroupIds.remove(groupId);
+          final idx = _lags.indexWhere((g) => g.groupId == groupId);
+          if (idx != -1) {
+            _lags[idx] = updatedGroup;
+          }
+
+          if (updatedGroup.lagError != null &&
+              updatedGroup.lagError!.isNotEmpty) {
+            _failedGroupIds.add(groupId);
+            _loadedGroupIds.remove(groupId);
+            _groupErrors[groupId] = updatedGroup.lagError!;
+            continue;
+          }
+
+          _failedGroupIds.remove(groupId);
+          _groupErrors.remove(groupId);
+          _loadedGroupIds.add(groupId);
+          _cachedPartitionLags[groupId] = updatedGroup.partitionLags;
+
+          final summary = summarizeGroupLag(updatedGroup);
+          if (summary.totalLag != null) {
+            final delta = _calculateLagDelta(
+              groupId,
+              updatedGroup.partitionLags,
+            );
+            if (delta != null) {
+              _groupDeltas[groupId] = delta;
+            }
+
+            final oldLags = _previousLags[groupId];
+            final groupPartitionDeltas = <String, int>{};
+            for (final lag in updatedGroup.partitionLags) {
+              if (lag.status != PartitionLagStatus.known) continue;
+              final key = "${lag.topic}-${lag.partition}";
+              final oldLag = oldLags?[key];
+              if (oldLag != null) {
+                groupPartitionDeltas[key] = lag.lag.toInt() - oldLag;
+              }
+            }
+            if (oldLags != null) {
+              _partitionDeltas[groupId] = groupPartitionDeltas;
+            }
+
+            final newLagsMap = <String, int>{};
+            for (final lag in updatedGroup.partitionLags) {
+              if (lag.status != PartitionLagStatus.known) continue;
+              newLagsMap["${lag.topic}-${lag.partition}"] = lag.lag.toInt();
+            }
+            _previousLags[groupId] = newLagsMap;
+            _appendLagReading(groupId, newLagsMap, summary.totalLag!);
+          }
+        }
+      });
+    } catch (e) {
+      if (!mounted ||
+          generation != _fetchGeneration ||
+          activeController.activeProfile != profile) {
+        return;
+      }
+      setState(() {
+        for (final groupId in groupIds) {
+          _loadingGroupIds.remove(groupId);
+          _failedGroupIds.add(groupId);
+          _groupErrors[groupId] = e.toString();
+        }
+      });
+    } finally {
+      if (generation == _fetchGeneration) {
+        _activeLagQueries = (_activeLagQueries - 1).clamp(0, 999);
+        _pumpLagChunks(profile, generation);
+      }
     }
+  }
+
+  void _retryGroup(String groupId, ClusterProfile profile) {
+    setState(() {
+      _failedGroupIds.remove(groupId);
+      _groupErrors.remove(groupId);
+      _loadedGroupIds.remove(groupId);
+    });
+    _runLagChunk([groupId], profile, _fetchGeneration);
   }
 
   void _updateRefreshInterval(int seconds, ClusterProfile? profile) {
@@ -317,11 +422,27 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     }
   }
 
-  int _calculateGroupLag(ConsumerGroupLag group) {
-    final lags = group.partitionLags.isNotEmpty
-        ? group.partitionLags
-        : (_cachedPartitionLags[group.groupId] ?? const []);
-    return lags.fold(0, (sum, item) => sum + item.lag.toInt());
+  ConsumerGroupLag _withCachedPartitions(ConsumerGroupLag rawGroup) {
+    final cachedLags = _cachedPartitionLags[rawGroup.groupId];
+    final partitionLags = rawGroup.partitionLags.isNotEmpty
+        ? rawGroup.partitionLags
+        : (cachedLags ?? const <TopicPartitionLag>[]);
+    return ConsumerGroupLag(
+      groupId: rawGroup.groupId,
+      state: rawGroup.state,
+      protocolType: rawGroup.protocolType,
+      partitionLags: partitionLags,
+      membersCount: rawGroup.membersCount,
+      topicsCount: rawGroup.topicsCount,
+      members: rawGroup.members,
+      unassignedPartitions: rawGroup.unassignedPartitions,
+      lagError: _groupErrors[rawGroup.groupId] ?? rawGroup.lagError,
+      ownershipKnown: rawGroup.ownershipKnown,
+    );
+  }
+
+  int? _calculateGroupLag(ConsumerGroupLag group) {
+    return knownGroupLag(_withCachedPartitions(group));
   }
 
   Color _getStateColor(String state) {
@@ -350,17 +471,39 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     }).length;
     final totalLag = filteredLags.fold(
       0,
-      (sum, group) => sum + _calculateGroupLag(group),
+      (sum, group) => sum + (_calculateGroupLag(group) ?? 0),
     );
+    final loadedCount = filteredLags
+        .where((g) => _loadedGroupIds.contains(g.groupId))
+        .length;
+    final failedOrUnknownCount = filteredLags
+        .where(
+          (g) =>
+              _failedGroupIds.contains(g.groupId) ||
+              summarizeGroupLag(_withCachedPartitions(g)).outcome ==
+                  GroupLagOutcome.unknown,
+        )
+        .length;
     final activeQueries = _activeLagQueries;
-    final queuedQueries = _lagQueryQueue.length;
+    final queuedQueries = _lagChunkQueue.fold<int>(
+      0,
+      (sum, chunk) => sum + chunk.length,
+    );
 
     final totalDelta = filteredLags.fold<int>(
       0,
       (sum, group) => sum + (_groupDeltas[group.groupId] ?? 0),
     );
     final String? lagSubtitle;
-    if (_groupDeltas.isNotEmpty) {
+    if (filteredLags.isNotEmpty &&
+        (loadedCount + failedOrUnknownCount) < filteredLags.length) {
+      lagSubtitle = l10n.lagGroupsLoadedProgress(
+        loadedCount,
+        filteredLags.length,
+      );
+    } else if (failedOrUnknownCount > 0) {
+      lagSubtitle = l10n.lagTotalIncomplete;
+    } else if (_groupDeltas.isNotEmpty) {
       final formattedDelta = totalDelta > 0
           ? "+${_formatNum(totalDelta)}"
           : _formatNum(totalDelta);
@@ -475,8 +618,16 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
     if (activeProfile != _lastProfile) {
       _lastProfile = activeProfile;
+      _fetchGeneration++;
+      _isCycleRunning = false;
+      _lags = [];
       _cachedPartitionLags.clear();
-      _lagQueryQueue.clear();
+      _lagChunkQueue.clear();
+      _queuedGroupIds.clear();
+      _loadingGroupIds.clear();
+      _loadedGroupIds.clear();
+      _failedGroupIds.clear();
+      _groupErrors.clear();
       _previousLags.clear();
       _groupDeltas.clear();
       _partitionDeltas.clear();
@@ -492,21 +643,12 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
           scheduleMicrotask(() => _fetchLags(activeProfile));
         }
       } else {
-        _lags = [];
         _errorMessage = null;
         _refreshTimer?.cancel();
       }
     }
 
-    final filteredLags = _lags.where((group) {
-      final matchesSearch = group.groupId.toLowerCase().contains(
-        _filterText.toLowerCase(),
-      );
-      final matchesStatus =
-          _statusFilter == 'All' ||
-          group.state.toLowerCase() == _statusFilter.toLowerCase();
-      return matchesSearch && matchesStatus;
-    }).toList();
+    final filteredLags = _filteredLagsFor(_lags);
 
     filteredLags.sort((a, b) {
       int cmp;
@@ -528,16 +670,19 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
         case 4:
           cmp = a.topicsCount.compareTo(b.topicsCount);
           break;
-        case 5:
-          cmp = _calculateGroupLag(a).compareTo(_calculateGroupLag(b));
-          break;
         case 6:
           final deltaA = _groupDeltas[a.groupId] ?? 0;
           final deltaB = _groupDeltas[b.groupId] ?? 0;
           cmp = deltaA.compareTo(deltaB);
           break;
+        case 5:
         default:
-          cmp = _calculateGroupLag(a).compareTo(_calculateGroupLag(b));
+          final lagA = _calculateGroupLag(a);
+          final lagB = _calculateGroupLag(b);
+          if (lagA == null && lagB == null) return 0;
+          if (lagA == null) return 1;
+          if (lagB == null) return -1;
+          cmp = lagA.compareTo(lagB);
           break;
       }
       return _sortAscending ? cmp : -cmp;
@@ -567,8 +712,14 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
               onStatusFilterChanged: (val) {
                 setState(() {
                   _statusFilter = val;
-                  _lagQueryQueue.clear();
                 });
+                if (activeProfile != null) {
+                  _enqueueUnloadedGroups(
+                    _filteredLagsFor(_lags),
+                    activeProfile,
+                    _fetchGeneration,
+                  );
+                }
               },
               onRefreshIntervalChanged: (val) {
                 _updateRefreshInterval(val, activeProfile);
@@ -739,6 +890,21 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
             ),
           ),
         ],
+        const Spacer(),
+        IconButton(
+          key: const Key('consumer_lag_refresh_button'),
+          icon: _isLoading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.refresh),
+          tooltip: _isLoading ? l10n.lagRefreshInProgress : l10n.lagRetryAction,
+          onPressed: (profile == null || _isLoading)
+              ? null
+              : () => _fetchLags(profile),
+        ),
       ],
     );
   }
@@ -886,27 +1052,21 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
               final isLoaded = _loadedGroupIds.contains(rawGroup.groupId);
               final isLoading = _loadingGroupIds.contains(rawGroup.groupId);
               final isFailed = _failedGroupIds.contains(rawGroup.groupId);
-
-              if (!isLoaded && !isLoading && !isFailed) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _loadGroupLag(rawGroup.groupId);
-                });
+              final group = _withCachedPartitions(rawGroup);
+              final summary = summarizeGroupLag(group);
+              final String badgeLabel;
+              if (isFailed) {
+                badgeLabel = l10n.lagErrorLabel;
+              } else if (!isLoaded && group.partitionLags.isEmpty) {
+                badgeLabel = "${l10n.lagCol}: -";
+              } else if (summary.outcome == GroupLagOutcome.unknown) {
+                badgeLabel = l10n.lagUnknown;
+              } else if (summary.outcome ==
+                  GroupLagOutcome.noCommittedOffsets) {
+                badgeLabel = l10n.lagNoCommittedOffsets;
+              } else {
+                badgeLabel = "${l10n.lagCol}: ${_formatNum(summary.totalLag!)}";
               }
-
-              final cachedLags = _cachedPartitionLags[rawGroup.groupId];
-              final partitionLags = rawGroup.partitionLags.isNotEmpty
-                  ? rawGroup.partitionLags
-                  : (cachedLags ?? const []);
-              final group = ConsumerGroupLag(
-                groupId: rawGroup.groupId,
-                state: rawGroup.state,
-                protocolType: rawGroup.protocolType,
-                partitionLags: partitionLags,
-                membersCount: rawGroup.membersCount,
-                topicsCount: rawGroup.topicsCount,
-                members: rawGroup.members,
-                unassignedPartitions: rawGroup.unassignedPartitions,
-              );
 
               return Card(
                 elevation: 0,
@@ -982,23 +1142,18 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                             children: [
                               Flexible(
                                 child: GroupLagBadge(
-                                  totalLag: _calculateGroupLag(group),
-                                  isLoading: _loadingGroupIds.contains(
-                                    group.groupId,
-                                  ),
-                                  isLoaded: _loadedGroupIds.contains(
-                                    group.groupId,
-                                  ),
-                                  isFailed: _failedGroupIds.contains(
-                                    group.groupId,
-                                  ),
+                                  totalLag: summary.totalLag ?? 0,
+                                  isLoading: isLoading,
+                                  isLoaded: isLoaded,
+                                  isFailed: isFailed,
                                   hasPreviousValue:
                                       group.partitionLags.isNotEmpty,
-                                  labelText:
-                                      _loadedGroupIds.contains(group.groupId) ||
-                                          group.partitionLags.isNotEmpty
-                                      ? "${l10n.lagCol}: ${_formatNum(_calculateGroupLag(group))}"
-                                      : "${l10n.lagCol}: -",
+                                  labelText: badgeLabel,
+                                  outcome: isLoaded ? summary.outcome : null,
+                                  errorReason:
+                                      _groupErrors[group.groupId] ??
+                                      group.lagError,
+                                  l10n: l10n,
                                   warnThreshold: _lagWarnThreshold,
                                   warnTooltip: l10n.lagOverThreshold(
                                     _formatNum(_lagWarnThreshold),
@@ -1049,6 +1204,8 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
                       partitionTrends: _partitionLagHistory[group.groupId],
                       lagWarnThreshold: _lagWarnThreshold,
                       l10n: l10n,
+                      lagError: _groupErrors[group.groupId] ?? group.lagError,
+                      onRetry: () => _retryGroup(group.groupId, activeProfile),
                     ),
                   ],
                 ),

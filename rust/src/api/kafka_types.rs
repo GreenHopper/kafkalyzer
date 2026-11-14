@@ -103,6 +103,24 @@ impl SearchScope {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum PartitionLagStatus {
+    #[default]
+    Known,
+    NoCommit,
+    Unknown,
+}
+
+impl From<kafkalyzer_core::kafka_types::PartitionLagStatus> for PartitionLagStatus {
+    fn from(status: kafkalyzer_core::kafka_types::PartitionLagStatus) -> Self {
+        match status {
+            kafkalyzer_core::kafka_types::PartitionLagStatus::Known => Self::Known,
+            kafkalyzer_core::kafka_types::PartitionLagStatus::NoCommit => Self::NoCommit,
+            kafkalyzer_core::kafka_types::PartitionLagStatus::Unknown => Self::Unknown,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TopicPartitionLag {
     pub topic: String,
@@ -110,6 +128,8 @@ pub struct TopicPartitionLag {
     pub log_end_offset: i64,
     pub current_offset: i64,
     pub lag: i64,
+    pub status: PartitionLagStatus,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -164,6 +184,8 @@ pub struct ConsumerGroupLag {
     pub topics_count: i32,
     pub members: Vec<ConsumerGroupMember>,
     pub unassigned_partitions: Vec<TopicPartition>,
+    pub lag_error: Option<String>,
+    pub ownership_known: bool,
 }
 
 impl From<kafkalyzer_core::kafka_types::TopicPartitionLag> for TopicPartitionLag {
@@ -174,6 +196,8 @@ impl From<kafkalyzer_core::kafka_types::TopicPartitionLag> for TopicPartitionLag
             log_end_offset: lag.log_end_offset,
             current_offset: lag.current_offset,
             lag: lag.lag,
+            status: PartitionLagStatus::from(lag.status),
+            error: lag.error,
         }
     }
 }
@@ -201,6 +225,8 @@ impl From<kafkalyzer_core::kafka_types::ConsumerGroupLag> for ConsumerGroupLag {
                 .into_iter()
                 .map(TopicPartition::from)
                 .collect(),
+            lag_error: group.lag_error,
+            ownership_known: group.ownership_known,
         }
     }
 }
@@ -824,6 +850,8 @@ mod tests {
                 topic: "orders".to_string(),
                 partition: 2,
             }],
+            lag_error: None,
+            ownership_known: true,
         };
 
         let mapped = ConsumerGroupLag::from(group);
@@ -834,5 +862,7 @@ mod tests {
         assert!(mapped.members[2].assignments.is_empty());
         assert_eq!(mapped.unassigned_partitions.len(), 1);
         assert_eq!(mapped.unassigned_partitions[0].partition, 2);
+        assert!(mapped.ownership_known);
+        assert_eq!(mapped.lag_error, None);
     }
 }

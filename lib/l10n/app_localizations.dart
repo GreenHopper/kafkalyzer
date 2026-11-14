@@ -4302,6 +4302,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset filters'**
   String get resetColumnFilters;
+
+  /// No description provided for @lagUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get lagUnknown;
+
+  /// No description provided for @lagNoCommit.
+  ///
+  /// In en, this message translates to:
+  /// **'No commit'**
+  String get lagNoCommit;
+
+  /// No description provided for @lagNoCommittedOffsets.
+  ///
+  /// In en, this message translates to:
+  /// **'No committed offsets'**
+  String get lagNoCommittedOffsets;
+
+  /// No description provided for @lagGroupsLoadedProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{loaded} of {total} loaded'**
+  String lagGroupsLoadedProgress(int loaded, int total);
+
+  /// No description provided for @lagTotalIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Total incomplete'**
+  String get lagTotalIncomplete;
+
+  /// No description provided for @lagErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get lagErrorLabel;
+
+  /// No description provided for @lagErrorTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Lag error: {error}'**
+  String lagErrorTooltip(String error);
+
+  /// No description provided for @lagRetryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get lagRetryAction;
+
+  /// No description provided for @lagRefreshInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh in progress'**
+  String get lagRefreshInProgress;
+
+  /// No description provided for @partitionOwnershipUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition ownership unknown'**
+  String get partitionOwnershipUnknown;
+
+  /// No description provided for @topicNotReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic not readable'**
+  String get topicNotReadable;
+
+  /// No description provided for @diagStageNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get diagStageNetwork;
+
+  /// No description provided for @diagStageTls.
+  ///
+  /// In en, this message translates to:
+  /// **'TLS'**
+  String get diagStageTls;
+
+  /// No description provided for @diagStageAuthentication.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get diagStageAuthentication;
+
+  /// No description provided for @diagStageMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata'**
+  String get diagStageMetadata;
+
+  /// No description provided for @diagStageSchemaRegistry.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry'**
+  String get diagStageSchemaRegistry;
+
+  /// No description provided for @diagStateOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get diagStateOk;
+
+  /// No description provided for @diagStateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get diagStateFailed;
+
+  /// No description provided for @diagStateNotChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked'**
+  String get diagStateNotChecked;
+
+  /// No description provided for @diagStateNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not applicable'**
+  String get diagStateNotApplicable;
+
+  /// No description provided for @diagStateUndetermined.
+  ///
+  /// In en, this message translates to:
+  /// **'Undetermined'**
+  String get diagStateUndetermined;
+
+  /// No description provided for @diagNotCheckedPreviousFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped because {stage} failed'**
+  String diagNotCheckedPreviousFailed(String stage);
+
+  /// No description provided for @diagNotCheckedBudgetExhausted.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped because the diagnosis time budget ran out'**
+  String get diagNotCheckedBudgetExhausted;
+
+  /// No description provided for @diagOverallOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection succeeded across all applicable stages'**
+  String get diagOverallOk;
+
+  /// No description provided for @diagOverallFailedAtStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed at stage: {stage}'**
+  String diagOverallFailedAtStage(String stage);
+
+  /// No description provided for @diagOverallStageUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed, stage unknown'**
+  String get diagOverallStageUnknown;
+
+  /// No description provided for @diagHintInvalidEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Bootstrap entry is invalid (expected host:port without scheme)'**
+  String get diagHintInvalidEntry;
+
+  /// No description provided for @diagHintHostUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Host name could not be resolved'**
+  String get diagHintHostUnknown;
+
+  /// No description provided for @diagHintConnectionRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection refused by host'**
+  String get diagHintConnectionRefused;
+
+  /// No description provided for @diagHintConnectTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection timed out'**
+  String get diagHintConnectTimeout;
+
+  /// No description provided for @diagHintCertificateRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate verification failed — check truststore/CA or hostname'**
+  String get diagHintCertificateRejected;
+
+  /// No description provided for @diagHintTlsHandshakeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'TLS handshake failed — check client/server certificates and TLS settings'**
+  String get diagHintTlsHandshakeFailed;
+
+  /// No description provided for @diagHintProtocolMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Security protocol does not match the broker listener'**
+  String get diagHintProtocolMismatch;
+
+  /// No description provided for @diagHintAuthenticationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication failed — check SASL username and password'**
+  String get diagHintAuthenticationFailed;
+
+  /// No description provided for @diagHintMechanismRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'SASL mechanism rejected or not supported by broker listener'**
+  String get diagHintMechanismRejected;
+
+  /// No description provided for @diagHintNotAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized to describe cluster metadata (check ACLs)'**
+  String get diagHintNotAuthorized;
+
+  /// No description provided for @diagHintRequestTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Request timed out'**
+  String get diagHintRequestTimeout;
+
+  /// No description provided for @diagHintRegistryUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry is unreachable'**
+  String get diagHintRegistryUnreachable;
+
+  /// No description provided for @diagHintRegistryUnauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry rejected credentials'**
+  String get diagHintRegistryUnauthorized;
+
+  /// No description provided for @diagHintRegistryHttpError.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry returned HTTP {status}'**
+  String diagHintRegistryHttpError(int status);
+
+  /// No description provided for @diagHintGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection check failed'**
+  String get diagHintGeneric;
+
+  /// No description provided for @diagServerDnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'DNS'**
+  String get diagServerDnsLabel;
+
+  /// No description provided for @diagServerTcpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TCP'**
+  String get diagServerTcpLabel;
+
+  /// No description provided for @diagServerResolvedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved'**
+  String get diagServerResolvedLabel;
+
+  /// No description provided for @diagServerConnectedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to {address}'**
+  String diagServerConnectedTo(String address);
+
+  /// No description provided for @diagRawErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw error'**
+  String get diagRawErrorLabel;
 }
 
 class _AppLocalizationsDelegate

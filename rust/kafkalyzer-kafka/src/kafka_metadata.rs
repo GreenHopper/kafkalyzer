@@ -1,9 +1,13 @@
 use crate::kafka_utils::create_config;
 use anyhow::Result;
-use kafkalyzer_core::consumer_group_protocol::{
-    parse_assignment, parse_subscription, TopicPartition,
+use kafkalyzer_core::connection_diagnostics::CapturedLine;
+use kafkalyzer_core::consumer_group_protocol::{parse_assignment, parse_subscription};
+use kafkalyzer_core::consumer_lag::{
+    calculate_lag as core_calculate_lag, classify_partition, unassigned_partitions,
 };
-use kafkalyzer_core::kafka_types::{ClusterProfile, ConsumerGroupMember};
+use kafkalyzer_core::kafka_types::{
+    ClusterProfile, ConsumerGroupLag, ConsumerGroupMember, PartitionLagStatus, TopicPartitionLag,
+};
 use kafkalyzer_core::partition_health::{summarize_topic_health, PartitionMetadata};
 use kafkalyzer_core::tls::{classify_tls_failure, TlsFailureClassification};
 use rdkafka::admin::{AdminClient, AdminOptions, OwnedResourceSpecifier, ResourceSpecifier};
@@ -11,8 +15,11 @@ use rdkafka::client::{ClientContext, DefaultClientContext};
 use rdkafka::config::RDKafkaLogLevel;
 use rdkafka::consumer::{BaseConsumer, Consumer, ConsumerContext};
 use rdkafka::error::KafkaError;
-use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::ffi::{CStr, CString};
+use std::ptr;
 use std::sync::Mutex;
+use std::time::Duration;
 use tokio::runtime::Runtime;
 
 #[derive(Debug, Clone)]
@@ -63,27 +70,39 @@ pub enum TlsProbe {
     Inconclusive(String),
 }
 
-struct ProbeClientContext {
-    lines: Mutex<VecDeque<String>>,
+pub(crate) struct ProbeClientContext {
+    lines: Mutex<VecDeque<CapturedLine>>,
 }
 
 impl ProbeClientContext {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             lines: Mutex::new(VecDeque::with_capacity(20)),
         }
     }
 
-    fn push_line(&self, line: String) {
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) fn push_line(&self, line: String) {
+        self.push_entry(None, line);
+    }
+
+    pub(crate) fn push_entry(&self, code: Option<i32>, text: String) {
         if let Ok(mut guard) = self.lines.lock() {
             if guard.len() >= 20 {
                 guard.pop_front();
             }
-            guard.push_back(line);
+            guard.push_back(CapturedLine { code, text });
         }
     }
 
-    fn snapshot(&self) -> Vec<String> {
+    pub(crate) fn snapshot(&self) -> Vec<String> {
+        self.lines
+            .lock()
+            .map(|g| g.iter().map(|c| c.text.clone()).collect())
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn snapshot_captured(&self) -> Vec<CapturedLine> {
         self.lines
             .lock()
             .map(|g| g.iter().cloned().collect())
@@ -93,11 +112,20 @@ impl ProbeClientContext {
 
 impl ClientContext for ProbeClientContext {
     fn log(&self, _level: RDKafkaLogLevel, fac: &str, log_message: &str) {
-        self.push_line(format!("{fac}: {log_message}"));
+        self.push_entry(None, format!("{fac}: {log_message}"));
     }
 
     fn error(&self, error: KafkaError, reason: &str) {
-        self.push_line(format!("{error}: {reason}"));
+        let code = match &error {
+            KafkaError::Global(c) | KafkaError::MetadataFetch(c) => Some(*c as i32),
+            _ => None,
+        };
+        let text = if reason.trim().is_empty() {
+            error.to_string()
+        } else {
+            reason.to_string()
+        };
+        self.push_entry(code, text);
     }
 }
 
@@ -292,6 +320,18 @@ pub fn fetch_topic_partitions(
     })
 }
 
+fn safe_collect_members(group: &rdkafka::groups::GroupInfo) -> Vec<ConsumerGroupMember> {
+    // Work around rdkafka 0.36.2 calling slice::from_raw_parts(null, 0) when member_cnt == 0.
+    let raw = unsafe {
+        &*(group as *const rdkafka::groups::GroupInfo as *const rdkafka_sys::rd_kafka_group_info)
+    };
+    if raw.member_cnt <= 0 || raw.members.is_null() {
+        Vec::new()
+    } else {
+        collect_members(group.members())
+    }
+}
+
 fn collect_members(members: &[rdkafka::groups::GroupMemberInfo]) -> Vec<ConsumerGroupMember> {
     members
         .iter()
@@ -312,8 +352,8 @@ fn collect_members(members: &[rdkafka::groups::GroupMemberInfo]) -> Vec<Consumer
         .collect()
 }
 
-fn subscribed_topics(members: &[ConsumerGroupMember]) -> std::collections::HashSet<String> {
-    let mut topics = std::collections::HashSet::new();
+fn subscribed_topics(members: &[ConsumerGroupMember]) -> HashSet<String> {
+    let mut topics = HashSet::new();
     for member in members {
         topics.extend(member.subscriptions.iter().cloned());
         topics.extend(member.assignments.iter().map(|a| a.topic.clone()));
@@ -321,275 +361,617 @@ fn subscribed_topics(members: &[ConsumerGroupMember]) -> std::collections::HashS
     topics
 }
 
-fn unassigned_partitions(
-    topic_partitions: &std::collections::HashMap<String, Vec<i32>>,
-    members: &[ConsumerGroupMember],
-) -> Vec<TopicPartition> {
-    let owned: std::collections::HashSet<(String, i32)> = members
-        .iter()
-        .flat_map(|m| m.assignments.iter().map(|a| (a.topic.clone(), a.partition)))
-        .collect();
+struct QueueGuard(*mut rdkafka_sys::rd_kafka_queue_t);
+impl Drop for QueueGuard {
+    fn drop(&mut self) {
+        if !self.0.is_null() {
+            unsafe { rdkafka_sys::rd_kafka_queue_destroy(self.0) };
+        }
+    }
+}
 
-    let mut result: Vec<TopicPartition> = topic_partitions
-        .iter()
-        .flat_map(|(topic, partitions)| {
-            partitions
-                .iter()
-                .filter(|p| !owned.contains(&(topic.clone(), **p)))
-                .map(|p| TopicPartition {
-                    topic: topic.clone(),
-                    partition: *p,
+struct ListGroupOffsetsReqGuard(*mut rdkafka_sys::rd_kafka_ListConsumerGroupOffsets_t);
+impl Drop for ListGroupOffsetsReqGuard {
+    fn drop(&mut self) {
+        if !self.0.is_null() {
+            unsafe { rdkafka_sys::rd_kafka_ListConsumerGroupOffsets_destroy(self.0) };
+        }
+    }
+}
+
+struct AdminOptionsGuard(*mut rdkafka_sys::rd_kafka_AdminOptions_t);
+impl Drop for AdminOptionsGuard {
+    fn drop(&mut self) {
+        if !self.0.is_null() {
+            unsafe { rdkafka_sys::rd_kafka_AdminOptions_destroy(self.0) };
+        }
+    }
+}
+
+struct EventGuard(*mut rdkafka_sys::rd_kafka_event_t);
+impl Drop for EventGuard {
+    fn drop(&mut self) {
+        if !self.0.is_null() {
+            unsafe { rdkafka_sys::rd_kafka_event_destroy(self.0) };
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RawCommittedEntry {
+    topic: String,
+    partition: i32,
+    offset: i64,
+    err: Option<String>,
+}
+
+type CommittedOffsetMap = HashMap<(String, i32), std::result::Result<i64, String>>;
+
+fn map_raw_committed_entries(entries: Vec<RawCommittedEntry>) -> CommittedOffsetMap {
+    let mut map = HashMap::new();
+    for entry in entries {
+        if let Some(err_msg) = entry.err {
+            map.insert((entry.topic, entry.partition), Err(err_msg));
+        } else if entry.offset >= 0 {
+            map.insert((entry.topic, entry.partition), Ok(entry.offset));
+        }
+    }
+    map
+}
+
+/// Lists all committed offsets for `group_id` using librdkafka's read-only
+/// `rd_kafka_ListConsumerGroupOffsets` admin call (`partitions = NULL`).
+fn list_consumer_group_offsets(
+    admin: &AdminClient<DefaultClientContext>,
+    group_id: &str,
+    timeout: Duration,
+) -> std::result::Result<CommittedOffsetMap, String> {
+    let c_group = CString::new(group_id).map_err(|_| "Invalid group id".to_string())?;
+    let rk = admin.inner().native_ptr();
+    let timeout_ms = timeout.as_millis().min(i32::MAX as u128) as i32;
+
+    unsafe {
+        let queue = QueueGuard(rdkafka_sys::rd_kafka_queue_new(rk));
+        if queue.0.is_null() {
+            return Err("Failed to create librdkafka queue".to_string());
+        }
+
+        let req = ListGroupOffsetsReqGuard(rdkafka_sys::rd_kafka_ListConsumerGroupOffsets_new(
+            c_group.as_ptr(),
+            ptr::null(),
+        ));
+        if req.0.is_null() {
+            return Err("Failed to allocate ListConsumerGroupOffsets request".to_string());
+        }
+
+        let options = AdminOptionsGuard(rdkafka_sys::rd_kafka_AdminOptions_new(
+            rk,
+            rdkafka_sys::rd_kafka_admin_op_t::RD_KAFKA_ADMIN_OP_LISTCONSUMERGROUPOFFSETS,
+        ));
+        if options.0.is_null() {
+            return Err("Failed to allocate AdminOptions".to_string());
+        }
+
+        let mut err_buf = [0 as std::os::raw::c_char; 512];
+        let opt_err = rdkafka_sys::rd_kafka_AdminOptions_set_request_timeout(
+            options.0,
+            timeout_ms,
+            err_buf.as_mut_ptr(),
+            err_buf.len(),
+        );
+        if opt_err != rdkafka_sys::rd_kafka_resp_err_t::RD_KAFKA_RESP_ERR_NO_ERROR {
+            let msg = CStr::from_ptr(err_buf.as_ptr())
+                .to_string_lossy()
+                .into_owned();
+            return Err(if msg.is_empty() {
+                format!("AdminOptions error: {opt_err:?}")
+            } else {
+                msg
+            });
+        }
+
+        let mut req_ptr = req.0;
+        rdkafka_sys::rd_kafka_ListConsumerGroupOffsets(rk, &mut req_ptr, 1, options.0, queue.0);
+
+        let rkev = loop {
+            let ev = rdkafka_sys::rd_kafka_queue_poll(queue.0, timeout_ms);
+            if ev.is_null() {
+                return Err(format!(
+                    "Timed out listing committed offsets for group '{group_id}'"
+                ));
+            }
+            if rdkafka_sys::rd_kafka_event_type(ev)
+                == rdkafka_sys::RD_KAFKA_EVENT_LISTCONSUMERGROUPOFFSETS_RESULT
+            {
+                break EventGuard(ev);
+            }
+            rdkafka_sys::rd_kafka_event_destroy(ev);
+        };
+
+        let ev_err = rdkafka_sys::rd_kafka_event_error(rkev.0);
+        if ev_err != rdkafka_sys::rd_kafka_resp_err_t::RD_KAFKA_RESP_ERR_NO_ERROR {
+            let msg = CStr::from_ptr(rdkafka_sys::rd_kafka_event_error_string(rkev.0))
+                .to_string_lossy()
+                .into_owned();
+            return Err(msg);
+        }
+
+        let res = rdkafka_sys::rd_kafka_event_ListConsumerGroupOffsets_result(rkev.0);
+        if res.is_null() {
+            return Err("Missing ListConsumerGroupOffsets result".to_string());
+        }
+
+        let mut cnt: usize = 0;
+        let groups = rdkafka_sys::rd_kafka_ListConsumerGroupOffsets_result_groups(res, &mut cnt);
+        if groups.is_null() || cnt == 0 {
+            return Ok(HashMap::new());
+        }
+
+        let g = *groups;
+        let g_err = rdkafka_sys::rd_kafka_group_result_error(g);
+        if !g_err.is_null() {
+            let msg = CStr::from_ptr(rdkafka_sys::rd_kafka_error_string(g_err))
+                .to_string_lossy()
+                .into_owned();
+            return Err(msg);
+        }
+
+        let tpl = rdkafka_sys::rd_kafka_group_result_partitions(g);
+        if tpl.is_null() {
+            return Ok(HashMap::new());
+        }
+
+        let mut raw = Vec::with_capacity((*tpl).cnt as usize);
+        for j in 0..(*tpl).cnt {
+            let elem = (*tpl).elems.add(j as usize);
+            let topic = if (*elem).topic.is_null() {
+                String::new()
+            } else {
+                CStr::from_ptr((*elem).topic).to_string_lossy().into_owned()
+            };
+            let err = if (*elem).err != rdkafka_sys::rd_kafka_resp_err_t::RD_KAFKA_RESP_ERR_NO_ERROR
+            {
+                let err_cstr = rdkafka_sys::rd_kafka_err2str((*elem).err);
+                Some(if err_cstr.is_null() {
+                    format!("{:?}", (*elem).err)
+                } else {
+                    CStr::from_ptr(err_cstr).to_string_lossy().into_owned()
                 })
-        })
-        .collect();
+            } else {
+                None
+            };
+            raw.push(RawCommittedEntry {
+                topic,
+                partition: (*elem).partition,
+                offset: (*elem).offset,
+                err,
+            });
+        }
 
-    result.sort_by(|a, b| a.topic.cmp(&b.topic).then(a.partition.cmp(&b.partition)));
+        Ok(map_raw_committed_entries(raw))
+    }
+}
+
+fn fetch_topic_partitions_cached(
+    consumer: &BaseConsumer,
+    topic_name: &str,
+    timeout: Duration,
+    cache: &mut HashMap<String, std::result::Result<Vec<i32>, String>>,
+) -> std::result::Result<Vec<i32>, String> {
+    if let Some(cached) = cache.get(topic_name) {
+        return cached.clone();
+    }
+
+    let result = match consumer.fetch_metadata(Some(topic_name), timeout) {
+        Ok(md) => {
+            if let Some(topic_meta) = md.topics().iter().find(|t| t.name() == topic_name) {
+                if let Some(err) = topic_meta.error() {
+                    Err(format!("Topic not readable: {err:?}"))
+                } else {
+                    let mut parts: Vec<i32> =
+                        topic_meta.partitions().iter().map(|p| p.id()).collect();
+                    parts.sort_unstable();
+                    Ok(parts)
+                }
+            } else {
+                Err("Topic not found".to_string())
+            }
+        }
+        Err(e) => Err(format!("Failed to describe topic: {e}")),
+    };
+
+    cache.insert(topic_name.to_string(), result.clone());
     result
 }
 
-pub fn fetch_consumer_lags(
-    profile: ClusterProfile,
-) -> Result<Vec<kafkalyzer_core::kafka_types::ConsumerGroupLag>> {
-    let timeout = std::time::Duration::from_secs(5);
-    let config = create_config(&profile);
-    let main_consumer: BaseConsumer = config.create()?;
-
-    // Warm up the client connection using __consumer_offsets metadata fetch
-    let _ = main_consumer.fetch_metadata(Some("__consumer_offsets"), timeout);
-
-    // Fetch list of consumer groups with retries for transient Partial responses
-    let mut group_list = None;
-    for attempt in 1..=3 {
-        match main_consumer.fetch_group_list(None, timeout) {
-            Ok(gl) => {
-                group_list = Some(gl);
-                break;
-            }
-            Err(rdkafka::error::KafkaError::GroupListFetch(
-                rdkafka::types::RDKafkaErrorCode::Partial,
-            )) => {
-                if attempt == 3 {
-                    return Err(anyhow::anyhow!(
-                        "Group list fetch failed: \
-                         Partial response after 3 attempts"
-                    ));
-                }
-                std::thread::sleep(std::time::Duration::from_millis(500 * attempt));
-            }
-            Err(e) => {
-                return Err(anyhow::Error::from(e));
-            }
-        }
-    }
-    let group_list = group_list.unwrap();
-    let mut results = Vec::new();
-
-    // 2. Collect all topics consumed by active (Stable) groups
-    let mut active_groups = Vec::new();
-    let mut all_needed_topics = std::collections::HashSet::new();
-
-    for group in group_list.groups() {
-        let group_id = group.name();
-        let state = group.state();
-        let protocol_type = group.protocol_type();
-
-        // Standard consumer groups only
-        if protocol_type != "consumer" && !protocol_type.is_empty() {
-            continue;
-        }
-
-        let is_stable = state.eq_ignore_ascii_case("stable");
-
-        let mut group_topics = std::collections::HashSet::new();
-        let mut members_count = 0;
-        let mut members = Vec::new();
-        if is_stable {
-            members_count = group.members().len() as i32;
-            members = collect_members(group.members());
-            group_topics = subscribed_topics(&members);
-            all_needed_topics.extend(group_topics.iter().cloned());
-        }
-
-        active_groups.push((
-            group_id.to_string(),
-            state.to_string(),
-            protocol_type.to_string(),
-            group_topics,
-            members_count,
-            members,
-        ));
+fn fetch_watermark_cached(
+    consumer: &BaseConsumer,
+    topic: &str,
+    partition: i32,
+    timeout: Duration,
+    cache: &mut HashMap<(String, i32), std::result::Result<i64, String>>,
+) -> std::result::Result<i64, String> {
+    let key = (topic.to_string(), partition);
+    if let Some(cached) = cache.get(&key) {
+        return cached.clone();
     }
 
-    // 3. Fetch metadata for only the needed topics
-    let mut topic_partitions: std::collections::HashMap<String, Vec<i32>> =
-        std::collections::HashMap::new();
+    let result = match consumer.fetch_watermarks(topic, partition, timeout) {
+        Ok((_, high)) => Ok(high),
+        Err(e) => Err(format!("Log end offset unreadable: {e}")),
+    };
 
-    for topic_name in &all_needed_topics {
-        if let Ok(md) = main_consumer.fetch_metadata(Some(topic_name), timeout) {
-            for topic_meta in md.topics() {
-                if topic_meta.name() == topic_name && topic_meta.error().is_none() {
-                    let parts: Vec<i32> = topic_meta.partitions().iter().map(|p| p.id()).collect();
-                    topic_partitions.insert(topic_name.clone(), parts);
+    cache.insert(key, result.clone());
+    result
+}
+
+/// Pure assembly of a `ConsumerGroupLag` from pre-fetched member info,
+/// committed offsets, topic metadata, and log-end watermarks.
+fn assemble_consumer_group_lag(
+    group_id: String,
+    state: String,
+    protocol_type: String,
+    members: Vec<ConsumerGroupMember>,
+    committed: std::result::Result<CommittedOffsetMap, String>,
+    topic_meta: &HashMap<String, std::result::Result<Vec<i32>, String>>,
+    watermarks: &HashMap<(String, i32), std::result::Result<i64, String>>,
+) -> ConsumerGroupLag {
+    let members_count = members.len() as i32;
+    let subscribed = subscribed_topics(&members);
+
+    let committed_map = match committed {
+        Ok(map) => map,
+        Err(reason) => {
+            let subscribed_meta: HashMap<String, Vec<i32>> = subscribed
+                .iter()
+                .filter_map(|t| {
+                    topic_meta
+                        .get(t)
+                        .and_then(|res| res.as_ref().ok())
+                        .map(|parts| (t.clone(), parts.clone()))
+                })
+                .collect();
+            let (ownership_known, unassigned) = if state.eq_ignore_ascii_case("stable") {
+                match unassigned_partitions(&subscribed_meta, &members) {
+                    Some(u) => (true, u),
+                    None => (false, Vec::new()),
                 }
-            }
-        }
-    }
-
-    // 4. Cache watermarks to prevent redundant coordinator requests
-    let mut watermark_cache: std::collections::HashMap<(String, i32), (i64, i64)> =
-        std::collections::HashMap::new();
-
-    // 5. Query committed offsets and build results
-    for (group_id, state, protocol_type, group_topics, members_count, members) in active_groups {
-        let mut partitions_to_query = rdkafka::TopicPartitionList::new();
-        for topic_name in &group_topics {
-            if let Some(partitions) = topic_partitions.get(topic_name) {
-                for &partition_id in partitions {
-                    partitions_to_query.add_partition(topic_name, partition_id);
-                }
-            }
-        }
-
-        if partitions_to_query.count() == 0 {
-            results.push(kafkalyzer_core::kafka_types::ConsumerGroupLag {
+            } else {
+                (false, Vec::new())
+            };
+            return ConsumerGroupLag {
                 group_id,
                 state,
                 protocol_type,
                 partition_lags: Vec::new(),
                 members_count,
-                topics_count: group_topics.len() as i32,
-                unassigned_partitions: unassigned_partitions(&topic_partitions, &members),
+                topics_count: subscribed.len() as i32,
                 members,
-            });
-            continue;
+                unassigned_partitions: unassigned,
+                lag_error: Some(reason),
+                ownership_known,
+            };
         }
+    };
 
-        // Create temporary consumer configuration for the specific group ID
-        let mut group_config = create_config(&profile);
-        group_config.set("group.id", &group_id);
-        let group_consumer: BaseConsumer = match group_config.create() {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
+    let mut group_topics: HashSet<String> = subscribed.clone();
+    for (topic, _) in committed_map.keys() {
+        group_topics.insert(topic.clone());
+    }
+    let mut sorted_topics: Vec<String> = group_topics.iter().cloned().collect();
+    sorted_topics.sort();
 
-        // Query committed offsets for specified partitions
-        let committed_tpl = match group_consumer.committed_offsets(partitions_to_query, timeout) {
-            Ok(tpl) => tpl,
-            Err(_) => continue,
-        };
-
-        let mut partition_lags = Vec::new();
-
-        // Calculate lag for each partition with committed offset
-        for elem in committed_tpl.elements() {
-            if let rdkafka::Offset::Offset(current_offset) = elem.offset() {
-                let topic = elem.topic();
-                let partition = elem.partition();
-
-                let cache_key = (topic.to_string(), partition);
-                let high_offset = if let Some(&(_, high)) = watermark_cache.get(&cache_key) {
-                    Some(high)
-                } else {
-                    match main_consumer.fetch_watermarks(topic, partition, timeout) {
-                        Ok((low, high)) => {
-                            watermark_cache.insert(cache_key, (low, high));
-                            Some(high)
+    let mut partition_lags = Vec::new();
+    for topic in &sorted_topics {
+        match topic_meta.get(topic) {
+            Some(Ok(partitions)) => {
+                let mut seen_parts = HashSet::new();
+                for &partition in partitions {
+                    seen_parts.insert(partition);
+                    let wm = watermarks
+                        .get(&(topic.clone(), partition))
+                        .cloned()
+                        .unwrap_or_else(|| Err("Watermark unavailable".to_string()));
+                    match committed_map.get(&(topic.clone(), partition)) {
+                        Some(Err(err_msg)) => partition_lags.push(TopicPartitionLag {
+                            topic: topic.clone(),
+                            partition,
+                            log_end_offset: -1,
+                            current_offset: -1,
+                            lag: 0,
+                            status: PartitionLagStatus::Unknown,
+                            error: Some(err_msg.clone()),
+                        }),
+                        Some(Ok(offset)) => {
+                            partition_lags.push(classify_partition(
+                                topic,
+                                partition,
+                                Some(*offset),
+                                wm,
+                            ));
                         }
-                        Err(_) => None,
+                        None => {
+                            partition_lags.push(classify_partition(topic, partition, None, wm));
+                        }
                     }
-                };
-
-                if let Some(high_offset) = high_offset {
-                    let lag = calculate_lag(high_offset, current_offset);
-
-                    partition_lags.push(kafkalyzer_core::kafka_types::TopicPartitionLag {
-                        topic: topic.to_string(),
-                        partition,
-                        log_end_offset: high_offset,
-                        current_offset,
-                        lag,
-                    });
+                }
+                let mut extra_parts: Vec<i32> = committed_map
+                    .keys()
+                    .filter(|(t, p)| t == topic && !seen_parts.contains(p))
+                    .map(|(_, p)| *p)
+                    .collect();
+                extra_parts.sort_unstable();
+                for partition in extra_parts {
+                    let wm = watermarks
+                        .get(&(topic.clone(), partition))
+                        .cloned()
+                        .unwrap_or_else(|| Err("Watermark unavailable".to_string()));
+                    match committed_map.get(&(topic.clone(), partition)) {
+                        Some(Err(err_msg)) => partition_lags.push(TopicPartitionLag {
+                            topic: topic.clone(),
+                            partition,
+                            log_end_offset: -1,
+                            current_offset: -1,
+                            lag: 0,
+                            status: PartitionLagStatus::Unknown,
+                            error: Some(err_msg.clone()),
+                        }),
+                        Some(Ok(offset)) => {
+                            partition_lags.push(classify_partition(
+                                topic,
+                                partition,
+                                Some(*offset),
+                                wm,
+                            ));
+                        }
+                        None => {}
+                    }
                 }
             }
+            Some(Err(err_msg)) => {
+                let mut committed_parts: Vec<i32> = committed_map
+                    .keys()
+                    .filter(|(t, _)| t == topic)
+                    .map(|(_, p)| *p)
+                    .collect();
+                committed_parts.sort_unstable();
+                if committed_parts.is_empty() {
+                    partition_lags.push(TopicPartitionLag {
+                        topic: topic.clone(),
+                        partition: -1,
+                        log_end_offset: -1,
+                        current_offset: -1,
+                        lag: 0,
+                        status: PartitionLagStatus::Unknown,
+                        error: Some(err_msg.clone()),
+                    });
+                } else {
+                    for partition in committed_parts {
+                        partition_lags.push(TopicPartitionLag {
+                            topic: topic.clone(),
+                            partition,
+                            log_end_offset: -1,
+                            current_offset: -1,
+                            lag: 0,
+                            status: PartitionLagStatus::Unknown,
+                            error: Some(err_msg.clone()),
+                        });
+                    }
+                }
+            }
+            None => {
+                partition_lags.push(TopicPartitionLag {
+                    topic: topic.clone(),
+                    partition: -1,
+                    log_end_offset: -1,
+                    current_offset: -1,
+                    lag: 0,
+                    status: PartitionLagStatus::Unknown,
+                    error: Some("Topic metadata unavailable".to_string()),
+                });
+            }
         }
+    }
 
-        results.push(kafkalyzer_core::kafka_types::ConsumerGroupLag {
-            group_id,
-            state,
-            protocol_type,
-            partition_lags,
-            members_count,
-            topics_count: group_topics.len() as i32,
-            unassigned_partitions: unassigned_partitions(&topic_partitions, &members),
-            members,
-        });
+    let subscribed_meta: HashMap<String, Vec<i32>> = subscribed
+        .iter()
+        .filter_map(|t| {
+            topic_meta
+                .get(t)
+                .and_then(|res| res.as_ref().ok())
+                .map(|parts| (t.clone(), parts.clone()))
+        })
+        .collect();
+    let (ownership_known, unassigned) = if state.eq_ignore_ascii_case("stable") {
+        match unassigned_partitions(&subscribed_meta, &members) {
+            Some(u) => (true, u),
+            None => (false, Vec::new()),
+        }
+    } else {
+        (false, Vec::new())
+    };
+
+    ConsumerGroupLag {
+        group_id,
+        state,
+        protocol_type,
+        partition_lags,
+        members_count,
+        topics_count: group_topics.len() as i32,
+        members,
+        unassigned_partitions: unassigned,
+        lag_error: None,
+        ownership_known,
+    }
+}
+
+struct GroupSnapshot {
+    group_id: String,
+    state: String,
+    protocol_type: String,
+    members: Vec<ConsumerGroupMember>,
+}
+
+fn fetch_group_list_with_retry(
+    main_consumer: &BaseConsumer,
+    timeout: Duration,
+) -> Result<rdkafka::groups::GroupList> {
+    for attempt in 1..=3 {
+        match main_consumer.fetch_group_list(None, timeout) {
+            Ok(gl) => return Ok(gl),
+            Err(KafkaError::GroupListFetch(rdkafka::types::RDKafkaErrorCode::Partial)) => {
+                if attempt == 3 {
+                    return Err(anyhow::anyhow!(
+                        "Group list fetch failed: Partial response after 3 attempts"
+                    ));
+                }
+                std::thread::sleep(Duration::from_millis(500 * attempt));
+            }
+            Err(e) => return Err(anyhow::Error::from(e)),
+        }
+    }
+    unreachable!("group list retry loop always returns")
+}
+
+fn fetch_consumer_lags_for_targets(
+    profile: ClusterProfile,
+    target_group_ids: Option<Vec<String>>,
+) -> Result<Vec<ConsumerGroupLag>> {
+    let timeout = Duration::from_secs(5);
+    let admin_config = create_config(&profile);
+    let admin_client: AdminClient<DefaultClientContext> = admin_config.create()?;
+
+    let mut consumer_config = create_config(&profile);
+    consumer_config.set("enable.auto.commit", "false");
+    consumer_config.set("enable.auto.offset.store", "false");
+    let main_consumer: BaseConsumer = consumer_config.create()?;
+
+    let _ = main_consumer.fetch_metadata(Some("__consumer_offsets"), timeout);
+    let group_list = fetch_group_list_with_retry(&main_consumer, timeout)?;
+
+    let mut group_snapshots: HashMap<String, GroupSnapshot> = HashMap::new();
+    let mut listed_order: Vec<String> = Vec::new();
+    for group in group_list.groups() {
+        let protocol_type = group.protocol_type();
+        if protocol_type == "consumer" || protocol_type.is_empty() {
+            let group_id = group.name().to_string();
+            listed_order.push(group_id.clone());
+            group_snapshots.insert(
+                group_id.clone(),
+                GroupSnapshot {
+                    group_id,
+                    state: group.state().to_string(),
+                    protocol_type: protocol_type.to_string(),
+                    members: safe_collect_members(group),
+                },
+            );
+        }
+    }
+
+    let ordered_ids = target_group_ids.unwrap_or(listed_order);
+    let mut topic_meta_cache: HashMap<String, std::result::Result<Vec<i32>, String>> =
+        HashMap::new();
+    let mut watermark_cache: HashMap<(String, i32), std::result::Result<i64, String>> =
+        HashMap::new();
+    let mut results = Vec::with_capacity(ordered_ids.len());
+
+    for group_id in ordered_ids {
+        if let Some(snapshot) = group_snapshots.get(&group_id) {
+            let committed = list_consumer_group_offsets(&admin_client, &snapshot.group_id, timeout);
+            let mut needed_topics = subscribed_topics(&snapshot.members);
+            if let Ok(ref map) = committed {
+                for (topic, _) in map.keys() {
+                    needed_topics.insert(topic.clone());
+                }
+            }
+
+            for topic in &needed_topics {
+                if let Ok(partitions) = fetch_topic_partitions_cached(
+                    &main_consumer,
+                    topic,
+                    timeout,
+                    &mut topic_meta_cache,
+                ) {
+                    for partition in partitions {
+                        let _ = fetch_watermark_cached(
+                            &main_consumer,
+                            topic,
+                            partition,
+                            timeout,
+                            &mut watermark_cache,
+                        );
+                    }
+                }
+            }
+
+            results.push(assemble_consumer_group_lag(
+                snapshot.group_id.clone(),
+                snapshot.state.clone(),
+                snapshot.protocol_type.clone(),
+                snapshot.members.clone(),
+                committed,
+                &topic_meta_cache,
+                &watermark_cache,
+            ));
+        } else {
+            results.push(ConsumerGroupLag {
+                group_id,
+                state: "Unknown".to_string(),
+                protocol_type: "consumer".to_string(),
+                partition_lags: Vec::new(),
+                members_count: 0,
+                topics_count: 0,
+                members: Vec::new(),
+                unassigned_partitions: Vec::new(),
+                lag_error: Some("group not found".to_string()),
+                ownership_known: false,
+            });
+        }
     }
 
     Ok(results)
 }
 
-pub fn fetch_consumer_groups(
+pub fn fetch_consumer_lags(profile: ClusterProfile) -> Result<Vec<ConsumerGroupLag>> {
+    fetch_consumer_lags_for_targets(profile, None)
+}
+
+pub fn fetch_consumer_group_lags(
     profile: ClusterProfile,
-) -> Result<Vec<kafkalyzer_core::kafka_types::ConsumerGroupLag>> {
-    let timeout = std::time::Duration::from_secs(5);
-    let config = create_config(&profile);
+    group_ids: Vec<String>,
+) -> Result<Vec<ConsumerGroupLag>> {
+    fetch_consumer_lags_for_targets(profile, Some(group_ids))
+}
+
+pub fn fetch_consumer_groups(profile: ClusterProfile) -> Result<Vec<ConsumerGroupLag>> {
+    let timeout = Duration::from_secs(5);
+    let mut config = create_config(&profile);
+    config.set("enable.auto.commit", "false");
+    config.set("enable.auto.offset.store", "false");
     let main_consumer: BaseConsumer = config.create()?;
 
-    // Warm up the client connection
     let _ = main_consumer.fetch_metadata(Some("__consumer_offsets"), timeout);
+    let group_list = fetch_group_list_with_retry(&main_consumer, timeout)?;
 
-    // Fetch list of consumer groups with retries
-    let mut group_list = None;
-    for attempt in 1..=3 {
-        match main_consumer.fetch_group_list(None, timeout) {
-            Ok(gl) => {
-                group_list = Some(gl);
-                break;
-            }
-            Err(rdkafka::error::KafkaError::GroupListFetch(
-                rdkafka::types::RDKafkaErrorCode::Partial,
-            )) => {
-                if attempt == 3 {
-                    return Err(anyhow::anyhow!("Group list fetch failed: Partial response"));
-                }
-                std::thread::sleep(std::time::Duration::from_millis(500 * attempt));
-            }
-            Err(e) => {
-                return Err(anyhow::Error::from(e));
-            }
-        }
-    }
-    let group_list = group_list.unwrap();
     let mut results = Vec::new();
-
     for group in group_list.groups() {
-        let group_id = group.name();
-        let state = group.state();
         let protocol_type = group.protocol_type();
-
-        // Standard consumer groups only
-        if protocol_type != "consumer" && !protocol_type.is_empty() {
-            continue;
+        if protocol_type == "consumer" || protocol_type.is_empty() {
+            let members = safe_collect_members(group);
+            let members_count = members.len() as i32;
+            results.push(ConsumerGroupLag {
+                group_id: group.name().to_string(),
+                state: group.state().to_string(),
+                protocol_type: protocol_type.to_string(),
+                partition_lags: Vec::new(),
+                members_count,
+                topics_count: subscribed_topics(&members).len() as i32,
+                members,
+                unassigned_partitions: Vec::new(),
+                lag_error: None,
+                ownership_known: false,
+            });
         }
-
-        let is_stable = state.eq_ignore_ascii_case("stable");
-        let mut members = Vec::new();
-        let mut members_count = 0;
-        if is_stable {
-            members_count = group.members().len() as i32;
-            members = collect_members(group.members());
-        }
-
-        results.push(kafkalyzer_core::kafka_types::ConsumerGroupLag {
-            group_id: group_id.to_string(),
-            state: state.to_string(),
-            protocol_type: protocol_type.to_string(),
-            partition_lags: Vec::new(),
-            members_count,
-            topics_count: subscribed_topics(&members).len() as i32,
-            unassigned_partitions: Vec::new(),
-            members,
-        });
     }
 
     Ok(results)
@@ -598,109 +980,15 @@ pub fn fetch_consumer_groups(
 pub fn fetch_consumer_group_lag(
     profile: ClusterProfile,
     group_id: String,
-) -> Result<kafkalyzer_core::kafka_types::ConsumerGroupLag> {
-    let timeout = std::time::Duration::from_secs(5);
-    let config = create_config(&profile);
-    let main_consumer: BaseConsumer = config.create()?;
-
-    // Fetch list filtering for requested group ID
-    let group_list = main_consumer.fetch_group_list(Some(&group_id), timeout)?;
-    let group = group_list
-        .groups()
-        .iter()
-        .find(|g| g.name() == group_id)
-        .ok_or_else(|| anyhow::anyhow!("Group not found: {}", group_id))?;
-
-    let state = group.state();
-    let protocol_type = group.protocol_type();
-
-    let is_stable = state.eq_ignore_ascii_case("stable");
-    let mut members = Vec::new();
-    let mut members_count = 0;
-    if is_stable {
-        members_count = group.members().len() as i32;
-        members = collect_members(group.members());
-    }
-    let group_topics = subscribed_topics(&members);
-
-    let mut topic_partitions = std::collections::HashMap::new();
-    for topic_name in &group_topics {
-        if let Ok(md) = main_consumer.fetch_metadata(Some(topic_name), timeout) {
-            for topic_meta in md.topics() {
-                if topic_meta.name() == topic_name && topic_meta.error().is_none() {
-                    let parts: Vec<i32> = topic_meta.partitions().iter().map(|p| p.id()).collect();
-                    topic_partitions.insert(topic_name.clone(), parts);
-                }
-            }
-        }
-    }
-
-    let mut partitions_to_query = rdkafka::TopicPartitionList::new();
-    for topic_name in &group_topics {
-        if let Some(partitions) = topic_partitions.get(topic_name) {
-            for &partition_id in partitions {
-                partitions_to_query.add_partition(topic_name, partition_id);
-            }
-        }
-    }
-
-    if partitions_to_query.count() == 0 {
-        return Ok(kafkalyzer_core::kafka_types::ConsumerGroupLag {
-            group_id,
-            state: state.to_string(),
-            protocol_type: protocol_type.to_string(),
-            partition_lags: Vec::new(),
-            members_count,
-            topics_count: group_topics.len() as i32,
-            unassigned_partitions: unassigned_partitions(&topic_partitions, &members),
-            members,
-        });
-    }
-
-    let mut group_config = create_config(&profile);
-    group_config.set("group.id", &group_id);
-    let group_consumer: BaseConsumer = group_config.create()?;
-
-    let committed_tpl = group_consumer.committed_offsets(partitions_to_query, timeout)?;
-    let mut partition_lags = Vec::new();
-
-    for elem in committed_tpl.elements() {
-        if let rdkafka::Offset::Offset(current_offset) = elem.offset() {
-            let topic = elem.topic();
-            let partition = elem.partition();
-
-            if let Ok((_, high_offset)) = main_consumer.fetch_watermarks(topic, partition, timeout)
-            {
-                let lag = calculate_lag(high_offset, current_offset);
-                partition_lags.push(kafkalyzer_core::kafka_types::TopicPartitionLag {
-                    topic: topic.to_string(),
-                    partition,
-                    log_end_offset: high_offset,
-                    current_offset,
-                    lag,
-                });
-            }
-        }
-    }
-
-    Ok(kafkalyzer_core::kafka_types::ConsumerGroupLag {
-        group_id,
-        state: state.to_string(),
-        protocol_type: protocol_type.to_string(),
-        partition_lags,
-        members_count,
-        topics_count: group_topics.len() as i32,
-        unassigned_partitions: unassigned_partitions(&topic_partitions, &members),
-        members,
-    })
+) -> Result<ConsumerGroupLag> {
+    let mut items = fetch_consumer_lags_for_targets(profile, Some(vec![group_id]))?;
+    items
+        .pop()
+        .ok_or_else(|| anyhow::anyhow!("Consumer group lag missing from batch result"))
 }
 
 pub fn calculate_lag(high_offset: i64, current_offset: i64) -> i64 {
-    if high_offset >= current_offset {
-        high_offset - current_offset
-    } else {
-        0
-    }
+    core_calculate_lag(high_offset, current_offset)
 }
 
 #[cfg(test)]
@@ -749,41 +1037,140 @@ mod tests {
     }
 
     #[test]
-    fn member_without_a_decodable_assignment_is_marked() {
-        let member = ConsumerGroupMember {
-            member_id: "m-1".to_string(),
-            client_id: "client-1".to_string(),
-            client_host: "host-1".to_string(),
-            subscriptions: vec!["orders".to_string()],
-            assignments: Vec::new(),
-            assignment_decodable: false,
-        };
-
-        let partitions = std::collections::HashMap::from([("orders".to_string(), vec![0, 1])]);
-        let unowned = unassigned_partitions(&partitions, &[member]);
-
-        assert_eq!(unowned.len(), 2);
+    fn map_raw_committed_entries_filters_invalid_and_keeps_errors() {
+        let mapped = map_raw_committed_entries(vec![
+            RawCommittedEntry {
+                topic: "orders".to_string(),
+                partition: 0,
+                offset: 100,
+                err: None,
+            },
+            RawCommittedEntry {
+                topic: "orders".to_string(),
+                partition: 1,
+                offset: -1001,
+                err: None,
+            },
+            RawCommittedEntry {
+                topic: "orders".to_string(),
+                partition: 2,
+                offset: -1,
+                err: Some("Topic authorization failed".to_string()),
+            },
+        ]);
+        assert_eq!(mapped.get(&("orders".to_string(), 0)), Some(&Ok(100)));
+        assert_eq!(mapped.get(&("orders".to_string(), 1)), None);
+        assert_eq!(
+            mapped.get(&("orders".to_string(), 2)),
+            Some(&Err("Topic authorization failed".to_string()))
+        );
     }
 
     #[test]
-    fn partitions_owned_by_no_member_are_reported_once() {
-        let member = ConsumerGroupMember {
-            member_id: "m-1".to_string(),
-            client_id: "client-1".to_string(),
-            client_host: "host-1".to_string(),
-            subscriptions: vec!["orders".to_string()],
-            assignments: vec![TopicPartition {
-                topic: "orders".to_string(),
-                partition: 0,
-            }],
-            assignment_decodable: true,
+    fn assemble_consumer_group_lag_handles_empty_group_and_unreadable_topic() {
+        let mut committed = HashMap::new();
+        committed.insert(("lag-spike".to_string(), 0), Ok(0));
+        committed.insert(("lag-spike".to_string(), 2), Ok(100));
+        committed.insert(("secret".to_string(), 0), Ok(5));
+
+        let topic_meta = HashMap::from([
+            ("lag-spike".to_string(), Ok(vec![0, 1, 2])),
+            (
+                "secret".to_string(),
+                Err("Topic not readable: TopicAuthorizationFailed".to_string()),
+            ),
+        ]);
+        let watermarks = HashMap::from([
+            (("lag-spike".to_string(), 0), Ok(0)),
+            (("lag-spike".to_string(), 1), Ok(0)),
+            (("lag-spike".to_string(), 2), Ok(150)),
+        ]);
+
+        let res = assemble_consumer_group_lag(
+            "lag-spike-g".to_string(),
+            "Empty".to_string(),
+            "consumer".to_string(),
+            Vec::new(),
+            Ok(committed),
+            &topic_meta,
+            &watermarks,
+        );
+
+        assert_eq!(res.lag_error, None);
+        assert!(!res.ownership_known);
+        assert!(res.unassigned_partitions.is_empty());
+        assert_eq!(res.topics_count, 2);
+        assert_eq!(res.partition_lags.len(), 4);
+
+        let p0 = res
+            .partition_lags
+            .iter()
+            .find(|p| p.topic == "lag-spike" && p.partition == 0)
+            .unwrap();
+        assert_eq!(p0.status, PartitionLagStatus::Known);
+        assert_eq!(p0.lag, 0);
+
+        let p1 = res
+            .partition_lags
+            .iter()
+            .find(|p| p.topic == "lag-spike" && p.partition == 1)
+            .unwrap();
+        assert_eq!(p1.status, PartitionLagStatus::NoCommit);
+
+        let p2 = res
+            .partition_lags
+            .iter()
+            .find(|p| p.topic == "lag-spike" && p.partition == 2)
+            .unwrap();
+        assert_eq!(p2.status, PartitionLagStatus::Known);
+        assert_eq!(p2.lag, 50);
+
+        let sec = res
+            .partition_lags
+            .iter()
+            .find(|p| p.topic == "secret")
+            .unwrap();
+        assert_eq!(sec.status, PartitionLagStatus::Unknown);
+    }
+
+    #[test]
+    fn assemble_consumer_group_lag_keeps_group_error() {
+        let res = assemble_consumer_group_lag(
+            "broken-g".to_string(),
+            "Empty".to_string(),
+            "consumer".to_string(),
+            Vec::new(),
+            Err("GroupAuthorizationFailed".to_string()),
+            &HashMap::new(),
+            &HashMap::new(),
+        );
+        assert_eq!(res.lag_error.as_deref(), Some("GroupAuthorizationFailed"));
+        assert!(!res.ownership_known);
+    }
+
+    #[test]
+    #[ignore = "Requires local docker compose kafka on localhost:9094 with lag-spike-g fixture"]
+    fn integration_lag_spike_g_empty_group_has_accurate_lags() {
+        let profile = ClusterProfile {
+            name: "local".to_string(),
+            bootstrap_servers: "localhost:9094".to_string(),
+            security_protocol: Some("PLAINTEXT".to_string()),
+            ..Default::default()
         };
-
-        let partitions = std::collections::HashMap::from([("orders".to_string(), vec![0, 1, 2])]);
-        let unowned = unassigned_partitions(&partitions, &[member]);
-
-        assert_eq!(unowned.len(), 2);
-        assert_eq!(unowned[0].partition, 1);
+        let lag = fetch_consumer_group_lag(profile, "lag-spike-g".to_string()).unwrap();
+        assert_eq!(lag.state, "Empty");
+        assert_eq!(lag.lag_error, None);
+        assert!(!lag.ownership_known);
+        let spike_parts: Vec<_> = lag
+            .partition_lags
+            .iter()
+            .filter(|p| p.topic == "lag-spike")
+            .collect();
+        assert_eq!(spike_parts.len(), 3);
+        assert_eq!(spike_parts[0].status, PartitionLagStatus::Known);
+        assert_eq!(spike_parts[1].status, PartitionLagStatus::NoCommit);
+        assert_eq!(spike_parts[2].status, PartitionLagStatus::Known);
+        assert_eq!(spike_parts[2].lag, 50);
     }
 
     #[test]

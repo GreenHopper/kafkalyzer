@@ -53,6 +53,15 @@ Future<ConsumerGroupLag> fetchConsumerGroupLag({
   groupId: groupId,
 );
 
+Future<List<ConsumerGroupLag>> fetchConsumerGroupLags({
+  required ClusterProfile profile,
+  required List<String> groupIds,
+}) =>
+    KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchConsumerGroupLags(
+      profile: profile,
+      groupIds: groupIds,
+    );
+
 class BrokerEndpoint {
   final int id;
   final String host;

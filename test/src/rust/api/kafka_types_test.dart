@@ -260,6 +260,8 @@ void main() {
         logEndOffset: 100,
         currentOffset: 80,
         lag: 20,
+
+        status: PartitionLagStatus.known,
       );
 
       const lag2 = TopicPartitionLag(
@@ -268,6 +270,8 @@ void main() {
         logEndOffset: 100,
         currentOffset: 80,
         lag: 20,
+
+        status: PartitionLagStatus.known,
       );
 
       expect(lag1 == lag1, isTrue);
@@ -284,6 +288,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: 80,
               lag: 20,
+
+              status: PartitionLagStatus.known,
             ),
         isFalse,
       );
@@ -296,6 +302,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: 80,
               lag: 20,
+
+              status: PartitionLagStatus.known,
             ),
         isFalse,
       );
@@ -308,6 +316,8 @@ void main() {
               logEndOffset: 101,
               currentOffset: 80,
               lag: 20,
+
+              status: PartitionLagStatus.known,
             ),
         isFalse,
       );
@@ -320,6 +330,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: 81,
               lag: 20,
+
+              status: PartitionLagStatus.known,
             ),
         isFalse,
       );
@@ -332,6 +344,8 @@ void main() {
               logEndOffset: 100,
               currentOffset: 80,
               lag: 21,
+
+              status: PartitionLagStatus.known,
             ),
         isFalse,
       );
@@ -346,6 +360,8 @@ void main() {
         logEndOffset: 10,
         currentOffset: 5,
         lag: 5,
+
+        status: PartitionLagStatus.known,
       );
 
       const groupLag1 = ConsumerGroupLag(
@@ -357,6 +373,7 @@ void main() {
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       );
 
       const groupLag2 = ConsumerGroupLag(
@@ -368,6 +385,7 @@ void main() {
         topicsCount: 1,
         members: [],
         unassignedPartitions: [],
+        ownershipKnown: true,
       );
 
       expect(groupLag1 == groupLag1, isTrue);
@@ -387,6 +405,7 @@ void main() {
               topicsCount: 1,
               members: [],
               unassignedPartitions: [],
+              ownershipKnown: true,
             ),
         isFalse,
       );
@@ -402,6 +421,7 @@ void main() {
               topicsCount: 1,
               members: [],
               unassignedPartitions: [],
+              ownershipKnown: true,
             ),
         isFalse,
       );
@@ -417,6 +437,7 @@ void main() {
               topicsCount: 1,
               members: [],
               unassignedPartitions: [],
+              ownershipKnown: true,
             ),
         isFalse,
       );
@@ -432,6 +453,7 @@ void main() {
               topicsCount: 1,
               members: [],
               unassignedPartitions: [],
+              ownershipKnown: true,
             ),
         isFalse,
       );
@@ -447,6 +469,7 @@ void main() {
               topicsCount: 1,
               members: [],
               unassignedPartitions: [],
+              ownershipKnown: true,
             ),
         isFalse,
       );
@@ -462,6 +485,7 @@ void main() {
               topicsCount: 2,
               members: [],
               unassignedPartitions: [],
+              ownershipKnown: true,
             ),
         isFalse,
       );

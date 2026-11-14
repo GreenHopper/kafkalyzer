@@ -1284,5 +1284,82 @@
     }
   },
   "columnFiltersNoMatch": "No rows match the active column filters.",
-  "resetColumnFilters": "Reset filters"
+  "resetColumnFilters": "Reset filters",
+  "lagUnknown": "Unknown",
+  "lagNoCommit": "No commit",
+  "lagNoCommittedOffsets": "No committed offsets",
+  "lagGroupsLoadedProgress": "{loaded} of {total} loaded",
+  "@lagGroupsLoadedProgress": {
+    "placeholders": {
+      "loaded": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "lagTotalIncomplete": "Total incomplete",
+  "lagErrorLabel": "Error",
+  "lagErrorTooltip": "Lag error: {error}",
+  "@lagErrorTooltip": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "lagRetryAction": "Retry",
+  "lagRefreshInProgress": "Refresh in progress",
+  "partitionOwnershipUnknown": "Partition ownership unknown",
+  "topicNotReadable": "Topic not readable",
+  "diagStageNetwork": "Network",
+  "diagStageTls": "TLS",
+  "diagStageAuthentication": "Authentication",
+  "diagStageMetadata": "Metadata",
+  "diagStageSchemaRegistry": "Schema Registry",
+  "diagStateOk": "OK",
+  "diagStateFailed": "Failed",
+  "diagStateNotChecked": "Not checked",
+  "diagStateNotApplicable": "Not applicable",
+  "diagStateUndetermined": "Undetermined",
+  "diagNotCheckedPreviousFailed": "Skipped because {stage} failed",
+  "@diagNotCheckedPreviousFailed": {
+    "placeholders": {
+      "stage": { "type": "String" }
+    }
+  },
+  "diagNotCheckedBudgetExhausted": "Skipped because the diagnosis time budget ran out",
+  "diagOverallOk": "Connection succeeded across all applicable stages",
+  "diagOverallFailedAtStage": "Connection failed at stage: {stage}",
+  "@diagOverallFailedAtStage": {
+    "placeholders": {
+      "stage": { "type": "String" }
+    }
+  },
+  "diagOverallStageUnknown": "Connection failed, stage unknown",
+  "diagHintInvalidEntry": "Bootstrap entry is invalid (expected host:port without scheme)",
+  "diagHintHostUnknown": "Host name could not be resolved",
+  "diagHintConnectionRefused": "Connection refused by host",
+  "diagHintConnectTimeout": "Connection timed out",
+  "diagHintCertificateRejected": "Certificate verification failed — check truststore/CA or hostname",
+  "diagHintTlsHandshakeFailed": "TLS handshake failed — check client/server certificates and TLS settings",
+  "diagHintProtocolMismatch": "Security protocol does not match the broker listener",
+  "diagHintAuthenticationFailed": "Authentication failed — check SASL username and password",
+  "diagHintMechanismRejected": "SASL mechanism rejected or not supported by broker listener",
+  "diagHintNotAuthorized": "Not authorized to describe cluster metadata (check ACLs)",
+  "diagHintRequestTimeout": "Request timed out",
+  "diagHintRegistryUnreachable": "Schema Registry is unreachable",
+  "diagHintRegistryUnauthorized": "Schema Registry rejected credentials",
+  "diagHintRegistryHttpError": "Schema Registry returned HTTP {status}",
+  "@diagHintRegistryHttpError": {
+    "placeholders": {
+      "status": { "type": "int" }
+    }
+  },
+  "diagHintGeneric": "Connection check failed",
+  "diagServerDnsLabel": "DNS",
+  "diagServerTcpLabel": "TCP",
+  "diagServerResolvedLabel": "Resolved",
+  "diagServerConnectedTo": "Connected to {address}",
+  "@diagServerConnectedTo": {
+    "placeholders": {
+      "address": { "type": "String" }
+    }
+  },
+  "diagRawErrorLabel": "Raw error"
 }

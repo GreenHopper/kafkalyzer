@@ -4,6 +4,7 @@
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
 import 'api.dart';
+import 'api/connection_diagnostics.dart';
 import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
@@ -68,6 +69,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ClusterProfile dco_decode_box_autoadd_cluster_profile(dynamic raw);
 
   @protected
+  DiagnosisHint dco_decode_box_autoadd_diagnosis_hint(dynamic raw);
+
+  @protected
   DuplicateAnalysisResult dco_decode_box_autoadd_duplicate_analysis_result(
     dynamic raw,
   );
@@ -93,6 +97,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   MessageSchema dco_decode_box_autoadd_message_schema(dynamic raw);
 
   @protected
+  NotCheckedReason dco_decode_box_autoadd_not_checked_reason(dynamic raw);
+
+  @protected
   SizePercentiles dco_decode_box_autoadd_size_percentiles(dynamic raw);
 
   @protected
@@ -104,6 +111,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   TopicAnalysisReport dco_decode_box_autoadd_topic_analysis_report(dynamic raw);
 
   @protected
+  int dco_decode_box_autoadd_u_16(dynamic raw);
+
+  @protected
   ValueFilterResult dco_decode_box_autoadd_value_filter_result(dynamic raw);
 
   @protected
@@ -113,10 +123,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ClusterProfile dco_decode_cluster_profile(dynamic raw);
 
   @protected
+  ConnectionDiagnosis dco_decode_connection_diagnosis(dynamic raw);
+
+  @protected
   ConsumerGroupLag dco_decode_consumer_group_lag(dynamic raw);
 
   @protected
   ConsumerGroupMember dco_decode_consumer_group_member(dynamic raw);
+
+  @protected
+  DiagnosisHint dco_decode_diagnosis_hint(dynamic raw);
+
+  @protected
+  DiagnosisOutcome dco_decode_diagnosis_outcome(dynamic raw);
+
+  @protected
+  DiagnosisStage dco_decode_diagnosis_stage(dynamic raw);
 
   @protected
   DuplicateAnalysisResult dco_decode_duplicate_analysis_result(dynamic raw);
@@ -220,6 +242,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  List<ServerCheck> dco_decode_list_server_check(dynamic raw);
+
+  @protected
+  List<StageResult> dco_decode_list_stage_result(dynamic raw);
+
+  @protected
   List<TopDuplicateOccurrence> dco_decode_list_top_duplicate_occurrence(
     dynamic raw,
   );
@@ -243,10 +271,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
   MetricDelta dco_decode_metric_delta(dynamic raw);
 
   @protected
+  NotCheckedReason dco_decode_not_checked_reason(dynamic raw);
+
+  @protected
   String? dco_decode_opt_String(dynamic raw);
 
   @protected
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
+
+  @protected
+  DiagnosisHint? dco_decode_opt_box_autoadd_diagnosis_hint(dynamic raw);
 
   @protected
   DuplicateAnalysisResult? dco_decode_opt_box_autoadd_duplicate_analysis_result(
@@ -274,12 +308,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   MessageSchema? dco_decode_opt_box_autoadd_message_schema(dynamic raw);
 
   @protected
+  NotCheckedReason? dco_decode_opt_box_autoadd_not_checked_reason(dynamic raw);
+
+  @protected
   SizePercentiles? dco_decode_opt_box_autoadd_size_percentiles(dynamic raw);
 
   @protected
   TopicAnalysisReport? dco_decode_opt_box_autoadd_topic_analysis_report(
     dynamic raw,
   );
+
+  @protected
+  int? dco_decode_opt_box_autoadd_u_16(dynamic raw);
 
   @protected
   ValueFilterResult? dco_decode_opt_box_autoadd_value_filter_result(
@@ -296,6 +336,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   PartitionAnalysis dco_decode_partition_analysis(dynamic raw);
 
   @protected
+  PartitionLagStatus dco_decode_partition_lag_status(dynamic raw);
+
+  @protected
   PartitionRow dco_decode_partition_row(dynamic raw);
 
   @protected
@@ -308,7 +351,19 @@ abstract class KafkalyzerRustLibApiImplPlatform
   SearchScope dco_decode_search_scope(dynamic raw);
 
   @protected
+  ServerCheck dco_decode_server_check(dynamic raw);
+
+  @protected
   SizePercentiles dco_decode_size_percentiles(dynamic raw);
+
+  @protected
+  StageResult dco_decode_stage_result(dynamic raw);
+
+  @protected
+  StageState dco_decode_stage_state(dynamic raw);
+
+  @protected
+  StepState dco_decode_step_state(dynamic raw);
 
   @protected
   TlsProbeOutcome dco_decode_tls_probe_outcome(dynamic raw);
@@ -347,7 +402,13 @@ abstract class KafkalyzerRustLibApiImplPlatform
   TypeOccurrence dco_decode_type_occurrence(dynamic raw);
 
   @protected
+  int dco_decode_u_16(dynamic raw);
+
+  @protected
   int dco_decode_u_32(dynamic raw);
+
+  @protected
+  BigInt dco_decode_u_64(dynamic raw);
 
   @protected
   int dco_decode_u_8(dynamic raw);
@@ -402,6 +463,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  DiagnosisHint sse_decode_box_autoadd_diagnosis_hint(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   DuplicateAnalysisResult sse_decode_box_autoadd_duplicate_analysis_result(
     SseDeserializer deserializer,
   );
@@ -431,6 +497,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  NotCheckedReason sse_decode_box_autoadd_not_checked_reason(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SizePercentiles sse_decode_box_autoadd_size_percentiles(
     SseDeserializer deserializer,
   );
@@ -446,6 +517,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  int sse_decode_box_autoadd_u_16(SseDeserializer deserializer);
+
+  @protected
   ValueFilterResult sse_decode_box_autoadd_value_filter_result(
     SseDeserializer deserializer,
   );
@@ -457,12 +531,26 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ClusterProfile sse_decode_cluster_profile(SseDeserializer deserializer);
 
   @protected
+  ConnectionDiagnosis sse_decode_connection_diagnosis(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   ConsumerGroupLag sse_decode_consumer_group_lag(SseDeserializer deserializer);
 
   @protected
   ConsumerGroupMember sse_decode_consumer_group_member(
     SseDeserializer deserializer,
   );
+
+  @protected
+  DiagnosisHint sse_decode_diagnosis_hint(SseDeserializer deserializer);
+
+  @protected
+  DiagnosisOutcome sse_decode_diagnosis_outcome(SseDeserializer deserializer);
+
+  @protected
+  DiagnosisStage sse_decode_diagnosis_stage(SseDeserializer deserializer);
 
   @protected
   DuplicateAnalysisResult sse_decode_duplicate_analysis_result(
@@ -586,6 +674,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  List<ServerCheck> sse_decode_list_server_check(SseDeserializer deserializer);
+
+  @protected
+  List<StageResult> sse_decode_list_stage_result(SseDeserializer deserializer);
+
+  @protected
   List<TopDuplicateOccurrence> sse_decode_list_top_duplicate_occurrence(
     SseDeserializer deserializer,
   );
@@ -617,10 +711,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   MetricDelta sse_decode_metric_delta(SseDeserializer deserializer);
 
   @protected
+  NotCheckedReason sse_decode_not_checked_reason(SseDeserializer deserializer);
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
+  DiagnosisHint? sse_decode_opt_box_autoadd_diagnosis_hint(
+    SseDeserializer deserializer,
+  );
 
   @protected
   DuplicateAnalysisResult? sse_decode_opt_box_autoadd_duplicate_analysis_result(
@@ -652,6 +754,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  NotCheckedReason? sse_decode_opt_box_autoadd_not_checked_reason(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SizePercentiles? sse_decode_opt_box_autoadd_size_percentiles(
     SseDeserializer deserializer,
   );
@@ -660,6 +767,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   TopicAnalysisReport? sse_decode_opt_box_autoadd_topic_analysis_report(
     SseDeserializer deserializer,
   );
+
+  @protected
+  int? sse_decode_opt_box_autoadd_u_16(SseDeserializer deserializer);
 
   @protected
   ValueFilterResult? sse_decode_opt_box_autoadd_value_filter_result(
@@ -678,6 +788,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   PartitionAnalysis sse_decode_partition_analysis(SseDeserializer deserializer);
 
   @protected
+  PartitionLagStatus sse_decode_partition_lag_status(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   PartitionRow sse_decode_partition_row(SseDeserializer deserializer);
 
   @protected
@@ -692,7 +807,19 @@ abstract class KafkalyzerRustLibApiImplPlatform
   SearchScope sse_decode_search_scope(SseDeserializer deserializer);
 
   @protected
+  ServerCheck sse_decode_server_check(SseDeserializer deserializer);
+
+  @protected
   SizePercentiles sse_decode_size_percentiles(SseDeserializer deserializer);
+
+  @protected
+  StageResult sse_decode_stage_result(SseDeserializer deserializer);
+
+  @protected
+  StageState sse_decode_stage_state(SseDeserializer deserializer);
+
+  @protected
+  StepState sse_decode_step_state(SseDeserializer deserializer);
 
   @protected
   TlsProbeOutcome sse_decode_tls_probe_outcome(SseDeserializer deserializer);
@@ -743,7 +870,13 @@ abstract class KafkalyzerRustLibApiImplPlatform
   TypeOccurrence sse_decode_type_occurrence(SseDeserializer deserializer);
 
   @protected
+  int sse_decode_u_16(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_u_32(SseDeserializer deserializer);
+
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -807,6 +940,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_diagnosis_hint(
+    DiagnosisHint self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_duplicate_analysis_result(
     DuplicateAnalysisResult self,
     SseSerializer serializer,
@@ -843,6 +982,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_not_checked_reason(
+    NotCheckedReason self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_size_percentiles(
     SizePercentiles self,
     SseSerializer serializer,
@@ -859,6 +1004,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
     TopicAnalysisReport self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_box_autoadd_u_16(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_value_filter_result(
@@ -879,6 +1027,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_connection_diagnosis(
+    ConnectionDiagnosis self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_consumer_group_lag(
     ConsumerGroupLag self,
     SseSerializer serializer,
@@ -887,6 +1041,21 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_consumer_group_member(
     ConsumerGroupMember self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_diagnosis_hint(DiagnosisHint self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_diagnosis_outcome(
+    DiagnosisOutcome self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_diagnosis_stage(
+    DiagnosisStage self,
     SseSerializer serializer,
   );
 
@@ -1050,6 +1219,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_server_check(
+    List<ServerCheck> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_stage_result(
+    List<StageResult> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_top_duplicate_occurrence(
     List<TopDuplicateOccurrence> self,
     SseSerializer serializer,
@@ -1086,10 +1267,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_metric_delta(MetricDelta self, SseSerializer serializer);
 
   @protected
+  void sse_encode_not_checked_reason(
+    NotCheckedReason self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_diagnosis_hint(
+    DiagnosisHint? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_duplicate_analysis_result(
@@ -1128,6 +1321,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_not_checked_reason(
+    NotCheckedReason? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_size_percentiles(
     SizePercentiles? self,
     SseSerializer serializer,
@@ -1138,6 +1337,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
     TopicAnalysisReport? self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_16(int? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_value_filter_result(
@@ -1161,6 +1363,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_partition_lag_status(
+    PartitionLagStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_partition_row(PartitionRow self, SseSerializer serializer);
 
   @protected
@@ -1179,10 +1387,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_search_scope(SearchScope self, SseSerializer serializer);
 
   @protected
+  void sse_encode_server_check(ServerCheck self, SseSerializer serializer);
+
+  @protected
   void sse_encode_size_percentiles(
     SizePercentiles self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_stage_result(StageResult self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_stage_state(StageState self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_step_state(StepState self, SseSerializer serializer);
 
   @protected
   void sse_encode_tls_probe_outcome(
@@ -1254,7 +1474,13 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_u_16(int self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
