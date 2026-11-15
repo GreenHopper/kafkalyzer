@@ -110,7 +110,7 @@ The recent hours view and the daily distribution SHALL present hours, weekdays a
 
 ### Requirement: Timeline Coverage Indication
 
-The report SHALL record from which moment on the scanned data is complete. When the selected recent window or a listed day starts before that moment, the system SHALL mark it as partially covered instead of presenting missing data as low volume.
+The report SHALL record from which moment on the scanned data is complete and, when the scan stopped before the log end, until which moment it is complete. When the selected recent window or a listed day lies partly outside that coverage, the system SHALL mark it as partially covered instead of presenting missing data as low volume. A scan of a partition subset SHALL be marked as covering only the selected partitions.
 
 #### Scenario: Sampled scan does not cover the window
 
@@ -127,6 +127,28 @@ The report SHALL record from which moment on the scanned data is complete. When 
 
 - **WHEN** a full scan of all retained messages completes
 - **THEN** no part of the timeline SHALL be marked as partially covered
+
+#### Scenario: Oldest messages scan ends before the window
+
+- **WHEN** the user scanned the oldest 5,000 messages, these end 3 days before the scan moment, and the 24-hour window is selected
+- **THEN** the whole window SHALL be marked as not covered by the scan
+- **AND** the hours SHALL NOT be presented as hours with zero messages
+
+#### Scenario: Time range with an end
+
+- **WHEN** the user scanned the range 2026-11-20 14:00 to 16:00 local time
+- **THEN** hours before 14:00 and from 16:00 on SHALL be marked as not covered
+- **AND** the day 2026-11-20 SHALL be marked as partially covered
+
+#### Scenario: Partition subset
+
+- **WHEN** the user scanned partitions 0 and 3 of a 6-partition topic
+- **THEN** the recent hours view and the daily distribution SHALL state that they cover only partitions 0 and 3
+
+#### Scenario: Coverage end not recorded
+
+- **WHEN** the displayed report does not record a coverage end
+- **THEN** the timeline SHALL use only the coverage start as before
 
 ### Requirement: Timeline Unavailable For Older Reports
 

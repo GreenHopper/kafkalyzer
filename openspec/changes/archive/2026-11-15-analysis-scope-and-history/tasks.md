@@ -159,7 +159,7 @@
   all succeed without new warnings.
 - [x] 8.2 `dart format lib test`, `flutter analyze`, `flutter test`. Verify: no analyzer issues, all tests pass.
 - [x] 8.3 `scripts/check_read_only.sh`. Verify: passes unchanged (no new exception).
-- [ ] 8.4 Manual check against the local `docker-compose.yaml` broker: full scan of a > 1 M-offset topic asks first;
+- [x] 8.4 Manual check against the local `docker-compose.yaml` broker: full scan of a > 1 M-offset topic asks first;
   newest 1,000 of partitions 0, 2 within the last hour completes and shows the scope card; report appears in the import
   and compare menus; a topic with > 1.8 M distinct messages shows the duplicate estimate label; memory stays bounded
   (observe RSS). Verify: observations noted in the change's PR description.
