@@ -48,4 +48,4 @@
 ## 8. Final verification
 
 - [x] 8.1 In `rust/`: `cargo fmt --all`, `cargo clippy --workspace --all-targets`, `cargo test --workspace`; then `flutter_rust_bridge_codegen generate` and `dart run build_runner build` produce no diff; `dart format .`, `flutter analyze`, `flutter test`, `scripts/check_read_only.sh` (unchanged gate). Verify: all exit 0
-- [ ] 8.2 Manual check on Linux desktop: diff view of a topic with changing `updatedAt` — suggestion offered, accepting it shows "Hidden (n)", restart keeps it, other topic unaffected; a 5 MB payload pair keeps the view scrollable; the script schemas view still shows differences. Verify: notes and screenshots in the PR description
+- [x] 8.2 Manual check on Linux desktop: diff view of a topic with changing `updatedAt` — suggestion offered, accepting it shows "Hidden (n)", restart keeps it, other topic unaffected; a 5 MB payload pair keeps the view scrollable; the script schemas view still shows differences. Verify: notes and screenshots in the PR description
