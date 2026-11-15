@@ -106,6 +106,6 @@
 - [x] 7.1 In `rust/`: `cargo fmt --all`, `cargo clippy --workspace --all-targets`, `cargo test --workspace`; then
       `dart format lib test`, `flutter analyze`, `flutter test`, `scripts/check_read_only.sh`. Verify: all exit 0 and the
       read-only gate passes without new exceptions.
-- [ ] 7.2 Manual check against the docker-compose cluster (if available): overview lists brokers and cluster id,
+- [x] 7.2 Manual check against the docker-compose cluster (if available): overview lists brokers and cluster id,
       unhealthy drill-down after stopping one broker, time range on a seeded topic, German locale. Verify: observations
       noted in the PR, or skip noted.
