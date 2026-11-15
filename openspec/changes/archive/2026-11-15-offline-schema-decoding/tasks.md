@@ -147,7 +147,7 @@ Prerequisite: 5.35 `schema-type-awareness-and-subject-browser` is implemented (`
       `flutter analyze` and `flutter test`. Verify: no diff after regeneration, analyzer clean, all tests pass.
 - [x] 7.3 `scripts/check_read_only.sh` and `scripts/test_check_read_only.sh`. Verify: both exit 0 with no new
       exception.
-- [ ] 7.4 Manual check against `docker-compose.yaml`. With no registry in the profile: produce (outside the app) a
+- [x] 7.4 Manual check against `docker-compose.yaml`. With no registry in the profile: produce (outside the app) a
       Confluent-framed Avro topic, a raw Avro topic, a framed Protobuf topic with index `[1]`, and a framed JSON topic.
       Assign `.avsc`, `.desc` and JSON Schema files. Check decoding, provenance, analysis fields, a script step (GUI and
       `--script`), a deleted file (raw + reason, scan completes), an edited file (changed state), and with the registry

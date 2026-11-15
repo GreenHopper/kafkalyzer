@@ -24,7 +24,7 @@ For a message whose key or value is Schema Registry encoded, the system SHALL re
 
 - **WHEN** a message payload is plain JSON or raw bytes without a registry identifier
 - **THEN** the system SHALL report that no registry schema applies to that side
-- **AND** the message SHALL still be listed and decoded as before
+- **AND** the message SHALL still be listed and decoded as before, unless a local schema is assigned to that side, in which case it SHALL be decoded with the local schema
 
 ### Requirement: Compact Schema Provenance On Timeline Cards
 
@@ -54,7 +54,7 @@ The message inspector SHALL remain the authoritative surface for full schema pro
 
 #### Scenario: Message without provenance
 
-- **WHEN** the user selects a message that carries no registry identifier
+- **WHEN** the user selects a message that carries no registry identifier and to whose sides no local schema applies
 - **THEN** the inspector SHALL show a "no registry schema" state for that side
 - **AND** no error message SHALL be shown
 
@@ -89,3 +89,28 @@ Reporting schema provenance SHALL NOT change which messages a scan returns, and 
 - **WHEN** a scan reads many messages that share the same schema id
 - **THEN** the system SHALL resolve that schema id once for the scan session
 - **AND** the number of registry requests SHALL NOT grow with the number of messages of that schema
+
+### Requirement: Local Schema File Provenance
+
+For a side decoded with a local schema, or whose local decoding failed, the system SHALL report "local file" with the file name (never the full path), the schema type, the message type for Protobuf, the framing and the schema id from the prefix when present. A failed local decode SHALL also report its reason.
+
+#### Scenario: Value decoded with a local file
+
+- **WHEN** the user selects a message whose value was decoded with the local file `orders.avsc` from a payload with schema id 42 in its prefix
+- **THEN** the inspector SHALL show "local file orders.avsc", type Avro and schema id 42 for the value side
+
+#### Scenario: Local decoding failed
+
+- **WHEN** the user selects a message whose value could not be decoded with its local Protobuf schema
+- **THEN** the inspector SHALL show the local file name, the message type and the decode reason for the value side
+- **AND** the value SHALL be shown in its raw form
+
+#### Scenario: Local provenance on message cards
+
+- **WHEN** a message value was decoded with a local schema and the key has no schema
+- **THEN** the message card SHALL show a compact local-schema indicator for the value and no placeholder for the key
+
+#### Scenario: Local provenance in exports and script results
+
+- **WHEN** messages decoded with a local schema are exported or written as script results
+- **THEN** each message SHALL carry its local provenance per side, and files written by earlier versions SHALL still load with no local provenance
