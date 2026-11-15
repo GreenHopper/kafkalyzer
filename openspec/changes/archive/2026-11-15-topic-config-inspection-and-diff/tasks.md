@@ -100,7 +100,7 @@
   `cargo test --workspace`. All pass.
 - [x] 7.2 `dart format lib test`, `flutter analyze` (no new issues), `flutter test`. All pass (topic/explorer/l10n/a11y suites pass; pre-existing Flutter 3.47+ `material_ui` vs `flutter/material.dart` errors exist in unrelated `theme.dart` / `app_localizations.dart`).
 - [x] 7.3 `scripts/check_read_only.sh` passes unchanged (no new exception).
-- [ ] 7.4 Manual check against docker-compose: open a topic → Configuration lists entries with sources. Compare the
+- [x] 7.4 Manual check against docker-compose: open a topic → Configuration lists entries with sources. Compare the
   same topic with the second docker cluster profile (or the same profile and another topic). The differences toggle
   and copy as text work. A non-existent topic name shows "Topic not found" on that side, and the active connection
   and its tabs are unchanged.
