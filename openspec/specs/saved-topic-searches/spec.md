@@ -8,7 +8,7 @@ Enables users to save, manage, and recall complete topic search configurations (
 
 ### Requirement: Persistent Topic Search Presets
 
-The system SHALL persist named search configurations for each topic and cluster in local storage, capturing scan mode, filter type, filter query, search scope, fast trace setting, partition filter, result limit, start/end conditions, and table column configurations.
+The system SHALL persist named search configurations for each topic and cluster in local storage, capturing scan mode, filter type, filter query, filter expression, search scope, fast trace setting, partition filter, result limit, start/end conditions, and table column configurations. A preset stored without a filter expression SHALL load as a preset without expression.
 
 #### Scenario: Saving a new search preset
 
@@ -32,6 +32,23 @@ The system SHALL persist named search configurations for each topic and cluster 
 - **WHEN** the user deletes a saved preset from the management affordance
 - **THEN** the preset SHALL be removed from storage and from the selectable preset list
 - **AND** the currently displayed search inputs SHALL remain unchanged
+
+#### Scenario: Saving and applying a preset with a filter expression
+
+- **WHEN** the user saves a preset while the expression `header.eventType == "OrderCreated"` is set and later applies it
+- **THEN** the stored preset SHALL contain the canonical expression text
+- **AND** applying it SHALL restore that expression in the expression editor
+
+#### Scenario: Preset saved before filter expressions existed
+
+- **WHEN** a preset stored by an earlier version without a filter expression is applied
+- **THEN** all its other values SHALL be restored unchanged and the expression editor SHALL be empty
+
+#### Scenario: Preset with an expression that is no longer valid
+
+- **WHEN** a stored preset contains an expression that fails validation
+- **THEN** the preset SHALL remain selectable, applying it SHALL put the stored text into the text mode of the editor with its localized error
+- **AND** the scan SHALL NOT start until the expression is corrected or cleared
 
 ### Requirement: Ergonomic Search Preset Selector
 

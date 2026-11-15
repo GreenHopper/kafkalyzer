@@ -119,6 +119,6 @@
 - [x] 7.1 In `rust/`: `cargo fmt --all`, `cargo clippy --workspace --all-targets` (no warnings), `cargo test --workspace`.
 - [x] 7.2 `flutter_rust_bridge_codegen generate` and `dart run build_runner build` produce no further diff; `dart
       format .` clean; `flutter analyze` clean; `flutter test` green.
-- [ ] 7.3 `scripts/check_read_only.sh` passes unchanged (no new exception), and a manual run against
+- [x] 7.3 `scripts/check_read_only.sh` passes unchanged (no new exception), and a manual run against
       `docker-compose.yaml` confirms: header/metadata/value expressions, a legacy-only search identical to before, an
       invalid expression refused with column, a script using `{{var}}` in desktop and headless mode.
