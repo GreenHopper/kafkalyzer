@@ -149,7 +149,7 @@
       tests pass.
 - [x] 8.3 `scripts/check_read_only.sh` and `scripts/test_check_read_only.sh`. Verify: both exit 0 with no new
       exception.
-- [ ] 8.4 Manual check against `docker-compose.yaml` with a Schema Registry: register (outside the app, with curl)
+- [x] 8.4 Manual check against `docker-compose.yaml` with a Schema Registry: register (outside the app, with curl)
       one Avro, one JSON Schema and one Protobuf subject with a reference, plus one subject named `com.acme.Customer`.
       In the app, check labels, field trees, pin/filter, reference navigation, compatibility (set and inherited),
       copy and save, subject search and the associated-topic jump, and a wrong password (401 text). Verify: the
