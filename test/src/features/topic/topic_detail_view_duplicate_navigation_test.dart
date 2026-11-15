@@ -72,6 +72,8 @@ class _RecordingStreamController extends ChangeNotifier
     String? filterField,
     required FilterType filterType,
     required SearchScope searchScope,
+    String? filterExpression,
+    Map<String, List<String>>? filterVariables,
     bool fastTraceEnabled = false,
     int? startOffset,
     int? startTimestamp,

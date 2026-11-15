@@ -458,7 +458,13 @@ for (name, t) in td.params:
             args.append('visualDensity: modern.VisualDensity('
                         'horizontal: t.visualDensity.horizontal, vertical: t.visualDensity.vertical)')
         elif mode == 'SPLASH':
-            args.append('splashFactory: t.splashFactory is legacy.NoSplash ? modern.NoSplash.splashFactory : null')
+            # splashFactory is a factory closure, never a NoSplash instance.
+            args.append(
+                'splashFactory: identical(t.splashFactory, '
+                'legacy.NoSplash.splashFactory)\n'
+                '        ? modern.NoSplash.splashFactory\n'
+                '        : null'
+            )
         continue
     gen_param(td, 't', name, t, args, skipped_all)
 body = ',\n    '.join(args)

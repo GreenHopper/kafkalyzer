@@ -4,7 +4,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 // from the official package:material_ui. `legacy` is used only to name types
 // of the legacy theme that FlexThemeData consumes.
 // See https://github.com/rydmike/flex_color_scheme/issues/310
-import 'package:material_ui/material_ui.dart' as legacy;
+import 'package:flutter/material.dart' as legacy;
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/flex_theme_bridge.dart';
 import 'package:kafkalyzer/src/utils/app_fonts.dart';

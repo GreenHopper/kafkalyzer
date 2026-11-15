@@ -167,22 +167,44 @@ void main() {
         }
       });
 
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('plugins.flutter.io/path_provider'),
+        (MethodCall call) async {
+          if (call.method == 'getApplicationSupportDirectory') {
+            return '/tmp/kafkalyzer-support';
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          null,
+        );
+      });
+
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
-      await tester.drag(find.byType(ListView).first, const Offset(0, -800));
-      await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('About Kafkalyzer'));
-      await tester.tap(find.text('About Kafkalyzer'));
+      final aboutFinder = find.text('About Kafkalyzer');
+      await tester.scrollUntilVisible(
+        aboutFinder,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(aboutFinder);
+      // About dialog resolves path_provider / prefs before showing.
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
       await tester.pumpAndSettle();
 
+      expect(find.byType(AboutDialog), findsOneWidget);
       expect(
         find.textContaining(AppVersionHelper.version),
         findsAtLeastNWidgets(1),

@@ -73,6 +73,7 @@ dependencies:
   window_manager: ^0.5.2
   screen_retriever: ^0.2.2
   cupertino_ui: any
+  collection: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
