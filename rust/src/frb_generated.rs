@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -777892988;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1940193560;
 
 // Section: executor
 
@@ -73,6 +73,39 @@ fn wire__crate__api__profile_tools__allowed_extra_properties_impl(
                     Result::<_, ()>::Ok(crate::api::profile_tools::allowed_extra_properties())?;
                 Ok(output_ok)
             })())
+        },
+    )
+}
+fn wire__crate__api__kafka_types__analysis_scope_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "analysis_scope_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::kafka_types::AnalysisScope::default())?;
+                    Ok(output_ok)
+                })())
+            }
         },
     )
 }
@@ -178,6 +211,39 @@ fn wire__crate__api__kafka_analyzer__analyze_topic_content_with_options_impl(
         },
     )
 }
+fn wire__crate__api__schema_registry__associate_subjects_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "associate_subjects",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_subjects = <Vec<String>>::sse_decode(&mut deserializer);
+            let api_topics = <Vec<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(
+                    crate::api::schema_registry::associate_subjects(api_subjects, api_topics),
+                )?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__schema_registry__check_schema_compatibility_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -207,7 +273,7 @@ fn wire__crate__api__schema_registry__check_schema_compatibility_impl(
             let api_schema = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::schema_registry::SchemaRegistryErrorDto>(
                     (move || {
                         let output_ok = crate::api::schema_registry::check_schema_compatibility(
                             api_profile,
@@ -252,6 +318,40 @@ fn wire__crate__api__kafka_types__cluster_profile_default_impl(
                     Ok(output_ok)
                 })())
             }
+        },
+    )
+}
+fn wire__crate__api__json_path__collect_field_paths_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "collect_field_paths",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_payload = <String>::sse_decode(&mut deserializer);
+            let api_limit = <u32>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::json_path::collect_field_paths(
+                    api_payload,
+                    api_limit,
+                ))?;
+                Ok(output_ok)
+            })())
         },
     )
 }
@@ -324,6 +424,11 @@ fn wire__crate__api__kafka_consumer__consume_with_filter_impl(
                 <crate::api::kafka_types::FilterType>::sse_decode(&mut deserializer);
             let api_search_scope =
                 <crate::api::kafka_types::SearchScope>::sse_decode(&mut deserializer);
+            let api_filter_expression = <Option<String>>::sse_decode(&mut deserializer);
+            let api_filter_variables =
+                <Option<std::collections::HashMap<String, Vec<String>>>>::sse_decode(
+                    &mut deserializer,
+                );
             let api_start_offset = <Option<i64>>::sse_decode(&mut deserializer);
             let api_start_timestamp = <Option<i64>>::sse_decode(&mut deserializer);
             let api_start_partition = <Option<i32>>::sse_decode(&mut deserializer);
@@ -333,6 +438,10 @@ fn wire__crate__api__kafka_consumer__consume_with_filter_impl(
             let api_max_results = <Option<i32>>::sse_decode(&mut deserializer);
             let api_run_forever = <bool>::sse_decode(&mut deserializer);
             let api_start_from_tail = <Option<bool>>::sse_decode(&mut deserializer);
+            let api_local_schemas =
+                <Option<crate::api::local_schema::TopicLocalSchemasDto>>::sse_decode(
+                    &mut deserializer,
+                );
             let api_sink = <StreamSink<
                 crate::api::kafka_consumer::KafkaMessage,
                 flutter_rust_bridge::for_generated::SseCodec,
@@ -348,6 +457,8 @@ fn wire__crate__api__kafka_consumer__consume_with_filter_impl(
                             api_filter_field,
                             api_filter_type,
                             api_search_scope,
+                            api_filter_expression,
+                            api_filter_variables,
                             api_start_offset,
                             api_start_timestamp,
                             api_start_partition,
@@ -357,6 +468,7 @@ fn wire__crate__api__kafka_consumer__consume_with_filter_impl(
                             api_max_results,
                             api_run_forever,
                             api_start_from_tail,
+                            api_local_schemas,
                             api_sink,
                         )
                         .await?;
@@ -442,6 +554,46 @@ fn wire__crate__api__profile_crypto__decrypt_bundle_with_passphrase_impl(
         },
     )
 }
+fn wire__crate__api__kafka_metadata__describe_topic_configs_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "describe_topic_configs",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_topics = <Vec<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::kafka_metadata::describe_topic_configs(
+                            api_profile,
+                            api_topics,
+                        )?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__json_path__deserialize_cluster_profile_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -515,6 +667,79 @@ fn wire__crate__api__connection_diagnostics__diagnose_connection_impl(
         },
     )
 }
+fn wire__crate__api__json_diff__diff_json_batch_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "diff_json_batch",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_requests =
+                <Vec<crate::api::json_diff::JsonDiffRequest>>::sse_decode(&mut deserializer);
+            let api_max_entries = <Option<u32>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(crate::api::json_diff::diff_json_batch(
+                        api_requests,
+                        api_max_entries,
+                    ))?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__topic_config__diff_topic_configs_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "diff_topic_configs",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_left =
+                <crate::api::topic_config::TopicConfigSnapshot>::sse_decode(&mut deserializer);
+            let api_right =
+                <crate::api::topic_config::TopicConfigSnapshot>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(crate::api::topic_config::diff_topic_configs(
+                    api_left, api_right,
+                ))?;
+                Ok(output_ok)
+            })())
+        },
+    )
+}
 fn wire__crate__api__profile_crypto__encrypt_bundle_with_passphrase_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -550,6 +775,87 @@ fn wire__crate__api__profile_crypto__encrypt_bundle_with_passphrase_impl(
                     )?;
                     Ok(output_ok)
                 })())
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_analyzer__estimate_analysis_scope_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "estimate_analysis_scope",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_topic = <String>::sse_decode(&mut deserializer);
+            let api_scope = <crate::api::kafka_types::AnalysisScope>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let output_ok = crate::api::kafka_analyzer::estimate_analysis_scope(
+                            api_profile,
+                            api_topic,
+                            api_scope,
+                        )
+                        .await?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_metadata__fetch_cluster_overview_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_cluster_overview",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok =
+                            crate::api::kafka_metadata::fetch_cluster_overview(api_profile)?;
+                        Ok(output_ok)
+                    })(),
+                )
             }
         },
     )
@@ -708,6 +1014,85 @@ fn wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
         },
     )
 }
+fn wire__crate__api__schema_registry__fetch_global_compatibility_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_global_compatibility",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::schema_registry::SchemaRegistryErrorDto>(
+                    (move || {
+                        let output_ok =
+                            crate::api::schema_registry::fetch_global_compatibility(api_profile)?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_metadata__fetch_partition_offsets_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_partition_offsets",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_topic = <String>::sse_decode(&mut deserializer);
+            let api_skew_threshold_percent = <Option<u32>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::kafka_metadata::fetch_partition_offsets(
+                            api_profile,
+                            api_topic,
+                            api_skew_threshold_percent,
+                        )?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__schema_registry__fetch_schema_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -736,7 +1121,7 @@ fn wire__crate__api__schema_registry__fetch_schema_impl(
             let api_version = <Option<i32>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::schema_registry::SchemaRegistryErrorDto>(
                     (move || {
                         let output_ok = crate::api::schema_registry::fetch_schema(
                             api_profile,
@@ -777,11 +1162,93 @@ fn wire__crate__api__schema_registry__fetch_schema_versions_impl(
             let api_subject = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::schema_registry::SchemaRegistryErrorDto>(
                     (move || {
                         let output_ok = crate::api::schema_registry::fetch_schema_versions(
                             api_profile,
                             api_subject,
+                        )?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__schema_registry__fetch_subject_compatibility_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_subject_compatibility",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_subject = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::schema_registry::SchemaRegistryErrorDto>(
+                    (move || {
+                        let output_ok = crate::api::schema_registry::fetch_subject_compatibility(
+                            api_profile,
+                            api_subject,
+                        )?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__schema_registry__fetch_subject_schema_view_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_subject_schema_view",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_subject = <String>::sse_decode(&mut deserializer);
+            let api_version = <Option<i32>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::schema_registry::SchemaRegistryErrorDto>(
+                    (move || {
+                        let output_ok = crate::api::schema_registry::fetch_subject_schema_view(
+                            api_profile,
+                            api_subject,
+                            api_version,
                         )?;
                         Ok(output_ok)
                     })(),
@@ -816,9 +1283,86 @@ fn wire__crate__api__schema_registry__fetch_subjects_impl(
                 <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::schema_registry::SchemaRegistryErrorDto>(
                     (move || {
                         let output_ok = crate::api::schema_registry::fetch_subjects(api_profile)?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__topic_config__fetch_topic_config_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_topic_config",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_topic = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::topic_config::fetch_topic_config(api_profile, api_topic),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__kafka_metadata__fetch_topic_metadata_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_topic_metadata",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_topic = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::kafka_metadata::fetch_topic_metadata(
+                            api_profile,
+                            api_topic,
+                        )?;
                         Ok(output_ok)
                     })(),
                 )
@@ -866,6 +1410,46 @@ fn wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
         },
     )
 }
+fn wire__crate__api__kafka_metadata__fetch_topic_time_range_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "fetch_topic_time_range",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_profile =
+                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
+            let api_topic = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::kafka_metadata::fetch_topic_time_range(
+                            api_profile,
+                            api_topic,
+                        )?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__kafka_metadata__fetch_topics_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -898,6 +1482,72 @@ fn wire__crate__api__kafka_metadata__fetch_topics_impl(
                         Ok(output_ok)
                     })(),
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__filter_expr__format_filter_expression_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "format_filter_expression",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_nodes =
+                <Vec<crate::api::filter_expr::FilterNodeDto>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                (move || {
+                    let output_ok = crate::api::filter_expr::format_filter_expression(api_nodes)?;
+                    Ok(output_ok)
+                })(),
+            )
+        },
+    )
+}
+fn wire__crate__api__local_schema__framing_dto_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "framing_dto_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::local_schema::FramingDto::default())?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -981,6 +1631,87 @@ fn wire__crate__api__diagnostics__init_rust_logging_impl(
         },
     )
 }
+fn wire__crate__api__local_schema__inspect_local_schema_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "inspect_local_schema",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_path = <String>::sse_decode(&mut deserializer);
+            let api_format = <Option<crate::api::local_schema::LocalSchemaFormatDto>>::sse_decode(
+                &mut deserializer,
+            );
+            let api_message_type = <Option<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::api::local_schema::inspect_local_schema(
+                                api_path,
+                                api_format,
+                                api_message_type,
+                            )
+                            .await,
+                        )?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__local_schema__local_schema_mode_dto_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "local_schema_mode_dto_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::local_schema::LocalSchemaModeDto::default(),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__kafka_utils__murmur2_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1050,6 +1781,38 @@ fn wire__crate__api__profile_tools__parse_client_properties_impl(
                     .await,
                 )
             }
+        },
+    )
+}
+fn wire__crate__api__filter_expr__parse_filter_expression_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "parse_filter_expression",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_input = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Result::<_, ()>::Ok(
+                    crate::api::filter_expr::parse_filter_expression(api_input),
+                )?;
+                Ok(output_ok)
+            })())
         },
     )
 }
@@ -1273,6 +2036,39 @@ fn wire__crate__api__json_path__resolve_json_path_batch_impl(
         },
     )
 }
+fn wire__crate__api__kafka_types__scope_limit_from_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "scope_limit_from_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::kafka_types::ScopeLimitFrom::default())?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__json_path__serialize_cluster_profile_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1404,6 +2200,40 @@ fn wire__crate__api__kafka_types__topic_analysis_options_default_impl(
                 transform_result_sse::<_, ()>((move || {
                     let output_ok = Result::<_, ()>::Ok(
                         crate::api::kafka_types::TopicAnalysisOptions::default(),
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__local_schema__topic_local_schemas_dto_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "topic_local_schemas_dto_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::local_schema::TopicLocalSchemasDto::default(),
                     )?;
                     Ok(output_ok)
                 })())
@@ -1574,6 +2404,14 @@ impl SseDecode for ClientConfig {
     }
 }
 
+impl SseDecode for std::collections::HashMap<String, Vec<String>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <Vec<(String, Vec<String>)>>::sse_decode(deserializer);
+        return inner.into_iter().collect();
+    }
+}
+
 impl SseDecode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>
 {
@@ -1639,6 +2477,97 @@ impl SseDecode for crate::api::profile_tools::AllowedExtraProperty {
         return crate::api::profile_tools::AllowedExtraProperty {
             key: var_key,
             value_hint: var_valueHint,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::AnalysisLimit {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind = <crate::api::kafka_types::AnalysisLimitKind>::sse_decode(deserializer);
+        let mut var_limit = <i64>::sse_decode(deserializer);
+        let mut var_reached = <bool>::sse_decode(deserializer);
+        return crate::api::kafka_types::AnalysisLimit {
+            kind: var_kind,
+            limit: var_limit,
+            reached: var_reached,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::AnalysisLimitKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_types::AnalysisLimitKind::TrackedFields,
+            1 => crate::api::kafka_types::AnalysisLimitKind::ListedFields,
+            2 => crate::api::kafka_types::AnalysisLimitKind::ValuesPerField,
+            3 => crate::api::kafka_types::AnalysisLimitKind::ListedValuesPerField,
+            4 => crate::api::kafka_types::AnalysisLimitKind::FieldDepth,
+            5 => crate::api::kafka_types::AnalysisLimitKind::ValueDisplayChars,
+            6 => crate::api::kafka_types::AnalysisLimitKind::TrackedKeys,
+            7 => crate::api::kafka_types::AnalysisLimitKind::ListedKeys,
+            8 => crate::api::kafka_types::AnalysisLimitKind::SizePercentileSample,
+            9 => crate::api::kafka_types::AnalysisLimitKind::TrackedFingerprints,
+            10 => crate::api::kafka_types::AnalysisLimitKind::DuplicateSamples,
+            11 => crate::api::kafka_types::AnalysisLimitKind::ListedDuplicates,
+            12 => crate::api::kafka_types::AnalysisLimitKind::PreviewChars,
+            13 => crate::api::kafka_types::AnalysisLimitKind::TimelineWindowDays,
+            _ => unreachable!("Invalid variant for AnalysisLimitKind: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::AnalysisScope {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_partitions = <Option<Vec<i32>>>::sse_decode(deserializer);
+        let mut var_startTimestampMs = <Option<i64>>::sse_decode(deserializer);
+        let mut var_endTimestampMs = <Option<i64>>::sse_decode(deserializer);
+        let mut var_messageLimit = <Option<i64>>::sse_decode(deserializer);
+        let mut var_limitFrom = <crate::api::kafka_types::ScopeLimitFrom>::sse_decode(deserializer);
+        return crate::api::kafka_types::AnalysisScope {
+            partitions: var_partitions,
+            start_timestamp_ms: var_startTimestampMs,
+            end_timestamp_ms: var_endTimestampMs,
+            message_limit: var_messageLimit,
+            limit_from: var_limitFrom,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::AnalysisScopeEstimate {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_plannedTotal = <Option<i64>>::sse_decode(deserializer);
+        let mut var_knownTotal = <i64>::sse_decode(deserializer);
+        let mut var_complete = <bool>::sse_decode(deserializer);
+        let mut var_unreadable =
+            <Vec<crate::api::kafka_types::UnreadablePartition>>::sse_decode(deserializer);
+        return crate::api::kafka_types::AnalysisScopeEstimate {
+            planned_total: var_plannedTotal,
+            known_total: var_knownTotal,
+            complete: var_complete,
+            unreadable: var_unreadable,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::AnalysisScopeSummary {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_scope = <crate::api::kafka_types::AnalysisScope>::sse_decode(deserializer);
+        let mut var_ranges =
+            <Vec<crate::api::kafka_types::PlannedPartitionRange>>::sse_decode(deserializer);
+        let mut var_unreadable =
+            <Vec<crate::api::kafka_types::UnreadablePartition>>::sse_decode(deserializer);
+        let mut var_excludedByTimeRange = <i64>::sse_decode(deserializer);
+        return crate::api::kafka_types::AnalysisScopeSummary {
+            scope: var_scope,
+            ranges: var_ranges,
+            unreadable: var_unreadable,
+            excluded_by_time_range: var_excludedByTimeRange,
         };
     }
 }
@@ -1749,6 +2678,21 @@ impl SseDecode for crate::api::profile_tools::ClientPropertySkipReason {
             3 => crate::api::profile_tools::ClientPropertySkipReason::VerificationOverride,
             4 => crate::api::profile_tools::ClientPropertySkipReason::InvalidValue,
             _ => unreachable!("Invalid variant for ClientPropertySkipReason: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::ClusterOverview {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_brokers =
+            <Vec<crate::api::kafka_metadata::BrokerEndpoint>>::sse_decode(deserializer);
+        let mut var_clusterId = <Option<String>>::sse_decode(deserializer);
+        let mut var_controllerId = <Option<i32>>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::ClusterOverview {
+            brokers: var_brokers,
+            cluster_id: var_clusterId,
+            controller_id: var_controllerId,
         };
     }
 }
@@ -1946,6 +2890,10 @@ impl SseDecode for crate::api::kafka_types::DuplicateAnalysisResult {
         let mut var_duplicateRate = <f64>::sse_decode(deserializer);
         let mut var_topDuplicates =
             <Vec<crate::api::kafka_types::TopDuplicateOccurrence>>::sse_decode(deserializer);
+        let mut var_estimated = <bool>::sse_decode(deserializer);
+        let mut var_untrackedMessages = <i64>::sse_decode(deserializer);
+        let mut var_fingerprintLimit = <Option<i64>>::sse_decode(deserializer);
+        let mut var_samplesCapped = <bool>::sse_decode(deserializer);
         return crate::api::kafka_types::DuplicateAnalysisResult {
             scope: var_scope,
             total_messages: var_totalMessages,
@@ -1953,6 +2901,10 @@ impl SseDecode for crate::api::kafka_types::DuplicateAnalysisResult {
             duplicate_messages: var_duplicateMessages,
             duplicate_rate: var_duplicateRate,
             top_duplicates: var_topDuplicates,
+            estimated: var_estimated,
+            untracked_messages: var_untrackedMessages,
+            fingerprint_limit: var_fingerprintLimit,
+            samples_capped: var_samplesCapped,
         };
     }
 }
@@ -2027,6 +2979,18 @@ impl SseDecode for crate::api::report_compare::FieldDelta {
     }
 }
 
+impl SseDecode for crate::api::schema_registry::FieldNoteDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::schema_registry::FieldNoteDto::Recursive,
+            1 => crate::api::schema_registry::FieldNoteDto::UnresolvedReference,
+            _ => unreachable!("Invalid variant for FieldNoteDto: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_types::FieldOccurrence {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2074,6 +3038,162 @@ impl SseDecode for crate::api::kafka_types::FieldValueOccurrence {
     }
 }
 
+impl SseDecode for crate::api::filter_expr::FilterConditionDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_fieldKind =
+            <crate::api::filter_expr::FilterFieldKind>::sse_decode(deserializer);
+        let mut var_fieldPath = <Option<String>>::sse_decode(deserializer);
+        let mut var_op = <crate::api::filter_expr::FilterOpDto>::sse_decode(deserializer);
+        let mut var_scalar =
+            <Option<crate::api::filter_expr::FilterScalarDto>>::sse_decode(deserializer);
+        let mut var_listItems =
+            <Vec<crate::api::filter_expr::FilterScalarDto>>::sse_decode(deserializer);
+        return crate::api::filter_expr::FilterConditionDto {
+            field_kind: var_fieldKind,
+            field_path: var_fieldPath,
+            op: var_op,
+            scalar: var_scalar,
+            list_items: var_listItems,
+        };
+    }
+}
+
+impl SseDecode for crate::api::filter_expr::FilterErrorDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_message = <String>::sse_decode(deserializer);
+        let mut var_startUtf16 = <u32>::sse_decode(deserializer);
+        let mut var_endUtf16 = <u32>::sse_decode(deserializer);
+        return crate::api::filter_expr::FilterErrorDto {
+            message: var_message,
+            start_utf16: var_startUtf16,
+            end_utf16: var_endUtf16,
+        };
+    }
+}
+
+impl SseDecode for crate::api::filter_expr::FilterFieldKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::filter_expr::FilterFieldKind::Value,
+            1 => crate::api::filter_expr::FilterFieldKind::Key,
+            2 => crate::api::filter_expr::FilterFieldKind::KeyPath,
+            3 => crate::api::filter_expr::FilterFieldKind::Header,
+            4 => crate::api::filter_expr::FilterFieldKind::Timestamp,
+            5 => crate::api::filter_expr::FilterFieldKind::Offset,
+            6 => crate::api::filter_expr::FilterFieldKind::Partition,
+            _ => unreachable!("Invalid variant for FilterFieldKind: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::filter_expr::FilterNodeDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind = <crate::api::filter_expr::FilterNodeKind>::sse_decode(deserializer);
+        let mut var_children = <Vec<u32>>::sse_decode(deserializer);
+        let mut var_condition =
+            <Option<crate::api::filter_expr::FilterConditionDto>>::sse_decode(deserializer);
+        return crate::api::filter_expr::FilterNodeDto {
+            kind: var_kind,
+            children: var_children,
+            condition: var_condition,
+        };
+    }
+}
+
+impl SseDecode for crate::api::filter_expr::FilterNodeKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::filter_expr::FilterNodeKind::And,
+            1 => crate::api::filter_expr::FilterNodeKind::Or,
+            2 => crate::api::filter_expr::FilterNodeKind::Not,
+            3 => crate::api::filter_expr::FilterNodeKind::Cond,
+            _ => unreachable!("Invalid variant for FilterNodeKind: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::filter_expr::FilterOpDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::filter_expr::FilterOpDto::Eq,
+            1 => crate::api::filter_expr::FilterOpDto::Ne,
+            2 => crate::api::filter_expr::FilterOpDto::Gt,
+            3 => crate::api::filter_expr::FilterOpDto::Ge,
+            4 => crate::api::filter_expr::FilterOpDto::Lt,
+            5 => crate::api::filter_expr::FilterOpDto::Le,
+            6 => crate::api::filter_expr::FilterOpDto::Contains,
+            7 => crate::api::filter_expr::FilterOpDto::StartsWith,
+            8 => crate::api::filter_expr::FilterOpDto::EndsWith,
+            9 => crate::api::filter_expr::FilterOpDto::Matches,
+            10 => crate::api::filter_expr::FilterOpDto::In,
+            11 => crate::api::filter_expr::FilterOpDto::Exists,
+            12 => crate::api::filter_expr::FilterOpDto::IsNull,
+            13 => crate::api::filter_expr::FilterOpDto::IsNotNull,
+            _ => unreachable!("Invalid variant for FilterOpDto: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::filter_expr::FilterParseResultDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_ok = <bool>::sse_decode(deserializer);
+        let mut var_nodes = <Vec<crate::api::filter_expr::FilterNodeDto>>::sse_decode(deserializer);
+        let mut var_canonical = <Option<String>>::sse_decode(deserializer);
+        let mut var_error =
+            <Option<crate::api::filter_expr::FilterErrorDto>>::sse_decode(deserializer);
+        return crate::api::filter_expr::FilterParseResultDto {
+            ok: var_ok,
+            nodes: var_nodes,
+            canonical: var_canonical,
+            error: var_error,
+        };
+    }
+}
+
+impl SseDecode for crate::api::filter_expr::FilterScalarDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind = <crate::api::filter_expr::FilterScalarKind>::sse_decode(deserializer);
+        let mut var_text = <String>::sse_decode(deserializer);
+        let mut var_intVal = <Option<i64>>::sse_decode(deserializer);
+        let mut var_floatVal = <Option<f64>>::sse_decode(deserializer);
+        let mut var_boolVal = <Option<bool>>::sse_decode(deserializer);
+        return crate::api::filter_expr::FilterScalarDto {
+            kind: var_kind,
+            text: var_text,
+            int_val: var_intVal,
+            float_val: var_floatVal,
+            bool_val: var_boolVal,
+        };
+    }
+}
+
+impl SseDecode for crate::api::filter_expr::FilterScalarKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::filter_expr::FilterScalarKind::String,
+            1 => crate::api::filter_expr::FilterScalarKind::Int,
+            2 => crate::api::filter_expr::FilterScalarKind::Float,
+            3 => crate::api::filter_expr::FilterScalarKind::Bool,
+            4 => crate::api::filter_expr::FilterScalarKind::Null,
+            5 => crate::api::filter_expr::FilterScalarKind::Placeholder,
+            _ => unreachable!("Invalid variant for FilterScalarKind: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_types::FilterType {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2083,6 +3203,19 @@ impl SseDecode for crate::api::kafka_types::FilterType {
             1 => crate::api::kafka_types::FilterType::Regex,
             2 => crate::api::kafka_types::FilterType::Exact,
             _ => unreachable!("Invalid variant for FilterType: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::local_schema::FramingDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::local_schema::FramingDto::Auto,
+            1 => crate::api::local_schema::FramingDto::Prefixed,
+            2 => crate::api::local_schema::FramingDto::Raw,
+            _ => unreachable!("Invalid variant for FramingDto: {}", inner),
         };
     }
 }
@@ -2127,6 +3260,83 @@ impl SseDecode for i64 {
     }
 }
 
+impl SseDecode for crate::api::json_diff::JsonDiffEntry {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_path = <String>::sse_decode(deserializer);
+        let mut var_segments = <Vec<String>>::sse_decode(deserializer);
+        let mut var_kind = <crate::api::json_diff::JsonDiffKind>::sse_decode(deserializer);
+        let mut var_oldValue = <Option<String>>::sse_decode(deserializer);
+        let mut var_newValue = <Option<String>>::sse_decode(deserializer);
+        return crate::api::json_diff::JsonDiffEntry {
+            path: var_path,
+            segments: var_segments,
+            kind: var_kind,
+            old_value: var_oldValue,
+            new_value: var_newValue,
+        };
+    }
+}
+
+impl SseDecode for crate::api::json_diff::JsonDiffInvalidSide {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::json_diff::JsonDiffInvalidSide::Old,
+            1 => crate::api::json_diff::JsonDiffInvalidSide::New,
+            2 => crate::api::json_diff::JsonDiffInvalidSide::Both,
+            _ => unreachable!("Invalid variant for JsonDiffInvalidSide: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::json_diff::JsonDiffKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::json_diff::JsonDiffKind::Added,
+            1 => crate::api::json_diff::JsonDiffKind::Removed,
+            2 => crate::api::json_diff::JsonDiffKind::Changed,
+            _ => unreachable!("Invalid variant for JsonDiffKind: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::json_diff::JsonDiffRequest {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_oldJson = <String>::sse_decode(deserializer);
+        let mut var_newJson = <String>::sse_decode(deserializer);
+        let mut var_ignorePaths = <Vec<String>>::sse_decode(deserializer);
+        return crate::api::json_diff::JsonDiffRequest {
+            old_json: var_oldJson,
+            new_json: var_newJson,
+            ignore_paths: var_ignorePaths,
+        };
+    }
+}
+
+impl SseDecode for crate::api::json_diff::JsonDiffResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_entries = <Vec<crate::api::json_diff::JsonDiffEntry>>::sse_decode(deserializer);
+        let mut var_total = <u32>::sse_decode(deserializer);
+        let mut var_hidden = <u32>::sse_decode(deserializer);
+        let mut var_truncated = <bool>::sse_decode(deserializer);
+        let mut var_invalidSide =
+            <Option<crate::api::json_diff::JsonDiffInvalidSide>>::sse_decode(deserializer);
+        return crate::api::json_diff::JsonDiffResult {
+            entries: var_entries,
+            total: var_total,
+            hidden: var_hidden,
+            truncated: var_truncated,
+            invalid_side: var_invalidSide,
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_consumer::KafkaHeader {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2154,6 +3364,10 @@ impl SseDecode for crate::api::kafka_consumer::KafkaMessage {
             <Option<crate::api::kafka_consumer::MessageSchema>>::sse_decode(deserializer);
         let mut var_valueSchema =
             <Option<crate::api::kafka_consumer::MessageSchema>>::sse_decode(deserializer);
+        let mut var_keyLocalSchema =
+            <Option<crate::api::local_schema::LocalSchemaUseDto>>::sse_decode(deserializer);
+        let mut var_valueLocalSchema =
+            <Option<crate::api::local_schema::LocalSchemaUseDto>>::sse_decode(deserializer);
         return crate::api::kafka_consumer::KafkaMessage {
             topic: var_topic,
             partition: var_partition,
@@ -2164,6 +3378,8 @@ impl SseDecode for crate::api::kafka_consumer::KafkaMessage {
             headers: var_headers,
             key_schema: var_keySchema,
             value_schema: var_valueSchema,
+            key_local_schema: var_keyLocalSchema,
+            value_local_schema: var_valueLocalSchema,
         };
     }
 }
@@ -2201,6 +3417,20 @@ impl SseDecode for Vec<crate::api::profile_tools::AllowedExtraProperty> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<crate::api::profile_tools::AllowedExtraProperty>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::kafka_types::AnalysisLimit> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_types::AnalysisLimit>::sse_decode(
+                deserializer,
+            ));
         }
         return ans_;
     }
@@ -2316,6 +3546,34 @@ impl SseDecode for Vec<crate::api::kafka_types::FieldValueOccurrence> {
     }
 }
 
+impl SseDecode for Vec<crate::api::filter_expr::FilterNodeDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::filter_expr::FilterNodeDto>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::filter_expr::FilterScalarDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::filter_expr::FilterScalarDto>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_types::HourBucket> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2337,6 +3595,48 @@ impl SseDecode for Vec<crate::api::kafka_types::HourlyCount> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<crate::api::kafka_types::HourlyCount>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::json_diff::JsonDiffEntry> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::json_diff::JsonDiffEntry>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::json_diff::JsonDiffRequest> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::json_diff::JsonDiffRequest>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::json_diff::JsonDiffResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::json_diff::JsonDiffResult>::sse_decode(
                 deserializer,
             ));
         }
@@ -2412,6 +3712,18 @@ impl SseDecode for Vec<crate::api::kafka_types::PartitionAnalysis> {
     }
 }
 
+impl SseDecode for Vec<crate::api::kafka_metadata::PartitionOffsetRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_metadata::PartitionOffsetRow>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_metadata::PartitionRow> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2421,6 +3733,30 @@ impl SseDecode for Vec<crate::api::kafka_metadata::PartitionRow> {
             ans_.push(<crate::api::kafka_metadata::PartitionRow>::sse_decode(
                 deserializer,
             ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::kafka_metadata::PartitionTimeProbe> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_metadata::PartitionTimeProbe>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::kafka_types::PlannedPartitionRange> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_types::PlannedPartitionRange>::sse_decode(deserializer));
         }
         return ans_;
     }
@@ -2438,6 +3774,18 @@ impl SseDecode for Vec<i32> {
     }
 }
 
+impl SseDecode for Vec<u32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<u32>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<u8> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2445,6 +3793,42 @@ impl SseDecode for Vec<u8> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<u8>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<(String, Vec<String>)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<(String, Vec<String>)>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::schema_registry::SchemaFieldEntryDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::schema_registry::SchemaFieldEntryDto>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::schema_registry::SchemaReferenceDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::schema_registry::SchemaReferenceDto>::sse_decode(deserializer));
         }
         return ans_;
     }
@@ -2486,6 +3870,20 @@ impl SseDecode for Vec<crate::api::connection_diagnostics::StageResult> {
     }
 }
 
+impl SseDecode for Vec<crate::api::schema_registry::SubjectAssociationDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(
+                <crate::api::schema_registry::SubjectAssociationDto>::sse_decode(deserializer),
+            );
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_types::TopDuplicateOccurrence> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2493,6 +3891,48 @@ impl SseDecode for Vec<crate::api::kafka_types::TopDuplicateOccurrence> {
         let mut ans_ = vec![];
         for idx_ in 0..len_ {
             ans_.push(<crate::api::kafka_types::TopDuplicateOccurrence>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::topic_config::TopicConfigDiffRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::topic_config::TopicConfigDiffRow>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::kafka_metadata::TopicConfigEntry> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_metadata::TopicConfigEntry>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::kafka_metadata::TopicConfigResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_metadata::TopicConfigResult>::sse_decode(
+                deserializer,
+            ));
         }
         return ans_;
     }
@@ -2554,6 +3994,149 @@ impl SseDecode for Vec<crate::api::kafka_types::TypeOccurrence> {
     }
 }
 
+impl SseDecode for Vec<crate::api::kafka_types::UnreadablePartition> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_types::UnreadablePartition>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for crate::api::local_schema::LocalDecodeErrorKindDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::local_schema::LocalDecodeErrorKindDto::FileNotFound,
+            1 => crate::api::local_schema::LocalDecodeErrorKindDto::FileUnreadable,
+            2 => crate::api::local_schema::LocalDecodeErrorKindDto::FileTooLarge,
+            3 => crate::api::local_schema::LocalDecodeErrorKindDto::SchemaInvalid,
+            4 => crate::api::local_schema::LocalDecodeErrorKindDto::UnsupportedProto2,
+            5 => crate::api::local_schema::LocalDecodeErrorKindDto::UnresolvedImport,
+            6 => crate::api::local_schema::LocalDecodeErrorKindDto::MessageTypeNotFound,
+            7 => crate::api::local_schema::LocalDecodeErrorKindDto::MissingPrefix,
+            8 => crate::api::local_schema::LocalDecodeErrorKindDto::UnknownMessageIndex,
+            9 => crate::api::local_schema::LocalDecodeErrorKindDto::PayloadMismatch,
+            10 => crate::api::local_schema::LocalDecodeErrorKindDto::TrailingBytes,
+            11 => crate::api::local_schema::LocalDecodeErrorKindDto::NotJson,
+            _ => unreachable!("Invalid variant for LocalDecodeErrorKindDto: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::local_schema::LocalSchemaAssignmentDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_path = <String>::sse_decode(deserializer);
+        let mut var_format =
+            <crate::api::local_schema::LocalSchemaFormatDto>::sse_decode(deserializer);
+        let mut var_messageType = <Option<String>>::sse_decode(deserializer);
+        let mut var_framing = <crate::api::local_schema::FramingDto>::sse_decode(deserializer);
+        let mut var_mode = <crate::api::local_schema::LocalSchemaModeDto>::sse_decode(deserializer);
+        let mut var_expectedSha256 = <Option<String>>::sse_decode(deserializer);
+        return crate::api::local_schema::LocalSchemaAssignmentDto {
+            path: var_path,
+            format: var_format,
+            message_type: var_messageType,
+            framing: var_framing,
+            mode: var_mode,
+            expected_sha256: var_expectedSha256,
+        };
+    }
+}
+
+impl SseDecode for crate::api::local_schema::LocalSchemaErrorDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind =
+            <crate::api::local_schema::LocalDecodeErrorKindDto>::sse_decode(deserializer);
+        let mut var_detail = <String>::sse_decode(deserializer);
+        return crate::api::local_schema::LocalSchemaErrorDto {
+            kind: var_kind,
+            detail: var_detail,
+        };
+    }
+}
+
+impl SseDecode for crate::api::local_schema::LocalSchemaFormatDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::local_schema::LocalSchemaFormatDto::Avro,
+            1 => crate::api::local_schema::LocalSchemaFormatDto::ProtobufSource,
+            2 => crate::api::local_schema::LocalSchemaFormatDto::ProtobufDescriptor,
+            3 => crate::api::local_schema::LocalSchemaFormatDto::JsonSchema,
+            _ => unreachable!("Invalid variant for LocalSchemaFormatDto: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::local_schema::LocalSchemaInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_fileName = <String>::sse_decode(deserializer);
+        let mut var_detectedFormat =
+            <Option<crate::api::local_schema::LocalSchemaFormatDto>>::sse_decode(deserializer);
+        let mut var_sha256Hex = <Option<String>>::sse_decode(deserializer);
+        let mut var_messageTypes = <Vec<String>>::sse_decode(deserializer);
+        let mut var_selectedMessage = <Option<String>>::sse_decode(deserializer);
+        let mut var_fields =
+            <Option<crate::api::schema_registry::SchemaFieldModelDto>>::sse_decode(deserializer);
+        let mut var_error =
+            <Option<crate::api::local_schema::LocalSchemaErrorDto>>::sse_decode(deserializer);
+        return crate::api::local_schema::LocalSchemaInfo {
+            file_name: var_fileName,
+            detected_format: var_detectedFormat,
+            sha256_hex: var_sha256Hex,
+            message_types: var_messageTypes,
+            selected_message: var_selectedMessage,
+            fields: var_fields,
+            error: var_error,
+        };
+    }
+}
+
+impl SseDecode for crate::api::local_schema::LocalSchemaModeDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::local_schema::LocalSchemaModeDto::Fallback,
+            1 => crate::api::local_schema::LocalSchemaModeDto::Always,
+            _ => unreachable!("Invalid variant for LocalSchemaModeDto: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::local_schema::LocalSchemaUseDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_fileName = <String>::sse_decode(deserializer);
+        let mut var_format =
+            <crate::api::local_schema::LocalSchemaFormatDto>::sse_decode(deserializer);
+        let mut var_messageType = <Option<String>>::sse_decode(deserializer);
+        let mut var_framing = <crate::api::local_schema::FramingDto>::sse_decode(deserializer);
+        let mut var_wireSchemaId = <Option<u32>>::sse_decode(deserializer);
+        let mut var_error =
+            <Option<crate::api::local_schema::LocalSchemaErrorDto>>::sse_decode(deserializer);
+        return crate::api::local_schema::LocalSchemaUseDto {
+            file_name: var_fileName,
+            format: var_format,
+            message_type: var_messageType,
+            framing: var_framing,
+            wire_schema_id: var_wireSchemaId,
+            error: var_error,
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_consumer::MessageSchema {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2600,11 +4183,66 @@ impl SseDecode for crate::api::connection_diagnostics::NotCheckedReason {
     }
 }
 
+impl SseDecode for crate::api::kafka_metadata::OffsetSkewStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_metadata::OffsetSkewStatus::NotRequested,
+            1 => crate::api::kafka_metadata::OffsetSkewStatus::SinglePartition,
+            2 => crate::api::kafka_metadata::OffsetSkewStatus::Incomplete,
+            3 => crate::api::kafka_metadata::OffsetSkewStatus::Empty,
+            4 => crate::api::kafka_metadata::OffsetSkewStatus::Balanced,
+            5 => crate::api::kafka_metadata::OffsetSkewStatus::Skewed,
+            _ => unreachable!("Invalid variant for OffsetSkewStatus: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for Option<std::collections::HashMap<String, Vec<String>>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <std::collections::HashMap<String, Vec<String>>>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<String>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::kafka_types::AnalysisScope> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::kafka_types::AnalysisScope>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::kafka_types::AnalysisScopeSummary> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::kafka_types::AnalysisScopeSummary>::sse_decode(
+                deserializer,
+            ));
         } else {
             return None;
         }
@@ -2685,11 +4323,63 @@ impl SseDecode for Option<f64> {
     }
 }
 
+impl SseDecode for Option<crate::api::schema_registry::FieldNoteDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::schema_registry::FieldNoteDto>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<crate::api::kafka_types::FieldValueFilter> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<crate::api::kafka_types::FieldValueFilter>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::filter_expr::FilterConditionDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::filter_expr::FilterConditionDto>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::filter_expr::FilterErrorDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::filter_expr::FilterErrorDto>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::filter_expr::FilterScalarDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::filter_expr::FilterScalarDto>::sse_decode(
                 deserializer,
             ));
         } else {
@@ -2714,6 +4404,71 @@ impl SseDecode for Option<i64> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<i64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::json_diff::JsonDiffInvalidSide> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::json_diff::JsonDiffInvalidSide>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::local_schema::LocalSchemaAssignmentDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::local_schema::LocalSchemaAssignmentDto>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::local_schema::LocalSchemaErrorDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::local_schema::LocalSchemaErrorDto>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::local_schema::LocalSchemaFormatDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::local_schema::LocalSchemaFormatDto>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::local_schema::LocalSchemaUseDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::local_schema::LocalSchemaUseDto>::sse_decode(
+                deserializer,
+            ));
         } else {
             return None;
         }
@@ -2746,6 +4501,32 @@ impl SseDecode for Option<crate::api::connection_diagnostics::NotCheckedReason> 
     }
 }
 
+impl SseDecode for Option<crate::api::kafka_metadata::PartitionTimestamp> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::kafka_metadata::PartitionTimestamp>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::schema_registry::SchemaFieldModelDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::schema_registry::SchemaFieldModelDto>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<crate::api::kafka_types::SizePercentiles> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2753,6 +4534,19 @@ impl SseDecode for Option<crate::api::kafka_types::SizePercentiles> {
             return Some(<crate::api::kafka_types::SizePercentiles>::sse_decode(
                 deserializer,
             ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::kafka_metadata::TimeRangeTimestampKind> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::kafka_metadata::TimeRangeTimestampKind>::sse_decode(deserializer),
+            );
         } else {
             return None;
         }
@@ -2772,11 +4566,61 @@ impl SseDecode for Option<crate::api::kafka_types::TopicAnalysisReport> {
     }
 }
 
+impl SseDecode for Option<crate::api::kafka_metadata::TopicConfigEntry> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::kafka_metadata::TopicConfigEntry>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::local_schema::TopicLocalSchemasDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::local_schema::TopicLocalSchemasDto>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::kafka_metadata::TopicMetadataError> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(
+                <crate::api::kafka_metadata::TopicMetadataError>::sse_decode(deserializer),
+            );
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<u16> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<u16>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<u32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<u32>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -2807,6 +4651,19 @@ impl SseDecode for Option<Vec<String>> {
     }
 }
 
+impl SseDecode for Option<Vec<crate::api::kafka_types::AnalysisLimit>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<Vec<crate::api::kafka_types::AnalysisLimit>>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<Vec<crate::api::kafka_consumer::KafkaHeader>> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2814,6 +4671,17 @@ impl SseDecode for Option<Vec<crate::api::kafka_consumer::KafkaHeader>> {
             return Some(<Vec<crate::api::kafka_consumer::KafkaHeader>>::sse_decode(
                 deserializer,
             ));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<Vec<i32>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<Vec<i32>>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -2864,6 +4732,71 @@ impl SseDecode for crate::api::kafka_types::PartitionLagStatus {
     }
 }
 
+impl SseDecode for crate::api::kafka_metadata::PartitionOffsetDistribution {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_topic = <String>::sse_decode(deserializer);
+        let mut var_readAtMs = <i64>::sse_decode(deserializer);
+        let mut var_partitions =
+            <Vec<crate::api::kafka_metadata::PartitionOffsetRow>>::sse_decode(deserializer);
+        let mut var_totalSpan = <Option<i64>>::sse_decode(deserializer);
+        let mut var_knownSpan = <i64>::sse_decode(deserializer);
+        let mut var_complete = <bool>::sse_decode(deserializer);
+        let mut var_skewStatus =
+            <crate::api::kafka_metadata::OffsetSkewStatus>::sse_decode(deserializer);
+        let mut var_skewThresholdPercent = <Option<u32>>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::PartitionOffsetDistribution {
+            topic: var_topic,
+            read_at_ms: var_readAtMs,
+            partitions: var_partitions,
+            total_span: var_totalSpan,
+            known_span: var_knownSpan,
+            complete: var_complete,
+            skew_status: var_skewStatus,
+            skew_threshold_percent: var_skewThresholdPercent,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::PartitionOffsetRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_partition = <i32>::sse_decode(deserializer);
+        let mut var_state =
+            <crate::api::kafka_metadata::PartitionOffsetState>::sse_decode(deserializer);
+        let mut var_error = <Option<String>>::sse_decode(deserializer);
+        let mut var_low = <Option<i64>>::sse_decode(deserializer);
+        let mut var_high = <Option<i64>>::sse_decode(deserializer);
+        let mut var_span = <Option<i64>>::sse_decode(deserializer);
+        let mut var_sharePercent = <Option<f64>>::sse_decode(deserializer);
+        let mut var_skewed = <bool>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::PartitionOffsetRow {
+            partition: var_partition,
+            state: var_state,
+            error: var_error,
+            low: var_low,
+            high: var_high,
+            span: var_span,
+            share_percent: var_sharePercent,
+            skewed: var_skewed,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::PartitionOffsetState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_metadata::PartitionOffsetState::Known,
+            1 => crate::api::kafka_metadata::PartitionOffsetState::NotReadable,
+            2 => crate::api::kafka_metadata::PartitionOffsetState::Failed,
+            3 => crate::api::kafka_metadata::PartitionOffsetState::TimedOut,
+            _ => unreachable!("Invalid variant for PartitionOffsetState: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_metadata::PartitionRow {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -2881,6 +4814,98 @@ impl SseDecode for crate::api::kafka_metadata::PartitionRow {
             under_replicated: var_underReplicated,
             leaderless: var_leaderless,
         };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::PartitionTimeProbe {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_partition = <i32>::sse_decode(deserializer);
+        let mut var_oldest =
+            <crate::api::kafka_metadata::PartitionTimeProbeOutcome>::sse_decode(deserializer);
+        let mut var_newest =
+            <crate::api::kafka_metadata::PartitionTimeProbeOutcome>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::PartitionTimeProbe {
+            partition: var_partition,
+            oldest: var_oldest,
+            newest: var_newest,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::PartitionTimeProbeOutcome {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind = <crate::api::kafka_metadata::ProbeOutcomeKind>::sse_decode(deserializer);
+        let mut var_offset = <Option<i64>>::sse_decode(deserializer);
+        let mut var_timestampMs = <Option<i64>>::sse_decode(deserializer);
+        let mut var_timestampType =
+            <Option<crate::api::kafka_metadata::TimeRangeTimestampKind>>::sse_decode(deserializer);
+        let mut var_reason = <Option<String>>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::PartitionTimeProbeOutcome {
+            kind: var_kind,
+            offset: var_offset,
+            timestamp_ms: var_timestampMs,
+            timestamp_type: var_timestampType,
+            reason: var_reason,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::PartitionTimestamp {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_partition = <i32>::sse_decode(deserializer);
+        let mut var_offset = <i64>::sse_decode(deserializer);
+        let mut var_timestampMs = <i64>::sse_decode(deserializer);
+        let mut var_timestampType =
+            <crate::api::kafka_metadata::TimeRangeTimestampKind>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::PartitionTimestamp {
+            partition: var_partition,
+            offset: var_offset,
+            timestamp_ms: var_timestampMs,
+            timestamp_type: var_timestampType,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::PlannedPartitionRange {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_partition = <i32>::sse_decode(deserializer);
+        let mut var_start = <i64>::sse_decode(deserializer);
+        let mut var_end = <i64>::sse_decode(deserializer);
+        return crate::api::kafka_types::PlannedPartitionRange {
+            partition: var_partition,
+            start: var_start,
+            end: var_end,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::ProbeOutcomeKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_metadata::ProbeOutcomeKind::Found,
+            1 => crate::api::kafka_metadata::ProbeOutcomeKind::Empty,
+            2 => crate::api::kafka_metadata::ProbeOutcomeKind::NotFoundInWindow,
+            3 => crate::api::kafka_metadata::ProbeOutcomeKind::NoTimestamp,
+            4 => crate::api::kafka_metadata::ProbeOutcomeKind::TimedOut,
+            5 => crate::api::kafka_metadata::ProbeOutcomeKind::Unreadable,
+            6 => crate::api::kafka_metadata::ProbeOutcomeKind::Failed,
+            _ => unreachable!("Invalid variant for ProbeOutcomeKind: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for (String, Vec<String>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        let mut var_field1 = <Vec<String>>::sse_decode(deserializer);
+        return (var_field0, var_field1);
     }
 }
 
@@ -2939,6 +4964,133 @@ impl SseDecode for crate::api::schema_registry::SchemaCompatibilityResult {
         return crate::api::schema_registry::SchemaCompatibilityResult {
             is_compatible: var_isCompatible,
             messages: var_messages,
+        };
+    }
+}
+
+impl SseDecode for crate::api::schema_registry::SchemaFieldEntryDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_path = <String>::sse_decode(deserializer);
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_depth = <u32>::sse_decode(deserializer);
+        let mut var_typeLabel = <String>::sse_decode(deserializer);
+        let mut var_doc = <Option<String>>::sse_decode(deserializer);
+        let mut var_optional = <bool>::sse_decode(deserializer);
+        let mut var_repeated = <bool>::sse_decode(deserializer);
+        let mut var_note =
+            <Option<crate::api::schema_registry::FieldNoteDto>>::sse_decode(deserializer);
+        let mut var_unresolvedReference = <Option<String>>::sse_decode(deserializer);
+        return crate::api::schema_registry::SchemaFieldEntryDto {
+            path: var_path,
+            name: var_name,
+            depth: var_depth,
+            type_label: var_typeLabel,
+            doc: var_doc,
+            optional: var_optional,
+            repeated: var_repeated,
+            note: var_note,
+            unresolved_reference: var_unresolvedReference,
+        };
+    }
+}
+
+impl SseDecode for crate::api::schema_registry::SchemaFieldModelDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind = <crate::api::schema_registry::SchemaKindDto>::sse_decode(deserializer);
+        let mut var_otherSchemaType = <Option<String>>::sse_decode(deserializer);
+        let mut var_rootName = <Option<String>>::sse_decode(deserializer);
+        let mut var_messages = <Vec<String>>::sse_decode(deserializer);
+        let mut var_fields =
+            <Vec<crate::api::schema_registry::SchemaFieldEntryDto>>::sse_decode(deserializer);
+        let mut var_truncated = <bool>::sse_decode(deserializer);
+        let mut var_unavailableReason = <Option<String>>::sse_decode(deserializer);
+        return crate::api::schema_registry::SchemaFieldModelDto {
+            kind: var_kind,
+            other_schema_type: var_otherSchemaType,
+            root_name: var_rootName,
+            messages: var_messages,
+            fields: var_fields,
+            truncated: var_truncated,
+            unavailable_reason: var_unavailableReason,
+        };
+    }
+}
+
+impl SseDecode for crate::api::schema_registry::SchemaKindDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::schema_registry::SchemaKindDto::Avro,
+            1 => crate::api::schema_registry::SchemaKindDto::Protobuf,
+            2 => crate::api::schema_registry::SchemaKindDto::Json,
+            3 => crate::api::schema_registry::SchemaKindDto::Other,
+            _ => unreachable!("Invalid variant for SchemaKindDto: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::schema_registry::SchemaReferenceDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_subject = <String>::sse_decode(deserializer);
+        let mut var_version = <i32>::sse_decode(deserializer);
+        return crate::api::schema_registry::SchemaReferenceDto {
+            name: var_name,
+            subject: var_subject,
+            version: var_version,
+        };
+    }
+}
+
+impl SseDecode for crate::api::schema_registry::SchemaRegistryErrorDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind =
+            <crate::api::schema_registry::SchemaRegistryErrorKindDto>::sse_decode(deserializer);
+        let mut var_status = <Option<u16>>::sse_decode(deserializer);
+        let mut var_registryErrorCode = <Option<i64>>::sse_decode(deserializer);
+        let mut var_detail = <String>::sse_decode(deserializer);
+        return crate::api::schema_registry::SchemaRegistryErrorDto {
+            kind: var_kind,
+            status: var_status,
+            registry_error_code: var_registryErrorCode,
+            detail: var_detail,
+        };
+    }
+}
+
+impl SseDecode for crate::api::schema_registry::SchemaRegistryErrorKindDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::schema_registry::SchemaRegistryErrorKindDto::NotConfigured,
+            1 => crate::api::schema_registry::SchemaRegistryErrorKindDto::InvalidUrl,
+            2 => crate::api::schema_registry::SchemaRegistryErrorKindDto::Unauthorized,
+            3 => crate::api::schema_registry::SchemaRegistryErrorKindDto::Forbidden,
+            4 => crate::api::schema_registry::SchemaRegistryErrorKindDto::NotFound,
+            5 => crate::api::schema_registry::SchemaRegistryErrorKindDto::Timeout,
+            6 => crate::api::schema_registry::SchemaRegistryErrorKindDto::Unreachable,
+            7 => crate::api::schema_registry::SchemaRegistryErrorKindDto::CertificateRejected,
+            8 => crate::api::schema_registry::SchemaRegistryErrorKindDto::HttpStatus,
+            9 => crate::api::schema_registry::SchemaRegistryErrorKindDto::InvalidResponse,
+            _ => unreachable!("Invalid variant for SchemaRegistryErrorKindDto: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_types::ScopeLimitFrom {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_types::ScopeLimitFrom::Newest,
+            1 => crate::api::kafka_types::ScopeLimitFrom::Oldest,
+            _ => unreachable!("Invalid variant for ScopeLimitFrom: {}", inner),
         };
     }
 }
@@ -3063,6 +5215,72 @@ impl SseDecode for crate::api::connection_diagnostics::StepState {
     }
 }
 
+impl SseDecode for crate::api::schema_registry::SubjectAssociationDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_subject = <String>::sse_decode(deserializer);
+        let mut var_topic = <Option<String>>::sse_decode(deserializer);
+        let mut var_side = <crate::api::schema_registry::TopicSideDto>::sse_decode(deserializer);
+        let mut var_onCluster = <bool>::sse_decode(deserializer);
+        return crate::api::schema_registry::SubjectAssociationDto {
+            subject: var_subject,
+            topic: var_topic,
+            side: var_side,
+            on_cluster: var_onCluster,
+        };
+    }
+}
+
+impl SseDecode for crate::api::schema_registry::SubjectSchemaDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_subject = <String>::sse_decode(deserializer);
+        let mut var_version = <i32>::sse_decode(deserializer);
+        let mut var_id = <i32>::sse_decode(deserializer);
+        let mut var_schemaType =
+            <crate::api::schema_registry::SchemaKindDto>::sse_decode(deserializer);
+        let mut var_otherSchemaType = <Option<String>>::sse_decode(deserializer);
+        let mut var_schema = <String>::sse_decode(deserializer);
+        let mut var_references =
+            <Vec<crate::api::schema_registry::SchemaReferenceDto>>::sse_decode(deserializer);
+        return crate::api::schema_registry::SubjectSchemaDto {
+            subject: var_subject,
+            version: var_version,
+            id: var_id,
+            schema_type: var_schemaType,
+            other_schema_type: var_otherSchemaType,
+            schema: var_schema,
+            references: var_references,
+        };
+    }
+}
+
+impl SseDecode for crate::api::schema_registry::SubjectSchemaViewDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_schema =
+            <crate::api::schema_registry::SubjectSchemaDto>::sse_decode(deserializer);
+        let mut var_fields =
+            <crate::api::schema_registry::SchemaFieldModelDto>::sse_decode(deserializer);
+        return crate::api::schema_registry::SubjectSchemaViewDto {
+            schema: var_schema,
+            fields: var_fields,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::TimeRangeTimestampKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_metadata::TimeRangeTimestampKind::CreateTime,
+            1 => crate::api::kafka_metadata::TimeRangeTimestampKind::LogAppendTime,
+            _ => unreachable!("Invalid variant for TimeRangeTimestampKind: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_metadata::TlsProbeOutcome {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3134,11 +5352,17 @@ impl SseDecode for crate::api::kafka_types::TopicAnalysisOptions {
             <Option<crate::api::kafka_types::FieldValueFilter>>::sse_decode(deserializer);
         let mut var_duplicateScope =
             <Option<crate::api::kafka_types::DuplicateDetectionScope>>::sse_decode(deserializer);
+        let mut var_scope =
+            <Option<crate::api::kafka_types::AnalysisScope>>::sse_decode(deserializer);
+        let mut var_localSchemas =
+            <Option<crate::api::local_schema::TopicLocalSchemasDto>>::sse_decode(deserializer);
         return crate::api::kafka_types::TopicAnalysisOptions {
             max_messages: var_maxMessages,
             sample_from_latest: var_sampleFromLatest,
             value_filter: var_valueFilter,
             duplicate_scope: var_duplicateScope,
+            scope: var_scope,
+            local_schemas: var_localSchemas,
         };
     }
 }
@@ -3205,6 +5429,13 @@ impl SseDecode for crate::api::kafka_types::TopicAnalysisReport {
             <Option<crate::api::kafka_types::ValueFilterResult>>::sse_decode(deserializer);
         let mut var_duplicateAnalysisResult =
             <Option<crate::api::kafka_types::DuplicateAnalysisResult>>::sse_decode(deserializer);
+        let mut var_cleanupPolicyUnknown = <bool>::sse_decode(deserializer);
+        let mut var_scanScope =
+            <Option<crate::api::kafka_types::AnalysisScopeSummary>>::sse_decode(deserializer);
+        let mut var_analysisLimits =
+            <Option<Vec<crate::api::kafka_types::AnalysisLimit>>>::sse_decode(deserializer);
+        let mut var_trackedFieldCount = <Option<i64>>::sse_decode(deserializer);
+        let mut var_completeUntilMs = <Option<i64>>::sse_decode(deserializer);
         return crate::api::kafka_types::TopicAnalysisReport {
             topic: var_topic,
             total_messages: var_totalMessages,
@@ -3231,6 +5462,175 @@ impl SseDecode for crate::api::kafka_types::TopicAnalysisReport {
             timeline_outside_count: var_timelineOutsideCount,
             value_filter_result: var_valueFilterResult,
             duplicate_analysis_result: var_duplicateAnalysisResult,
+            cleanup_policy_unknown: var_cleanupPolicyUnknown,
+            scan_scope: var_scanScope,
+            analysis_limits: var_analysisLimits,
+            tracked_field_count: var_trackedFieldCount,
+            complete_until_ms: var_completeUntilMs,
+        };
+    }
+}
+
+impl SseDecode for crate::api::topic_config::TopicConfigAvailability {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::topic_config::TopicConfigAvailability::Available,
+            1 => crate::api::topic_config::TopicConfigAvailability::NotAuthorized,
+            2 => crate::api::topic_config::TopicConfigAvailability::TopicNotFound,
+            3 => crate::api::topic_config::TopicConfigAvailability::Failed,
+            _ => unreachable!("Invalid variant for TopicConfigAvailability: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::topic_config::TopicConfigDiff {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_rows =
+            <Vec<crate::api::topic_config::TopicConfigDiffRow>>::sse_decode(deserializer);
+        let mut var_differenceCount = <Option<u32>>::sse_decode(deserializer);
+        return crate::api::topic_config::TopicConfigDiff {
+            rows: var_rows,
+            difference_count: var_differenceCount,
+        };
+    }
+}
+
+impl SseDecode for crate::api::topic_config::TopicConfigDiffRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_left =
+            <Option<crate::api::kafka_metadata::TopicConfigEntry>>::sse_decode(deserializer);
+        let mut var_right =
+            <Option<crate::api::kafka_metadata::TopicConfigEntry>>::sse_decode(deserializer);
+        let mut var_status =
+            <crate::api::topic_config::TopicConfigDiffStatus>::sse_decode(deserializer);
+        let mut var_nonDefault = <bool>::sse_decode(deserializer);
+        return crate::api::topic_config::TopicConfigDiffRow {
+            name: var_name,
+            left: var_left,
+            right: var_right,
+            status: var_status,
+            non_default: var_nonDefault,
+        };
+    }
+}
+
+impl SseDecode for crate::api::topic_config::TopicConfigDiffStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::topic_config::TopicConfigDiffStatus::Equal,
+            1 => crate::api::topic_config::TopicConfigDiffStatus::Different,
+            2 => crate::api::topic_config::TopicConfigDiffStatus::OnlyLeft,
+            3 => crate::api::topic_config::TopicConfigDiffStatus::OnlyRight,
+            4 => crate::api::topic_config::TopicConfigDiffStatus::NotComparable,
+            5 => crate::api::topic_config::TopicConfigDiffStatus::Unknown,
+            _ => unreachable!("Invalid variant for TopicConfigDiffStatus: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::TopicConfigEntry {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_value = <Option<String>>::sse_decode(deserializer);
+        let mut var_source =
+            <crate::api::kafka_metadata::TopicConfigSource>::sse_decode(deserializer);
+        let mut var_isDefault = <bool>::sse_decode(deserializer);
+        let mut var_isSensitive = <bool>::sse_decode(deserializer);
+        let mut var_isReadOnly = <bool>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::TopicConfigEntry {
+            name: var_name,
+            value: var_value,
+            source: var_source,
+            is_default: var_isDefault,
+            is_sensitive: var_isSensitive,
+            is_read_only: var_isReadOnly,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::TopicConfigResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_topic = <String>::sse_decode(deserializer);
+        let mut var_status =
+            <crate::api::kafka_metadata::TopicConfigStatus>::sse_decode(deserializer);
+        let mut var_message = <Option<String>>::sse_decode(deserializer);
+        let mut var_entries =
+            <Vec<crate::api::kafka_metadata::TopicConfigEntry>>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::TopicConfigResult {
+            topic: var_topic,
+            status: var_status,
+            message: var_message,
+            entries: var_entries,
+        };
+    }
+}
+
+impl SseDecode for crate::api::topic_config::TopicConfigSnapshot {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_topic = <String>::sse_decode(deserializer);
+        let mut var_availability =
+            <crate::api::topic_config::TopicConfigAvailability>::sse_decode(deserializer);
+        let mut var_errorMessage = <Option<String>>::sse_decode(deserializer);
+        let mut var_entries =
+            <Vec<crate::api::kafka_metadata::TopicConfigEntry>>::sse_decode(deserializer);
+        return crate::api::topic_config::TopicConfigSnapshot {
+            topic: var_topic,
+            availability: var_availability,
+            error_message: var_errorMessage,
+            entries: var_entries,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::TopicConfigSource {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_metadata::TopicConfigSource::Unknown,
+            1 => crate::api::kafka_metadata::TopicConfigSource::DynamicTopic,
+            2 => crate::api::kafka_metadata::TopicConfigSource::DynamicBroker,
+            3 => crate::api::kafka_metadata::TopicConfigSource::DynamicDefaultBroker,
+            4 => crate::api::kafka_metadata::TopicConfigSource::StaticBroker,
+            5 => crate::api::kafka_metadata::TopicConfigSource::Default,
+            _ => unreachable!("Invalid variant for TopicConfigSource: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::TopicConfigStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_metadata::TopicConfigStatus::Available,
+            1 => crate::api::kafka_metadata::TopicConfigStatus::NotReadable,
+            2 => crate::api::kafka_metadata::TopicConfigStatus::Failed,
+            _ => unreachable!("Invalid variant for TopicConfigStatus: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::local_schema::TopicLocalSchemasDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_key =
+            <Option<crate::api::local_schema::LocalSchemaAssignmentDto>>::sse_decode(deserializer);
+        let mut var_value =
+            <Option<crate::api::local_schema::LocalSchemaAssignmentDto>>::sse_decode(deserializer);
+        return crate::api::local_schema::TopicLocalSchemasDto {
+            key: var_key,
+            value: var_value,
         };
     }
 }
@@ -3245,6 +5645,8 @@ impl SseDecode for crate::api::kafka_metadata::TopicMetadata {
         let mut var_retentionMs = <Option<String>>::sse_decode(deserializer);
         let mut var_underReplicatedPartitions = <Option<i32>>::sse_decode(deserializer);
         let mut var_leaderlessPartitions = <Option<i32>>::sse_decode(deserializer);
+        let mut var_metadataError =
+            <Option<crate::api::kafka_metadata::TopicMetadataError>>::sse_decode(deserializer);
         return crate::api::kafka_metadata::TopicMetadata {
             name: var_name,
             partition_count: var_partitionCount,
@@ -3253,6 +5655,33 @@ impl SseDecode for crate::api::kafka_metadata::TopicMetadata {
             retention_ms: var_retentionMs,
             under_replicated_partitions: var_underReplicatedPartitions,
             leaderless_partitions: var_leaderlessPartitions,
+            metadata_error: var_metadataError,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::TopicMetadataError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind =
+            <crate::api::kafka_metadata::TopicMetadataErrorKind>::sse_decode(deserializer);
+        let mut var_message = <String>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::TopicMetadataError {
+            kind: var_kind,
+            message: var_message,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::TopicMetadataErrorKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::kafka_metadata::TopicMetadataErrorKind::NotAuthorized,
+            1 => crate::api::kafka_metadata::TopicMetadataErrorKind::NotFound,
+            2 => crate::api::kafka_metadata::TopicMetadataErrorKind::Other,
+            _ => unreachable!("Invalid variant for TopicMetadataErrorKind: {}", inner),
         };
     }
 }
@@ -3308,6 +5737,46 @@ impl SseDecode for crate::api::kafka_types::TopicPartitionLag {
     }
 }
 
+impl SseDecode for crate::api::schema_registry::TopicSideDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::schema_registry::TopicSideDto::Key,
+            1 => crate::api::schema_registry::TopicSideDto::Value,
+            2 => crate::api::schema_registry::TopicSideDto::None,
+            _ => unreachable!("Invalid variant for TopicSideDto: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_metadata::TopicTimeRange {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_oldest =
+            <Option<crate::api::kafka_metadata::PartitionTimestamp>>::sse_decode(deserializer);
+        let mut var_newest =
+            <Option<crate::api::kafka_metadata::PartitionTimestamp>>::sse_decode(deserializer);
+        let mut var_partitionsTotal = <u32>::sse_decode(deserializer);
+        let mut var_partitionsEmpty = <u32>::sse_decode(deserializer);
+        let mut var_oldestKnown = <u32>::sse_decode(deserializer);
+        let mut var_newestKnown = <u32>::sse_decode(deserializer);
+        let mut var_allEmpty = <bool>::sse_decode(deserializer);
+        let mut var_probes =
+            <Vec<crate::api::kafka_metadata::PartitionTimeProbe>>::sse_decode(deserializer);
+        return crate::api::kafka_metadata::TopicTimeRange {
+            oldest: var_oldest,
+            newest: var_newest,
+            partitions_total: var_partitionsTotal,
+            partitions_empty: var_partitionsEmpty,
+            oldest_known: var_oldestKnown,
+            newest_known: var_newestKnown,
+            all_empty: var_allEmpty,
+            probes: var_probes,
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_types::TypeOccurrence {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3355,6 +5824,18 @@ impl SseDecode for () {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {}
 }
 
+impl SseDecode for crate::api::kafka_types::UnreadablePartition {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_partition = <i32>::sse_decode(deserializer);
+        let mut var_reason = <String>::sse_decode(deserializer);
+        return crate::api::kafka_types::UnreadablePartition {
+            partition: var_partition,
+            reason: var_reason,
+        };
+    }
+}
+
 impl SseDecode for usize {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3390,185 +5871,282 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        2 => wire__crate__api__kafka_analyzer__analyze_topic_content_impl(
+        2 => wire__crate__api__kafka_types__analysis_scope_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        3 => wire__crate__api__kafka_analyzer__analyze_topic_content_with_options_impl(
+        3 => wire__crate__api__kafka_analyzer__analyze_topic_content_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        4 => wire__crate__api__schema_registry__check_schema_compatibility_impl(
+        4 => wire__crate__api__kafka_analyzer__analyze_topic_content_with_options_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        5 => wire__crate__api__kafka_types__cluster_profile_default_impl(
+        6 => wire__crate__api__schema_registry__check_schema_compatibility_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        6 => wire__crate__api__report_compare__compare_reports_impl(
+        7 => wire__crate__api__kafka_types__cluster_profile_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        7 => wire__crate__api__kafka_consumer__consume_with_filter_impl(
+        9 => wire__crate__api__report_compare__compare_reports_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        8 => wire__crate__api__kafka_utils__create_config_impl(port, ptr, rust_vec_len, data_len),
-        9 => wire__crate__api__profile_crypto__decrypt_bundle_with_passphrase_impl(
+        10 => wire__crate__api__kafka_consumer__consume_with_filter_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__crate__api__json_path__deserialize_cluster_profile_impl(
+        11 => wire__crate__api__kafka_utils__create_config_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__profile_crypto__decrypt_bundle_with_passphrase_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        11 => wire__crate__api__connection_diagnostics__diagnose_connection_impl(
+        13 => wire__crate__api__kafka_metadata__describe_topic_configs_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        12 => wire__crate__api__profile_crypto__encrypt_bundle_with_passphrase_impl(
+        14 => wire__crate__api__json_path__deserialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        13 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
+        15 => wire__crate__api__connection_diagnostics__diagnose_connection_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => wire__crate__api__kafka_metadata__fetch_consumer_group_lags_impl(
+        16 => wire__crate__api__json_diff__diff_json_batch_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__profile_crypto__encrypt_bundle_with_passphrase_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        15 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+        19 => wire__crate__api__kafka_analyzer__estimate_analysis_scope_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        16 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+        20 => wire__crate__api__kafka_metadata__fetch_cluster_overview_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        17 => {
+        21 => wire__crate__api__kafka_metadata__fetch_consumer_group_lag_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        22 => wire__crate__api__kafka_metadata__fetch_consumer_group_lags_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        23 => wire__crate__api__kafka_metadata__fetch_consumer_groups_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        24 => wire__crate__api__kafka_metadata__fetch_consumer_lags_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        25 => wire__crate__api__schema_registry__fetch_global_compatibility_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        26 => wire__crate__api__kafka_metadata__fetch_partition_offsets_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        27 => {
             wire__crate__api__schema_registry__fetch_schema_impl(port, ptr, rust_vec_len, data_len)
         }
-        18 => wire__crate__api__schema_registry__fetch_schema_versions_impl(
+        28 => wire__crate__api__schema_registry__fetch_schema_versions_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        19 => wire__crate__api__schema_registry__fetch_subjects_impl(
+        29 => wire__crate__api__schema_registry__fetch_subject_compatibility_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        20 => wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
+        30 => wire__crate__api__schema_registry__fetch_subject_schema_view_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        21 => {
+        31 => wire__crate__api__schema_registry__fetch_subjects_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        32 => wire__crate__api__topic_config__fetch_topic_config_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        33 => wire__crate__api__kafka_metadata__fetch_topic_metadata_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        34 => wire__crate__api__kafka_metadata__fetch_topic_partitions_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        35 => wire__crate__api__kafka_metadata__fetch_topic_time_range_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        36 => {
             wire__crate__api__kafka_metadata__fetch_topics_impl(port, ptr, rust_vec_len, data_len)
         }
-        22 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
-        23 => {
+        38 => wire__crate__api__local_schema__framing_dto_default_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        39 => wire__crate__api__init_app_impl(port, ptr, rust_vec_len, data_len),
+        40 => {
             wire__crate__api__diagnostics__init_rust_logging_impl(port, ptr, rust_vec_len, data_len)
         }
-        24 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__profile_tools__parse_client_properties_impl(
+        41 => wire__crate__api__local_schema__inspect_local_schema_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        26 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
+        42 => wire__crate__api__local_schema__local_schema_mode_dto_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        27 => wire__crate__api__kafka_utils__predict_default_partition_impl(
+        43 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
+        44 => wire__crate__api__profile_tools__parse_client_properties_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        28 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
+        46 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        29 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+        47 => wire__crate__api__kafka_utils__predict_default_partition_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        30 => {
+        48 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        49 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        50 => {
             wire__crate__api__json_path__resolve_json_path_impl(port, ptr, rust_vec_len, data_len)
         }
-        31 => wire__crate__api__json_path__resolve_json_path_batch_impl(
+        51 => wire__crate__api__json_path__resolve_json_path_batch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        32 => wire__crate__api__json_path__serialize_cluster_profile_impl(
+        52 => wire__crate__api__kafka_types__scope_limit_from_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        33 => wire__crate__api__kafka_types__tls_verification_default_impl(
+        53 => wire__crate__api__json_path__serialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        34 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
-        35 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
+        54 => wire__crate__api__kafka_types__tls_verification_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        37 => wire__crate__api__kafka_metadata__validate_connection_impl(
+        55 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
+        56 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        39 => wire__crate__api__json_path__validate_filter_patterns_impl(
+        57 => wire__crate__api__local_schema__topic_local_schemas_dto_default_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        59 => wire__crate__api__kafka_metadata__validate_connection_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        61 => wire__crate__api__json_path__validate_filter_patterns_impl(
             port,
             ptr,
             rust_vec_len,
@@ -3591,12 +6169,25 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        36 => wire__crate__api__profile_tools__validate_bootstrap_servers_impl(
+        5 => {
+            wire__crate__api__schema_registry__associate_subjects_impl(ptr, rust_vec_len, data_len)
+        }
+        8 => wire__crate__api__json_path__collect_field_paths_impl(ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__topic_config__diff_topic_configs_impl(ptr, rust_vec_len, data_len),
+        37 => wire__crate__api__filter_expr__format_filter_expression_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        38 => wire__crate__api__profile_tools__validate_extra_properties_impl(
+        45 => {
+            wire__crate__api__filter_expr__parse_filter_expression_impl(ptr, rust_vec_len, data_len)
+        }
+        58 => wire__crate__api__profile_tools__validate_bootstrap_servers_impl(
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        60 => wire__crate__api__profile_tools__validate_extra_properties_impl(
             ptr,
             rust_vec_len,
             data_len,
@@ -3640,6 +6231,131 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::AllowedExtraPr
     for crate::api::profile_tools::AllowedExtraProperty
 {
     fn into_into_dart(self) -> crate::api::profile_tools::AllowedExtraProperty {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::AnalysisLimit {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.limit.into_into_dart().into_dart(),
+            self.reached.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::AnalysisLimit
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::AnalysisLimit>
+    for crate::api::kafka_types::AnalysisLimit
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::AnalysisLimit {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::AnalysisLimitKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::TrackedFields => 0.into_dart(),
+            Self::ListedFields => 1.into_dart(),
+            Self::ValuesPerField => 2.into_dart(),
+            Self::ListedValuesPerField => 3.into_dart(),
+            Self::FieldDepth => 4.into_dart(),
+            Self::ValueDisplayChars => 5.into_dart(),
+            Self::TrackedKeys => 6.into_dart(),
+            Self::ListedKeys => 7.into_dart(),
+            Self::SizePercentileSample => 8.into_dart(),
+            Self::TrackedFingerprints => 9.into_dart(),
+            Self::DuplicateSamples => 10.into_dart(),
+            Self::ListedDuplicates => 11.into_dart(),
+            Self::PreviewChars => 12.into_dart(),
+            Self::TimelineWindowDays => 13.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::AnalysisLimitKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::AnalysisLimitKind>
+    for crate::api::kafka_types::AnalysisLimitKind
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::AnalysisLimitKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::AnalysisScope {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.partitions.into_into_dart().into_dart(),
+            self.start_timestamp_ms.into_into_dart().into_dart(),
+            self.end_timestamp_ms.into_into_dart().into_dart(),
+            self.message_limit.into_into_dart().into_dart(),
+            self.limit_from.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::AnalysisScope
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::AnalysisScope>
+    for crate::api::kafka_types::AnalysisScope
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::AnalysisScope {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::AnalysisScopeEstimate {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.planned_total.into_into_dart().into_dart(),
+            self.known_total.into_into_dart().into_dart(),
+            self.complete.into_into_dart().into_dart(),
+            self.unreadable.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::AnalysisScopeEstimate
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::AnalysisScopeEstimate>
+    for crate::api::kafka_types::AnalysisScopeEstimate
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::AnalysisScopeEstimate {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::AnalysisScopeSummary {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.scope.into_into_dart().into_dart(),
+            self.ranges.into_into_dart().into_dart(),
+            self.unreadable.into_into_dart().into_dart(),
+            self.excluded_by_time_range.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::AnalysisScopeSummary
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::AnalysisScopeSummary>
+    for crate::api::kafka_types::AnalysisScopeSummary
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::AnalysisScopeSummary {
         self
     }
 }
@@ -3800,6 +6516,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::profile_tools::ClientProperty
     for crate::api::profile_tools::ClientPropertySkipReason
 {
     fn into_into_dart(self) -> crate::api::profile_tools::ClientPropertySkipReason {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::ClusterOverview {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.brokers.into_into_dart().into_dart(),
+            self.cluster_id.into_into_dart().into_dart(),
+            self.controller_id.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::ClusterOverview
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::ClusterOverview>
+    for crate::api::kafka_metadata::ClusterOverview
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::ClusterOverview {
         self
     }
 }
@@ -4016,6 +6754,10 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::DuplicateAnalysi
             self.duplicate_messages.into_into_dart().into_dart(),
             self.duplicate_rate.into_into_dart().into_dart(),
             self.top_duplicates.into_into_dart().into_dart(),
+            self.estimated.into_into_dart().into_dart(),
+            self.untracked_messages.into_into_dart().into_dart(),
+            self.fingerprint_limit.into_into_dart().into_dart(),
+            self.samples_capped.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4124,6 +6866,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::report_compare::FieldDelta>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::FieldNoteDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Recursive => 0.into_dart(),
+            Self::UnresolvedReference => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::FieldNoteDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::FieldNoteDto>
+    for crate::api::schema_registry::FieldNoteDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::FieldNoteDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::FieldOccurrence {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4192,6 +6955,228 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::FieldValueOccurr
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterConditionDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.field_kind.into_into_dart().into_dart(),
+            self.field_path.into_into_dart().into_dart(),
+            self.op.into_into_dart().into_dart(),
+            self.scalar.into_into_dart().into_dart(),
+            self.list_items.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterConditionDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterConditionDto>
+    for crate::api::filter_expr::FilterConditionDto
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterConditionDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterErrorDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.message.into_into_dart().into_dart(),
+            self.start_utf16.into_into_dart().into_dart(),
+            self.end_utf16.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterErrorDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterErrorDto>
+    for crate::api::filter_expr::FilterErrorDto
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterErrorDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterFieldKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Value => 0.into_dart(),
+            Self::Key => 1.into_dart(),
+            Self::KeyPath => 2.into_dart(),
+            Self::Header => 3.into_dart(),
+            Self::Timestamp => 4.into_dart(),
+            Self::Offset => 5.into_dart(),
+            Self::Partition => 6.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterFieldKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterFieldKind>
+    for crate::api::filter_expr::FilterFieldKind
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterFieldKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterNodeDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.children.into_into_dart().into_dart(),
+            self.condition.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterNodeDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterNodeDto>
+    for crate::api::filter_expr::FilterNodeDto
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterNodeDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterNodeKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::And => 0.into_dart(),
+            Self::Or => 1.into_dart(),
+            Self::Not => 2.into_dart(),
+            Self::Cond => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterNodeKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterNodeKind>
+    for crate::api::filter_expr::FilterNodeKind
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterNodeKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterOpDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Eq => 0.into_dart(),
+            Self::Ne => 1.into_dart(),
+            Self::Gt => 2.into_dart(),
+            Self::Ge => 3.into_dart(),
+            Self::Lt => 4.into_dart(),
+            Self::Le => 5.into_dart(),
+            Self::Contains => 6.into_dart(),
+            Self::StartsWith => 7.into_dart(),
+            Self::EndsWith => 8.into_dart(),
+            Self::Matches => 9.into_dart(),
+            Self::In => 10.into_dart(),
+            Self::Exists => 11.into_dart(),
+            Self::IsNull => 12.into_dart(),
+            Self::IsNotNull => 13.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterOpDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterOpDto>
+    for crate::api::filter_expr::FilterOpDto
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterOpDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterParseResultDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.ok.into_into_dart().into_dart(),
+            self.nodes.into_into_dart().into_dart(),
+            self.canonical.into_into_dart().into_dart(),
+            self.error.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterParseResultDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterParseResultDto>
+    for crate::api::filter_expr::FilterParseResultDto
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterParseResultDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterScalarDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.text.into_into_dart().into_dart(),
+            self.int_val.into_into_dart().into_dart(),
+            self.float_val.into_into_dart().into_dart(),
+            self.bool_val.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterScalarDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterScalarDto>
+    for crate::api::filter_expr::FilterScalarDto
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterScalarDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::filter_expr::FilterScalarKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::String => 0.into_dart(),
+            Self::Int => 1.into_dart(),
+            Self::Float => 2.into_dart(),
+            Self::Bool => 3.into_dart(),
+            Self::Null => 4.into_dart(),
+            Self::Placeholder => 5.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::filter_expr::FilterScalarKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::filter_expr::FilterScalarKind>
+    for crate::api::filter_expr::FilterScalarKind
+{
+    fn into_into_dart(self) -> crate::api::filter_expr::FilterScalarKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::FilterType {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
@@ -4210,6 +7195,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::FilterType>
     for crate::api::kafka_types::FilterType
 {
     fn into_into_dart(self) -> crate::api::kafka_types::FilterType {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::FramingDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Auto => 0.into_dart(),
+            Self::Prefixed => 1.into_dart(),
+            Self::Raw => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::FramingDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::FramingDto>
+    for crate::api::local_schema::FramingDto
+{
+    fn into_into_dart(self) -> crate::api::local_schema::FramingDto {
         self
     }
 }
@@ -4257,6 +7264,120 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::HourlyCount>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::json_diff::JsonDiffEntry {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.path.into_into_dart().into_dart(),
+            self.segments.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+            self.old_value.into_into_dart().into_dart(),
+            self.new_value.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::json_diff::JsonDiffEntry
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::json_diff::JsonDiffEntry>
+    for crate::api::json_diff::JsonDiffEntry
+{
+    fn into_into_dart(self) -> crate::api::json_diff::JsonDiffEntry {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::json_diff::JsonDiffInvalidSide {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Old => 0.into_dart(),
+            Self::New => 1.into_dart(),
+            Self::Both => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::json_diff::JsonDiffInvalidSide
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::json_diff::JsonDiffInvalidSide>
+    for crate::api::json_diff::JsonDiffInvalidSide
+{
+    fn into_into_dart(self) -> crate::api::json_diff::JsonDiffInvalidSide {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::json_diff::JsonDiffKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Added => 0.into_dart(),
+            Self::Removed => 1.into_dart(),
+            Self::Changed => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::json_diff::JsonDiffKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::json_diff::JsonDiffKind>
+    for crate::api::json_diff::JsonDiffKind
+{
+    fn into_into_dart(self) -> crate::api::json_diff::JsonDiffKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::json_diff::JsonDiffRequest {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.old_json.into_into_dart().into_dart(),
+            self.new_json.into_into_dart().into_dart(),
+            self.ignore_paths.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::json_diff::JsonDiffRequest
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::json_diff::JsonDiffRequest>
+    for crate::api::json_diff::JsonDiffRequest
+{
+    fn into_into_dart(self) -> crate::api::json_diff::JsonDiffRequest {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::json_diff::JsonDiffResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.entries.into_into_dart().into_dart(),
+            self.total.into_into_dart().into_dart(),
+            self.hidden.into_into_dart().into_dart(),
+            self.truncated.into_into_dart().into_dart(),
+            self.invalid_side.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::json_diff::JsonDiffResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::json_diff::JsonDiffResult>
+    for crate::api::json_diff::JsonDiffResult
+{
+    fn into_into_dart(self) -> crate::api::json_diff::JsonDiffResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_consumer::KafkaHeader {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4290,6 +7411,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_consumer::KafkaMessage 
             self.headers.into_into_dart().into_dart(),
             self.key_schema.into_into_dart().into_dart(),
             self.value_schema.into_into_dart().into_dart(),
+            self.key_local_schema.into_into_dart().into_dart(),
+            self.value_local_schema.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4324,6 +7447,178 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::KeyOccurrence>
     for crate::api::kafka_types::KeyOccurrence
 {
     fn into_into_dart(self) -> crate::api::kafka_types::KeyOccurrence {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::LocalDecodeErrorKindDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::FileNotFound => 0.into_dart(),
+            Self::FileUnreadable => 1.into_dart(),
+            Self::FileTooLarge => 2.into_dart(),
+            Self::SchemaInvalid => 3.into_dart(),
+            Self::UnsupportedProto2 => 4.into_dart(),
+            Self::UnresolvedImport => 5.into_dart(),
+            Self::MessageTypeNotFound => 6.into_dart(),
+            Self::MissingPrefix => 7.into_dart(),
+            Self::UnknownMessageIndex => 8.into_dart(),
+            Self::PayloadMismatch => 9.into_dart(),
+            Self::TrailingBytes => 10.into_dart(),
+            Self::NotJson => 11.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::LocalDecodeErrorKindDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::LocalDecodeErrorKindDto>
+    for crate::api::local_schema::LocalDecodeErrorKindDto
+{
+    fn into_into_dart(self) -> crate::api::local_schema::LocalDecodeErrorKindDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::LocalSchemaAssignmentDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.path.into_into_dart().into_dart(),
+            self.format.into_into_dart().into_dart(),
+            self.message_type.into_into_dart().into_dart(),
+            self.framing.into_into_dart().into_dart(),
+            self.mode.into_into_dart().into_dart(),
+            self.expected_sha256.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::LocalSchemaAssignmentDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::LocalSchemaAssignmentDto>
+    for crate::api::local_schema::LocalSchemaAssignmentDto
+{
+    fn into_into_dart(self) -> crate::api::local_schema::LocalSchemaAssignmentDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::LocalSchemaErrorDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.detail.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::LocalSchemaErrorDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::LocalSchemaErrorDto>
+    for crate::api::local_schema::LocalSchemaErrorDto
+{
+    fn into_into_dart(self) -> crate::api::local_schema::LocalSchemaErrorDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::LocalSchemaFormatDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Avro => 0.into_dart(),
+            Self::ProtobufSource => 1.into_dart(),
+            Self::ProtobufDescriptor => 2.into_dart(),
+            Self::JsonSchema => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::LocalSchemaFormatDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::LocalSchemaFormatDto>
+    for crate::api::local_schema::LocalSchemaFormatDto
+{
+    fn into_into_dart(self) -> crate::api::local_schema::LocalSchemaFormatDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::LocalSchemaInfo {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.file_name.into_into_dart().into_dart(),
+            self.detected_format.into_into_dart().into_dart(),
+            self.sha256_hex.into_into_dart().into_dart(),
+            self.message_types.into_into_dart().into_dart(),
+            self.selected_message.into_into_dart().into_dart(),
+            self.fields.into_into_dart().into_dart(),
+            self.error.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::LocalSchemaInfo
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::LocalSchemaInfo>
+    for crate::api::local_schema::LocalSchemaInfo
+{
+    fn into_into_dart(self) -> crate::api::local_schema::LocalSchemaInfo {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::LocalSchemaModeDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Fallback => 0.into_dart(),
+            Self::Always => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::LocalSchemaModeDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::LocalSchemaModeDto>
+    for crate::api::local_schema::LocalSchemaModeDto
+{
+    fn into_into_dart(self) -> crate::api::local_schema::LocalSchemaModeDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::LocalSchemaUseDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.file_name.into_into_dart().into_dart(),
+            self.format.into_into_dart().into_dart(),
+            self.message_type.into_into_dart().into_dart(),
+            self.framing.into_into_dart().into_dart(),
+            self.wire_schema_id.into_into_dart().into_dart(),
+            self.error.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::LocalSchemaUseDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::LocalSchemaUseDto>
+    for crate::api::local_schema::LocalSchemaUseDto
+{
+    fn into_into_dart(self) -> crate::api::local_schema::LocalSchemaUseDto {
         self
     }
 }
@@ -4396,6 +7691,31 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::NotCh
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::OffsetSkewStatus {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::NotRequested => 0.into_dart(),
+            Self::SinglePartition => 1.into_dart(),
+            Self::Incomplete => 2.into_dart(),
+            Self::Empty => 3.into_dart(),
+            Self::Balanced => 4.into_dart(),
+            Self::Skewed => 5.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::OffsetSkewStatus
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::OffsetSkewStatus>
+    for crate::api::kafka_metadata::OffsetSkewStatus
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::OffsetSkewStatus {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::PartitionAnalysis {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4443,6 +7763,83 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::PartitionLagStat
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::PartitionOffsetDistribution {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.topic.into_into_dart().into_dart(),
+            self.read_at_ms.into_into_dart().into_dart(),
+            self.partitions.into_into_dart().into_dart(),
+            self.total_span.into_into_dart().into_dart(),
+            self.known_span.into_into_dart().into_dart(),
+            self.complete.into_into_dart().into_dart(),
+            self.skew_status.into_into_dart().into_dart(),
+            self.skew_threshold_percent.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::PartitionOffsetDistribution
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::PartitionOffsetDistribution>
+    for crate::api::kafka_metadata::PartitionOffsetDistribution
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::PartitionOffsetDistribution {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::PartitionOffsetRow {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.partition.into_into_dart().into_dart(),
+            self.state.into_into_dart().into_dart(),
+            self.error.into_into_dart().into_dart(),
+            self.low.into_into_dart().into_dart(),
+            self.high.into_into_dart().into_dart(),
+            self.span.into_into_dart().into_dart(),
+            self.share_percent.into_into_dart().into_dart(),
+            self.skewed.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::PartitionOffsetRow
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::PartitionOffsetRow>
+    for crate::api::kafka_metadata::PartitionOffsetRow
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::PartitionOffsetRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::PartitionOffsetState {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Known => 0.into_dart(),
+            Self::NotReadable => 1.into_dart(),
+            Self::Failed => 2.into_dart(),
+            Self::TimedOut => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::PartitionOffsetState
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::PartitionOffsetState>
+    for crate::api::kafka_metadata::PartitionOffsetState
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::PartitionOffsetState {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::PartitionRow {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4464,6 +7861,123 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::PartitionRow>
     for crate::api::kafka_metadata::PartitionRow
 {
     fn into_into_dart(self) -> crate::api::kafka_metadata::PartitionRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::PartitionTimeProbe {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.partition.into_into_dart().into_dart(),
+            self.oldest.into_into_dart().into_dart(),
+            self.newest.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::PartitionTimeProbe
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::PartitionTimeProbe>
+    for crate::api::kafka_metadata::PartitionTimeProbe
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::PartitionTimeProbe {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::PartitionTimeProbeOutcome {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.offset.into_into_dart().into_dart(),
+            self.timestamp_ms.into_into_dart().into_dart(),
+            self.timestamp_type.into_into_dart().into_dart(),
+            self.reason.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::PartitionTimeProbeOutcome
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::PartitionTimeProbeOutcome>
+    for crate::api::kafka_metadata::PartitionTimeProbeOutcome
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::PartitionTimeProbeOutcome {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::PartitionTimestamp {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.partition.into_into_dart().into_dart(),
+            self.offset.into_into_dart().into_dart(),
+            self.timestamp_ms.into_into_dart().into_dart(),
+            self.timestamp_type.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::PartitionTimestamp
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::PartitionTimestamp>
+    for crate::api::kafka_metadata::PartitionTimestamp
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::PartitionTimestamp {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::PlannedPartitionRange {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.partition.into_into_dart().into_dart(),
+            self.start.into_into_dart().into_dart(),
+            self.end.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::PlannedPartitionRange
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::PlannedPartitionRange>
+    for crate::api::kafka_types::PlannedPartitionRange
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::PlannedPartitionRange {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::ProbeOutcomeKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Found => 0.into_dart(),
+            Self::Empty => 1.into_dart(),
+            Self::NotFoundInWindow => 2.into_dart(),
+            Self::NoTimestamp => 3.into_dart(),
+            Self::TimedOut => 4.into_dart(),
+            Self::Unreadable => 5.into_dart(),
+            Self::Failed => 6.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::ProbeOutcomeKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::ProbeOutcomeKind>
+    for crate::api::kafka_metadata::ProbeOutcomeKind
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::ProbeOutcomeKind {
         self
     }
 }
@@ -4554,6 +8068,178 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SchemaCompat
     for crate::api::schema_registry::SchemaCompatibilityResult
 {
     fn into_into_dart(self) -> crate::api::schema_registry::SchemaCompatibilityResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SchemaFieldEntryDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.path.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.depth.into_into_dart().into_dart(),
+            self.type_label.into_into_dart().into_dart(),
+            self.doc.into_into_dart().into_dart(),
+            self.optional.into_into_dart().into_dart(),
+            self.repeated.into_into_dart().into_dart(),
+            self.note.into_into_dart().into_dart(),
+            self.unresolved_reference.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SchemaFieldEntryDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SchemaFieldEntryDto>
+    for crate::api::schema_registry::SchemaFieldEntryDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SchemaFieldEntryDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SchemaFieldModelDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.other_schema_type.into_into_dart().into_dart(),
+            self.root_name.into_into_dart().into_dart(),
+            self.messages.into_into_dart().into_dart(),
+            self.fields.into_into_dart().into_dart(),
+            self.truncated.into_into_dart().into_dart(),
+            self.unavailable_reason.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SchemaFieldModelDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SchemaFieldModelDto>
+    for crate::api::schema_registry::SchemaFieldModelDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SchemaFieldModelDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SchemaKindDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Avro => 0.into_dart(),
+            Self::Protobuf => 1.into_dart(),
+            Self::Json => 2.into_dart(),
+            Self::Other => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SchemaKindDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SchemaKindDto>
+    for crate::api::schema_registry::SchemaKindDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SchemaKindDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SchemaReferenceDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.subject.into_into_dart().into_dart(),
+            self.version.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SchemaReferenceDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SchemaReferenceDto>
+    for crate::api::schema_registry::SchemaReferenceDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SchemaReferenceDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SchemaRegistryErrorDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.status.into_into_dart().into_dart(),
+            self.registry_error_code.into_into_dart().into_dart(),
+            self.detail.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SchemaRegistryErrorDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SchemaRegistryErrorDto>
+    for crate::api::schema_registry::SchemaRegistryErrorDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SchemaRegistryErrorDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SchemaRegistryErrorKindDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::NotConfigured => 0.into_dart(),
+            Self::InvalidUrl => 1.into_dart(),
+            Self::Unauthorized => 2.into_dart(),
+            Self::Forbidden => 3.into_dart(),
+            Self::NotFound => 4.into_dart(),
+            Self::Timeout => 5.into_dart(),
+            Self::Unreachable => 6.into_dart(),
+            Self::CertificateRejected => 7.into_dart(),
+            Self::HttpStatus => 8.into_dart(),
+            Self::InvalidResponse => 9.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SchemaRegistryErrorKindDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SchemaRegistryErrorKindDto>
+    for crate::api::schema_registry::SchemaRegistryErrorKindDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SchemaRegistryErrorKindDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ScopeLimitFrom {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Newest => 0.into_dart(),
+            Self::Oldest => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::ScopeLimitFrom
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::ScopeLimitFrom>
+    for crate::api::kafka_types::ScopeLimitFrom
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::ScopeLimitFrom {
         self
     }
 }
@@ -4721,6 +8407,97 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::StepS
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SubjectAssociationDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.subject.into_into_dart().into_dart(),
+            self.topic.into_into_dart().into_dart(),
+            self.side.into_into_dart().into_dart(),
+            self.on_cluster.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SubjectAssociationDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SubjectAssociationDto>
+    for crate::api::schema_registry::SubjectAssociationDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SubjectAssociationDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SubjectSchemaDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.subject.into_into_dart().into_dart(),
+            self.version.into_into_dart().into_dart(),
+            self.id.into_into_dart().into_dart(),
+            self.schema_type.into_into_dart().into_dart(),
+            self.other_schema_type.into_into_dart().into_dart(),
+            self.schema.into_into_dart().into_dart(),
+            self.references.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SubjectSchemaDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SubjectSchemaDto>
+    for crate::api::schema_registry::SubjectSchemaDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SubjectSchemaDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::SubjectSchemaViewDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.schema.into_into_dart().into_dart(),
+            self.fields.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::SubjectSchemaViewDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::SubjectSchemaViewDto>
+    for crate::api::schema_registry::SubjectSchemaViewDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::SubjectSchemaViewDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TimeRangeTimestampKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::CreateTime => 0.into_dart(),
+            Self::LogAppendTime => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::TimeRangeTimestampKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TimeRangeTimestampKind>
+    for crate::api::kafka_metadata::TimeRangeTimestampKind
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::TimeRangeTimestampKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TlsProbeOutcome {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
@@ -4820,6 +8597,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::TopicAnalysisOpt
             self.sample_from_latest.into_into_dart().into_dart(),
             self.value_filter.into_into_dart().into_dart(),
             self.duplicate_scope.into_into_dart().into_dart(),
+            self.scope.into_into_dart().into_dart(),
+            self.local_schemas.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4891,6 +8670,11 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::TopicAnalysisRep
             self.timeline_outside_count.into_into_dart().into_dart(),
             self.value_filter_result.into_into_dart().into_dart(),
             self.duplicate_analysis_result.into_into_dart().into_dart(),
+            self.cleanup_policy_unknown.into_into_dart().into_dart(),
+            self.scan_scope.into_into_dart().into_dart(),
+            self.analysis_limits.into_into_dart().into_dart(),
+            self.tracked_field_count.into_into_dart().into_dart(),
+            self.complete_until_ms.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4907,6 +8691,238 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::TopicAnalysisRep
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::topic_config::TopicConfigAvailability {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Available => 0.into_dart(),
+            Self::NotAuthorized => 1.into_dart(),
+            Self::TopicNotFound => 2.into_dart(),
+            Self::Failed => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::topic_config::TopicConfigAvailability
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::topic_config::TopicConfigAvailability>
+    for crate::api::topic_config::TopicConfigAvailability
+{
+    fn into_into_dart(self) -> crate::api::topic_config::TopicConfigAvailability {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::topic_config::TopicConfigDiff {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.rows.into_into_dart().into_dart(),
+            self.difference_count.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::topic_config::TopicConfigDiff
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::topic_config::TopicConfigDiff>
+    for crate::api::topic_config::TopicConfigDiff
+{
+    fn into_into_dart(self) -> crate::api::topic_config::TopicConfigDiff {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::topic_config::TopicConfigDiffRow {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.left.into_into_dart().into_dart(),
+            self.right.into_into_dart().into_dart(),
+            self.status.into_into_dart().into_dart(),
+            self.non_default.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::topic_config::TopicConfigDiffRow
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::topic_config::TopicConfigDiffRow>
+    for crate::api::topic_config::TopicConfigDiffRow
+{
+    fn into_into_dart(self) -> crate::api::topic_config::TopicConfigDiffRow {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::topic_config::TopicConfigDiffStatus {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Equal => 0.into_dart(),
+            Self::Different => 1.into_dart(),
+            Self::OnlyLeft => 2.into_dart(),
+            Self::OnlyRight => 3.into_dart(),
+            Self::NotComparable => 4.into_dart(),
+            Self::Unknown => 5.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::topic_config::TopicConfigDiffStatus
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::topic_config::TopicConfigDiffStatus>
+    for crate::api::topic_config::TopicConfigDiffStatus
+{
+    fn into_into_dart(self) -> crate::api::topic_config::TopicConfigDiffStatus {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicConfigEntry {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.value.into_into_dart().into_dart(),
+            self.source.into_into_dart().into_dart(),
+            self.is_default.into_into_dart().into_dart(),
+            self.is_sensitive.into_into_dart().into_dart(),
+            self.is_read_only.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::TopicConfigEntry
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TopicConfigEntry>
+    for crate::api::kafka_metadata::TopicConfigEntry
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::TopicConfigEntry {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicConfigResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.topic.into_into_dart().into_dart(),
+            self.status.into_into_dart().into_dart(),
+            self.message.into_into_dart().into_dart(),
+            self.entries.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::TopicConfigResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TopicConfigResult>
+    for crate::api::kafka_metadata::TopicConfigResult
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::TopicConfigResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::topic_config::TopicConfigSnapshot {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.topic.into_into_dart().into_dart(),
+            self.availability.into_into_dart().into_dart(),
+            self.error_message.into_into_dart().into_dart(),
+            self.entries.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::topic_config::TopicConfigSnapshot
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::topic_config::TopicConfigSnapshot>
+    for crate::api::topic_config::TopicConfigSnapshot
+{
+    fn into_into_dart(self) -> crate::api::topic_config::TopicConfigSnapshot {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicConfigSource {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Unknown => 0.into_dart(),
+            Self::DynamicTopic => 1.into_dart(),
+            Self::DynamicBroker => 2.into_dart(),
+            Self::DynamicDefaultBroker => 3.into_dart(),
+            Self::StaticBroker => 4.into_dart(),
+            Self::Default => 5.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::TopicConfigSource
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TopicConfigSource>
+    for crate::api::kafka_metadata::TopicConfigSource
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::TopicConfigSource {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicConfigStatus {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Available => 0.into_dart(),
+            Self::NotReadable => 1.into_dart(),
+            Self::Failed => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::TopicConfigStatus
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TopicConfigStatus>
+    for crate::api::kafka_metadata::TopicConfigStatus
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::TopicConfigStatus {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::local_schema::TopicLocalSchemasDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.key.into_into_dart().into_dart(),
+            self.value.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::local_schema::TopicLocalSchemasDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::TopicLocalSchemasDto>
+    for crate::api::local_schema::TopicLocalSchemasDto
+{
+    fn into_into_dart(self) -> crate::api::local_schema::TopicLocalSchemasDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicMetadata {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -4919,6 +8935,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicMetadata
                 .into_into_dart()
                 .into_dart(),
             self.leaderless_partitions.into_into_dart().into_dart(),
+            self.metadata_error.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -4931,6 +8948,49 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TopicMetadata
     for crate::api::kafka_metadata::TopicMetadata
 {
     fn into_into_dart(self) -> crate::api::kafka_metadata::TopicMetadata {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicMetadataError {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.message.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::TopicMetadataError
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TopicMetadataError>
+    for crate::api::kafka_metadata::TopicMetadataError
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::TopicMetadataError {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicMetadataErrorKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::NotAuthorized => 0.into_dart(),
+            Self::NotFound => 1.into_dart(),
+            Self::Other => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::TopicMetadataErrorKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TopicMetadataErrorKind>
+    for crate::api::kafka_metadata::TopicMetadataErrorKind
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::TopicMetadataErrorKind {
         self
     }
 }
@@ -5004,6 +9064,55 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::TopicPartitionLa
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::schema_registry::TopicSideDto {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Key => 0.into_dart(),
+            Self::Value => 1.into_dart(),
+            Self::None => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::schema_registry::TopicSideDto
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::schema_registry::TopicSideDto>
+    for crate::api::schema_registry::TopicSideDto
+{
+    fn into_into_dart(self) -> crate::api::schema_registry::TopicSideDto {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_metadata::TopicTimeRange {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.oldest.into_into_dart().into_dart(),
+            self.newest.into_into_dart().into_dart(),
+            self.partitions_total.into_into_dart().into_dart(),
+            self.partitions_empty.into_into_dart().into_dart(),
+            self.oldest_known.into_into_dart().into_dart(),
+            self.newest_known.into_into_dart().into_dart(),
+            self.all_empty.into_into_dart().into_dart(),
+            self.probes.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_metadata::TopicTimeRange
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_metadata::TopicTimeRange>
+    for crate::api::kafka_metadata::TopicTimeRange
+{
+    fn into_into_dart(self) -> crate::api::kafka_metadata::TopicTimeRange {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::TypeOccurrence {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -5022,6 +9131,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::TypeOccurrence>
     for crate::api::kafka_types::TypeOccurrence
 {
     fn into_into_dart(self) -> crate::api::kafka_types::TypeOccurrence {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::UnreadablePartition {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.partition.into_into_dart().into_dart(),
+            self.reason.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_types::UnreadablePartition
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_types::UnreadablePartition>
+    for crate::api::kafka_types::UnreadablePartition
+{
+    fn into_into_dart(self) -> crate::api::kafka_types::UnreadablePartition {
         self
     }
 }
@@ -5061,6 +9191,13 @@ impl SseEncode for ClientConfig {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<ClientConfig>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
+    }
+}
+
+impl SseEncode for std::collections::HashMap<String, Vec<String>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<(String, Vec<String>)>>::sse_encode(self.into_iter().collect(), serializer);
     }
 }
 
@@ -5123,6 +9260,80 @@ impl SseEncode for crate::api::profile_tools::AllowedExtraProperty {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.key, serializer);
         <String>::sse_encode(self.value_hint, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::AnalysisLimit {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::kafka_types::AnalysisLimitKind>::sse_encode(self.kind, serializer);
+        <i64>::sse_encode(self.limit, serializer);
+        <bool>::sse_encode(self.reached, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::AnalysisLimitKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_types::AnalysisLimitKind::TrackedFields => 0,
+                crate::api::kafka_types::AnalysisLimitKind::ListedFields => 1,
+                crate::api::kafka_types::AnalysisLimitKind::ValuesPerField => 2,
+                crate::api::kafka_types::AnalysisLimitKind::ListedValuesPerField => 3,
+                crate::api::kafka_types::AnalysisLimitKind::FieldDepth => 4,
+                crate::api::kafka_types::AnalysisLimitKind::ValueDisplayChars => 5,
+                crate::api::kafka_types::AnalysisLimitKind::TrackedKeys => 6,
+                crate::api::kafka_types::AnalysisLimitKind::ListedKeys => 7,
+                crate::api::kafka_types::AnalysisLimitKind::SizePercentileSample => 8,
+                crate::api::kafka_types::AnalysisLimitKind::TrackedFingerprints => 9,
+                crate::api::kafka_types::AnalysisLimitKind::DuplicateSamples => 10,
+                crate::api::kafka_types::AnalysisLimitKind::ListedDuplicates => 11,
+                crate::api::kafka_types::AnalysisLimitKind::PreviewChars => 12,
+                crate::api::kafka_types::AnalysisLimitKind::TimelineWindowDays => 13,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::AnalysisScope {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<Vec<i32>>>::sse_encode(self.partitions, serializer);
+        <Option<i64>>::sse_encode(self.start_timestamp_ms, serializer);
+        <Option<i64>>::sse_encode(self.end_timestamp_ms, serializer);
+        <Option<i64>>::sse_encode(self.message_limit, serializer);
+        <crate::api::kafka_types::ScopeLimitFrom>::sse_encode(self.limit_from, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::AnalysisScopeEstimate {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<i64>>::sse_encode(self.planned_total, serializer);
+        <i64>::sse_encode(self.known_total, serializer);
+        <bool>::sse_encode(self.complete, serializer);
+        <Vec<crate::api::kafka_types::UnreadablePartition>>::sse_encode(
+            self.unreadable,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::AnalysisScopeSummary {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::kafka_types::AnalysisScope>::sse_encode(self.scope, serializer);
+        <Vec<crate::api::kafka_types::PlannedPartitionRange>>::sse_encode(self.ranges, serializer);
+        <Vec<crate::api::kafka_types::UnreadablePartition>>::sse_encode(
+            self.unreadable,
+            serializer,
+        );
+        <i64>::sse_encode(self.excluded_by_time_range, serializer);
     }
 }
 
@@ -5228,6 +9439,15 @@ impl SseEncode for crate::api::profile_tools::ClientPropertySkipReason {
             },
             serializer,
         );
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::ClusterOverview {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<crate::api::kafka_metadata::BrokerEndpoint>>::sse_encode(self.brokers, serializer);
+        <Option<String>>::sse_encode(self.cluster_id, serializer);
+        <Option<i32>>::sse_encode(self.controller_id, serializer);
     }
 }
 
@@ -5386,6 +9606,10 @@ impl SseEncode for crate::api::kafka_types::DuplicateAnalysisResult {
             self.top_duplicates,
             serializer,
         );
+        <bool>::sse_encode(self.estimated, serializer);
+        <i64>::sse_encode(self.untracked_messages, serializer);
+        <Option<i64>>::sse_encode(self.fingerprint_limit, serializer);
+        <bool>::sse_encode(self.samples_capped, serializer);
     }
 }
 
@@ -5452,6 +9676,22 @@ impl SseEncode for crate::api::report_compare::FieldDelta {
     }
 }
 
+impl SseEncode for crate::api::schema_registry::FieldNoteDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::schema_registry::FieldNoteDto::Recursive => 0,
+                crate::api::schema_registry::FieldNoteDto::UnresolvedReference => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::api::kafka_types::FieldOccurrence {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5484,6 +9724,146 @@ impl SseEncode for crate::api::kafka_types::FieldValueOccurrence {
     }
 }
 
+impl SseEncode for crate::api::filter_expr::FilterConditionDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::filter_expr::FilterFieldKind>::sse_encode(self.field_kind, serializer);
+        <Option<String>>::sse_encode(self.field_path, serializer);
+        <crate::api::filter_expr::FilterOpDto>::sse_encode(self.op, serializer);
+        <Option<crate::api::filter_expr::FilterScalarDto>>::sse_encode(self.scalar, serializer);
+        <Vec<crate::api::filter_expr::FilterScalarDto>>::sse_encode(self.list_items, serializer);
+    }
+}
+
+impl SseEncode for crate::api::filter_expr::FilterErrorDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.message, serializer);
+        <u32>::sse_encode(self.start_utf16, serializer);
+        <u32>::sse_encode(self.end_utf16, serializer);
+    }
+}
+
+impl SseEncode for crate::api::filter_expr::FilterFieldKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::filter_expr::FilterFieldKind::Value => 0,
+                crate::api::filter_expr::FilterFieldKind::Key => 1,
+                crate::api::filter_expr::FilterFieldKind::KeyPath => 2,
+                crate::api::filter_expr::FilterFieldKind::Header => 3,
+                crate::api::filter_expr::FilterFieldKind::Timestamp => 4,
+                crate::api::filter_expr::FilterFieldKind::Offset => 5,
+                crate::api::filter_expr::FilterFieldKind::Partition => 6,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::filter_expr::FilterNodeDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::filter_expr::FilterNodeKind>::sse_encode(self.kind, serializer);
+        <Vec<u32>>::sse_encode(self.children, serializer);
+        <Option<crate::api::filter_expr::FilterConditionDto>>::sse_encode(
+            self.condition,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::filter_expr::FilterNodeKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::filter_expr::FilterNodeKind::And => 0,
+                crate::api::filter_expr::FilterNodeKind::Or => 1,
+                crate::api::filter_expr::FilterNodeKind::Not => 2,
+                crate::api::filter_expr::FilterNodeKind::Cond => 3,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::filter_expr::FilterOpDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::filter_expr::FilterOpDto::Eq => 0,
+                crate::api::filter_expr::FilterOpDto::Ne => 1,
+                crate::api::filter_expr::FilterOpDto::Gt => 2,
+                crate::api::filter_expr::FilterOpDto::Ge => 3,
+                crate::api::filter_expr::FilterOpDto::Lt => 4,
+                crate::api::filter_expr::FilterOpDto::Le => 5,
+                crate::api::filter_expr::FilterOpDto::Contains => 6,
+                crate::api::filter_expr::FilterOpDto::StartsWith => 7,
+                crate::api::filter_expr::FilterOpDto::EndsWith => 8,
+                crate::api::filter_expr::FilterOpDto::Matches => 9,
+                crate::api::filter_expr::FilterOpDto::In => 10,
+                crate::api::filter_expr::FilterOpDto::Exists => 11,
+                crate::api::filter_expr::FilterOpDto::IsNull => 12,
+                crate::api::filter_expr::FilterOpDto::IsNotNull => 13,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::filter_expr::FilterParseResultDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.ok, serializer);
+        <Vec<crate::api::filter_expr::FilterNodeDto>>::sse_encode(self.nodes, serializer);
+        <Option<String>>::sse_encode(self.canonical, serializer);
+        <Option<crate::api::filter_expr::FilterErrorDto>>::sse_encode(self.error, serializer);
+    }
+}
+
+impl SseEncode for crate::api::filter_expr::FilterScalarDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::filter_expr::FilterScalarKind>::sse_encode(self.kind, serializer);
+        <String>::sse_encode(self.text, serializer);
+        <Option<i64>>::sse_encode(self.int_val, serializer);
+        <Option<f64>>::sse_encode(self.float_val, serializer);
+        <Option<bool>>::sse_encode(self.bool_val, serializer);
+    }
+}
+
+impl SseEncode for crate::api::filter_expr::FilterScalarKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::filter_expr::FilterScalarKind::String => 0,
+                crate::api::filter_expr::FilterScalarKind::Int => 1,
+                crate::api::filter_expr::FilterScalarKind::Float => 2,
+                crate::api::filter_expr::FilterScalarKind::Bool => 3,
+                crate::api::filter_expr::FilterScalarKind::Null => 4,
+                crate::api::filter_expr::FilterScalarKind::Placeholder => 5,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::api::kafka_types::FilterType {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5492,6 +9872,23 @@ impl SseEncode for crate::api::kafka_types::FilterType {
                 crate::api::kafka_types::FilterType::Contains => 0,
                 crate::api::kafka_types::FilterType::Regex => 1,
                 crate::api::kafka_types::FilterType::Exact => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::local_schema::FramingDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::local_schema::FramingDto::Auto => 0,
+                crate::api::local_schema::FramingDto::Prefixed => 1,
+                crate::api::local_schema::FramingDto::Raw => 2,
                 _ => {
                     unimplemented!("");
                 }
@@ -5532,6 +9929,74 @@ impl SseEncode for i64 {
     }
 }
 
+impl SseEncode for crate::api::json_diff::JsonDiffEntry {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.path, serializer);
+        <Vec<String>>::sse_encode(self.segments, serializer);
+        <crate::api::json_diff::JsonDiffKind>::sse_encode(self.kind, serializer);
+        <Option<String>>::sse_encode(self.old_value, serializer);
+        <Option<String>>::sse_encode(self.new_value, serializer);
+    }
+}
+
+impl SseEncode for crate::api::json_diff::JsonDiffInvalidSide {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::json_diff::JsonDiffInvalidSide::Old => 0,
+                crate::api::json_diff::JsonDiffInvalidSide::New => 1,
+                crate::api::json_diff::JsonDiffInvalidSide::Both => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::json_diff::JsonDiffKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::json_diff::JsonDiffKind::Added => 0,
+                crate::api::json_diff::JsonDiffKind::Removed => 1,
+                crate::api::json_diff::JsonDiffKind::Changed => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::json_diff::JsonDiffRequest {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.old_json, serializer);
+        <String>::sse_encode(self.new_json, serializer);
+        <Vec<String>>::sse_encode(self.ignore_paths, serializer);
+    }
+}
+
+impl SseEncode for crate::api::json_diff::JsonDiffResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<crate::api::json_diff::JsonDiffEntry>>::sse_encode(self.entries, serializer);
+        <u32>::sse_encode(self.total, serializer);
+        <u32>::sse_encode(self.hidden, serializer);
+        <bool>::sse_encode(self.truncated, serializer);
+        <Option<crate::api::json_diff::JsonDiffInvalidSide>>::sse_encode(
+            self.invalid_side,
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::api::kafka_consumer::KafkaHeader {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5559,6 +10024,14 @@ impl SseEncode for crate::api::kafka_consumer::KafkaMessage {
         );
         <Option<crate::api::kafka_consumer::MessageSchema>>::sse_encode(
             self.value_schema,
+            serializer,
+        );
+        <Option<crate::api::local_schema::LocalSchemaUseDto>>::sse_encode(
+            self.key_local_schema,
+            serializer,
+        );
+        <Option<crate::api::local_schema::LocalSchemaUseDto>>::sse_encode(
+            self.value_local_schema,
             serializer,
         );
     }
@@ -5589,6 +10062,16 @@ impl SseEncode for Vec<crate::api::profile_tools::AllowedExtraProperty> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::profile_tools::AllowedExtraProperty>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::kafka_types::AnalysisLimit> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_types::AnalysisLimit>::sse_encode(item, serializer);
         }
     }
 }
@@ -5673,6 +10156,26 @@ impl SseEncode for Vec<crate::api::kafka_types::FieldValueOccurrence> {
     }
 }
 
+impl SseEncode for Vec<crate::api::filter_expr::FilterNodeDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::filter_expr::FilterNodeDto>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::filter_expr::FilterScalarDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::filter_expr::FilterScalarDto>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::kafka_types::HourBucket> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5689,6 +10192,36 @@ impl SseEncode for Vec<crate::api::kafka_types::HourlyCount> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::kafka_types::HourlyCount>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::json_diff::JsonDiffEntry> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::json_diff::JsonDiffEntry>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::json_diff::JsonDiffRequest> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::json_diff::JsonDiffRequest>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::json_diff::JsonDiffResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::json_diff::JsonDiffResult>::sse_encode(item, serializer);
         }
     }
 }
@@ -5743,12 +10276,42 @@ impl SseEncode for Vec<crate::api::kafka_types::PartitionAnalysis> {
     }
 }
 
+impl SseEncode for Vec<crate::api::kafka_metadata::PartitionOffsetRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_metadata::PartitionOffsetRow>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::kafka_metadata::PartitionRow> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::kafka_metadata::PartitionRow>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::kafka_metadata::PartitionTimeProbe> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_metadata::PartitionTimeProbe>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::kafka_types::PlannedPartitionRange> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_types::PlannedPartitionRange>::sse_encode(item, serializer);
         }
     }
 }
@@ -5763,12 +10326,52 @@ impl SseEncode for Vec<i32> {
     }
 }
 
+impl SseEncode for Vec<u32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <u32>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<u8> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <u8>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<(String, Vec<String>)> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <(String, Vec<String>)>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::schema_registry::SchemaFieldEntryDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::schema_registry::SchemaFieldEntryDto>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::schema_registry::SchemaReferenceDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::schema_registry::SchemaReferenceDto>::sse_encode(item, serializer);
         }
     }
 }
@@ -5803,12 +10406,52 @@ impl SseEncode for Vec<crate::api::connection_diagnostics::StageResult> {
     }
 }
 
+impl SseEncode for Vec<crate::api::schema_registry::SubjectAssociationDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::schema_registry::SubjectAssociationDto>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::kafka_types::TopDuplicateOccurrence> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::kafka_types::TopDuplicateOccurrence>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::topic_config::TopicConfigDiffRow> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::topic_config::TopicConfigDiffRow>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::kafka_metadata::TopicConfigEntry> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_metadata::TopicConfigEntry>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::kafka_metadata::TopicConfigResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_metadata::TopicConfigResult>::sse_encode(item, serializer);
         }
     }
 }
@@ -5853,6 +10496,127 @@ impl SseEncode for Vec<crate::api::kafka_types::TypeOccurrence> {
     }
 }
 
+impl SseEncode for Vec<crate::api::kafka_types::UnreadablePartition> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_types::UnreadablePartition>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for crate::api::local_schema::LocalDecodeErrorKindDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::local_schema::LocalDecodeErrorKindDto::FileNotFound => 0,
+                crate::api::local_schema::LocalDecodeErrorKindDto::FileUnreadable => 1,
+                crate::api::local_schema::LocalDecodeErrorKindDto::FileTooLarge => 2,
+                crate::api::local_schema::LocalDecodeErrorKindDto::SchemaInvalid => 3,
+                crate::api::local_schema::LocalDecodeErrorKindDto::UnsupportedProto2 => 4,
+                crate::api::local_schema::LocalDecodeErrorKindDto::UnresolvedImport => 5,
+                crate::api::local_schema::LocalDecodeErrorKindDto::MessageTypeNotFound => 6,
+                crate::api::local_schema::LocalDecodeErrorKindDto::MissingPrefix => 7,
+                crate::api::local_schema::LocalDecodeErrorKindDto::UnknownMessageIndex => 8,
+                crate::api::local_schema::LocalDecodeErrorKindDto::PayloadMismatch => 9,
+                crate::api::local_schema::LocalDecodeErrorKindDto::TrailingBytes => 10,
+                crate::api::local_schema::LocalDecodeErrorKindDto::NotJson => 11,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::local_schema::LocalSchemaAssignmentDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.path, serializer);
+        <crate::api::local_schema::LocalSchemaFormatDto>::sse_encode(self.format, serializer);
+        <Option<String>>::sse_encode(self.message_type, serializer);
+        <crate::api::local_schema::FramingDto>::sse_encode(self.framing, serializer);
+        <crate::api::local_schema::LocalSchemaModeDto>::sse_encode(self.mode, serializer);
+        <Option<String>>::sse_encode(self.expected_sha256, serializer);
+    }
+}
+
+impl SseEncode for crate::api::local_schema::LocalSchemaErrorDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::local_schema::LocalDecodeErrorKindDto>::sse_encode(self.kind, serializer);
+        <String>::sse_encode(self.detail, serializer);
+    }
+}
+
+impl SseEncode for crate::api::local_schema::LocalSchemaFormatDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::local_schema::LocalSchemaFormatDto::Avro => 0,
+                crate::api::local_schema::LocalSchemaFormatDto::ProtobufSource => 1,
+                crate::api::local_schema::LocalSchemaFormatDto::ProtobufDescriptor => 2,
+                crate::api::local_schema::LocalSchemaFormatDto::JsonSchema => 3,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::local_schema::LocalSchemaInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.file_name, serializer);
+        <Option<crate::api::local_schema::LocalSchemaFormatDto>>::sse_encode(
+            self.detected_format,
+            serializer,
+        );
+        <Option<String>>::sse_encode(self.sha256_hex, serializer);
+        <Vec<String>>::sse_encode(self.message_types, serializer);
+        <Option<String>>::sse_encode(self.selected_message, serializer);
+        <Option<crate::api::schema_registry::SchemaFieldModelDto>>::sse_encode(
+            self.fields,
+            serializer,
+        );
+        <Option<crate::api::local_schema::LocalSchemaErrorDto>>::sse_encode(self.error, serializer);
+    }
+}
+
+impl SseEncode for crate::api::local_schema::LocalSchemaModeDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::local_schema::LocalSchemaModeDto::Fallback => 0,
+                crate::api::local_schema::LocalSchemaModeDto::Always => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::local_schema::LocalSchemaUseDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.file_name, serializer);
+        <crate::api::local_schema::LocalSchemaFormatDto>::sse_encode(self.format, serializer);
+        <Option<String>>::sse_encode(self.message_type, serializer);
+        <crate::api::local_schema::FramingDto>::sse_encode(self.framing, serializer);
+        <Option<u32>>::sse_encode(self.wire_schema_id, serializer);
+        <Option<crate::api::local_schema::LocalSchemaErrorDto>>::sse_encode(self.error, serializer);
+    }
+}
+
 impl SseEncode for crate::api::kafka_consumer::MessageSchema {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5890,12 +10654,62 @@ impl SseEncode for crate::api::connection_diagnostics::NotCheckedReason {
     }
 }
 
+impl SseEncode for crate::api::kafka_metadata::OffsetSkewStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_metadata::OffsetSkewStatus::NotRequested => 0,
+                crate::api::kafka_metadata::OffsetSkewStatus::SinglePartition => 1,
+                crate::api::kafka_metadata::OffsetSkewStatus::Incomplete => 2,
+                crate::api::kafka_metadata::OffsetSkewStatus::Empty => 3,
+                crate::api::kafka_metadata::OffsetSkewStatus::Balanced => 4,
+                crate::api::kafka_metadata::OffsetSkewStatus::Skewed => 5,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for Option<std::collections::HashMap<String, Vec<String>>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <std::collections::HashMap<String, Vec<String>>>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <String>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::kafka_types::AnalysisScope> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_types::AnalysisScope>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::kafka_types::AnalysisScopeSummary> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_types::AnalysisScopeSummary>::sse_encode(value, serializer);
         }
     }
 }
@@ -5960,12 +10774,52 @@ impl SseEncode for Option<f64> {
     }
 }
 
+impl SseEncode for Option<crate::api::schema_registry::FieldNoteDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::schema_registry::FieldNoteDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<crate::api::kafka_types::FieldValueFilter> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::api::kafka_types::FieldValueFilter>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::filter_expr::FilterConditionDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::filter_expr::FilterConditionDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::filter_expr::FilterErrorDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::filter_expr::FilterErrorDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::filter_expr::FilterScalarDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::filter_expr::FilterScalarDto>::sse_encode(value, serializer);
         }
     }
 }
@@ -5990,6 +10844,56 @@ impl SseEncode for Option<i64> {
     }
 }
 
+impl SseEncode for Option<crate::api::json_diff::JsonDiffInvalidSide> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::json_diff::JsonDiffInvalidSide>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::local_schema::LocalSchemaAssignmentDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::local_schema::LocalSchemaAssignmentDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::local_schema::LocalSchemaErrorDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::local_schema::LocalSchemaErrorDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::local_schema::LocalSchemaFormatDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::local_schema::LocalSchemaFormatDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::local_schema::LocalSchemaUseDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::local_schema::LocalSchemaUseDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<crate::api::kafka_consumer::MessageSchema> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -6010,12 +10914,42 @@ impl SseEncode for Option<crate::api::connection_diagnostics::NotCheckedReason> 
     }
 }
 
+impl SseEncode for Option<crate::api::kafka_metadata::PartitionTimestamp> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_metadata::PartitionTimestamp>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::schema_registry::SchemaFieldModelDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::schema_registry::SchemaFieldModelDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<crate::api::kafka_types::SizePercentiles> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::api::kafka_types::SizePercentiles>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::kafka_metadata::TimeRangeTimestampKind> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_metadata::TimeRangeTimestampKind>::sse_encode(value, serializer);
         }
     }
 }
@@ -6030,12 +10964,52 @@ impl SseEncode for Option<crate::api::kafka_types::TopicAnalysisReport> {
     }
 }
 
+impl SseEncode for Option<crate::api::kafka_metadata::TopicConfigEntry> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_metadata::TopicConfigEntry>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::local_schema::TopicLocalSchemasDto> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::local_schema::TopicLocalSchemasDto>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::kafka_metadata::TopicMetadataError> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::kafka_metadata::TopicMetadataError>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<u16> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <u16>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<u32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <u32>::sse_encode(value, serializer);
         }
     }
 }
@@ -6060,12 +11034,32 @@ impl SseEncode for Option<Vec<String>> {
     }
 }
 
+impl SseEncode for Option<Vec<crate::api::kafka_types::AnalysisLimit>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <Vec<crate::api::kafka_types::AnalysisLimit>>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<Vec<crate::api::kafka_consumer::KafkaHeader>> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <Vec<crate::api::kafka_consumer::KafkaHeader>>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<Vec<i32>> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <Vec<i32>>::sse_encode(value, serializer);
         }
     }
 }
@@ -6109,6 +11103,55 @@ impl SseEncode for crate::api::kafka_types::PartitionLagStatus {
     }
 }
 
+impl SseEncode for crate::api::kafka_metadata::PartitionOffsetDistribution {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.topic, serializer);
+        <i64>::sse_encode(self.read_at_ms, serializer);
+        <Vec<crate::api::kafka_metadata::PartitionOffsetRow>>::sse_encode(
+            self.partitions,
+            serializer,
+        );
+        <Option<i64>>::sse_encode(self.total_span, serializer);
+        <i64>::sse_encode(self.known_span, serializer);
+        <bool>::sse_encode(self.complete, serializer);
+        <crate::api::kafka_metadata::OffsetSkewStatus>::sse_encode(self.skew_status, serializer);
+        <Option<u32>>::sse_encode(self.skew_threshold_percent, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::PartitionOffsetRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.partition, serializer);
+        <crate::api::kafka_metadata::PartitionOffsetState>::sse_encode(self.state, serializer);
+        <Option<String>>::sse_encode(self.error, serializer);
+        <Option<i64>>::sse_encode(self.low, serializer);
+        <Option<i64>>::sse_encode(self.high, serializer);
+        <Option<i64>>::sse_encode(self.span, serializer);
+        <Option<f64>>::sse_encode(self.share_percent, serializer);
+        <bool>::sse_encode(self.skewed, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::PartitionOffsetState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_metadata::PartitionOffsetState::Known => 0,
+                crate::api::kafka_metadata::PartitionOffsetState::NotReadable => 1,
+                crate::api::kafka_metadata::PartitionOffsetState::Failed => 2,
+                crate::api::kafka_metadata::PartitionOffsetState::TimedOut => 3,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::api::kafka_metadata::PartitionRow {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -6118,6 +11161,86 @@ impl SseEncode for crate::api::kafka_metadata::PartitionRow {
         <Vec<i32>>::sse_encode(self.in_sync_replicas, serializer);
         <bool>::sse_encode(self.under_replicated, serializer);
         <bool>::sse_encode(self.leaderless, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::PartitionTimeProbe {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.partition, serializer);
+        <crate::api::kafka_metadata::PartitionTimeProbeOutcome>::sse_encode(
+            self.oldest,
+            serializer,
+        );
+        <crate::api::kafka_metadata::PartitionTimeProbeOutcome>::sse_encode(
+            self.newest,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::PartitionTimeProbeOutcome {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::kafka_metadata::ProbeOutcomeKind>::sse_encode(self.kind, serializer);
+        <Option<i64>>::sse_encode(self.offset, serializer);
+        <Option<i64>>::sse_encode(self.timestamp_ms, serializer);
+        <Option<crate::api::kafka_metadata::TimeRangeTimestampKind>>::sse_encode(
+            self.timestamp_type,
+            serializer,
+        );
+        <Option<String>>::sse_encode(self.reason, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::PartitionTimestamp {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.partition, serializer);
+        <i64>::sse_encode(self.offset, serializer);
+        <i64>::sse_encode(self.timestamp_ms, serializer);
+        <crate::api::kafka_metadata::TimeRangeTimestampKind>::sse_encode(
+            self.timestamp_type,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::PlannedPartitionRange {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.partition, serializer);
+        <i64>::sse_encode(self.start, serializer);
+        <i64>::sse_encode(self.end, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::ProbeOutcomeKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_metadata::ProbeOutcomeKind::Found => 0,
+                crate::api::kafka_metadata::ProbeOutcomeKind::Empty => 1,
+                crate::api::kafka_metadata::ProbeOutcomeKind::NotFoundInWindow => 2,
+                crate::api::kafka_metadata::ProbeOutcomeKind::NoTimestamp => 3,
+                crate::api::kafka_metadata::ProbeOutcomeKind::TimedOut => 4,
+                crate::api::kafka_metadata::ProbeOutcomeKind::Unreadable => 5,
+                crate::api::kafka_metadata::ProbeOutcomeKind::Failed => 6,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for (String, Vec<String>) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+        <Vec<String>>::sse_encode(self.1, serializer);
     }
 }
 
@@ -6164,6 +11287,116 @@ impl SseEncode for crate::api::schema_registry::SchemaCompatibilityResult {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <bool>::sse_encode(self.is_compatible, serializer);
         <Vec<String>>::sse_encode(self.messages, serializer);
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::SchemaFieldEntryDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.path, serializer);
+        <String>::sse_encode(self.name, serializer);
+        <u32>::sse_encode(self.depth, serializer);
+        <String>::sse_encode(self.type_label, serializer);
+        <Option<String>>::sse_encode(self.doc, serializer);
+        <bool>::sse_encode(self.optional, serializer);
+        <bool>::sse_encode(self.repeated, serializer);
+        <Option<crate::api::schema_registry::FieldNoteDto>>::sse_encode(self.note, serializer);
+        <Option<String>>::sse_encode(self.unresolved_reference, serializer);
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::SchemaFieldModelDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::schema_registry::SchemaKindDto>::sse_encode(self.kind, serializer);
+        <Option<String>>::sse_encode(self.other_schema_type, serializer);
+        <Option<String>>::sse_encode(self.root_name, serializer);
+        <Vec<String>>::sse_encode(self.messages, serializer);
+        <Vec<crate::api::schema_registry::SchemaFieldEntryDto>>::sse_encode(
+            self.fields,
+            serializer,
+        );
+        <bool>::sse_encode(self.truncated, serializer);
+        <Option<String>>::sse_encode(self.unavailable_reason, serializer);
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::SchemaKindDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::schema_registry::SchemaKindDto::Avro => 0,
+                crate::api::schema_registry::SchemaKindDto::Protobuf => 1,
+                crate::api::schema_registry::SchemaKindDto::Json => 2,
+                crate::api::schema_registry::SchemaKindDto::Other => 3,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::SchemaReferenceDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.subject, serializer);
+        <i32>::sse_encode(self.version, serializer);
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::SchemaRegistryErrorDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::schema_registry::SchemaRegistryErrorKindDto>::sse_encode(
+            self.kind, serializer,
+        );
+        <Option<u16>>::sse_encode(self.status, serializer);
+        <Option<i64>>::sse_encode(self.registry_error_code, serializer);
+        <String>::sse_encode(self.detail, serializer);
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::SchemaRegistryErrorKindDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::NotConfigured => 0,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::InvalidUrl => 1,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::Unauthorized => 2,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::Forbidden => 3,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::NotFound => 4,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::Timeout => 5,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::Unreachable => 6,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::CertificateRejected => 7,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::HttpStatus => 8,
+                crate::api::schema_registry::SchemaRegistryErrorKindDto::InvalidResponse => 9,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_types::ScopeLimitFrom {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_types::ScopeLimitFrom::Newest => 0,
+                crate::api::kafka_types::ScopeLimitFrom::Oldest => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -6273,6 +11506,56 @@ impl SseEncode for crate::api::connection_diagnostics::StepState {
     }
 }
 
+impl SseEncode for crate::api::schema_registry::SubjectAssociationDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.subject, serializer);
+        <Option<String>>::sse_encode(self.topic, serializer);
+        <crate::api::schema_registry::TopicSideDto>::sse_encode(self.side, serializer);
+        <bool>::sse_encode(self.on_cluster, serializer);
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::SubjectSchemaDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.subject, serializer);
+        <i32>::sse_encode(self.version, serializer);
+        <i32>::sse_encode(self.id, serializer);
+        <crate::api::schema_registry::SchemaKindDto>::sse_encode(self.schema_type, serializer);
+        <Option<String>>::sse_encode(self.other_schema_type, serializer);
+        <String>::sse_encode(self.schema, serializer);
+        <Vec<crate::api::schema_registry::SchemaReferenceDto>>::sse_encode(
+            self.references,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::SubjectSchemaViewDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::schema_registry::SubjectSchemaDto>::sse_encode(self.schema, serializer);
+        <crate::api::schema_registry::SchemaFieldModelDto>::sse_encode(self.fields, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::TimeRangeTimestampKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_metadata::TimeRangeTimestampKind::CreateTime => 0,
+                crate::api::kafka_metadata::TimeRangeTimestampKind::LogAppendTime => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
 impl SseEncode for crate::api::kafka_metadata::TlsProbeOutcome {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -6340,6 +11623,11 @@ impl SseEncode for crate::api::kafka_types::TopicAnalysisOptions {
         );
         <Option<crate::api::kafka_types::DuplicateDetectionScope>>::sse_encode(
             self.duplicate_scope,
+            serializer,
+        );
+        <Option<crate::api::kafka_types::AnalysisScope>>::sse_encode(self.scope, serializer);
+        <Option<crate::api::local_schema::TopicLocalSchemasDto>>::sse_encode(
+            self.local_schemas,
             serializer,
         );
     }
@@ -6411,6 +11699,158 @@ impl SseEncode for crate::api::kafka_types::TopicAnalysisReport {
             self.duplicate_analysis_result,
             serializer,
         );
+        <bool>::sse_encode(self.cleanup_policy_unknown, serializer);
+        <Option<crate::api::kafka_types::AnalysisScopeSummary>>::sse_encode(
+            self.scan_scope,
+            serializer,
+        );
+        <Option<Vec<crate::api::kafka_types::AnalysisLimit>>>::sse_encode(
+            self.analysis_limits,
+            serializer,
+        );
+        <Option<i64>>::sse_encode(self.tracked_field_count, serializer);
+        <Option<i64>>::sse_encode(self.complete_until_ms, serializer);
+    }
+}
+
+impl SseEncode for crate::api::topic_config::TopicConfigAvailability {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::topic_config::TopicConfigAvailability::Available => 0,
+                crate::api::topic_config::TopicConfigAvailability::NotAuthorized => 1,
+                crate::api::topic_config::TopicConfigAvailability::TopicNotFound => 2,
+                crate::api::topic_config::TopicConfigAvailability::Failed => 3,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::topic_config::TopicConfigDiff {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<crate::api::topic_config::TopicConfigDiffRow>>::sse_encode(self.rows, serializer);
+        <Option<u32>>::sse_encode(self.difference_count, serializer);
+    }
+}
+
+impl SseEncode for crate::api::topic_config::TopicConfigDiffRow {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <Option<crate::api::kafka_metadata::TopicConfigEntry>>::sse_encode(self.left, serializer);
+        <Option<crate::api::kafka_metadata::TopicConfigEntry>>::sse_encode(self.right, serializer);
+        <crate::api::topic_config::TopicConfigDiffStatus>::sse_encode(self.status, serializer);
+        <bool>::sse_encode(self.non_default, serializer);
+    }
+}
+
+impl SseEncode for crate::api::topic_config::TopicConfigDiffStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::topic_config::TopicConfigDiffStatus::Equal => 0,
+                crate::api::topic_config::TopicConfigDiffStatus::Different => 1,
+                crate::api::topic_config::TopicConfigDiffStatus::OnlyLeft => 2,
+                crate::api::topic_config::TopicConfigDiffStatus::OnlyRight => 3,
+                crate::api::topic_config::TopicConfigDiffStatus::NotComparable => 4,
+                crate::api::topic_config::TopicConfigDiffStatus::Unknown => 5,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::TopicConfigEntry {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <Option<String>>::sse_encode(self.value, serializer);
+        <crate::api::kafka_metadata::TopicConfigSource>::sse_encode(self.source, serializer);
+        <bool>::sse_encode(self.is_default, serializer);
+        <bool>::sse_encode(self.is_sensitive, serializer);
+        <bool>::sse_encode(self.is_read_only, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::TopicConfigResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.topic, serializer);
+        <crate::api::kafka_metadata::TopicConfigStatus>::sse_encode(self.status, serializer);
+        <Option<String>>::sse_encode(self.message, serializer);
+        <Vec<crate::api::kafka_metadata::TopicConfigEntry>>::sse_encode(self.entries, serializer);
+    }
+}
+
+impl SseEncode for crate::api::topic_config::TopicConfigSnapshot {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.topic, serializer);
+        <crate::api::topic_config::TopicConfigAvailability>::sse_encode(
+            self.availability,
+            serializer,
+        );
+        <Option<String>>::sse_encode(self.error_message, serializer);
+        <Vec<crate::api::kafka_metadata::TopicConfigEntry>>::sse_encode(self.entries, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::TopicConfigSource {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_metadata::TopicConfigSource::Unknown => 0,
+                crate::api::kafka_metadata::TopicConfigSource::DynamicTopic => 1,
+                crate::api::kafka_metadata::TopicConfigSource::DynamicBroker => 2,
+                crate::api::kafka_metadata::TopicConfigSource::DynamicDefaultBroker => 3,
+                crate::api::kafka_metadata::TopicConfigSource::StaticBroker => 4,
+                crate::api::kafka_metadata::TopicConfigSource::Default => 5,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::TopicConfigStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_metadata::TopicConfigStatus::Available => 0,
+                crate::api::kafka_metadata::TopicConfigStatus::NotReadable => 1,
+                crate::api::kafka_metadata::TopicConfigStatus::Failed => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::local_schema::TopicLocalSchemasDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<crate::api::local_schema::LocalSchemaAssignmentDto>>::sse_encode(
+            self.key, serializer,
+        );
+        <Option<crate::api::local_schema::LocalSchemaAssignmentDto>>::sse_encode(
+            self.value, serializer,
+        );
     }
 }
 
@@ -6424,6 +11864,35 @@ impl SseEncode for crate::api::kafka_metadata::TopicMetadata {
         <Option<String>>::sse_encode(self.retention_ms, serializer);
         <Option<i32>>::sse_encode(self.under_replicated_partitions, serializer);
         <Option<i32>>::sse_encode(self.leaderless_partitions, serializer);
+        <Option<crate::api::kafka_metadata::TopicMetadataError>>::sse_encode(
+            self.metadata_error,
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::TopicMetadataError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::kafka_metadata::TopicMetadataErrorKind>::sse_encode(self.kind, serializer);
+        <String>::sse_encode(self.message, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::TopicMetadataErrorKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::kafka_metadata::TopicMetadataErrorKind::NotAuthorized => 0,
+                crate::api::kafka_metadata::TopicMetadataErrorKind::NotFound => 1,
+                crate::api::kafka_metadata::TopicMetadataErrorKind::Other => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 
@@ -6454,6 +11923,43 @@ impl SseEncode for crate::api::kafka_types::TopicPartitionLag {
         <i64>::sse_encode(self.lag, serializer);
         <crate::api::kafka_types::PartitionLagStatus>::sse_encode(self.status, serializer);
         <Option<String>>::sse_encode(self.error, serializer);
+    }
+}
+
+impl SseEncode for crate::api::schema_registry::TopicSideDto {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::schema_registry::TopicSideDto::Key => 0,
+                crate::api::schema_registry::TopicSideDto::Value => 1,
+                crate::api::schema_registry::TopicSideDto::None => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::kafka_metadata::TopicTimeRange {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<crate::api::kafka_metadata::PartitionTimestamp>>::sse_encode(
+            self.oldest,
+            serializer,
+        );
+        <Option<crate::api::kafka_metadata::PartitionTimestamp>>::sse_encode(
+            self.newest,
+            serializer,
+        );
+        <u32>::sse_encode(self.partitions_total, serializer);
+        <u32>::sse_encode(self.partitions_empty, serializer);
+        <u32>::sse_encode(self.oldest_known, serializer);
+        <u32>::sse_encode(self.newest_known, serializer);
+        <bool>::sse_encode(self.all_empty, serializer);
+        <Vec<crate::api::kafka_metadata::PartitionTimeProbe>>::sse_encode(self.probes, serializer);
     }
 }
 
@@ -6497,6 +12003,14 @@ impl SseEncode for u8 {
 impl SseEncode for () {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {}
+}
+
+impl SseEncode for crate::api::kafka_types::UnreadablePartition {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.partition, serializer);
+        <String>::sse_encode(self.reason, serializer);
+    }
 }
 
 impl SseEncode for usize {

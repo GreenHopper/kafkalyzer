@@ -4,6 +4,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
+import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_selection_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
@@ -34,6 +35,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   late TextEditingController _nameController;
   late TextEditingController
   _filterTemplateController; // Renamed from _filterController
+  late FilterExpressionEditingController _filterExpressionController;
 
   ClusterProfile? _selectedCluster;
   List<String> _selectedTopics =
@@ -70,6 +72,9 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     _filterTemplateController = TextEditingController(
       text: widget.step.filterTemplate,
     ); // Initialize renamed controller
+    _filterExpressionController = FilterExpressionEditingController(
+      initialText: widget.step.filterExpression ?? '',
+    );
     _selectedFilterType = widget.step.filterType; // Initialize renamed variable
     _selectedSearchScope = widget.step.scope; // Initialize renamed variable
 
@@ -358,6 +363,8 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
         _filterTemplateController,
         icon: Icons.filter_alt,
       ),
+      filterExpressionController: _filterExpressionController,
+      showPlaceholderHint: true,
       filterType: _selectedFilterType,
       onFilterTypeChanged: (v) => setState(() {
         _selectedFilterType = v;
@@ -656,6 +663,9 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
               clusterName: _selectedCluster!.name,
               topicNames: _selectedTopics,
               filterTemplate: _filterTemplateController.text,
+              filterExpression: _filterExpressionController.text.trim().isEmpty
+                  ? null
+                  : _filterExpressionController.text.trim(),
               filterType: _selectedFilterType,
               scope: _selectedSearchScope,
               startStrategy: _startStrategy,

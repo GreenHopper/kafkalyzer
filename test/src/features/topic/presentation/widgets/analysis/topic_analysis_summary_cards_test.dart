@@ -17,6 +17,7 @@ void main() {
       avgMessageSize: 200.0,
       tombstonesCount: 250,
       isCompacted: true,
+      cleanupPolicyUnknown: false,
       nullKeysCount: 100,
       partitionStats: [
         PartitionAnalysis(
@@ -75,6 +76,7 @@ void main() {
     avgMessageSize: 200.0,
     tombstonesCount: 0,
     isCompacted: false,
+    cleanupPolicyUnknown: false,
     nullKeysCount: 0,
     partitionStats: const [],
     hourlyDistribution: const [],
@@ -158,6 +160,9 @@ void main() {
             duplicateMessages: 150,
             duplicateRate: 15.0,
             topDuplicates: [],
+            estimated: false,
+            untrackedMessages: 0,
+            samplesCapped: false,
           ),
         ),
       );
@@ -165,6 +170,46 @@ void main() {
       expect(find.text('Duplicate Messages'), findsOneWidget);
       expect(find.text('150 (15.0%)'), findsOneWidget);
       expect(find.textContaining('850 unique'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'cleanupPolicyUnknown shows not-readable subtitle and ? badge with no delete badge',
+    (WidgetTester tester) async {
+      const unknownReport = TopicAnalysisReport(
+        topic: 'unknown-policy-topic',
+        totalMessages: 100,
+        totalBytes: 1000,
+        minMessageSize: 10,
+        maxMessageSize: 10,
+        avgMessageSize: 10.0,
+        tombstonesCount: 0,
+        isCompacted: false,
+        cleanupPolicyUnknown: true,
+        nullKeysCount: 0,
+        partitionStats: [],
+        hourlyDistribution: [],
+        topKeys: [],
+        contentTypeDistribution: [],
+        fieldFrequencies: [],
+        scanDurationMs: 10,
+        messageSizePercentiles: null,
+        sizePercentilesEstimated: false,
+        estimatedDistinctKeys: 0,
+        keyCardinalityCapped: false,
+        hourlyTimeline: [],
+        scanReferenceTimeMs: null,
+        completeFromMs: null,
+        timelineOutsideCount: 0,
+        valueFilterResult: null,
+      );
+
+      await pump(tester, unknownReport);
+
+      expect(find.text('Not readable'), findsOneWidget);
+      expect(find.text('?'), findsOneWidget);
+      expect(find.text('delete'), findsNothing);
+      expect(find.text('compact'), findsNothing);
     },
   );
 }

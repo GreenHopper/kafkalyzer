@@ -33,6 +33,12 @@ Future<List<String?>> resolveJsonPathBatch({
   paths: paths,
 );
 
+List<String> collectFieldPaths({required String payload, required int limit}) =>
+    KafkalyzerRustLib.instance.api.crateApiJsonPathCollectFieldPaths(
+      payload: payload,
+      limit: limit,
+    );
+
 /// Filter terms that the regex engine used by a scan cannot compile.
 ///
 /// Returned in input order; an empty list means every term is usable.

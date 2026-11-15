@@ -77,11 +77,20 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
                 mainValue:
                     '${numberFormat.format(tombstoneCount)} '
                     '(${tombstonePct.toStringAsFixed(1)}%)',
-                subtitle: report.isCompacted
+                subtitle: report.cleanupPolicyUnknown
+                    ? (l10n?.cleanupPolicyNotReadableSubtitle ??
+                          'Cleanup policy not readable')
+                    : report.isCompacted
                     ? (l10n?.compactedTopic ?? 'Compacted Topic')
                     : (l10n?.nonCompactedTopic ?? 'Delete Policy'),
-                badgeText: report.isCompacted ? 'compact' : 'delete',
-                badgeColor: report.isCompacted
+                badgeText: report.cleanupPolicyUnknown
+                    ? (l10n?.cleanupPolicyUnknownBadge ?? '?')
+                    : report.isCompacted
+                    ? 'compact'
+                    : 'delete',
+                badgeColor: report.cleanupPolicyUnknown
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest
+                    : report.isCompacted
                     ? Theme.of(context).colorScheme.tertiaryContainer
                     : Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
@@ -114,11 +123,8 @@ class TopicAnalysisSummaryCards extends StatelessWidget {
                       '${numberFormat.format(dupResult.duplicateMessages)} '
                       '(${dupResult.duplicateRate.toStringAsFixed(1)}%)',
                   subtitle:
-                      l10n?.duplicateMessagesSubtitle(
-                        numberFormat.format(dupResult.uniqueMessages),
-                        _scopeLabel(dupResult.scope, l10n),
-                      ) ??
-                      '${numberFormat.format(dupResult.uniqueMessages)} unique • ${_scopeLabel(dupResult.scope, l10n)}',
+                      '${l10n?.duplicateMessagesSubtitle(numberFormat.format(dupResult.uniqueMessages), _scopeLabel(dupResult.scope, l10n)) ?? '${numberFormat.format(dupResult.uniqueMessages)} unique • ${_scopeLabel(dupResult.scope, l10n)}'}'
+                      '${dupResult.estimated ? ' • ${l10n?.duplicateEstimatedAtLeast ?? 'Estimated (at least)'} (${l10n?.duplicateUntrackedCount(numberFormat.format(dupResult.untrackedMessages)) ?? '${numberFormat.format(dupResult.untrackedMessages)} untracked'})' : ''}',
                 ),
               ),
           ],

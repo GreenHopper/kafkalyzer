@@ -254,6 +254,11 @@ mod tests {
             timeline_outside_count: 0,
             value_filter_result: None,
             duplicate_analysis_result: None,
+            cleanup_policy_unknown: false,
+            scan_scope: None,
+            analysis_limits: None,
+            tracked_field_count: None,
+            complete_until_ms: None,
         }
     }
 

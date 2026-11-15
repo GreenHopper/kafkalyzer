@@ -7,6 +7,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
 import 'package:mockito/mockito.dart';
 import '../../../features/schema/presentation/widgets/schema_viewer_dialog_test.mocks.dart';
@@ -339,6 +340,8 @@ void main() {
   testWidgets('activating the schema row opens the inspector at that version', (
     tester,
   ) async {
+    const schemaJson =
+        '{"type": "record", "name": "Order", "fields": [{"name": "orderId", "type": "string"}]}';
     when(
       mockSchemaController.fetchSchemaVersions(any, any),
     ).thenAnswer((_) async => [1, 2, 3]);
@@ -348,9 +351,30 @@ void main() {
         any,
         version: anyNamed('version'),
       ),
+    ).thenAnswer((_) async => schemaJson);
+    when(
+      mockSchemaController.fetchSubjectSchemaView(
+        any,
+        any,
+        version: anyNamed('version'),
+      ),
     ).thenAnswer(
-      (_) async =>
-          '{"type": "record", "name": "Order", "fields": [{"name": "orderId", "type": "string"}]}',
+      (invocation) async => SubjectSchemaViewDto(
+        schema: SubjectSchemaDto(
+          subject: invocation.positionalArguments[1] as String,
+          version: (invocation.namedArguments[#version] as int?) ?? 3,
+          id: 42,
+          schemaType: SchemaKindDto.avro,
+          schema: schemaJson,
+          references: const [],
+        ),
+        fields: const SchemaFieldModelDto(
+          kind: SchemaKindDto.avro,
+          fields: [],
+          messages: [],
+          truncated: false,
+        ),
+      ),
     );
 
     final avroMessage = KafkaMessage(
@@ -389,62 +413,88 @@ void main() {
     );
   });
 
-  testWidgets(
-    'switching versions shows that version and back shows the original',
-    (tester) async {
-      when(
-        mockSchemaController.fetchSchemaVersions(any, any),
-      ).thenAnswer((_) async => [1, 2, 3]);
-      when(
-        mockSchemaController.fetchSchemaContent(
-          any,
-          any,
-          version: anyNamed('version'),
+  testWidgets('switching versions shows that version and back shows the original', (
+    tester,
+  ) async {
+    when(
+      mockSchemaController.fetchSchemaVersions(any, any),
+    ).thenAnswer((_) async => [1, 2, 3]);
+    when(
+      mockSchemaController.fetchSchemaContent(
+        any,
+        any,
+        version: anyNamed('version'),
+      ),
+    ).thenAnswer((invocation) async {
+      final version = invocation.namedArguments[#version] as int;
+      final field = version == 3 ? 'total' : 'amount';
+      return '{"type": "record", "name": "Order", "fields": [{"name": "$field", "type": "string"}]}';
+    });
+    when(
+      mockSchemaController.fetchSubjectSchemaView(
+        any,
+        any,
+        version: anyNamed('version'),
+      ),
+    ).thenAnswer((invocation) async {
+      final version = (invocation.namedArguments[#version] as int?) ?? 3;
+      final field = version == 3 ? 'total' : 'amount';
+      return SubjectSchemaViewDto(
+        schema: SubjectSchemaDto(
+          subject: invocation.positionalArguments[1] as String,
+          version: version,
+          id: 42,
+          schemaType: SchemaKindDto.avro,
+          schema:
+              '{"type": "record", "name": "Order", "fields": [{"name": "$field", "type": "string"}]}',
+          references: const [],
         ),
-      ).thenAnswer((invocation) async {
-        final version = invocation.namedArguments[#version] as int;
-        final field = version == 3 ? 'total' : 'amount';
-        return '{"type": "record", "name": "Order", "fields": [{"name": "$field", "type": "string"}]}';
-      });
-
-      final avroMessage = KafkaMessage(
-        topic: 'test-orders',
-        partition: 0,
-        offset: 7,
-        timestamp: 1695888000000,
-        key: 'order-1',
-        payload: '{"orderId":"1"}',
-        valueSchema: const MessageSchema(
-          schemaId: 42,
-          subject: 'test-orders-value',
-          version: 3,
+        fields: const SchemaFieldModelDto(
+          kind: SchemaKindDto.avro,
+          fields: [],
+          messages: [],
+          truncated: false,
         ),
       );
+    });
 
-      await tester.pumpWidget(
-        createWidgetUnderTest(message: avroMessage, profile: testProfile),
-      );
-      await tester.pumpAndSettle();
+    final avroMessage = KafkaMessage(
+      topic: 'test-orders',
+      partition: 0,
+      offset: 7,
+      timestamp: 1695888000000,
+      key: 'order-1',
+      payload: '{"orderId":"1"}',
+      valueSchema: const MessageSchema(
+        schemaId: 42,
+        subject: 'test-orders-value',
+        version: 3,
+      ),
+    );
 
-      await tester.tap(find.byKey(const Key('provenance_value_entry')));
-      await tester.pumpAndSettle();
-      expect(find.text('Version 3'), findsOneWidget);
-      expect(find.textContaining('total'), findsOneWidget);
+    await tester.pumpWidget(
+      createWidgetUnderTest(message: avroMessage, profile: testProfile),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('schema_version_selector')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Version 2').last);
-      await tester.pumpAndSettle();
-      expect(find.textContaining('amount'), findsOneWidget);
-      expect(find.textContaining('"total"'), findsNothing);
+    await tester.tap(find.byKey(const Key('provenance_value_entry')));
+    await tester.pumpAndSettle();
+    expect(find.text('Version 3'), findsOneWidget);
+    expect(find.textContaining('total'), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('schema_version_selector')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Version 3').last);
-      await tester.pumpAndSettle();
-      expect(find.textContaining('total'), findsOneWidget);
-    },
-  );
+    await tester.tap(find.byKey(const Key('schema_version_selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Version 2').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('amount'), findsOneWidget);
+    expect(find.textContaining('"total"'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('schema_version_selector')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Version 3').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('total'), findsOneWidget);
+  });
 
   testWidgets(
     'a vanished subject errors in the inspector, not in the message',

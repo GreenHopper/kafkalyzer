@@ -24,6 +24,22 @@ class _FakeMetadataService implements KafkaMetadataService {
   Completer<void>? groupsCompleter;
 
   @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  Future<api.TopicMetadata> fetchTopicMetadata({
+    required ClusterProfile profile,
+    required String topic,
+  }) async =>
+      api.TopicMetadata(name: topic, partitionCount: 0, replicationFactor: 0);
+
+  @override
+  Future<List<api.TopicConfigResult>> describeTopicConfigs({
+    required ClusterProfile profile,
+    required List<String> topics,
+  }) async => const [];
+
+  @override
   Future<List<ConsumerGroupLag>> fetchConsumerGroups({
     required ClusterProfile profile,
   }) async {

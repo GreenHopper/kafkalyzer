@@ -3,13 +3,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_item.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 
 class MockSchemaController extends ChangeNotifier implements SchemaController {
   @override
   List<String>? getSchemas(ClusterProfile cluster) => null;
+
+  @override
+  String? errorFor(ClusterProfile cluster) => null;
+
+  @override
+  SchemaTypeState schemaTypeFor(
+    ClusterProfile cluster,
+    String subject, {
+    int? version,
+  }) => const SchemaTypeNotLoaded();
 
   @override
   bool isLoading(ClusterProfile cluster) => false;
@@ -20,11 +32,35 @@ class MockSchemaController extends ChangeNotifier implements SchemaController {
 
 class MockSchemaControllerWithSchema extends ChangeNotifier
     implements SchemaController {
+  List<String>? schemas = ['test-topic-value'];
+  String? error;
+  final Map<String, SchemaTypeState> types = {};
+
   @override
-  List<String>? getSchemas(ClusterProfile cluster) => ['test-topic-value'];
+  List<String>? getSchemas(ClusterProfile cluster) => schemas;
+
+  @override
+  String? errorFor(ClusterProfile cluster) => error;
+
+  @override
+  SchemaTypeState schemaTypeFor(
+    ClusterProfile cluster,
+    String subject, {
+    int? version,
+  }) => types[subject] ?? const SchemaTypeNotLoaded();
 
   @override
   bool isLoading(ClusterProfile cluster) => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class MockTopicController extends ChangeNotifier implements TopicController {
+  TopicConfigView configView = const TopicConfigView.loading();
+
+  @override
+  TopicConfigView configFor(ClusterProfile cluster, String topic) => configView;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -113,7 +149,7 @@ void main() {
       final tooltip = tester.widget<Tooltip>(tooltipFinder);
       expect(
         tooltip.message,
-        'test-topic\nPartitions: 3 • RF: 1 • Retention: 1.0 days • Cleanup: delete',
+        'test-topic\nPartitions: 3 • RF: 1 • Retention: 1 day • Cleanup: delete',
       );
     },
   );
@@ -159,26 +195,66 @@ void main() {
     },
   );
 
-  testWidgets('displays Avro schema in tooltip when schema is detected', (
-    WidgetTester tester,
-  ) async {
-    final schemaController = MockSchemaControllerWithSchema();
-    await getIt.reset();
-    getIt.registerLazySingleton<SchemaController>(() => schemaController);
+  testWidgets(
+    'displays neutral Schema in tooltip when subject exists but type is not loaded',
+    (WidgetTester tester) async {
+      final schemaController = MockSchemaControllerWithSchema();
+      await getIt.reset();
+      getIt.registerLazySingleton<SchemaController>(() => schemaController);
 
-    await tester.pumpWidget(
-      createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
-    );
+      await tester.pumpWidget(
+        createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
+      );
 
-    // Badges NOT on card face
-    expect(find.text('Avro'), findsNothing);
-    expect(find.text('3P'), findsNothing);
+      // Badges NOT on card face
+      expect(find.text('Avro'), findsNothing);
+      expect(find.text('3P'), findsNothing);
 
-    // Tooltip includes Schema: Avro
-    final tooltipFinder = find.byType(Tooltip);
-    final tooltip = tester.widget<Tooltip>(tooltipFinder);
-    expect(tooltip.message?.contains('Schema: Avro'), isTrue);
-  });
+      // Tooltip includes neutral Schema: Schema while view is not loaded
+      final tooltipFinder = find.byType(Tooltip);
+      final tooltip = tester.widget<Tooltip>(tooltipFinder);
+      expect(tooltip.message?.contains('Schema: Schema'), isTrue);
+    },
+  );
+
+  testWidgets(
+    'displays Protobuf, mixed key/value, and failed schema labels in tooltip',
+    (WidgetTester tester) async {
+      final schemaController = MockSchemaControllerWithSchema();
+      await getIt.reset();
+      getIt.registerLazySingleton<SchemaController>(() => schemaController);
+
+      // 1. Protobuf value schema
+      schemaController.types['test-topic-value'] = const SchemaTypeKnown(
+        api.SchemaKindDto.protobuf,
+      );
+      await tester.pumpWidget(
+        createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
+      );
+      var tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      expect(tooltip.message, contains('Schema: Protobuf'));
+
+      // 2. Mixed key/value types (Avro / Protobuf)
+      schemaController.schemas = ['test-topic-key', 'test-topic-value'];
+      schemaController.types['test-topic-key'] = const SchemaTypeKnown(
+        api.SchemaKindDto.avro,
+      );
+      await tester.pumpWidget(
+        createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
+      );
+      tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      expect(tooltip.message, contains('Schema: Avro / Protobuf'));
+
+      // 3. Failed subject list
+      schemaController.schemas = null;
+      schemaController.error = '401 unauthorized';
+      await tester.pumpWidget(
+        createWidgetUnderTest(topic: testTopic, clusterProfile: testProfile),
+      );
+      tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      expect(tooltip.message, contains('Schema: Schema (unknown)'));
+    },
+  );
 
   testWidgets('triggers onTap callback on single tap', (
     WidgetTester tester,
@@ -433,4 +509,120 @@ void main() {
       expect(selectedChild, equals('test-topic-dlq'));
     },
   );
+
+  testWidgets('tooltip reflects TopicController configFor states', (
+    WidgetTester tester,
+  ) async {
+    final topicController = MockTopicController();
+    getIt.registerLazySingleton<TopicController>(() => topicController);
+
+    const bareTopic = TopicMetadata(
+      name: 'bare-topic',
+      partitionCount: 4,
+      replicationFactor: 2,
+    );
+
+    await tester.pumpWidget(
+      createWidgetUnderTest(topic: bareTopic, clusterProfile: testProfile),
+    );
+    var tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+    expect(tooltip.message, contains('Retention: loading • Cleanup: loading'));
+
+    topicController.configView = const TopicConfigView(
+      state: TopicConfigViewState.available,
+      retentionMs: '86400000',
+      cleanupPolicy: 'compact',
+    );
+    topicController.notifyListeners();
+    await tester.pump();
+    tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+    expect(tooltip.message, contains('Retention: 1 day • Cleanup: compact'));
+
+    topicController.configView = const TopicConfigView(
+      state: TopicConfigViewState.available,
+    );
+    topicController.notifyListeners();
+    await tester.pump();
+    tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+    expect(tooltip.message, contains('Retention: unknown • Cleanup: unknown'));
+
+    topicController.configView = const TopicConfigView(
+      state: TopicConfigViewState.notReadable,
+    );
+    topicController.notifyListeners();
+    await tester.pump();
+    tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+    expect(tooltip.message, contains('not readable — permission?'));
+
+    topicController.configView = const TopicConfigView(
+      state: TopicConfigViewState.failed,
+      message: 'timeout',
+    );
+    topicController.notifyListeners();
+    await tester.pump();
+    tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+    expect(tooltip.message, contains('could not be loaded'));
+  });
+
+  testWidgets(
+    'shows warning icon and error tooltip when metadataKnown is false',
+    (WidgetTester tester) async {
+      const errTopic = TopicMetadata(
+        name: 'secret-topic',
+        partitionCount: 0,
+        replicationFactor: 0,
+        metadataError: TopicMetadataError(
+          kind: TopicMetadataErrorKind.notAuthorized,
+          message: 'TopicAuthorizationFailed',
+        ),
+      );
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(topic: errTopic, clusterProfile: testProfile),
+      );
+
+      expect(
+        find.byKey(const Key('topic_metadata_error_icon')),
+        findsOneWidget,
+      );
+      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      expect(tooltip.message, 'secret-topic\nnot readable — permission?');
+    },
+  );
+
+  testWidgets('renders favourite toggle button and missing favourite state', (
+    WidgetTester tester,
+  ) async {
+    bool toggled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          ...GlobalMaterialLocalizations.delegates,
+        ],
+        supportedLocales: const [Locale('en')],
+        home: Scaffold(
+          body: TopicListItem(
+            topic: testTopic,
+            clusterProfile: testProfile,
+            isFavourite: true,
+            isMissingFavourite: true,
+            onToggleFavourite: () => toggled = true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('not in topic list'), findsOneWidget);
+    final starBtn = find.byKey(const Key('topic_favourite_button_test-topic'));
+    expect(starBtn, findsOneWidget);
+    expect(find.byIcon(Icons.star), findsOneWidget);
+
+    await tester.tap(starBtn);
+    await tester.pump();
+    expect(toggled, isTrue);
+
+    final tooltip = tester.widget<Tooltip>(find.byType(Tooltip).first);
+    expect(tooltip.message, 'test-topic\nnot in topic list');
+  });
 }

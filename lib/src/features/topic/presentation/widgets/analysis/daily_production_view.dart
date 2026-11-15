@@ -107,6 +107,18 @@ class DailyProductionView extends StatelessWidget {
                 ),
               ],
             ),
+            if (timeline.partitionSubset != null &&
+                timeline.partitionSubset!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.timelinePartitionSubsetNote(
+                  (timeline.partitionSubset!.toList()..sort()).join(', '),
+                ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             if (points.isEmpty)
               Padding(

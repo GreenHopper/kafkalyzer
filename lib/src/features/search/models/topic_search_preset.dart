@@ -14,6 +14,7 @@ class TopicSearchPreset {
   final FilterType filterType;
   final SearchScope searchScope;
   final String filterTerm;
+  final String filterExpression;
   final bool fastTraceEnabled;
   final bool limitResults;
   final String maxResults;
@@ -35,6 +36,7 @@ class TopicSearchPreset {
     this.filterType = FilterType.contains,
     this.searchScope = SearchScope.both,
     this.filterTerm = '',
+    this.filterExpression = '',
     this.fastTraceEnabled = false,
     this.limitResults = true,
     this.maxResults = '200',
@@ -57,6 +59,7 @@ class TopicSearchPreset {
     'filterType': filterType.name,
     'searchScope': searchScope.name,
     'filterTerm': filterTerm,
+    'filterExpression': filterExpression,
     'fastTraceEnabled': fastTraceEnabled,
     'limitResults': limitResults,
     'maxResults': maxResults,
@@ -115,6 +118,7 @@ class TopicSearchPreset {
       filterType: parseFilterType(json['filterType'] as String?),
       searchScope: parseSearchScope(json['searchScope'] as String?),
       filterTerm: json['filterTerm'] as String? ?? '',
+      filterExpression: json['filterExpression'] as String? ?? '',
       fastTraceEnabled: json['fastTraceEnabled'] as bool? ?? false,
       limitResults: json['limitResults'] as bool? ?? true,
       maxResults: json['maxResults']?.toString() ?? '200',
@@ -140,6 +144,7 @@ class TopicSearchPreset {
     FilterType? filterType,
     SearchScope? searchScope,
     String? filterTerm,
+    String? filterExpression,
     bool? fastTraceEnabled,
     bool? limitResults,
     String? maxResults,
@@ -161,6 +166,7 @@ class TopicSearchPreset {
       filterType: filterType ?? this.filterType,
       searchScope: searchScope ?? this.searchScope,
       filterTerm: filterTerm ?? this.filterTerm,
+      filterExpression: filterExpression ?? this.filterExpression,
       fastTraceEnabled: fastTraceEnabled ?? this.fastTraceEnabled,
       limitResults: limitResults ?? this.limitResults,
       maxResults: maxResults ?? this.maxResults,

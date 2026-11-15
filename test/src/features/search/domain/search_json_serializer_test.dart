@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 
 void main() {
   group('SearchJsonSerializer', () {
@@ -114,6 +115,50 @@ void main() {
       expect(restored.headers, isNull);
       expect(restored.keySchema, isNull);
       expect(restored.valueSchema, isNull);
+      expect(restored.keyLocalSchema, isNull);
+      expect(restored.valueLocalSchema, isNull);
     });
+
+    test(
+      'round-trips keyLocalSchema and valueLocalSchema and loads old files without them',
+      () {
+        const msg = KafkaMessage(
+          topic: 'orders',
+          partition: 0,
+          offset: 7,
+          key: 'k',
+          payload: '{"id":"1"}',
+          timestamp: 1000,
+          keyLocalSchema: LocalSchemaUseDto(
+            fileName: 'key.avsc',
+            format: LocalSchemaFormatDto.avro,
+            framing: FramingDto.raw,
+          ),
+          valueLocalSchema: LocalSchemaUseDto(
+            fileName: 'val.desc',
+            format: LocalSchemaFormatDto.protobufDescriptor,
+            messageType: 'acme.Order',
+            framing: FramingDto.prefixed,
+            wireSchemaId: 42,
+          ),
+        );
+        final encoded =
+            jsonDecode(jsonEncode(SearchJsonSerializer.serializeMessage(msg)))
+                as Map<String, dynamic>;
+        final restored = SearchJsonSerializer.deserializeMessage(encoded);
+        expect(restored.keyLocalSchema, equals(msg.keyLocalSchema));
+        expect(restored.valueLocalSchema, equals(msg.valueLocalSchema));
+
+        final legacy = <String, dynamic>{
+          'topic': 'orders',
+          'partition': 0,
+          'offset': 1,
+          'timestamp': 1000,
+        };
+        final legacyRestored = SearchJsonSerializer.deserializeMessage(legacy);
+        expect(legacyRestored.keyLocalSchema, isNull);
+        expect(legacyRestored.valueLocalSchema, isNull);
+      },
+    );
   });
 }

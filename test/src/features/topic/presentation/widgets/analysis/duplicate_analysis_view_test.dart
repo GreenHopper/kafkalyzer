@@ -30,6 +30,9 @@ void main() {
       duplicateMessages: 0,
       duplicateRate: 0.0,
       topDuplicates: [],
+      estimated: false,
+      untrackedMessages: 0,
+      samplesCapped: false,
     );
 
     await tester.pumpWidget(
@@ -84,6 +87,9 @@ void main() {
             sampleTimestampMs: 0,
           ),
         ],
+        estimated: false,
+        untrackedMessages: 0,
+        samplesCapped: false,
       );
 
       await tester.pumpWidget(
@@ -153,6 +159,9 @@ void main() {
             sampleTimestampMs: 1730000000000,
           ),
         ],
+        estimated: false,
+        untrackedMessages: 0,
+        samplesCapped: false,
       );
 
       await tester.pumpWidget(

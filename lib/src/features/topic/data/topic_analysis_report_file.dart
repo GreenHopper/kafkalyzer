@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
@@ -38,8 +39,8 @@ class TopicAnalysisImportError implements Exception {
 /// in one place and can be evolved (and unit-tested) without touching the UI.
 class TopicAnalysisReportFile {
   static const String formatIdentifier = 'topic-analysis-report';
-  static const int currentVersion = 3;
-  static const Set<int> supportedVersions = {1, 2, 3};
+  static const int currentVersion = 4;
+  static const Set<int> supportedVersions = {1, 2, 3, 4};
 
   final int version;
   final DateTime exportedAt;
@@ -175,6 +176,11 @@ Map<String, dynamic> _reportToMap(TopicAnalysisReport r) => <String, dynamic>{
   'duplicate_analysis_result': _duplicateAnalysisResultToMap(
     r.duplicateAnalysisResult,
   ),
+  'cleanup_policy_unknown': r.cleanupPolicyUnknown,
+  'scan_scope': _scanScopeToMap(r.scanScope),
+  'analysis_limits': r.analysisLimits?.map(_analysisLimitToMap).toList(),
+  'tracked_field_count': r.trackedFieldCount?.toInt(),
+  'complete_until_ms': r.completeUntilMs?.toInt(),
 };
 
 TopicAnalysisReport _reportFromMap(
@@ -211,6 +217,11 @@ TopicAnalysisReport _reportFromMap(
   duplicateAnalysisResult: _duplicateAnalysisResultFromMap(
     m['duplicate_analysis_result'],
   ),
+  cleanupPolicyUnknown: _toBool(m['cleanup_policy_unknown'] ?? false),
+  scanScope: _scanScopeFromMap(m['scan_scope']),
+  analysisLimits: _analysisLimitsFromRaw(m['analysis_limits']),
+  trackedFieldCount: _toOptionalInt(m['tracked_field_count']),
+  completeUntilMs: _toOptionalInt(m['complete_until_ms']),
 );
 
 Map<String, dynamic> _hourBucketToMap(HourBucket b) => <String, dynamic>{
@@ -256,6 +267,10 @@ Map<String, dynamic>? _duplicateAnalysisResultToMap(
     'duplicate_messages': r.duplicateMessages.toInt(),
     'duplicate_rate': r.duplicateRate,
     'top_duplicates': r.topDuplicates.map(_topDuplicateToMap).toList(),
+    'estimated': r.estimated,
+    'untracked_messages': r.untrackedMessages.toInt(),
+    'fingerprint_limit': r.fingerprintLimit?.toInt(),
+    'samples_capped': r.samplesCapped,
   };
 }
 
@@ -286,6 +301,10 @@ DuplicateAnalysisResult? _duplicateAnalysisResultFromMap(dynamic raw) {
     topDuplicates: _list(
       raw['top_duplicates'],
     ).map(_topDuplicateFromMap).toList(),
+    estimated: _toBool(raw['estimated'] ?? false),
+    untrackedMessages: _toInt(raw['untracked_messages'] ?? 0),
+    fingerprintLimit: _toOptionalInt(raw['fingerprint_limit']),
+    samplesCapped: _toBool(raw['samples_capped'] ?? false),
   );
 }
 
@@ -299,6 +318,112 @@ TopDuplicateOccurrence _topDuplicateFromMap(Map<String, dynamic> m) =>
       sampleOffset: _toInt(m['sample_offset']),
       sampleTimestampMs: _toInt(m['sample_timestamp_ms']),
     );
+
+Map<String, dynamic>? _scanScopeToMap(AnalysisScopeSummary? s) {
+  if (s == null) return null;
+  return <String, dynamic>{
+    'scope': _analysisScopeToMap(s.scope),
+    'ranges': s.ranges.map(_plannedRangeToMap).toList(),
+    'unreadable': s.unreadable.map(_unreadablePartitionToMap).toList(),
+    'excluded_by_time_range': s.excludedByTimeRange.toInt(),
+  };
+}
+
+AnalysisScopeSummary? _scanScopeFromMap(dynamic raw) {
+  if (raw is! Map) return null;
+  final scopeRaw = raw['scope'];
+  if (scopeRaw is! Map) return null;
+  return AnalysisScopeSummary(
+    scope: _analysisScopeFromMap(Map<String, dynamic>.from(scopeRaw)),
+    ranges: _list(raw['ranges']).map(_plannedRangeFromMap).toList(),
+    unreadable: _list(
+      raw['unreadable'],
+    ).map(_unreadablePartitionFromMap).toList(),
+    excludedByTimeRange: _toInt(raw['excluded_by_time_range'] ?? 0),
+  );
+}
+
+Map<String, dynamic> _analysisScopeToMap(AnalysisScope s) => <String, dynamic>{
+  'partitions': s.partitions?.toList(),
+  'start_timestamp_ms': s.startTimestampMs?.toInt(),
+  'end_timestamp_ms': s.endTimestampMs?.toInt(),
+  'message_limit': s.messageLimit?.toInt(),
+  'limit_from': s.limitFrom.name,
+};
+
+AnalysisScope _analysisScopeFromMap(Map<String, dynamic> m) {
+  final dynamic rawParts = m['partitions'];
+  Int32List? partitions;
+  if (rawParts is List) {
+    partitions = Int32List.fromList(rawParts.map(_toInt).toList());
+  }
+  final limitFromStr = _toStr(m['limit_from']);
+  final limitFrom = ScopeLimitFrom.values.firstWhere(
+    (v) => v.name == limitFromStr,
+    orElse: () => ScopeLimitFrom.newest,
+  );
+  return AnalysisScope(
+    partitions: partitions,
+    startTimestampMs: _toOptionalInt(m['start_timestamp_ms']),
+    endTimestampMs: _toOptionalInt(m['end_timestamp_ms']),
+    messageLimit: _toOptionalInt(m['message_limit']),
+    limitFrom: limitFrom,
+  );
+}
+
+Map<String, dynamic> _plannedRangeToMap(PlannedPartitionRange r) =>
+    <String, dynamic>{
+      'partition': r.partition,
+      'start': r.start.toInt(),
+      'end': r.end.toInt(),
+    };
+
+PlannedPartitionRange _plannedRangeFromMap(Map<String, dynamic> m) =>
+    PlannedPartitionRange(
+      partition: _toInt(m['partition']),
+      start: _toInt(m['start']),
+      end: _toInt(m['end']),
+    );
+
+Map<String, dynamic> _unreadablePartitionToMap(UnreadablePartition u) =>
+    <String, dynamic>{'partition': u.partition, 'reason': u.reason};
+
+UnreadablePartition _unreadablePartitionFromMap(Map<String, dynamic> m) =>
+    UnreadablePartition(
+      partition: _toInt(m['partition']),
+      reason: _toStr(m['reason']),
+    );
+
+Map<String, dynamic> _analysisLimitToMap(AnalysisLimit l) => <String, dynamic>{
+  'kind': l.kind.name,
+  'limit': l.limit.toInt(),
+  'reached': l.reached,
+};
+
+List<AnalysisLimit>? _analysisLimitsFromRaw(dynamic raw) {
+  if (raw == null) return null;
+  final items = _list(raw);
+  final out = <AnalysisLimit>[];
+  for (final m in items) {
+    final kindStr = _toStr(m['kind']);
+    AnalysisLimitKind? kind;
+    for (final candidate in AnalysisLimitKind.values) {
+      if (candidate.name == kindStr) {
+        kind = candidate;
+        break;
+      }
+    }
+    if (kind == null) continue;
+    out.add(
+      AnalysisLimit(
+        kind: kind,
+        limit: _toInt(m['limit']),
+        reached: _toBool(m['reached'] ?? false),
+      ),
+    );
+  }
+  return out;
+}
 
 /// Percentiles are optional in version 1 files: a missing block stays unavailable
 /// instead of turning into zeros.

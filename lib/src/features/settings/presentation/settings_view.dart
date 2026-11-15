@@ -17,6 +17,7 @@ import 'package:kafkalyzer/src/services/file_opener_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/services/time_display_settings.dart';
+import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
 import 'package:watch_it/watch_it.dart';
@@ -1578,6 +1579,41 @@ class _GeneralSettingsSectionState extends State<_GeneralSettingsSection> {
     });
   }
 
+  Future<void> _confirmDeleteAnalysisHistory(AppLocalizations l10n) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.deleteSavedAnalysisReportsConfirmTitle),
+        content: Text(l10n.deleteSavedAnalysisReportsConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await getIt<TopicAnalysisHistoryService>().clearAll();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.deleteSavedAnalysisReportsSuccess)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.deleteSavedAnalysisReportsFailed(e.toString())),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _dirController.dispose();
@@ -1664,6 +1700,14 @@ class _GeneralSettingsSectionState extends State<_GeneralSettingsSection> {
             resetGeneration: _resetGeneration,
           ),
           const SizedBox(height: 16),
+          _IntSettingField(
+            fieldKey: const Key('partition_skew_threshold_field'),
+            setting: SettingsService.partitionSkewThresholdSetting,
+            label: l10n.partitionOffsetSkewThresholdLabel,
+            prefs: prefs,
+            resetGeneration: _resetGeneration,
+          ),
+          const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1679,6 +1723,31 @@ class _GeneralSettingsSectionState extends State<_GeneralSettingsSection> {
               const SizedBox(width: 16),
               Expanded(
                 child: _IntSettingField(
+                  fieldKey: const Key('analysis_history_per_topic_field'),
+                  setting: SettingsService.analysisHistoryPerTopicSetting,
+                  label: l10n.analysisHistoryPerTopicLabel,
+                  prefs: prefs,
+                  resetGeneration: _resetGeneration,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _IntSettingField(
+                  fieldKey: const Key('analysis_confirm_threshold_field'),
+                  setting: SettingsService.analysisConfirmThresholdSetting,
+                  label: l10n.analysisConfirmThresholdLabel,
+                  prefs: prefs,
+                  resetGeneration: _resetGeneration,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _IntSettingField(
                   fieldKey: const Key('max_concurrent_lag_queries_field'),
                   setting: SettingsService.maxConcurrentLagQueriesSetting,
                   label: l10n.maxConcurrentLagQueries,
@@ -1687,6 +1756,16 @@ class _GeneralSettingsSectionState extends State<_GeneralSettingsSection> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const Key('delete_saved_analysis_reports_button'),
+              icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+              label: Text(l10n.deleteSavedAnalysisReports),
+              onPressed: () => _confirmDeleteAnalysisHistory(l10n),
+            ),
           ),
           const SizedBox(height: 16),
           Row(

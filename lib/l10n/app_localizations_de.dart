@@ -33,15 +33,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get fullTopicScan => 'Vollständiger Scan (Alle Nachrichten)';
 
   @override
-  String get sampleLast10k => 'Stichprobe letzte 10.000 Nachrichten';
-
-  @override
-  String get sampleLast50k => 'Stichprobe letzte 50.000 Nachrichten';
-
-  @override
-  String get sampleLast100k => 'Stichprobe letzte 100.000 Nachrichten';
-
-  @override
   String get totalMessages => 'Gesamtanzahl Nachrichten';
 
   @override
@@ -1362,7 +1353,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get schemaViewerTitle => 'Schema-Viewer';
 
   @override
-  String get noAvroSchemaFound => 'Kein Avro-Schema für dieses Topic gefunden.';
+  String get noSchemaFound => 'Kein Schema für dieses Topic gefunden.';
 
   @override
   String errorLoadingSchema(String error) {
@@ -3739,4 +3730,1562 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get copyFailed => 'Kopieren fehlgeschlagen';
+
+  @override
+  String get topicListUpdatedJustNow => 'gerade aktualisiert';
+
+  @override
+  String topicListUpdatedMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'vor $count Min. aktualisiert',
+      one: 'vor 1 Min. aktualisiert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String topicListUpdatedHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'vor $count Std. aktualisiert',
+      one: 'vor 1 Std. aktualisiert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String topicListHiddenCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ausgeblendet',
+      one: '1 ausgeblendet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String topicListHiddenTooltip(int internal, int stream, int filter) {
+    return 'Ausgeblendet: $internal intern, $stream Stream, $filter gefiltert';
+  }
+
+  @override
+  String get topicListShowAll => 'Alle anzeigen';
+
+  @override
+  String get topicListInvalidPattern => 'Ungültiges Muster';
+
+  @override
+  String get topicListFilterModeSubstring => 'Text';
+
+  @override
+  String get topicListFilterModeGlob => 'Glob';
+
+  @override
+  String get topicListFilterModeRegex => 'Regex';
+
+  @override
+  String get topicListFilterModeTooltip => 'Filtermodus';
+
+  @override
+  String get topicListSortTooltip => 'Topics sortieren';
+
+  @override
+  String get topicListSortName => 'Name (A–Z)';
+
+  @override
+  String get topicListSortPartitions => 'Partitionen';
+
+  @override
+  String get topicListSortHealth => 'Zustand';
+
+  @override
+  String get topicListGroupByPrefixTooltip => 'Nach Präfix gruppieren';
+
+  @override
+  String get topicListFavouritesSection => 'Favoriten';
+
+  @override
+  String get topicListAddFavouriteTooltip => 'Zu Favoriten hinzufügen';
+
+  @override
+  String get topicListRemoveFavouriteTooltip => 'Aus Favoriten entfernen';
+
+  @override
+  String get topicListNotInList => 'nicht in Topic-Liste';
+
+  @override
+  String topicListRefreshFailedNotice(String error) {
+    return 'Aktualisierung fehlgeschlagen: $error';
+  }
+
+  @override
+  String get topicListPrefsUnreadableNotice =>
+      'Gespeicherte Topic-Listen-Einstellungen waren unlesbar; Standardwerte aktiv.';
+
+  @override
+  String get topicListPrefsWriteBlockedNotice =>
+      'Gespeicherte Einstellungen konnten nicht gesichert werden und werden nicht überschrieben.';
+
+  @override
+  String get topicConfigLoading => 'lädt';
+
+  @override
+  String get topicConfigNotReadable => 'nicht lesbar — Berechtigung?';
+
+  @override
+  String get topicConfigLoadFailed => 'konnte nicht geladen werden';
+
+  @override
+  String get topicMetadataNotFound => 'Topic nicht gefunden';
+
+  @override
+  String get topicMetadataUnknown => 'unbekannt';
+
+  @override
+  String topicPartitionsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Partitionen',
+      one: '1 Partition',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String topicRfLabel(int count) {
+    return 'RF: $count';
+  }
+
+  @override
+  String topicOpenFailedNotice(String topic, String error) {
+    return 'Topic „$topic“ konnte nicht geöffnet werden: $error';
+  }
+
+  @override
+  String get cleanupPolicyNotReadableSubtitle => 'Nicht lesbar';
+
+  @override
+  String get cleanupPolicyUnknownBadge => '?';
+
+  @override
+  String get partitionOffsetSkewThresholdLabel =>
+      'Partitions-Ungleichgewichts-Schwelle (%)';
+
+  @override
+  String get partitionOffsetSectionTitle =>
+      'Geschätzte Verteilung (Offset-Spanne)';
+
+  @override
+  String get partitionOffsetLoading => 'Partitions-Offsets werden geladen…';
+
+  @override
+  String partitionOffsetLoadError(String error) {
+    return 'Partitions-Offsets konnten nicht geladen werden: $error';
+  }
+
+  @override
+  String get partitionOffsetRetry => 'Erneut versuchen';
+
+  @override
+  String get partitionOffsetRefreshTooltip => 'Offsets aktualisieren';
+
+  @override
+  String partitionOffsetReadAt(String time) {
+    return 'Stand: $time';
+  }
+
+  @override
+  String partitionOffsetReadFailed(String error) {
+    return 'Aktualisierung fehlgeschlagen: $error';
+  }
+
+  @override
+  String get partitionOffsetStaleNotice =>
+      'Offsets stammen von der vorherigen Verbindung — Cluster-Verbindung wurde geändert oder getrennt.';
+
+  @override
+  String partitionOffsetTotalSpan(String span) {
+    return 'Gesamte Offset-Spanne: $span';
+  }
+
+  @override
+  String partitionOffsetKnownSpan(String span) {
+    return 'Bekannte Offset-Spanne: $span';
+  }
+
+  @override
+  String get partitionOffsetUnknownValue => 'unbekannt';
+
+  @override
+  String get partitionOffsetColumnPartition => 'Partition';
+
+  @override
+  String get partitionOffsetColumnLow => 'Niedrig';
+
+  @override
+  String get partitionOffsetColumnHigh => 'Hoch';
+
+  @override
+  String get partitionOffsetColumnSpan => 'Offset-Spanne';
+
+  @override
+  String get partitionOffsetColumnShare => 'Anteil';
+
+  @override
+  String get partitionOffsetStateNotReadable =>
+      'Offsets nicht lesbar — Berechtigung?';
+
+  @override
+  String get partitionOffsetStateFailed => 'Lesen fehlgeschlagen';
+
+  @override
+  String get partitionOffsetStateTimedOut => 'Zeitüberschreitung';
+
+  @override
+  String get partitionOffsetEstimateNote =>
+      'Nur High − Low Watermark; keine exakte Nachrichtenanzahl.';
+
+  @override
+  String get partitionOffsetCompactedNote =>
+      'Kompaktiertes Topic: Vorhandene Nachrichten können deutlich unter der Offset-Spanne liegen.';
+
+  @override
+  String get partitionOffsetPolicyUnknownNote =>
+      'Cleanup-Policy unbekannt; Topic könnte kompaktiert sein.';
+
+  @override
+  String get partitionOffsetIncompleteNote =>
+      'Einige Partitionen konnten nicht gelesen werden; Gesamtspanne und Anteile sind nicht verfügbar.';
+
+  @override
+  String get partitionOffsetEmptyNote =>
+      'Alle Partitionen sind leer (gesamte Offset-Spanne ist 0).';
+
+  @override
+  String partitionOffsetSkewBadge(int threshold) {
+    return 'Ungleichgewicht (≥ $threshold%)';
+  }
+
+  @override
+  String partitionOffsetSkewRowTooltip(int threshold) {
+    return 'Überschreitet $threshold%-Anteilsschwelle';
+  }
+
+  @override
+  String get partitionOffsetOpenAnalysisAction =>
+      'Exakte Anzahl in Analyse ermitteln';
+
+  @override
+  String get retentionUnlimited => 'unbegrenzt';
+
+  @override
+  String retentionBytesPerPartition(String size) {
+    return '$size / Partition';
+  }
+
+  @override
+  String durationDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tage',
+      one: '1 Tag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Stunden',
+      one: '1 Stunde',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Minuten',
+      one: '1 Minute',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationSeconds(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Sekunden',
+      one: '1 Sekunde',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clusterOverviewRefreshTooltip => 'Cluster-Übersicht aktualisieren';
+
+  @override
+  String clusterOverviewBrokersTitle(int count) {
+    return 'Broker ($count)';
+  }
+
+  @override
+  String get clusterOverviewClusterIdLabel => 'Cluster-ID';
+
+  @override
+  String get clusterOverviewControllerLabel => 'Controller';
+
+  @override
+  String clusterOverviewBrokerIdLabel(int id) {
+    return 'Broker $id';
+  }
+
+  @override
+  String get clusterOverviewBrokersLoading => 'Broker werden geladen…';
+
+  @override
+  String clusterOverviewBrokersError(String error) {
+    return 'Broker konnten nicht geladen werden: $error';
+  }
+
+  @override
+  String get clusterOverviewBrokersNotReadable =>
+      'Broker nicht lesbar — Berechtigung?';
+
+  @override
+  String clusterOverviewTopicsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Topics',
+      one: '1 Topic',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clusterOverviewPartitionsTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Partitionen',
+      one: '1 Partition',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clusterOverviewTotalsLoading => 'Topic-Summen werden geladen…';
+
+  @override
+  String get clusterOverviewTotalsUnknown =>
+      'Topic- & Partitionssummen: unbekannt';
+
+  @override
+  String get clusterOverviewHealthHealthy =>
+      'Alle Topics vollständig repliziert (0 fehlerhaft)';
+
+  @override
+  String clusterOverviewHealthUnhealthy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Topics mit fehlerhaften Partitionen',
+      one: '1 Topic mit fehlerhaften Partitionen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String clusterOverviewHealthPartitionCounts(
+    int underReplicated,
+    int leaderless,
+  ) {
+    return '$underReplicated unterrepliziert, $leaderless ohne Leader';
+  }
+
+  @override
+  String clusterOverviewHealthUnknownCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Topics mit unbekanntem Zustand',
+      one: '1 Topic mit unbekanntem Zustand',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clusterOverviewHealthStatusUnknown =>
+      'Replikationszustand: unbekannt';
+
+  @override
+  String get clusterOverviewHealthStatusLoading => 'Replikationszustand: lädt…';
+
+  @override
+  String get clusterOverviewShowUnhealthyTooltip =>
+      'Topic-Liste auf fehlerhafte Topics filtern';
+
+  @override
+  String topicListUnhealthyOnlyChip(int count) {
+    return 'Nur fehlerhafte Topics ($count)';
+  }
+
+  @override
+  String get topicHeaderRefreshFactsTooltip => 'Topic-Fakten aktualisieren';
+
+  @override
+  String topicHeaderEstimateValue(String count) {
+    return '≈ $count Nachrichten (Schätzung)';
+  }
+
+  @override
+  String get topicHeaderEstimateCompactedNote =>
+      'Kompaktiertes Topic oder unbekannte Policy: Offset-Spannen sind keine Nachrichtenanzahl; exakte Werte liefert die Topic-Analyse.';
+
+  @override
+  String get topicHeaderEstimateUnknown => 'Nachrichten: unbekannt';
+
+  @override
+  String get topicHeaderEstimateNotReadable => 'Nachrichten: nicht lesbar';
+
+  @override
+  String topicHeaderRetentionLabel(String duration) {
+    return 'Aufbewahrung: $duration';
+  }
+
+  @override
+  String topicHeaderRetentionBytesLabel(String size) {
+    return 'Max. Größe: $size';
+  }
+
+  @override
+  String get topicHeaderRetentionNotReadable => 'nicht lesbar';
+
+  @override
+  String get topicHeaderLoadTimeRange => 'Zeitraum laden';
+
+  @override
+  String topicHeaderLoadTimeRangeTooltip(int count) {
+    return 'Ältesten & neuesten Nachrichten-Zeitstempel über $count Partitionen lesen';
+  }
+
+  @override
+  String get topicHeaderTimeRangeLoading => 'Zeitraum wird geladen…';
+
+  @override
+  String get topicHeaderTimeRangeEmpty => 'Keine Nachrichten';
+
+  @override
+  String topicHeaderTimeRangeValue(String oldest, String newest) {
+    return '$oldest – $newest';
+  }
+
+  @override
+  String topicHeaderTimeRangePartial(
+    int oldestKnown,
+    int newestKnown,
+    int total,
+  ) {
+    return 'Teilweise ($oldestKnown/$total älteste, $newestKnown/$total neueste)';
+  }
+
+  @override
+  String get topicHeaderTimeRangeUnknown => 'Zeitraum: unbekannt';
+
+  @override
+  String topicHeaderTimeRangeError(String error) {
+    return 'Zeitraum fehlgeschlagen: $error';
+  }
+
+  @override
+  String get topicModeConfig => 'Konfiguration';
+
+  @override
+  String get topicConfigRefreshTooltip => 'Konfiguration aktualisieren';
+
+  @override
+  String get topicConfigNonDefaultToggle => 'Nur Nicht-Standardwerte';
+
+  @override
+  String get topicConfigNonDefaultToggleTooltip =>
+      'Topic-Überschreibungen, dynamische und statische Broker-Einstellungen anzeigen';
+
+  @override
+  String get topicConfigDiffToggle => 'Nur Unterschiede & Nicht-Standardwerte';
+
+  @override
+  String get topicConfigCompareAction => 'Vergleichen…';
+
+  @override
+  String get topicConfigCloseComparisonAction => 'Vergleich schließen';
+
+  @override
+  String get topicConfigCopyAsText => 'Als Text kopieren';
+
+  @override
+  String get topicConfigCopiedToClipboard =>
+      'Konfiguration in die Zwischenablage kopiert';
+
+  @override
+  String get topicConfigColumnName => 'Name';
+
+  @override
+  String get topicConfigColumnValue => 'Wert';
+
+  @override
+  String get topicConfigColumnSource => 'Quelle';
+
+  @override
+  String get topicConfigColumnDefault => 'Standard';
+
+  @override
+  String get topicConfigColumnLeftValue => 'Linker Wert';
+
+  @override
+  String get topicConfigColumnLeftSource => 'Linke Quelle';
+
+  @override
+  String get topicConfigColumnRightValue => 'Rechter Wert';
+
+  @override
+  String get topicConfigColumnRightSource => 'Rechte Quelle';
+
+  @override
+  String get topicConfigColumnStatus => 'Status';
+
+  @override
+  String get topicConfigDefaultYes => 'Standard';
+
+  @override
+  String get topicConfigDefaultNo => 'Geändert';
+
+  @override
+  String get topicConfigSourceDynamicTopic => 'Topic-Überschreibung';
+
+  @override
+  String get topicConfigSourceDynamicBroker => 'Dynamische Broker-Einstellung';
+
+  @override
+  String get topicConfigSourceDynamicDefaultBroker =>
+      'Dynamischer Cluster-Broker-Standard';
+
+  @override
+  String get topicConfigSourceStaticBroker => 'Statische Broker-Einstellung';
+
+  @override
+  String get topicConfigSourceDefault => 'Eingebauter Standard';
+
+  @override
+  String get topicConfigSourceUnknown => 'Unbekannt';
+
+  @override
+  String get topicConfigStatusEqual => 'Gleich';
+
+  @override
+  String get topicConfigStatusDifferent => 'Unterschiedlich';
+
+  @override
+  String get topicConfigStatusOnlyLeft => 'Nur links';
+
+  @override
+  String get topicConfigStatusOnlyRight => 'Nur rechts';
+
+  @override
+  String get topicConfigStatusNotComparable => 'Nicht vergleichbar';
+
+  @override
+  String get topicConfigStatusUnknown => 'Unbekannt';
+
+  @override
+  String get topicConfigPlaceholderNoValue => 'kein Wert';
+
+  @override
+  String get topicConfigPlaceholderSensitive => 'versteckt (sensibel)';
+
+  @override
+  String get topicConfigPlaceholderUnknown => 'unbekannt';
+
+  @override
+  String get topicConfigUnavailableNotAuthorized =>
+      'Nicht lesbar — fehlt die DescribeConfigs-Berechtigung?';
+
+  @override
+  String get topicConfigUnavailableNotFound => 'Topic nicht gefunden';
+
+  @override
+  String topicConfigUnavailableFailed(String message) {
+    return 'Konfiguration konnte nicht gelesen werden: $message';
+  }
+
+  @override
+  String get topicConfigEmptyReported =>
+      'Keine Konfigurationseinträge gemeldet.';
+
+  @override
+  String get topicConfigEmptyNonDefaultFilter =>
+      'Alle gemeldeten Einträge verwenden Standardwerte.';
+
+  @override
+  String get topicConfigEmptyDiffFilter =>
+      'Die Konfigurationen unterscheiden sich nicht und verwenden nur Standardwerte.';
+
+  @override
+  String topicConfigDifferencesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Unterschiede',
+      one: '1 Unterschied',
+      zero: '0 Unterschiede',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get topicConfigDifferencesUnknown => 'Unterschiede: unbekannt';
+
+  @override
+  String get topicConfigComparisonInProgress => 'Vergleich wird geladen…';
+
+  @override
+  String get topicConfigCompareDialogTitle => 'Topic-Konfiguration vergleichen';
+
+  @override
+  String get topicConfigCompareProfileLabel => 'Ziel-Cluster-Profil';
+
+  @override
+  String get topicConfigCompareTopicLabel => 'Ziel-Topic';
+
+  @override
+  String get topicConfigCompareTopicHint =>
+      'Topic-Namen eingeben oder auswählen';
+
+  @override
+  String get topicConfigCompareSubmit => 'Vergleichen';
+
+  @override
+  String get schemaRegistryErrorNotConfigured =>
+      'Schema Registry ist für dieses Profil nicht konfiguriert.';
+
+  @override
+  String schemaRegistryErrorInvalidUrl(String detail) {
+    return 'Schema Registry-URL ist ungültig: $detail';
+  }
+
+  @override
+  String get schemaRegistryErrorUnauthorized =>
+      'Schema Registry-Authentifizierung fehlgeschlagen (HTTP 401). Prüfe Benutzername und Passwort im Cluster-Profil.';
+
+  @override
+  String get schemaRegistryErrorForbidden =>
+      'Schema Registry-Zugriff verweigert (HTTP 403).';
+
+  @override
+  String get schemaRegistryErrorNotFound =>
+      'Schema oder Subject in der Schema Registry nicht gefunden (HTTP 404).';
+
+  @override
+  String get schemaRegistryErrorTimeout =>
+      'Zeitüberschreitung bei der Anfrage an die Schema Registry.';
+
+  @override
+  String schemaRegistryErrorUnreachable(String detail) {
+    return 'Schema Registry konnte nicht erreicht werden: $detail';
+  }
+
+  @override
+  String schemaRegistryErrorCertificateRejected(String detail) {
+    return 'Das TLS-Zertifikat der Schema Registry wurde abgelehnt: $detail';
+  }
+
+  @override
+  String schemaRegistryErrorHttpStatus(int status, String detail) {
+    return 'Schema Registry meldete HTTP $status: $detail';
+  }
+
+  @override
+  String schemaRegistryErrorHttpStatusNoCode(String detail) {
+    return 'Schema Registry meldete einen Fehler: $detail';
+  }
+
+  @override
+  String schemaRegistryErrorInvalidResponse(String detail) {
+    return 'Schema Registry lieferte eine unerwartete Antwort: $detail';
+  }
+
+  @override
+  String get schemaTypeAvro => 'Avro';
+
+  @override
+  String get schemaTypeProtobuf => 'Protobuf';
+
+  @override
+  String get schemaTypeJson => 'JSON Schema';
+
+  @override
+  String get schemaTypeGeneric => 'Schema';
+
+  @override
+  String get schemaTypeUnknown => 'Schema (unbekannt)';
+
+  @override
+  String schemaTypeMixed(String keyType, String valueType) {
+    return '$keyType / $valueType';
+  }
+
+  @override
+  String schemaTopicHasTypeTooltip(String typeLabel) {
+    return 'Schema: $typeLabel';
+  }
+
+  @override
+  String schemaVersionBadge(int version) {
+    return 'v$version';
+  }
+
+  @override
+  String schemaIdBadge(int id) {
+    return 'ID $id';
+  }
+
+  @override
+  String schemaCompatibilityPrefix(String level) {
+    return 'Kompatibilität: $level';
+  }
+
+  @override
+  String get schemaCompatibilitySubject => 'am Subject gesetzt';
+
+  @override
+  String get schemaCompatibilityInherited => 'geerbt';
+
+  @override
+  String schemaCompatibilityUnknown(String reason) {
+    return 'Kompatibilität: unbekannt ($reason)';
+  }
+
+  @override
+  String get schemaReferencesLabel => 'Referenzen:';
+
+  @override
+  String schemaReferenceChip(String name, String subject, int version) {
+    return '$name ($subject v$version)';
+  }
+
+  @override
+  String schemaMessagesLabel(String messages) {
+    return 'Messages: $messages';
+  }
+
+  @override
+  String schemaRawUnavailableNotice(String reason) {
+    return 'Strukturierte Ansicht nicht verfügbar: $reason';
+  }
+
+  @override
+  String schemaUnsupportedTypeNotice(String type) {
+    return 'Strukturierte Ansicht wird für den Schema-Typ $type nicht unterstützt.';
+  }
+
+  @override
+  String get schemaCopyTooltip => 'Schema kopieren';
+
+  @override
+  String get schemaSaveTooltip => 'Schema speichern';
+
+  @override
+  String get schemaCopiedSnackBar => 'Schema in die Zwischenablage kopiert';
+
+  @override
+  String schemaSavedSuccess(String path) {
+    return 'Schema gespeichert unter $path';
+  }
+
+  @override
+  String schemaSaveFailed(String error) {
+    return 'Schema konnte nicht gespeichert werden: $error';
+  }
+
+  @override
+  String get schemaSaveDialogTitle => 'Schema speichern';
+
+  @override
+  String schemaViewerSubjectTitle(String subject) {
+    return 'Schema: $subject';
+  }
+
+  @override
+  String get schemaViewerBackTooltip => 'Zurück zum vorherigen Schema';
+
+  @override
+  String get schemaViewerAssociatedTopicsLoading =>
+      'Zugehörige Topics werden geladen…';
+
+  @override
+  String schemaViewerAssociatedTopicsError(String error) {
+    return 'Zugehörige Topics konnten nicht ermittelt werden: $error';
+  }
+
+  @override
+  String schemaViewerTopicNotOnCluster(String topic) {
+    return '$topic (nicht im Cluster)';
+  }
+
+  @override
+  String get subjectBrowserFilterHint => 'Subjects filtern…';
+
+  @override
+  String subjectBrowserCount(int shown, int total) {
+    return '$shown von $total';
+  }
+
+  @override
+  String get subjectBrowserCountUnknown => 'Subjects: unbekannt';
+
+  @override
+  String subjectBrowserGlobalCompatibility(String level) {
+    return 'Globale Kompatibilität: $level';
+  }
+
+  @override
+  String get subjectBrowserEmptyRegistry =>
+      'Keine Subjects in der Schema Registry registriert.';
+
+  @override
+  String subjectBrowserNoMatch(String query) {
+    return 'Keine Subjects entsprechen „$query“.';
+  }
+
+  @override
+  String get subjectBrowserRefreshTooltip => 'Subjects aktualisieren';
+
+  @override
+  String get subjectBrowserSideKey => 'Key';
+
+  @override
+  String get subjectBrowserSideValue => 'Value';
+
+  @override
+  String get explorerModeTopics => 'Topics';
+
+  @override
+  String get explorerModeSubjects => 'Subjects';
+
+  @override
+  String get explorerModeSwitcherSemantics =>
+      'Ansichtsmodus: Topics oder Subjects';
+
+  @override
+  String get analysisConfirmThresholdLabel =>
+      'Bestätigungsschwelle für große Analysen (Nachrichten)';
+
+  @override
+  String get analysisHistoryPerTopicLabel =>
+      'Gespeicherte Analyseberichte pro Topic';
+
+  @override
+  String get deleteSavedAnalysisReports =>
+      'Gespeicherte Analyseberichte löschen';
+
+  @override
+  String get deleteSavedAnalysisReportsConfirmTitle =>
+      'Alle gespeicherten Analyseberichte löschen?';
+
+  @override
+  String get deleteSavedAnalysisReportsConfirmBody =>
+      'Dadurch werden alle lokal gespeicherten Topic-Analyseberichte für alle Cluster entfernt. Anderweitig exportierte Dateien bleiben erhalten.';
+
+  @override
+  String get deleteSavedAnalysisReportsSuccess =>
+      'Gespeicherte Analyseberichte gelöscht.';
+
+  @override
+  String deleteSavedAnalysisReportsFailed(String error) {
+    return 'Nicht alle gespeicherten Analyseberichte konnten gelöscht werden: $error';
+  }
+
+  @override
+  String scopeSummaryButtonLabel(String summary) {
+    return 'Umfang: $summary';
+  }
+
+  @override
+  String get scopeSummaryAll => 'Alle Nachrichten';
+
+  @override
+  String scopeSummaryNewest(String count) {
+    return 'Neueste $count';
+  }
+
+  @override
+  String scopeSummaryOldest(String count) {
+    return 'Älteste $count';
+  }
+
+  @override
+  String scopeSummaryPartitions(String list) {
+    return 'Partitionen $list';
+  }
+
+  @override
+  String get scopeDialogTitle => 'Analyse-Umfang';
+
+  @override
+  String get scopeModeAll => 'Alle';
+
+  @override
+  String get scopeModeNewest => 'Neueste';
+
+  @override
+  String get scopeModeOldest => 'Älteste';
+
+  @override
+  String get scopeMessageLimitLabel => 'Nachrichtenlimit (bis zu N Offsets)';
+
+  @override
+  String get scopeMessageLimitHelper =>
+      'Zählung erfolgt in Offsets; kompaktierte oder transaktionale Topics können weniger Nachrichten enthalten.';
+
+  @override
+  String get scopeTimeRangeLabel =>
+      'Zeitraum (optional, über Broker-Zeitstempelindex aufgelöst)';
+
+  @override
+  String get scopeStartTimestampLabel => 'Start-Zeitstempel';
+
+  @override
+  String get scopeEndTimestampLabel => 'End-Zeitstempel';
+
+  @override
+  String get scopePartitionsLabel => 'Partitionen';
+
+  @override
+  String get scopeAllPartitionsChip => 'Alle Partitionen';
+
+  @override
+  String scopePartitionChipLabel(int id) {
+    return 'P$id';
+  }
+
+  @override
+  String get scopeErrorInvalidCount =>
+      'Geben Sie ein positives ganzzahliges Limit ein.';
+
+  @override
+  String get scopeErrorInvalidStartTimestamp =>
+      'Ungültiges Start-Zeitstempelformat.';
+
+  @override
+  String get scopeErrorInvalidEndTimestamp =>
+      'Ungültiges End-Zeitstempelformat.';
+
+  @override
+  String get scopeErrorStartAfterEnd =>
+      'Der Start-Zeitstempel muss vor dem End-Zeitstempel liegen.';
+
+  @override
+  String get scopeErrorNoPartitions =>
+      'Wählen Sie mindestens eine Partition aus.';
+
+  @override
+  String get scopeApplyButton => 'Übernehmen';
+
+  @override
+  String get scopeEstimating => 'Schätzung läuft…';
+
+  @override
+  String get scopeConfirmTitle => 'Große Analyse starten?';
+
+  @override
+  String scopeConfirmPlannedCount(String count) {
+    return 'Geschätzter Scan-Umfang: $count Offsets.';
+  }
+
+  @override
+  String scopeConfirmAtLeastCount(String count) {
+    return 'Geschätzter Scan-Umfang: mindestens $count Offsets.';
+  }
+
+  @override
+  String scopeConfirmSizeUnknown(String error) {
+    return 'Scan-Umfang unbekannt ($error). Trotzdem starten?';
+  }
+
+  @override
+  String get scopeConfirmUnreadableHeader => 'Nicht lesbare Partitionen:';
+
+  @override
+  String scopeConfirmUnreadableItem(int partition, String reason) {
+    return 'Partition $partition: $reason';
+  }
+
+  @override
+  String get scopeConfirmCompactedHint =>
+      'Dies ist ein kompaktiertes Topic; die tatsächliche Nachrichtenanzahl kann niedriger sein als der Offset-Bereich.';
+
+  @override
+  String get scopeConfirmStartButton => 'Scan starten';
+
+  @override
+  String historySaveErrorBanner(String error) {
+    return 'Bericht konnte nicht im lokalen Verlauf gespeichert werden: $error';
+  }
+
+  @override
+  String get reportScopeCardTitle => 'Scan-Umfang';
+
+  @override
+  String get reportScopeNotRecorded =>
+      'Umfang für diesen Bericht nicht erfasst.';
+
+  @override
+  String reportScopeExcludedByTime(String count) {
+    return 'Durch Zeitraum ausgeschlossen: $count';
+  }
+
+  @override
+  String reportScopeUnreadablePartitions(String list) {
+    return 'Nicht lesbare Partitionen: $list';
+  }
+
+  @override
+  String get analysisLimitsCardTitle => 'Analyselimits';
+
+  @override
+  String get analysisLimitsNotAvailable =>
+      'Für diesen Bericht nicht verfügbar.';
+
+  @override
+  String get analysisLimitReached => 'Erreicht';
+
+  @override
+  String get analysisLimitWithin => 'Im Limit';
+
+  @override
+  String get limitKindTrackedFields => 'Erfasste Felder';
+
+  @override
+  String get limitKindListedFields => 'Aufgeführte Felder';
+
+  @override
+  String get limitKindValuesPerField => 'Werte pro Feld';
+
+  @override
+  String get limitKindListedValuesPerField => 'Aufgeführte Werte pro Feld';
+
+  @override
+  String get limitKindFieldDepth => 'Feld-Verschachtelungstiefe';
+
+  @override
+  String get limitKindValueDisplayChars => 'Anzeigelänge pro Wert (Zeichen)';
+
+  @override
+  String get limitKindTrackedKeys => 'Erfasste Keys';
+
+  @override
+  String get limitKindListedKeys => 'Aufgeführte Keys';
+
+  @override
+  String get limitKindSizePercentileSample => 'Größenperzentil-Stichprobe';
+
+  @override
+  String get limitKindTrackedFingerprints => 'Erfasste Duplikat-Fingerprints';
+
+  @override
+  String get limitKindDuplicateSamples => 'Duplikat-Beispiele';
+
+  @override
+  String get limitKindListedDuplicates => 'Aufgeführte Duplikate';
+
+  @override
+  String get limitKindPreviewChars => 'Vorschaulänge (Zeichen)';
+
+  @override
+  String get limitKindTimelineWindowDays => 'Zeitachsen-Fenster (Tage)';
+
+  @override
+  String fieldTrackedCountSummary(String shown, String total) {
+    return '$shown von $total Feldern';
+  }
+
+  @override
+  String get fieldFurtherNotTracked => 'Weitere Felder nicht erfasst';
+
+  @override
+  String get duplicateEstimatedAtLeast => 'Geschätzt (mindestens)';
+
+  @override
+  String duplicateUntrackedCount(String count) {
+    return '$count nicht erfasste Nachrichten';
+  }
+
+  @override
+  String get duplicateListPossiblyIncomplete =>
+      'Liste möglicherweise unvollständig';
+
+  @override
+  String get historyMenuFromFile => 'Aus Datei…';
+
+  @override
+  String get historyMenuEmpty =>
+      'Keine gespeicherten Berichte für dieses Topic';
+
+  @override
+  String historyMenuUnreadable(int count) {
+    return '$count nicht lesbare Datei(en) übersprungen';
+  }
+
+  @override
+  String historyMenuLoadError(String error) {
+    return 'Verlauf konnte nicht geladen werden: $error';
+  }
+
+  @override
+  String historyEntrySubtitle(String scope, String messages) {
+    return '$scope · $messages Nachrichten';
+  }
+
+  @override
+  String get comparisonScopeNotRecorded => 'Umfang nicht erfasst';
+
+  @override
+  String get comparisonScopesDifferWarning =>
+      'Analyse-Umfänge unterscheiden sich — Abweichungen können auf dem Umfang statt auf Datenänderungen beruhen.';
+
+  @override
+  String get comparisonScopeMissingWarning =>
+      'Bei mindestens einem Bericht ist kein Umfang erfasst — ein zuverlässiger Vergleich ist nicht möglich.';
+
+  @override
+  String timelinePartitionSubsetNote(String partitions) {
+    return 'Hinweis: Die Zeitachse deckt nur eine Teilmenge der Partitionen ab ($partitions).';
+  }
+
+  @override
+  String diffIgnoredFieldsHeader(int count) {
+    return 'Ignorierte Felder ($count)';
+  }
+
+  @override
+  String get diffIgnoredFieldsButton => 'Ignorierte Felder';
+
+  @override
+  String diffIgnoreDialogTitle(String topic) {
+    return 'Ignorierte Felder — $topic';
+  }
+
+  @override
+  String get diffIgnorePathHint => 'Feldpfad (z. B. meta.ts oder /items/0/id)';
+
+  @override
+  String get diffIgnoreAddButton => 'Hinzufügen';
+
+  @override
+  String diffIgnoreRemoveTooltip(String path) {
+    return 'Ignoriertes Feld $path entfernen';
+  }
+
+  @override
+  String get diffIgnoreEmptyList =>
+      'Keine ignorierten Felder für dieses Topic.';
+
+  @override
+  String get diffIgnoreSuggestionsTitle => 'Vorgeschlagene volatile Felder';
+
+  @override
+  String get ignoreThisField => 'Dieses Feld ignorieren';
+
+  @override
+  String diffHiddenCount(int count) {
+    return 'Ausgeblendet ($count)';
+  }
+
+  @override
+  String diffTruncatedNotice(int count) {
+    return '$count weitere Unterschiede nicht angezeigt';
+  }
+
+  @override
+  String diffIgnoreLoadWarning(String topic) {
+    return 'Gespeicherte Ignorierliste für $topic konnte nicht gelesen werden.';
+  }
+
+  @override
+  String get diffIgnoreSaveError =>
+      'Ignorierliste konnte nicht gespeichert werden. Änderung wurde nicht übernommen.';
+
+  @override
+  String get diffIgnoreEmptyPathError =>
+      'Bitte einen nicht-leeren Feldpfad eingeben.';
+
+  @override
+  String get diffIgnoreDuplicatePathError =>
+      'Dieser Feldpfad wird bereits ignoriert.';
+
+  @override
+  String get filterExpressionLabel => 'Filterausdruck';
+
+  @override
+  String get filterExpressionHint =>
+      'z. B. value.status = \"FAILED\" AND partition = 0';
+
+  @override
+  String filterExpressionChipSummary(String expr) {
+    return 'Ausdruck: $expr';
+  }
+
+  @override
+  String get filterExpressionInvalidTooltip => 'Ungültiger Filterausdruck';
+
+  @override
+  String get filterExpressionModeBuilder => 'Baukasten';
+
+  @override
+  String get filterExpressionModeText => 'Text';
+
+  @override
+  String filterExpressionErrorAtColumn(int column, String message) {
+    return 'Spalte $column: $message';
+  }
+
+  @override
+  String get filterExpressionAddCondition => 'Bedingung hinzufügen';
+
+  @override
+  String get filterExpressionAddGroup => 'Gruppe hinzufügen';
+
+  @override
+  String get filterExpressionNotToggle => 'NOT';
+
+  @override
+  String get filterExpressionAndLabel => 'AND';
+
+  @override
+  String get filterExpressionOrLabel => 'OR';
+
+  @override
+  String get filterExpressionRemoveNode => 'Entfernen';
+
+  @override
+  String get filterExpressionEditCondition => 'Bedingung bearbeiten';
+
+  @override
+  String get filterExpressionSourceLabel => 'Quelle';
+
+  @override
+  String get filterExpressionPathLabel => 'Pfad / Header';
+
+  @override
+  String get filterExpressionOperatorLabel => 'Operator';
+
+  @override
+  String get filterExpressionValueLabel => 'Wert';
+
+  @override
+  String get filterExpressionTypeString => 'Text';
+
+  @override
+  String get filterExpressionTypeNumber => 'Zahl';
+
+  @override
+  String get filterExpressionTypeBoolean => 'Boolesch';
+
+  @override
+  String get filterExpressionTypeNull => 'Null';
+
+  @override
+  String get filterExpressionTypeVariable => 'Variable';
+
+  @override
+  String get filterExpressionPlaceholderHint =>
+      'Mehrwertige Skript-Variablen treffen zu, wenn MINDESTENS EIN Wert die Bedingung erfüllt.';
+
+  @override
+  String get filterExpressionSuggestionsLabel => 'Feldvorschläge';
+
+  @override
+  String get filterExpressionSuggestionsSourceSchema => 'Aus Schema';
+
+  @override
+  String get filterExpressionSuggestionsSourceAnalysis => 'Aus Analyse';
+
+  @override
+  String get filterExpressionSuggestionsSourceSample =>
+      'Aus geladenen Nachrichten';
+
+  @override
+  String get filterExpressionSuggestionsEmpty =>
+      'Keine Feldvorschläge verfügbar';
+
+  @override
+  String get filterExpressionOpEq => '=';
+
+  @override
+  String get filterExpressionOpNe => '!=';
+
+  @override
+  String get filterExpressionOpGt => '>';
+
+  @override
+  String get filterExpressionOpGe => '>=';
+
+  @override
+  String get filterExpressionOpLt => '<';
+
+  @override
+  String get filterExpressionOpLe => '<=';
+
+  @override
+  String get filterExpressionOpContains => 'contains';
+
+  @override
+  String get filterExpressionOpStartsWith => 'startsWith';
+
+  @override
+  String get filterExpressionOpEndsWith => 'endsWith';
+
+  @override
+  String get filterExpressionOpMatches => 'matches';
+
+  @override
+  String get filterExpressionOpIn => 'in';
+
+  @override
+  String get filterExpressionOpExists => 'exists';
+
+  @override
+  String get filterExpressionOpIsNull => 'is null';
+
+  @override
+  String get filterExpressionOpIsNotNull => 'is not null';
+
+  @override
+  String localSchemaDialogTitle(String side) {
+    return 'Lokales Schema zuweisen ($side)';
+  }
+
+  @override
+  String get localSchemaSideKey => 'Schlüssel';
+
+  @override
+  String get localSchemaSideValue => 'Wert';
+
+  @override
+  String get localSchemaFileLabel => 'Schemadatei';
+
+  @override
+  String get localSchemaChooseFile => 'Datei wählen…';
+
+  @override
+  String get localSchemaNoFileSelected => 'Keine Datei ausgewählt';
+
+  @override
+  String get localSchemaFormatLabel => 'Format';
+
+  @override
+  String get localSchemaFormatAvro => 'Avro (.avsc)';
+
+  @override
+  String get localSchemaFormatProtobufSource => 'Protobuf-Quelle (.proto)';
+
+  @override
+  String get localSchemaFormatProtobufDescriptor =>
+      'Protobuf-Descriptor-Set (.desc)';
+
+  @override
+  String get localSchemaFormatJsonSchema => 'JSON-Schema (.json)';
+
+  @override
+  String get localSchemaMessageTypeLabel => 'Nachrichtentyp';
+
+  @override
+  String get localSchemaMessageTypeHint => 'Nachrichtentyp auswählen';
+
+  @override
+  String get localSchemaFramingLabel => 'Framing';
+
+  @override
+  String get localSchemaFramingAuto => 'Automatisch';
+
+  @override
+  String get localSchemaFramingPrefixed => 'Confluent-Präfix';
+
+  @override
+  String get localSchemaFramingRaw => 'Rohdaten';
+
+  @override
+  String get localSchemaModeLabel => 'Vorrang';
+
+  @override
+  String get localSchemaModeFallback => 'Fallback (Registry zuerst)';
+
+  @override
+  String get localSchemaModeAlways => 'Immer (Registry überspringen)';
+
+  @override
+  String get localSchemaPreviewTitle => 'Feldvorschau';
+
+  @override
+  String get localSchemaPreviewEmpty => 'Keine Felder extrahiert';
+
+  @override
+  String get localSchemaRemoveAction => 'Entfernen';
+
+  @override
+  String get localSchemaSaveAction => 'Speichern';
+
+  @override
+  String get localSchemaProto2DescriptorHint =>
+      'Mit protoc --include_imports --descriptor_set_out=<datei>.desc kompilieren und die Descriptor-Datei auswählen.';
+
+  @override
+  String get localSchemaCardTitle => 'Lokales Schema';
+
+  @override
+  String get localSchemaAssignAction => 'Lokales Schema zuweisen';
+
+  @override
+  String get localSchemaChangeAction => 'Ändern';
+
+  @override
+  String get localSchemaConfirmChangedAction => 'Geänderte Datei bestätigen';
+
+  @override
+  String get localSchemaStateUsable => 'Bereit';
+
+  @override
+  String get localSchemaStateChanged => 'Datei seit Zuweisung geändert';
+
+  @override
+  String get localSchemaStateFileNotFound => 'Datei nicht gefunden';
+
+  @override
+  String get localSchemaStateFileUnreadable => 'Datei nicht lesbar';
+
+  @override
+  String get localSchemaStateSchemaInvalid => 'Schema ungültig';
+
+  @override
+  String get localSchemaStateMessageTypeMissing =>
+      'Nachrichtentyp nicht gefunden';
+
+  @override
+  String get localSchemaStateUnknown => 'Nicht überprüft';
+
+  @override
+  String localSchemaTagPrefix(String type) {
+    return 'Lokal: $type';
+  }
+
+  @override
+  String localSchemaUnreadableBanner(String reason) {
+    return 'Gespeicherte lokale Schema-Zuweisung konnte nicht gelesen werden: $reason';
+  }
+
+  @override
+  String localSchemaProvenanceDecoded(String fileName, String format) {
+    return 'Mit lokalem Schema dekodiert: $fileName ($format)';
+  }
+
+  @override
+  String localSchemaProvenanceDecodedWithMsg(
+    String fileName,
+    String format,
+    String messageType,
+  ) {
+    return 'Mit lokalem Schema dekodiert: $fileName ($format, $messageType)';
+  }
+
+  @override
+  String localSchemaProvenanceFailed(String fileName) {
+    return 'Dekodierung mit lokalem Schema fehlgeschlagen ($fileName)';
+  }
+
+  @override
+  String get localSchemaCardBadgeKey => 'K: lokal';
+
+  @override
+  String get localSchemaCardBadgeValue => 'V: lokal';
+
+  @override
+  String get localSchemaCardBadgeKeyError => 'K: lokal !';
+
+  @override
+  String get localSchemaCardBadgeValueError => 'V: lokal !';
+
+  @override
+  String get localSchemaAnalysisNotice =>
+      'Einige Nachrichten in dieser Analyse wurden mit einem lokalen Schema dekodiert.';
+
+  @override
+  String localDecodeErrorFileNotFound(String detail) {
+    return 'Schemadatei nicht gefunden: $detail';
+  }
+
+  @override
+  String localDecodeErrorFileUnreadable(String detail) {
+    return 'Schemadatei konnte nicht gelesen werden: $detail';
+  }
+
+  @override
+  String localDecodeErrorFileTooLarge(String detail) {
+    return 'Schemadatei überschreitet das 10-MiB-Limit: $detail';
+  }
+
+  @override
+  String localDecodeErrorSchemaInvalid(String detail) {
+    return 'Ungültiges Schema: $detail';
+  }
+
+  @override
+  String localDecodeErrorUnsupportedProto2(String detail) {
+    return 'Proto2-Quelldateien werden nicht direkt unterstützt; bitte als FileDescriptorSet (.desc) kompilieren. ($detail)';
+  }
+
+  @override
+  String localDecodeErrorUnresolvedImport(String detail) {
+    return 'Nicht aufgelöster Import im Schema: $detail. Mit protoc --include_imports --descriptor_set_out=... kompilieren';
+  }
+
+  @override
+  String localDecodeErrorMessageTypeNotFound(String detail) {
+    return 'Nachrichtentyp im Schema nicht gefunden: $detail';
+  }
+
+  @override
+  String localDecodeErrorMissingPrefix(String detail) {
+    return 'Confluent-5-Byte-Präfix erwartet, aber Payload beginnt nicht mit 0x00: $detail';
+  }
+
+  @override
+  String localDecodeErrorUnknownMessageIndex(String detail) {
+    return 'Unbekannter Protobuf-Nachrichtenindex im Wire-Präfix: $detail';
+  }
+
+  @override
+  String localDecodeErrorPayloadMismatch(String detail) {
+    return 'Payload stimmt nicht mit dem Schema überein: $detail';
+  }
+
+  @override
+  String localDecodeErrorTrailingBytes(String detail) {
+    return 'Unerwartete überzählige Bytes nach dekodiertem Payload: $detail';
+  }
+
+  @override
+  String localDecodeErrorNotJson(String detail) {
+    return 'Payload ist kein gültiges UTF-8-JSON: $detail';
+  }
 }

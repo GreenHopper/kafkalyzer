@@ -1,23 +1,98 @@
 import 'package:flutter/foundation.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
-import 'dart:convert';
+import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:logger/logger.dart';
 
+sealed class SchemaTypeState {
+  const SchemaTypeState();
+}
+
+class SchemaTypeKnown extends SchemaTypeState {
+  final api.SchemaKindDto kind;
+  final String? otherName;
+
+  const SchemaTypeKnown(this.kind, [this.otherName]);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SchemaTypeKnown &&
+          kind == other.kind &&
+          otherName == other.otherName;
+
+  @override
+  int get hashCode => Object.hash(kind, otherName);
+}
+
+class SchemaTypeNotLoaded extends SchemaTypeState {
+  const SchemaTypeNotLoaded();
+
+  @override
+  bool operator ==(Object other) => other is SchemaTypeNotLoaded;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+class SchemaTypeFailed extends SchemaTypeState {
+  const SchemaTypeFailed();
+
+  @override
+  bool operator ==(Object other) => other is SchemaTypeFailed;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+}
+
+class _AssociationCacheEntry {
+  final List<String> subjects;
+  final List<String> topics;
+  final List<api.SubjectAssociationDto> associations;
+
+  _AssociationCacheEntry({
+    required this.subjects,
+    required this.topics,
+    required this.associations,
+  });
+}
+
 class SchemaController extends ChangeNotifier {
   final SchemaRegistryService _registryService;
+  final LocalSchemaAssignmentService? _localSchemaService;
   final Logger _logger = getIt.isRegistered<Logger>()
       ? getIt<Logger>()
       : Logger();
 
-  SchemaController({SchemaRegistryService? registryService})
-    : _registryService = registryService ?? getIt<SchemaRegistryService>();
+  SchemaController({
+    SchemaRegistryService? registryService,
+    LocalSchemaAssignmentService? localSchemaService,
+  }) : _registryService = registryService ?? getIt<SchemaRegistryService>(),
+       _localSchemaService =
+           localSchemaService ??
+           (getIt.isRegistered<LocalSchemaAssignmentService>()
+               ? getIt<LocalSchemaAssignmentService>()
+               : null) {
+    _localSchemaService?.addListener(_onLocalSchemaChanged);
+  }
+
+  void _onLocalSchemaChanged() {
+    _fieldsCache.clear();
+  }
+
+  @override
+  void dispose() {
+    _localSchemaService?.removeListener(_onLocalSchemaChanged);
+    super.dispose();
+  }
 
   final Map<String, List<String>> _cache = {};
   final Map<String, bool> _isLoading = {};
   final Map<String, String> _errors = {};
+  final Map<String, Object> _errorObjects = {};
 
   List<String>? getSchemas(ClusterProfile cluster) => _cache[cluster.name];
 
@@ -25,12 +100,15 @@ class SchemaController extends ChangeNotifier {
 
   String? errorFor(ClusterProfile cluster) => _errors[cluster.name];
 
+  Object? errorObjectFor(ClusterProfile cluster) => _errorObjects[cluster.name];
+
   Future<void> fetchSchemas(
     ClusterProfile cluster, {
     bool force = false,
   }) async {
     if (cluster.schemaRegistryUrl?.trim().isEmpty ?? true) {
       _errors.remove(cluster.name);
+      _errorObjects.remove(cluster.name);
       _cache[cluster.name] = const [];
       notifyListeners();
       return;
@@ -39,6 +117,7 @@ class SchemaController extends ChangeNotifier {
     if (!force && _cache.containsKey(cluster.name)) return;
 
     _errors.remove(cluster.name);
+    _errorObjects.remove(cluster.name);
     _isLoading[cluster.name] = true;
     notifyListeners();
 
@@ -52,6 +131,7 @@ class SchemaController extends ChangeNotifier {
         stackTrace: st,
       );
       _errors[cluster.name] = e.toString();
+      _errorObjects[cluster.name] = e;
     } finally {
       _isLoading[cluster.name] = false;
       notifyListeners();
@@ -59,11 +139,133 @@ class SchemaController extends ChangeNotifier {
   }
 
   final Map<String, List<String>> _fieldsCache = {};
+  final Map<(String, String, int?), api.SubjectSchemaViewDto> _viewCache = {};
+  final Set<(String, String, int?)> _failedViews = {};
+  final Map<String, String> _globalCompatibilityCache = {};
+  final Map<(String, String), String?> _subjectCompatibilityCache = {};
+  final Map<String, _AssociationCacheEntry> _associationCache = {};
 
   void clearCache(ClusterProfile cluster) {
     _cache.remove(cluster.name);
     _fieldsCache.removeWhere((key, _) => key.startsWith("${cluster.name}_"));
+    _viewCache.removeWhere((key, _) => key.$1 == cluster.name);
+    _failedViews.removeWhere((key) => key.$1 == cluster.name);
+    _globalCompatibilityCache.remove(cluster.name);
+    _subjectCompatibilityCache.removeWhere((key, _) => key.$1 == cluster.name);
+    _associationCache.remove(cluster.name);
     notifyListeners();
+  }
+
+  SchemaTypeState schemaTypeFor(
+    ClusterProfile cluster,
+    String subject, {
+    int? version,
+  }) {
+    final key = (cluster.name, subject, version);
+    final view = _viewCache[key];
+    if (view != null) {
+      return SchemaTypeKnown(
+        view.schema.schemaType,
+        view.schema.otherSchemaType,
+      );
+    }
+    if (_failedViews.contains(key)) {
+      return const SchemaTypeFailed();
+    }
+    return const SchemaTypeNotLoaded();
+  }
+
+  Future<api.SubjectSchemaViewDto> fetchSubjectSchemaView(
+    ClusterProfile cluster,
+    String subject, {
+    int? version,
+    bool force = false,
+  }) async {
+    final key = (cluster.name, subject, version);
+    if (!force && _viewCache.containsKey(key)) {
+      return _viewCache[key]!;
+    }
+
+    try {
+      final view = await _registryService.fetchSubjectSchemaView(
+        profile: cluster,
+        subject: subject,
+        version: version,
+      );
+      _failedViews.remove(key);
+      _viewCache[key] = view;
+      notifyListeners();
+      return view;
+    } catch (e) {
+      _failedViews.add(key);
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  String? globalCompatibilityFor(ClusterProfile cluster) =>
+      _globalCompatibilityCache[cluster.name];
+
+  String? subjectCompatibilityFor(ClusterProfile cluster, String subject) =>
+      _subjectCompatibilityCache[(cluster.name, subject)];
+
+  bool hasSubjectCompatibility(ClusterProfile cluster, String subject) =>
+      _subjectCompatibilityCache.containsKey((cluster.name, subject));
+
+  Future<String> fetchGlobalCompatibility(
+    ClusterProfile cluster, {
+    bool force = false,
+  }) async {
+    if (!force && _globalCompatibilityCache.containsKey(cluster.name)) {
+      return _globalCompatibilityCache[cluster.name]!;
+    }
+    final level = await _registryService.fetchGlobalCompatibility(
+      profile: cluster,
+    );
+    _globalCompatibilityCache[cluster.name] = level;
+    notifyListeners();
+    return level;
+  }
+
+  Future<String?> fetchSubjectCompatibility(
+    ClusterProfile cluster,
+    String subject, {
+    bool force = false,
+  }) async {
+    final key = (cluster.name, subject);
+    if (!force && _subjectCompatibilityCache.containsKey(key)) {
+      return _subjectCompatibilityCache[key];
+    }
+    final level = await _registryService.fetchSubjectCompatibility(
+      profile: cluster,
+      subject: subject,
+    );
+    _subjectCompatibilityCache[key] = level;
+    notifyListeners();
+    return level;
+  }
+
+  List<api.SubjectAssociationDto> associatedTopics(
+    ClusterProfile cluster,
+    List<String> topics,
+  ) {
+    final subjects = _cache[cluster.name] ?? const <String>[];
+    final cached = _associationCache[cluster.name];
+    if (cached != null &&
+        listEquals(cached.subjects, subjects) &&
+        listEquals(cached.topics, topics)) {
+      return cached.associations;
+    }
+    final associations = _registryService.associateSubjects(
+      subjects: subjects,
+      topics: topics,
+    );
+    _associationCache[cluster.name] = _AssociationCacheEntry(
+      subjects: List<String>.of(subjects),
+      topics: List<String>.of(topics),
+      associations: associations,
+    );
+    return associations;
   }
 
   Future<List<String>> fetchSchemaFields(
@@ -75,17 +277,77 @@ class SchemaController extends ChangeNotifier {
       return _fieldsCache[cacheKey]!;
     }
 
-    try {
-      // Try to fetch value schema first
-      final schemaJson = await _registryService.fetchSchema(
-        profile: cluster,
-        subject: "$topic-value",
+    final localService = _localSchemaService;
+    final stored = localService != null
+        ? await localService.getForTopic(cluster.name, topic)
+        : null;
+    final valueAssignment = stored?.value;
+
+    if (valueAssignment?.mode == LocalSchemaModeDto.always &&
+        localService != null) {
+      final paths = await _fetchLocalSchemaFieldPaths(
+        localService,
+        cluster.name,
+        topic,
       );
-      final schema = parseSchemaFields(schemaJson);
-      _fieldsCache[cacheKey] = schema;
-      return schema;
-    } catch (e) {
-      debugPrint("Failed to fetch schema fields for $topic: $e");
+      _fieldsCache[cacheKey] = paths;
+      return paths;
+    }
+
+    try {
+      if (cluster.schemaRegistryUrl?.trim().isNotEmpty ?? false) {
+        final view = await fetchSubjectSchemaView(cluster, "$topic-value");
+        final paths = view.fields.fields.map((f) => f.path).toList();
+        if (paths.isNotEmpty || valueAssignment == null) {
+          _fieldsCache[cacheKey] = paths;
+          return paths;
+        }
+      }
+    } catch (e, st) {
+      _logger.w(
+        "Failed to fetch schema fields for $topic",
+        error: e,
+        stackTrace: st,
+      );
+    }
+
+    if (valueAssignment != null && localService != null) {
+      final paths = await _fetchLocalSchemaFieldPaths(
+        localService,
+        cluster.name,
+        topic,
+      );
+      if (paths.isNotEmpty) {
+        _fieldsCache[cacheKey] = paths;
+      }
+      return paths;
+    }
+
+    return [];
+  }
+
+  Future<List<String>> _fetchLocalSchemaFieldPaths(
+    LocalSchemaAssignmentService localService,
+    String clusterId,
+    String topic,
+  ) async {
+    try {
+      final state = await localService.stateFor(
+        clusterId,
+        topic,
+        LocalSchemaSide.value,
+      );
+      final fields = state.info?.fields?.fields;
+      if (fields == null) {
+        return [];
+      }
+      return fields.map((f) => f.path).toList();
+    } catch (e, st) {
+      _logger.w(
+        "Failed to inspect local schema fields for $topic",
+        error: e,
+        stackTrace: st,
+      );
       return [];
     }
   }
@@ -136,124 +398,5 @@ class SchemaController extends ChangeNotifier {
       subject: subject,
       availableTopics: availableTopics,
     );
-  }
-
-  List<String> parseSchemaFields(String jsonString) {
-    try {
-      final map = jsonDecode(jsonString);
-      if (map is Map<String, dynamic> && map.containsKey('fields')) {
-        final namedRecords = _collectNamedRecords(map, {});
-        return _extractFieldPaths(map['fields'] as List, "", namedRecords, {});
-      }
-    } catch (e) {
-      debugPrint("Error parsing schema JSON: $e");
-    }
-    return [];
-  }
-
-  Map<String, List> _collectNamedRecords(dynamic node, Map<String, List> map) {
-    if (node is Map<String, dynamic>) {
-      if (node['type'] == 'record' &&
-          node['name'] != null &&
-          node['fields'] != null) {
-        final name = node['name'].toString();
-        map[name] = node['fields'] as List;
-
-        if (node['namespace'] != null) {
-          final fullName = "${node['namespace']}.$name";
-          map[fullName] = node['fields'] as List;
-        }
-      }
-      for (var v in node.values) {
-        _collectNamedRecords(v, map);
-      }
-    } else if (node is List) {
-      for (var item in node) {
-        _collectNamedRecords(item, map);
-      }
-    }
-    return map;
-  }
-
-  List<String> _extractFieldPaths(
-    List fields,
-    String prefix,
-    Map<String, List> namedRecords,
-    Set<String> visited,
-  ) {
-    List<String> paths = [];
-    for (var f in fields) {
-      if (f is! Map<String, dynamic>) continue;
-      final name = f['name'] as String?;
-      if (name == null) continue;
-
-      final currentPath = prefix.isEmpty ? name : "$prefix.$name";
-      paths.add(currentPath);
-
-      if (f.containsKey('type')) {
-        paths.addAll(
-          _extractPathsFromType(f['type'], currentPath, namedRecords, visited),
-        );
-      }
-    }
-    return paths;
-  }
-
-  List<String> _extractPathsFromType(
-    dynamic typeObj,
-    String currentPath,
-    Map<String, List> namedRecords,
-    Set<String> visited,
-  ) {
-    List<String> paths = [];
-
-    if (typeObj is String) {
-      if (namedRecords.containsKey(typeObj) && !visited.contains(typeObj)) {
-        final newVisited = Set<String>.from(visited)..add(typeObj);
-        paths.addAll(
-          _extractFieldPaths(
-            namedRecords[typeObj]!,
-            currentPath,
-            namedRecords,
-            newVisited,
-          ),
-        );
-      }
-    } else if (typeObj is Map<String, dynamic>) {
-      final typeName = typeObj['name'] as String?;
-
-      var currentVisited = visited;
-      if (typeName != null) {
-        if (currentVisited.contains(typeName)) return paths;
-        currentVisited = Set<String>.from(currentVisited)..add(typeName);
-      }
-
-      if (typeObj['type'] == 'record' && typeObj.containsKey('fields')) {
-        paths.addAll(
-          _extractFieldPaths(
-            typeObj['fields'] as List,
-            currentPath,
-            namedRecords,
-            currentVisited,
-          ),
-        );
-      } else if (typeObj['type'] == 'array' && typeObj.containsKey('items')) {
-        paths.addAll(
-          _extractPathsFromType(
-            typeObj['items'],
-            currentPath,
-            namedRecords,
-            currentVisited,
-          ),
-        );
-      }
-    } else if (typeObj is List) {
-      for (var t in typeObj) {
-        paths.addAll(
-          _extractPathsFromType(t, currentPath, namedRecords, visited),
-        );
-      }
-    }
-    return paths;
   }
 }

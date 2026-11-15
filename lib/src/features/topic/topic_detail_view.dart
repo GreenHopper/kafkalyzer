@@ -1,20 +1,34 @@
 import 'dart:math' as math;
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/search/domain/filter_field_suggestions.dart';
+import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/topic/models/duplicate_navigation_target.dart';
 import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/local_schema_error_formatter.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/local_schema_assignment_dialog.dart';
+import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_dialog.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_config_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_view.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/config/topic_config_view.dart'
+    as config_ui;
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
+import 'package:kafkalyzer/src/services/time_display_settings.dart';
+import 'package:kafkalyzer/src/services/topic_config_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
@@ -28,7 +42,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 
 enum StartStrategy { latest, earliest, customOffset, customTimestamp }
 
-enum TopicViewMode { messages, analysis }
+enum TopicViewMode { messages, analysis, config }
 
 class TopicDetailView extends StatefulWidget {
   final TopicMetadata topic;
@@ -52,13 +66,23 @@ class _TopicDetailViewState extends State<TopicDetailView>
   bool get wantKeepAlive => true;
   final TextEditingController _filterController = TextEditingController();
   final TextEditingController _filterFieldController = TextEditingController();
+  final FilterExpressionEditingController _filterExpressionController =
+      FilterExpressionEditingController();
+  FilterFieldSuggestions? _filterSuggestions;
   final TextEditingController _offsetController = TextEditingController();
   final TextEditingController _timestampController = TextEditingController();
 
   late final ActiveConnectionController activeController;
   late final MessageStreamController streamController;
   late final TopicAnalysisController analysisController;
+  late final TopicFactsController factsController;
   late final SchemaController schemaController;
+  late final TimeDisplaySettings _timeDisplaySettings;
+  TopicConfigController? _configController;
+  LocalSchemaAssignmentService? _localSchemaService;
+  StoredTopicLocalSchemas? _storedLocalSchemas;
+  LocalSchemaStateResult? _localKeyState;
+  LocalSchemaStateResult? _localValueState;
 
   TopicViewMode _viewMode = TopicViewMode.messages;
   final GlobalKey<MessagesViewState> _messagesViewKey =
@@ -140,6 +164,12 @@ class _TopicDetailViewState extends State<TopicDetailView>
       ? getIt<SettingsService>().defaultResultLimit.value
       : SettingsService.defaultResultLimitSetting.defaultValue;
 
+  TopicController? topicController;
+
+  TopicMetadata get _currentTopic =>
+      topicController?.findTopic(widget.profile, widget.topic.name) ??
+      widget.topic;
+
   @override
   void initState() {
     super.initState();
@@ -148,20 +178,199 @@ class _TopicDetailViewState extends State<TopicDetailView>
     final key = widget.tabId ?? '${widget.profile.name}:${widget.topic.name}';
     streamController = activeController.getStreamController(key);
     analysisController = activeController.getAnalysisController(key);
+    factsController = activeController.getTopicFactsController(
+      key,
+      widget.profile,
+      widget.topic.name,
+    );
+    _timeDisplaySettings = getIt.isRegistered<TimeDisplaySettings>()
+        ? getIt<TimeDisplaySettings>()
+        : TimeDisplaySettings.fallback;
     schemaController = getIt<SchemaController>();
+    _localSchemaService = getIt.isRegistered<LocalSchemaAssignmentService>()
+        ? getIt<LocalSchemaAssignmentService>()
+        : null;
+    _localSchemaService?.addListener(_onLocalSchemaChanged);
+    _loadLocalSchemaTagState();
+    topicController = getIt.isRegistered<TopicController>()
+        ? getIt<TopicController>()
+        : null;
+    topicController?.ensureConfig(widget.profile, widget.topic.name);
+    activeController.addListener(_onActiveConnectionChanged);
+    _maybeLoadFactsIfActive();
+  }
+
+  bool _isTabActive() {
+    final active = activeController.activeTopic;
+    if (active == null) return false;
+    if (widget.tabId != null) {
+      return active.id == widget.tabId;
+    }
+    return active.topic.name == widget.topic.name &&
+        active.profile.name == widget.profile.name;
+  }
+
+  void _onLocalSchemaChanged() {
+    _loadLocalSchemaTagState();
+  }
+
+  Future<void> _loadLocalSchemaTagState({bool refresh = false}) async {
+    final service = _localSchemaService;
+    if (service == null) return;
+    final stored = await service.getForTopic(
+      widget.profile.name,
+      widget.topic.name,
+    );
+    LocalSchemaStateResult? keyState;
+    LocalSchemaStateResult? valueState;
+    if (stored.key != null) {
+      keyState = await service.stateFor(
+        widget.profile.name,
+        widget.topic.name,
+        LocalSchemaSide.key,
+        refresh: refresh,
+      );
+    }
+    if (stored.value != null) {
+      valueState = await service.stateFor(
+        widget.profile.name,
+        widget.topic.name,
+        LocalSchemaSide.value,
+        refresh: refresh,
+      );
+    }
+    if (!mounted) return;
+    setState(() {
+      _storedLocalSchemas = stored;
+      _localKeyState = keyState;
+      _localValueState = valueState;
+    });
+  }
+
+  String _shortFormatLabel(
+    AppLocalizations? l10n,
+    LocalSchemaFormatDto format,
+  ) {
+    return switch (format) {
+      LocalSchemaFormatDto.avro => l10n?.schemaTypeAvro ?? 'Avro',
+      LocalSchemaFormatDto.protobufSource ||
+      LocalSchemaFormatDto.protobufDescriptor =>
+        l10n?.schemaTypeProtobuf ?? 'Protobuf',
+      LocalSchemaFormatDto.jsonSchema => l10n?.schemaTypeJson ?? 'JSON Schema',
+    };
+  }
+
+  Future<void> _openLocalSchemaDialogFromHeader(LocalSchemaSide side) async {
+    final service = _localSchemaService;
+    if (service == null) return;
+    final existing = _storedLocalSchemas?.forSide(side);
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => LocalSchemaAssignmentDialog(
+        side: side,
+        existing: existing,
+        onSave: (assignment) async {
+          await service.saveSide(
+            widget.profile.name,
+            widget.topic.name,
+            side,
+            assignment,
+          );
+          await _loadLocalSchemaTagState(refresh: true);
+        },
+        onRemove: () async {
+          await service.removeSide(
+            widget.profile.name,
+            widget.topic.name,
+            side,
+          );
+          await _loadLocalSchemaTagState(refresh: true);
+        },
+      ),
+    );
+  }
+
+  Widget? _buildLocalSchemaHeaderTag(
+    BuildContext context,
+    AppLocalizations? l10n,
+  ) {
+    final stored = _storedLocalSchemas;
+    if (stored == null || !stored.hasAny || l10n == null) return null;
+
+    final side = stored.value != null
+        ? LocalSchemaSide.value
+        : LocalSchemaSide.key;
+    final assignment = stored.forSide(side)!;
+    final stateResult = side == LocalSchemaSide.value
+        ? _localValueState
+        : _localKeyState;
+    final state = stateResult?.state ?? LocalSchemaAssignmentState.unknown;
+    final hasError =
+        state != LocalSchemaAssignmentState.usable &&
+        state != LocalSchemaAssignmentState.unknown;
+
+    final typeLabel = _shortFormatLabel(l10n, assignment.format);
+    final baseText = l10n.localSchemaTagPrefix(typeLabel);
+    final text = hasError ? '$baseText !' : baseText;
+    final tooltip = stateResult?.error != null
+        ? describeLocalDecodeError(
+            l10n,
+            stateResult!.error!.kind,
+            stateResult.error!.detail,
+          )
+        : assignment.path.split(RegExp(r'[/\\]')).last;
+
+    return Tooltip(
+      message: tooltip,
+      child: TopicTag(
+        text,
+        key: const Key('topic_local_schema_tag'),
+        isSchema: true,
+        onTap: () => _openLocalSchemaDialogFromHeader(side),
+      ),
+    );
+  }
+
+  void _onActiveConnectionChanged() {
+    _maybeLoadFactsIfActive();
+  }
+
+  void _maybeLoadFactsIfActive() {
+    if (_isTabActive()) {
+      factsController.loadFacts();
+    }
   }
 
   @override
   void dispose() {
+    _localSchemaService?.removeListener(_onLocalSchemaChanged);
+    activeController.removeListener(_onActiveConnectionChanged);
     _filterController.dispose();
     _filterFieldController.dispose();
+    _filterExpressionController.dispose();
     _offsetController.dispose();
     _timestampController.dispose();
     _maxResultsController.dispose();
     _partitionController.dispose();
     _endOffsetController.dispose();
     _endTimestampController.dispose();
+    _configController?.dispose();
     super.dispose();
+  }
+
+  TopicConfigController _ensureConfigController() {
+    final existing = _configController;
+    if (existing != null) {
+      existing.ensureLoaded();
+      return existing;
+    }
+    final controller = TopicConfigController(
+      service: getIt<TopicConfigService>(),
+      leftProfile: widget.profile,
+      leftTopic: widget.topic.name,
+    )..ensureLoaded();
+    _configController = controller;
+    return controller;
   }
 
   // State
@@ -190,7 +399,11 @@ class _TopicDetailViewState extends State<TopicDetailView>
   Widget build(BuildContext context) {
     super.build(context);
     return AnimatedBuilder(
-      animation: Listenable.merge([activeController, streamController]),
+      animation: Listenable.merge([
+        activeController,
+        streamController,
+        ?topicController,
+      ]),
       builder: (context, child) {
         final messages = streamController.messages;
         final colorScheme = Theme.of(context).colorScheme;
@@ -234,7 +447,9 @@ class _TopicDetailViewState extends State<TopicDetailView>
                 fastTraceEnabled: _fastTraceEnabled,
                 onFastTraceEnabledChanged: (val) =>
                     setState(() => _fastTraceEnabled = val),
-                partitionCount: widget.topic.partitionCount,
+                partitionCount: _currentTopic.metadataKnown
+                    ? _currentTopic.partitionCount
+                    : null,
                 startStrategy: _startStrategy,
                 onStartStrategyChanged: (strategy) =>
                     setState(() => _startStrategy = strategy),
@@ -246,6 +461,8 @@ class _TopicDetailViewState extends State<TopicDetailView>
                 endOffsetController: _endOffsetController,
                 endTimestampController: _endTimestampController,
                 onStart: startStreaming,
+                filterExpressionController: _filterExpressionController,
+                filterSuggestions: _filterSuggestions,
                 schemaFieldsFetcher: () => schemaController.fetchSchemaFields(
                   widget.profile,
                   widget.topic.name,
@@ -279,7 +496,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
                       },
                 ),
               ),
-            ] else ...[
+            ] else if (_viewMode == TopicViewMode.analysis) ...[
               Expanded(
                 child: TopicAnalysisView(
                   topic: widget.topic,
@@ -287,6 +504,12 @@ class _TopicDetailViewState extends State<TopicDetailView>
                   controller: analysisController,
                   onNavigateToTarget: _handleDuplicateNavigation,
                   onNavigateToMessage: _navigateToMessage,
+                ),
+              ),
+            ] else ...[
+              Expanded(
+                child: config_ui.TopicConfigView(
+                  controller: _ensureConfigController(),
                 ),
               ),
             ],
@@ -326,8 +549,8 @@ class _TopicDetailViewState extends State<TopicDetailView>
     return LayoutBuilder(
       builder: (context, constraints) {
         // shortcut: fixed breakpoints, raise the second one if the pane gets wider sidebars
-        final compact = constraints.maxWidth < 1100;
-        final iconOnly = constraints.maxWidth < 620;
+        final compact = constraints.maxWidth < 1220;
+        final iconOnly = constraints.maxWidth < 700;
 
         final identityRow = Row(
           children: [
@@ -420,6 +643,17 @@ class _TopicDetailViewState extends State<TopicDetailView>
             showLabel: !iconOnly,
             onTap: () => setState(() => _viewMode = TopicViewMode.analysis),
           ),
+          const SizedBox(width: 2),
+          _TopicModeButton(
+            icon: Icons.tune,
+            label: l10n?.topicModeConfig ?? 'Configuration',
+            isSelected: _viewMode == TopicViewMode.config,
+            showLabel: !iconOnly,
+            onTap: () {
+              _ensureConfigController();
+              setState(() => _viewMode = TopicViewMode.config);
+            },
+          ),
         ],
       ),
     );
@@ -452,6 +686,16 @@ class _TopicDetailViewState extends State<TopicDetailView>
             );
           },
         ),
+        IconButton(
+          key: const Key('topic_header_refresh_facts_button'),
+          icon: const Icon(Icons.refresh, size: 18),
+          tooltip:
+              l10n?.topicHeaderRefreshFactsTooltip ?? 'Refresh topic facts',
+          onPressed: () {
+            topicController?.fetchTopics(widget.profile, force: true);
+            factsController.refresh();
+          },
+        ),
       ],
     );
   }
@@ -459,63 +703,447 @@ class _TopicDetailViewState extends State<TopicDetailView>
   void _openPartitionHealthDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => TopicPartitionHealthDialog(
+      builder: (dialogContext) => TopicPartitionHealthDialog(
         profile: widget.profile,
         topicName: widget.topic.name,
+        cleanupPolicy: _currentTopic.cleanupPolicy,
+        onOpenAnalysis: () {
+          Navigator.of(dialogContext).pop();
+          if (mounted) {
+            setState(() {
+              _viewMode = TopicViewMode.analysis;
+            });
+          }
+        },
       ),
     );
   }
 
   Widget _buildTopicTags(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final unhealthy =
-        (widget.topic.underReplicatedPartitions ?? 0) +
-        (widget.topic.leaderlessPartitions ?? 0);
+    final topic = _currentTopic;
     final healthTooltip =
         l10n?.partitionHealthTooltip ??
         'View partition replication & health details';
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      children: [
-        Tooltip(
-          message: healthTooltip,
-          child: TopicTag(
-            "${widget.topic.partitionCount} Partitions",
-            key: const Key('topic_partitions_tag'),
-            onTap: () => _openPartitionHealthDialog(context),
+    if (!topic.metadataKnown) {
+      final err = topic.metadataError!;
+      final reason = switch (err.kind) {
+        TopicMetadataErrorKind.notFound =>
+          l10n?.topicMetadataNotFound ?? 'topic not found',
+        TopicMetadataErrorKind.notAuthorized =>
+          l10n?.topicConfigNotReadable ?? 'not readable — permission?',
+        TopicMetadataErrorKind.other =>
+          l10n?.topicConfigLoadFailed ?? 'could not be loaded',
+      };
+      final schemaLabel = resolveTopicSchemaLabel(
+        l10n,
+        schemaController,
+        widget.profile,
+        topic.name,
+      );
+      final localSchemaTag = _buildLocalSchemaHeaderTag(context, l10n);
+      return Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          TopicTag(reason, key: const Key('topic_metadata_error_tag')),
+          if (schemaLabel != null)
+            TopicTag(
+              schemaLabel,
+              key: const Key('topic_schema_tag'),
+              isSchema: true,
+            ),
+          ?localSchemaTag,
+        ],
+      );
+    }
+
+    final unhealthy =
+        (topic.underReplicatedPartitions ?? 0) +
+        (topic.leaderlessPartitions ?? 0);
+    final configView = topicController?.configFor(widget.profile, topic.name);
+
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        factsController,
+        _timeDisplaySettings,
+        schemaController,
+      ]),
+      builder: (context, _) {
+        final schemaLabel = resolveTopicSchemaLabel(
+          l10n,
+          schemaController,
+          widget.profile,
+          topic.name,
+        );
+        return Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Tooltip(
+              message: healthTooltip,
+              child: TopicTag(
+                l10n?.topicPartitionsLabel(topic.partitionCount) ??
+                    "${topic.partitionCount} Partitions",
+                key: const Key('topic_partitions_tag'),
+                onTap: () => _openPartitionHealthDialog(context),
+              ),
+            ),
+            Tooltip(
+              message: healthTooltip,
+              child: TopicTag(
+                l10n?.topicRfLabel(topic.replicationFactor) ??
+                    "RF: ${topic.replicationFactor}",
+                key: const Key('topic_rf_tag'),
+                onTap: () => _openPartitionHealthDialog(context),
+              ),
+            ),
+            if (unhealthy > 0)
+              Tooltip(
+                message: healthTooltip,
+                child: TopicTag(
+                  l10n?.topicHealthWarning(
+                        topic.underReplicatedPartitions ?? 0,
+                        topic.leaderlessPartitions ?? 0,
+                      ) ??
+                      'Unhealthy partitions',
+                  key: const Key('topic_health_tag'),
+                  onTap: () => _openPartitionHealthDialog(context),
+                ),
+              ),
+            ..._buildEstimateTags(context, l10n, topic),
+            if (configView != null) ...[
+              switch (configView.state) {
+                TopicConfigViewState.loading =>
+                  topic.cleanupPolicy != null || topic.retentionMs != null
+                      ? const SizedBox.shrink()
+                      : TopicTag(
+                          l10n?.topicConfigLoading ?? 'loading',
+                          key: const Key('topic_config_loading_tag'),
+                          isConfig: true,
+                        ),
+                TopicConfigViewState.available => const SizedBox.shrink(),
+                TopicConfigViewState.notReadable => TopicTag(
+                  l10n?.topicConfigNotReadable ?? 'not readable — permission?',
+                  key: const Key('topic_config_not_readable_tag'),
+                  isConfig: true,
+                ),
+                TopicConfigViewState.failed => TopicTag(
+                  '${l10n?.topicConfigLoadFailed ?? 'could not be loaded'} · ${l10n?.retry ?? 'Retry'}',
+                  key: const Key('topic_config_failed_tag'),
+                  isConfig: true,
+                  onTap: () =>
+                      topicController!.retryConfig(widget.profile, topic.name),
+                ),
+              },
+            ],
+            ..._buildRetentionAndPolicyTags(context, l10n, topic, configView),
+            _buildTimeRangeWidget(context, l10n, topic),
+            if (schemaLabel != null)
+              TopicTag(
+                schemaLabel,
+                key: const Key('topic_schema_tag'),
+                isSchema: true,
+              ),
+            ?_buildLocalSchemaHeaderTag(context, l10n),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildEstimateTags(
+    BuildContext context,
+    AppLocalizations? l10n,
+    TopicMetadata topic,
+  ) {
+    final offsets = factsController.offsets;
+    switch (offsets.status) {
+      case TopicFactStatus.idle:
+        return const [];
+      case TopicFactStatus.loading:
+        return [
+          TopicTag(
+            l10n?.topicConfigLoading ?? 'loading',
+            key: const Key('topic_estimate_loading_tag'),
+            isConfig: true,
           ),
-        ),
-        Tooltip(
-          message: healthTooltip,
-          child: TopicTag(
-            "RF: ${widget.topic.replicationFactor}",
-            key: const Key('topic_rf_tag'),
-            onTap: () => _openPartitionHealthDialog(context),
-          ),
-        ),
-        if (unhealthy > 0)
+        ];
+      case TopicFactStatus.error:
+        if (offsets.notReadable) {
+          return [
+            TopicTag(
+              l10n?.topicHeaderEstimateNotReadable ?? 'Messages: not readable',
+              key: const Key('topic_estimate_not_readable_tag'),
+              isConfig: true,
+            ),
+          ];
+        }
+        return [
           Tooltip(
-            message: healthTooltip,
+            message: offsets.error ?? '',
             child: TopicTag(
-              l10n?.topicHealthWarning(
-                    widget.topic.underReplicatedPartitions ?? 0,
-                    widget.topic.leaderlessPartitions ?? 0,
-                  ) ??
-                  'Unhealthy partitions',
-              key: const Key('topic_health_tag'),
-              onTap: () => _openPartitionHealthDialog(context),
+              l10n?.topicHeaderEstimateUnknown ?? 'Messages: unknown',
+              key: const Key('topic_estimate_unknown_tag'),
+              isConfig: true,
             ),
           ),
-        if (widget.topic.cleanupPolicy != null)
-          TopicTag(splitPolicy(widget.topic.cleanupPolicy!), isConfig: true),
-        if (widget.topic.retentionMs != null)
-          TopicTag(formatRetention(widget.topic.retentionMs!), isConfig: true),
-        if (hasSchema(schemaController, widget.profile, widget.topic.name))
-          const TopicTag("Avro", isSchema: true),
-      ],
-    );
+        ];
+      case TopicFactStatus.value:
+        final est = offsets.data!;
+        if (est.notReadable) {
+          return [
+            Tooltip(
+              message: est.unreadableReason ?? '',
+              child: TopicTag(
+                l10n?.topicHeaderEstimateNotReadable ??
+                    'Messages: not readable',
+                key: const Key('topic_estimate_not_readable_tag'),
+                isConfig: true,
+              ),
+            ),
+          ];
+        }
+        if (est.totalSpan == null) {
+          return [
+            Tooltip(
+              message: est.unreadableReason ?? '',
+              child: TopicTag(
+                l10n?.topicHeaderEstimateUnknown ?? 'Messages: unknown',
+                key: const Key('topic_estimate_unknown_tag'),
+                isConfig: true,
+              ),
+            ),
+          ];
+        }
+        final locale = Localizations.localeOf(context).toString();
+        final formattedCount = NumberFormat.decimalPattern(
+          locale,
+        ).format(est.totalSpan!);
+        final label =
+            l10n?.topicHeaderEstimateValue(formattedCount) ??
+            '≈ $formattedCount messages (estimate)';
+        final policy =
+            factsController.configs.data?.cleanupPolicy ?? topic.cleanupPolicy;
+        final isCompactedOrUnknown =
+            policy == null || policy.isEmpty || policy.contains('compact');
+        final tag = TopicTag(
+          label,
+          key: const Key('topic_estimate_tag'),
+          isConfig: true,
+        );
+        if (isCompactedOrUnknown && l10n != null) {
+          return [
+            Tooltip(
+              key: const Key('topic_estimate_compaction_tooltip'),
+              message: l10n.topicHeaderEstimateCompactedNote,
+              child: tag,
+            ),
+          ];
+        }
+        return [tag];
+    }
+  }
+
+  List<Widget> _buildRetentionAndPolicyTags(
+    BuildContext context,
+    AppLocalizations? l10n,
+    TopicMetadata topic,
+    TopicConfigView? configView,
+  ) {
+    final configs = factsController.configs;
+    if (configs.status == TopicFactStatus.error && configs.notReadable) {
+      if (configView?.state == TopicConfigViewState.notReadable) {
+        return const [];
+      }
+      return [
+        TopicTag(
+          l10n?.topicHeaderRetentionLabel(
+                l10n.topicHeaderRetentionNotReadable,
+              ) ??
+              'Retention: not readable',
+          key: const Key('topic_retention_not_readable_tag'),
+          isConfig: true,
+        ),
+      ];
+    }
+
+    final policy =
+        configs.data?.cleanupPolicy ??
+        configView?.cleanupPolicy ??
+        topic.cleanupPolicy;
+    final retentionMs =
+        configs.data?.retentionMs ??
+        configView?.retentionMs ??
+        topic.retentionMs;
+    final retentionBytes = configs.data?.retentionBytes;
+
+    return [
+      if (policy != null && policy.isNotEmpty)
+        TopicTag(splitPolicy(policy), isConfig: true),
+      if (retentionMs != null && retentionMs.isNotEmpty && l10n != null)
+        TopicTag(
+          l10n.topicHeaderRetentionLabel(
+            formatRetentionDuration(retentionMs, l10n),
+          ),
+          key: const Key('topic_retention_tag'),
+          isConfig: true,
+        ),
+      if (retentionBytes != null && retentionBytes.isNotEmpty && l10n != null)
+        TopicTag(
+          l10n.topicHeaderRetentionBytesLabel(
+            formatRetentionBytes(retentionBytes, l10n),
+          ),
+          key: const Key('topic_retention_bytes_tag'),
+          isConfig: true,
+        ),
+    ];
+  }
+
+  Widget _buildTimeRangeWidget(
+    BuildContext context,
+    AppLocalizations? l10n,
+    TopicMetadata topic,
+  ) {
+    final tr = factsController.timeRange;
+    switch (tr.status) {
+      case TopicFactStatus.idle:
+        return Tooltip(
+          message:
+              l10n?.topicHeaderLoadTimeRangeTooltip(topic.partitionCount) ??
+              'Read oldest & newest message timestamps across ${topic.partitionCount} partitions',
+          child: OutlinedButton.icon(
+            key: const Key('topic_load_time_range_button'),
+            onPressed: factsController.loadTimeRange,
+            style: OutlinedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: const Size(24, 24),
+            ),
+            icon: const Icon(Icons.schedule, size: 14),
+            label: Text(
+              l10n?.topicHeaderLoadTimeRange ?? 'Load time range',
+              style: Theme.of(context).textTheme.labelSmall,
+            ),
+          ),
+        );
+      case TopicFactStatus.loading:
+        return TopicTag(
+          l10n?.topicHeaderTimeRangeLoading ?? 'Loading time range…',
+          key: const Key('topic_time_range_loading_tag'),
+          isConfig: true,
+        );
+      case TopicFactStatus.error:
+        return TopicTag(
+          '${l10n?.topicHeaderTimeRangeError(tr.error ?? '') ?? 'Time range failed'} · ${l10n?.retry ?? 'Retry'}',
+          key: const Key('topic_time_range_error_tag'),
+          isConfig: true,
+          onTap: factsController.loadTimeRange,
+        );
+      case TopicFactStatus.value:
+        final range = tr.data!;
+        if (range.allEmpty) {
+          return TopicTag(
+            l10n?.topicHeaderTimeRangeEmpty ?? 'No messages',
+            key: const Key('topic_time_range_empty_tag'),
+            isConfig: true,
+          );
+        }
+        final oldest = range.oldest;
+        final newest = range.newest;
+        if (oldest == null || newest == null) {
+          return TopicTag(
+            l10n?.topicHeaderTimeRangeUnknown ?? 'Time range: unknown',
+            key: const Key('topic_time_range_unknown_tag'),
+            isConfig: true,
+          );
+        }
+        final oldestStr = _formatZoneTimestamp(
+          context,
+          oldest.timestampMs.toInt(),
+        );
+        final newestStr = _formatZoneTimestamp(
+          context,
+          newest.timestampMs.toInt(),
+        );
+        final tooltipLines = <String>[
+          'P${oldest.partition} @ ${oldest.offset} (${oldest.timestampType.name})',
+          'P${newest.partition} @ ${newest.offset} (${newest.timestampType.name})',
+        ];
+        final nonFoundReasons = <String>[];
+        for (final probe in range.probes) {
+          if (probe.oldest.kind != ProbeOutcomeKind.found &&
+              probe.oldest.kind != ProbeOutcomeKind.empty) {
+            nonFoundReasons.add(
+              'P${probe.partition} oldest: ${probe.oldest.reason ?? probe.oldest.kind.name}',
+            );
+          }
+          if (probe.newest.kind != ProbeOutcomeKind.found &&
+              probe.newest.kind != ProbeOutcomeKind.empty) {
+            nonFoundReasons.add(
+              'P${probe.partition} newest: ${probe.newest.reason ?? probe.newest.kind.name}',
+            );
+          }
+        }
+        final valueText =
+            l10n?.topicHeaderTimeRangeValue(oldestStr, newestStr) ??
+            '$oldestStr – $newestStr';
+        final mainTag = Tooltip(
+          message: tooltipLines.join('\n'),
+          child: TopicTag(
+            valueText,
+            key: const Key('topic_time_range_tag'),
+            isConfig: true,
+          ),
+        );
+        if (nonFoundReasons.isEmpty) {
+          return mainTag;
+        }
+        final partialText =
+            l10n?.topicHeaderTimeRangePartial(
+              range.oldestKnown,
+              range.newestKnown,
+              range.partitionsTotal,
+            ) ??
+            'Partial (${range.oldestKnown}/${range.partitionsTotal} oldest, ${range.newestKnown}/${range.partitionsTotal} newest)';
+        return Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            mainTag,
+            Tooltip(
+              key: const Key('topic_time_range_partial_tooltip'),
+              message: nonFoundReasons.join('\n'),
+              child: TopicTag(
+                partialText,
+                key: const Key('topic_time_range_partial_tag'),
+                isConfig: true,
+              ),
+            ),
+          ],
+        );
+    }
+  }
+
+  String _formatZoneTimestamp(BuildContext context, int timestampMs) {
+    final utc = DateTime.fromMillisecondsSinceEpoch(timestampMs, isUtc: true);
+    final dt = _timeDisplaySettings.isUtc ? utc : utc.toLocal();
+    final formatted = DateFormatUtils.formatDateTime(context, dt);
+    if (_timeDisplaySettings.isUtc) {
+      return '$formatted UTC';
+    }
+    final offset = dt.timeZoneOffset;
+    final sign = offset.isNegative ? '-' : '+';
+    final absMinutes = offset.inMinutes.abs();
+    final hours = absMinutes ~/ 60;
+    final mins = absMinutes % 60;
+    final offsetLabel = mins == 0
+        ? 'UTC$sign$hours'
+        : 'UTC$sign$hours:${mins.toString().padLeft(2, '0')}';
+    return '$formatted $offsetLabel';
   }
 
   Widget _buildSchemaButton(BuildContext context) {
@@ -678,6 +1306,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
     }
 
     final parsedTerms = splitFilterTerms(_filterController.text);
+    final exprText = _filterExpressionController.text.trim();
     streamController.startStreaming(
       widget.profile,
       widget.topic.name,
@@ -687,6 +1316,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
           : null,
       filterType: _filterType,
       searchScope: _searchScope,
+      filterExpression: exprText.isNotEmpty ? exprText : null,
       fastTraceEnabled: _fastTraceEnabled,
       startOffset: startOffset,
       startTimestamp: startTimestamp,

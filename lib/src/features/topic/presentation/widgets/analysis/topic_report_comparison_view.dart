@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/analysis_scope_dialog.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_summary_cards.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/report_compare.dart';
@@ -37,11 +38,50 @@ class TopicReportComparisonView extends StatelessWidget {
     final added = comparison.fields.where((f) => f.added).toList();
     final removed = comparison.fields.where((f) => f.removed).toList();
 
+    final baseScope = base.scanScope?.scope;
+    final currentScope = current.scanScope?.scope;
+    final String? scopeWarning = (baseScope == null || currentScope == null)
+        ? (l10n?.comparisonScopeMissingWarning ??
+              'Scope is not recorded on one or both reports — they cannot be reliably compared.')
+        : (_scopeKey(baseScope) != _scopeKey(currentScope)
+              ? (l10n?.comparisonScopesDifferWarning ??
+                    'Comparison scopes differ — deltas may reflect scope differences rather than data changes.')
+              : null);
+
     return Column(
       key: const Key('report_comparison_view'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(l10n?.comparisonTitle ?? 'Report comparison'),
+        if (scopeWarning != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            key: const Key('comparison_scope_warning'),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    scopeWarning,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         Row(
           children: [
@@ -54,6 +94,10 @@ class TopicReportComparisonView extends StatelessWidget {
                 topic: base.topic,
                 cluster: baseClusterName,
                 moment: baseMoment,
+                scopeSummary: baseScope != null
+                    ? formatAnalysisScopeSummary(baseScope, l10n)
+                    : (l10n?.comparisonScopeNotRecorded ??
+                          'Scope not recorded'),
               ),
             ),
             Expanded(
@@ -65,6 +109,10 @@ class TopicReportComparisonView extends StatelessWidget {
                 topic: current.topic,
                 cluster: currentClusterName,
                 moment: currentMoment,
+                scopeSummary: currentScope != null
+                    ? formatAnalysisScopeSummary(currentScope, l10n)
+                    : (l10n?.comparisonScopeNotRecorded ??
+                          'Scope not recorded'),
               ),
             ),
           ],
@@ -114,6 +162,11 @@ class TopicReportComparisonView extends StatelessWidget {
     );
   }
 
+  static String _scopeKey(AnalysisScope s) {
+    final parts = s.partitions?.toList()?..sort();
+    return '${s.limitFrom.name}|${s.messageLimit}|${s.startTimestampMs}|${s.endTimestampMs}|${parts?.join(',') ?? '*'}';
+  }
+
   String _label(AppLocalizations? l10n, String metric) => switch (metric) {
     'total_messages' => l10n?.totalMessages ?? 'Total Messages',
     'total_bytes' => l10n?.totalPayloadSize ?? 'Total Payload Size',
@@ -137,6 +190,7 @@ class _SideLabel extends StatelessWidget {
   final String topic;
   final String? cluster;
   final DateTime? moment;
+  final String scopeSummary;
 
   const _SideLabel({
     super.key,
@@ -144,6 +198,7 @@ class _SideLabel extends StatelessWidget {
     required this.topic,
     this.cluster,
     this.moment,
+    required this.scopeSummary,
   });
 
   @override
@@ -157,7 +212,20 @@ class _SideLabel extends StatelessWidget {
     ].where((p) => p.isNotEmpty).join(' · ');
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: Text(parts, overflow: TextOverflow.ellipsis),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(parts, overflow: TextOverflow.ellipsis),
+          Text(
+            scopeSummary,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 
 enum DiffLineType { unchanged, added, removed }
@@ -139,6 +140,7 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
   // Associated topics tab
   List<String> _associatedTopics = const [];
   bool _isLoadingAssociatedTopics = false;
+  Object? _associatedTopicsError;
 
   @override
   void initState() {
@@ -245,6 +247,7 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
   Future<void> _loadAssociatedTopics() async {
     setState(() {
       _isLoadingAssociatedTopics = true;
+      _associatedTopicsError = null;
     });
 
     try {
@@ -271,6 +274,7 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
     } catch (e) {
       if (mounted) {
         setState(() {
+          _associatedTopicsError = e;
           _isLoadingAssociatedTopics = false;
         });
       }
@@ -803,6 +807,36 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
   ) {
     if (_isLoadingAssociatedTopics) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_associatedTopicsError != null) {
+      final description = l10n != null
+          ? describeSchemaRegistryError(l10n, _associatedTopicsError!)
+          : _associatedTopicsError.toString();
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 40, color: colorScheme.error),
+              const SizedBox(height: 12),
+              Text(
+                l10n?.schemaViewerAssociatedTopicsError(description) ??
+                    'Failed to resolve associated topics: $description',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colorScheme.error),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _loadAssociatedTopics,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: Text(l10n?.schemaRetry ?? 'Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     if (_associatedTopics.isEmpty) {

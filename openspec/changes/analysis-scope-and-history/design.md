@@ -141,6 +141,13 @@ no allocation in the hot path.
 Worker termination is unchanged: `off >= end` / `last_off + 1 >= end` / `PartitionEOF`; an end offset inside a
 compaction gap is handled by the existing `off >= end_off → break`.
 
+*Spike 1.1 findings (rdkafka 0.36.2 vs cp-kafka 7.6.0):* `offsets_for_times` returned `Offset::Offset(0)` (`err=Ok(())`)
+for timestamps before the first message (both normal and compacted topics), `Offset::Offset(1)` for an in-range
+timestamp, `Offset::End` (`to_raw() == Some(-1)`, `err=Ok(())`) for timestamps after the last message and on an empty
+partition, and `KafkaError (Metadata fetch error: UnknownPartition)` on an invalid partition id. This confirms the
+`TimeBound` mapping above (`Offset(o)` → `Offset(o)`, `End`/`-1` → `AfterEnd`, element `error()` → `Failed`, call
+`Err` → `Err`).
+
 ### D5 Estimate call
 
 Bridge: `pub async fn estimate_analysis_scope(profile, topic, scope: AnalysisScope) -> Result<AnalysisScopeEstimate>`
@@ -208,6 +215,12 @@ holds only the `Arc` (cloning a snapshot copies a pointer). Counting:
 Mutex contention: one short lock per message on 1 of 16 shards; benchmarked in a spike (task 1.2) against the current
 per-worker set. If contention costs > 10 % throughput, fall back to per-worker bounded sets with exact merge at the end
 and "not available during the scan" for live duplicate figures.
+
+*Spike 1.2 findings (release, 8 threads × 1.25 M = 10 M random 16-byte fingerprints):* shared 16-shard
+`BoundedFingerprintSet` took `1.042 s` (~9.6 M inserts/s, ~104 ns/op) vs `122.4 ms` for uncontended per-thread
+`HashSet`s (without periodic clones or final 8-way merge). Because the pure in-memory tight loop differs by > 10 %,
+awaiting confirmation on whether to keep the 16-shard `BoundedFingerprintSet` (negligible relative to Kafka/JSON work,
+preserves live duplicate counts and 36 MB global cap) or switch to the per-worker fallback.
 
 `DuplicateAnalysisResult` gains `#[serde(default)] estimated: bool, untracked_messages: i64, fingerprint_limit:
 Option<i64>, samples_capped: bool`.

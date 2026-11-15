@@ -218,8 +218,25 @@ void main() {
       });
       when(mockController.getSchemas(any)).thenReturn(['my-topic-value']);
       when(
-        mockController.fetchSchemaContent(any, 'my-topic-value'),
-      ).thenAnswer((_) async => '{"type": "string"}');
+        mockController.fetchSubjectSchemaView(any, 'my-topic-value'),
+      ).thenAnswer(
+        (_) async => const api.SubjectSchemaViewDto(
+          schema: api.SubjectSchemaDto(
+            subject: 'my-topic-value',
+            version: 1,
+            id: 1,
+            schemaType: api.SchemaKindDto.avro,
+            schema: '{"type": "string"}',
+            references: [],
+          ),
+          fields: api.SchemaFieldModelDto(
+            kind: api.SchemaKindDto.avro,
+            messages: [],
+            fields: [],
+            truncated: false,
+          ),
+        ),
+      );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -275,6 +292,55 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Versionen zum Vergleichen auswählen'), findsOneWidget);
+    });
+
+    testWidgets('shows association error with retry in Associated Topics tab', (
+      tester,
+    ) async {
+      final mockController = _TestMockSchemaController();
+      when(
+        mockController.fetchSchemaVersions(any, any),
+      ).thenAnswer((_) async => <int>[1]);
+      when(
+        mockController.fetchSchemaContent(
+          any,
+          any,
+          version: anyNamed('version'),
+        ),
+      ).thenAnswer((_) async => '{"type": "string"}');
+
+      var calls = 0;
+      when(mockController.getAssociatedTopics(any, any)).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) {
+          throw Exception('Association failed');
+        }
+        return ['orders'];
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SchemaDiffDialog(
+              profile: testProfile,
+              subject: 'orders-value',
+              controller: mockController,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Associated Topics'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Association failed'), findsOneWidget);
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('orders'), findsOneWidget);
     });
   });
 }

@@ -85,6 +85,12 @@ pub fn describe_topic_configs(profile: &ClusterProfile, topics: &[String]) -> Ve
 - Logging: `log::warn!` with topic name and classification only. It never logs values or entry lists.
 - Ownership: 5.33 owns this function. If 5.33 is implemented first, this change uses its function and types, renaming
   this change's references if 5.33 chose other type names. Otherwise this change creates them exactly as above.
+- **Task 1.2 status:** `describe_topic_configs` (`TopicConfigSource`, `TopicConfigEntry`, `TopicConfigOutcome`, `TopicConfigResult`) was **reused from 5.33** (`topic-list-scale-and-organisation` in `kafkalyzer-kafka::kafka_metadata`); `kafkalyzer_core::topic_config` (`TopicConfigSource`, `TopicConfigEntry`, `TopicConfigUnavailable`, `diff_topic_configs`) and `describe_topic_configs_detailed` (mapping per-resource `RDKafkaErrorCode` into `TopicConfigUnavailable`) are created here without breaking 5.33's existing callers.
+- **Spike 1.1 findings (cp-kafka 7.6 on `localhost:9094`, rdkafka 0.36.2):**
+  - Existing topic (`spike-t-000`): `Ok(1)` with `entries.len() = 31`; `source` (`Default`) and `is_default` (`true`) are populated accurately.
+  - Non-existent topic (`non-existent-spike-510-xyz`): `Ok([Ok(ConfigResource { specifier: Topic(...), entries: [] })])` (rdkafka 0.36.2 returns an empty entries list rather than `Err(UnknownTopicOrPartition)`).
+  - Empty resource list (`&[]`): `Err(KafkaError::AdminOp(RDKafkaErrorCode::InvalidArgument))`, confirming the early-return guard when `topics.is_empty()`.
+  - `classify_config_error(RDKafkaErrorCode)` maps `TopicAuthorizationFailed | ClusterAuthorizationFailed -> NotAuthorized`, `UnknownTopicOrPartition | UnknownTopic -> TopicNotFound`, and all other codes -> `Failed(code.to_string())`.
 
 Alternatives: return `anyhow::Result<Vec<…>>` with request errors as `Err` (rejected; callers then need two error
 paths and 5.33's list would lose per-topic availability). Redact in the bridge (rejected; the value would exist in a

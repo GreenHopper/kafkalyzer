@@ -1,4 +1,5 @@
 use crate::api::kafka_types::{ClusterProfile, FilterType, SearchScope};
+use crate::api::local_schema::{LocalSchemaUseDto, TopicLocalSchemasDto};
 use crate::frb_generated::StreamSink;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -46,6 +47,8 @@ pub struct KafkaMessage {
     pub headers: Option<Vec<KafkaHeader>>,
     pub key_schema: Option<MessageSchema>,
     pub value_schema: Option<MessageSchema>,
+    pub key_local_schema: Option<LocalSchemaUseDto>,
+    pub value_local_schema: Option<LocalSchemaUseDto>,
 }
 
 impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
@@ -62,6 +65,8 @@ impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
                 .map(|list| list.into_iter().map(KafkaHeader::from).collect()),
             key_schema: msg.key_schema.map(MessageSchema::from),
             value_schema: msg.value_schema.map(MessageSchema::from),
+            key_local_schema: msg.key_local_schema.map(LocalSchemaUseDto::from),
+            value_local_schema: msg.value_local_schema.map(LocalSchemaUseDto::from),
         }
     }
 }
@@ -73,6 +78,8 @@ pub async fn consume_with_filter(
     filter_field: Option<String>,
     filter_type: FilterType,
     search_scope: SearchScope,
+    filter_expression: Option<String>,
+    filter_variables: Option<std::collections::HashMap<String, Vec<String>>>,
     start_offset: Option<i64>,
     start_timestamp: Option<i64>,
     start_partition: Option<i32>,
@@ -82,6 +89,7 @@ pub async fn consume_with_filter(
     max_results: Option<i32>,
     run_forever: bool,
     start_from_tail: Option<bool>,
+    local_schemas: Option<TopicLocalSchemasDto>,
     sink: StreamSink<KafkaMessage>,
 ) -> Result<()> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
@@ -102,6 +110,7 @@ pub async fn consume_with_filter(
     let domain_filter_type = filter_type.to_domain();
     let domain_search_scope = search_scope.to_domain();
     let from_tail = start_from_tail.unwrap_or(false);
+    let domain_local_schemas = local_schemas.map(|ls| ls.to_domain());
 
     tokio::task::spawn_blocking(move || {
         kafkalyzer_kafka::kafka_consumer::consume_with_filter(
@@ -111,6 +120,8 @@ pub async fn consume_with_filter(
             filter_field,
             domain_filter_type,
             domain_search_scope,
+            filter_expression,
+            filter_variables,
             start_offset,
             start_timestamp,
             start_partition,
@@ -120,6 +131,7 @@ pub async fn consume_with_filter(
             max_results,
             run_forever,
             from_tail,
+            domain_local_schemas,
             kafka_sink,
         )
     })

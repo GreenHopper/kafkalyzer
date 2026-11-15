@@ -3,8 +3,10 @@ import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
+import 'package:kafkalyzer/src/features/topic/domain/topic_list_query.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
@@ -12,6 +14,7 @@ import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
+import 'package:kafkalyzer/src/services/topic_list_preferences_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 
 class OpenTopicRecord {
@@ -46,24 +49,98 @@ class ActiveConnectionController extends ChangeNotifier {
 
   ClusterProfile? _activeProfile;
   ClusterProfile? _connectingProfile;
-  // _topics removed
   bool _isConnecting = false;
-  bool _showInternalTopics = false;
-  bool _showStreamTopics = false;
   ConnectionError? _error;
-  String _topicFilter = "";
 
-  bool get showInternalTopics => _showInternalTopics;
-  bool get showStreamTopics => _showStreamTopics;
-  String get topicFilter => _topicFilter;
+  TopicListQuery _query = const TopicListQuery();
+  List<TopicMetadata>? _memoList;
+  TopicListQuery? _memoQuery;
+  bool? _memoUnhealthyOnly;
+  TopicListView? _memoView;
+  bool _unhealthyTopicsOnly = false;
+  @visibleForTesting
+  int viewComputations = 0;
+
+  bool _topicPreferencesUnreadable = false;
+  bool _topicPreferencesWriteBlocked = false;
+
+  TopicListQuery get topicListQuery => _query;
+  bool get showInternalTopics => _query.showInternal;
+  bool get showStreamTopics => _query.showStream;
+  String get topicFilter => _query.text;
+  TopicFilterMode get topicFilterMode => _query.mode;
+  TopicSortOrder get topicSortOrder => _query.sort;
+  bool get groupTopicsByPrefix => _query.groupByPrefix;
+  Set<String> get favouriteTopics => _query.favourites;
+  bool get topicPreferencesUnreadable => _topicPreferencesUnreadable;
+  bool get topicPreferencesWriteBlocked => _topicPreferencesWriteBlocked;
 
   void toggleShowInternalTopics(bool value) {
-    _showInternalTopics = value;
+    if (_query.showInternal == value) return;
+    _query = _query.copyWith(showInternal: value);
     notifyListeners();
+    _saveTopicPreferences();
   }
 
   void toggleShowStreamTopics(bool value) {
-    _showStreamTopics = value;
+    if (_query.showStream == value) return;
+    _query = _query.copyWith(showStream: value);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void setTopicFilterMode(TopicFilterMode mode) {
+    if (_query.mode == mode) return;
+    _query = _query.copyWith(mode: mode);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void setTopicSortOrder(TopicSortOrder sort) {
+    if (_query.sort == sort) return;
+    _query = _query.copyWith(sort: sort);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void setGroupByPrefix(bool value) {
+    if (_query.groupByPrefix == value) return;
+    _query = _query.copyWith(groupByPrefix: value);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void toggleGroupByPrefix() => setGroupByPrefix(!_query.groupByPrefix);
+
+  void toggleFavourite(String topicName) {
+    final next = Set<String>.from(_query.favourites);
+    if (!next.add(topicName)) {
+      next.remove(topicName);
+    }
+    _query = _query.copyWith(favourites: next);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void toggleGroupCollapsed(String prefix) {
+    final next = Set<String>.from(_query.collapsedGroups);
+    if (!next.add(prefix)) {
+      next.remove(prefix);
+    }
+    _query = _query.copyWith(collapsedGroups: next);
+    notifyListeners();
+  }
+
+  void showAllTopics() {
+    _query = _query.copyWith(text: '', showInternal: true, showStream: true);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void dismissTopicPreferencesNotice() {
+    if (!_topicPreferencesUnreadable && !_topicPreferencesWriteBlocked) return;
+    _topicPreferencesUnreadable = false;
+    _topicPreferencesWriteBlocked = false;
     notifyListeners();
   }
 
@@ -76,50 +153,90 @@ class ActiveConnectionController extends ChangeNotifier {
   ClusterProfile? get connectingProfile => _connectingProfile;
   bool isConnectingCluster(ClusterProfile profile) =>
       _connectingProfile?.name == profile.name;
-  List<TopicMetadata> get topics {
-    if (_activeProfile == null) return [];
 
-    final allTopics = _topicController.getTopics(_activeProfile!) ?? [];
+  static const _emptyView = TopicListView(
+    rows: [],
+    visibleTopics: [],
+    hiddenByInternal: 0,
+    hiddenByStream: 0,
+    hiddenByText: 0,
+    patternError: null,
+    highlightPattern: null,
+    failureGroups: {},
+  );
 
-    var filtered = allTopics;
+  bool get unhealthyTopicsOnly => _unhealthyTopicsOnly;
 
-    // Filter internal topics if not shown
-    if (!_showInternalTopics) {
-      filtered = filtered.where((t) => !t.name.startsWith("_")).toList();
-    }
-
-    // Filter stream topics if not shown
-    if (!_showStreamTopics) {
-      filtered = filtered.where((t) {
-        final name = t.name.toLowerCase();
-        return !name.endsWith("-topic") &&
-            !name.endsWith("-changelog") &&
-            !name.endsWith("-repartition");
-      }).toList();
-    }
-
-    if (_topicFilter.isEmpty) {
-      return filtered;
-    }
-    return filtered
-        .where((t) => t.name.toLowerCase().contains(_topicFilter.toLowerCase()))
-        .toList();
-  }
-
-  void updateTopicFilter(String filter) {
-    _topicFilter = filter;
+  void showUnhealthyTopicsOnly() {
+    _unhealthyTopicsOnly = true;
+    _query = _query.copyWith(text: '');
     notifyListeners();
   }
 
-  bool get isConnecting =>
-      _isConnecting ||
-      (_activeProfile != null && _topicController.isLoading(_activeProfile!));
+  void clearUnhealthyTopicsOnly() {
+    if (!_unhealthyTopicsOnly) return;
+    _unhealthyTopicsOnly = false;
+    notifyListeners();
+  }
+
+  TopicListView get topicListView {
+    final profile = _activeProfile;
+    if (profile == null) return _emptyView;
+
+    final allTopics = _topicController.getTopics(profile) ?? const [];
+    if (identical(_memoList, allTopics) &&
+        _memoQuery == _query &&
+        _memoUnhealthyOnly == _unhealthyTopicsOnly &&
+        _memoView != null) {
+      return _memoView!;
+    }
+
+    final TopicListView view;
+    if (_unhealthyTopicsOnly) {
+      final unhealthy = allTopics
+          .where(
+            (t) =>
+                ((t.underReplicatedPartitions ?? 0) +
+                    (t.leaderlessPartitions ?? 0)) >
+                0,
+          )
+          .toList(growable: false);
+      view = buildTopicListView(
+        unhealthy,
+        _query.copyWith(
+          text: '',
+          showInternal: true,
+          showStream: true,
+          groupByPrefix: false,
+        ),
+      );
+    } else {
+      view = buildTopicListView(allTopics, _query);
+    }
+    viewComputations++;
+    _memoList = allTopics;
+    _memoQuery = _query;
+    _memoUnhealthyOnly = _unhealthyTopicsOnly;
+    _memoView = view;
+    return view;
+  }
+
+  List<TopicMetadata> get topics => topicListView.visibleTopics;
+
+  void updateTopicFilter(String filter) {
+    if (_query.text == filter) return;
+    _query = _query.copyWith(text: filter);
+    notifyListeners();
+  }
+
+  bool get isConnecting => _isConnecting;
   ConnectionError? get error => _error;
 
   OpenTopicRecord? _activeTopic;
   final List<OpenTopicRecord> _openTopics = [];
   final Map<String, MessageStreamController> _streamControllers = {};
   final Map<String, TopicAnalysisController> _analysisControllers = {};
+  final Map<String, TopicFactsController> _factsControllers = {};
   final Map<String, String?> _lastActiveTopicByCluster = {};
   bool _restoring = false;
   List<String> _unrestoredTopics = const [];
@@ -179,6 +296,48 @@ class ActiveConnectionController extends ChangeNotifier {
     notifyListeners();
     _saveSessionTabs(p.name);
     return newRecord;
+  }
+
+  Future<OpenTopicRecord?> openTopicByName(
+    ClusterProfile profile,
+    String name, {
+    bool forceNew = false,
+  }) async {
+    final meta = await _topicController.resolveTopic(profile, name);
+    return openTopic(topic: meta, profile: profile, forceNew: forceNew);
+  }
+
+  Future<void> _loadTopicPreferences(ClusterProfile profile) async {
+    _unhealthyTopicsOnly = false;
+    if (!getIt.isRegistered<TopicListPreferencesService>()) {
+      _query = const TopicListQuery();
+      _topicPreferencesUnreadable = false;
+      _topicPreferencesWriteBlocked = false;
+      return;
+    }
+    final service = getIt<TopicListPreferencesService>();
+    final result = await service.load(profile.name);
+    _query = result.preferences.toQuery();
+    _topicPreferencesUnreadable = result.unreadable;
+    _topicPreferencesWriteBlocked = false;
+    _memoList = null;
+    _memoQuery = null;
+    _memoView = null;
+  }
+
+  Future<void> _saveTopicPreferences() async {
+    final profile = _activeProfile;
+    if (profile == null) return;
+    if (!getIt.isRegistered<TopicListPreferencesService>()) return;
+    final service = getIt<TopicListPreferencesService>();
+    final saved = await service.save(
+      profile.name,
+      TopicListPreferences.fromQuery(_query),
+    );
+    if (!saved && service.isWriteBlocked(profile.name)) {
+      _topicPreferencesWriteBlocked = true;
+      notifyListeners();
+    }
   }
 
   OpenTopicRecord? streamTopicWithDefaults(
@@ -277,6 +436,24 @@ class ActiveConnectionController extends ChangeNotifier {
     return _analysisControllers[key]!;
   }
 
+  TopicFactsController getTopicFactsController(
+    String tabIdOrTopicName,
+    ClusterProfile profile,
+    String topicName, [
+    String? clusterName,
+  ]) {
+    final key = clusterName != null
+        ? _getTopicKey(tabIdOrTopicName, clusterName)
+        : tabIdOrTopicName;
+    if (!_factsControllers.containsKey(key)) {
+      _factsControllers[key] = TopicFactsController(
+        profile: profile,
+        topicName: topicName,
+      );
+    }
+    return _factsControllers[key]!;
+  }
+
   void closeTopicTab(String tabId) {
     final removed = _openTopics.cast<OpenTopicRecord?>().firstWhere(
       (t) => t?.id == tabId,
@@ -289,6 +466,9 @@ class ActiveConnectionController extends ChangeNotifier {
 
     _analysisControllers[tabId]?.dispose();
     _analysisControllers.remove(tabId);
+
+    _factsControllers[tabId]?.dispose();
+    _factsControllers.remove(tabId);
 
     if (_activeTopic?.id == tabId) {
       _activeTopic = _openTopics.isNotEmpty ? _openTopics.last : null;
@@ -462,6 +642,7 @@ class ActiveConnectionController extends ChangeNotifier {
       if (cachedTopics != null && cachedTopics.isNotEmpty) {
         debugPrint('   Found cached topics, skipping validation');
         _activeProfile = effectiveProfile;
+        await _loadTopicPreferences(effectiveProfile);
         // This will update listeners but won't fetch if not forced
         await _topicController.fetchTopics(effectiveProfile);
         await _restoreSessionTabs(effectiveProfile);
@@ -484,6 +665,7 @@ class ActiveConnectionController extends ChangeNotifier {
               .markVerifiedIfUnreviewed(effectiveProfile);
         }
         _activeProfile = effectiveProfile;
+        await _loadTopicPreferences(effectiveProfile);
         // Fetch topics via controller
         await _topicController.fetchTopics(effectiveProfile);
         await _restoreSessionTabs(effectiveProfile);
@@ -506,7 +688,14 @@ class ActiveConnectionController extends ChangeNotifier {
     final active = _activeProfile;
     _connectingProfile = null;
     _activeProfile = null;
-    _topicFilter = "";
+    _unhealthyTopicsOnly = false;
+    _query = const TopicListQuery();
+    _memoList = null;
+    _memoQuery = null;
+    _memoUnhealthyOnly = null;
+    _memoView = null;
+    _topicPreferencesUnreadable = false;
+    _topicPreferencesWriteBlocked = false;
 
     if (active == null) {
       notifyListeners();
@@ -522,6 +711,8 @@ class ActiveConnectionController extends ChangeNotifier {
       _streamControllers.remove(record.id);
       _analysisControllers[record.id]?.dispose();
       _analysisControllers.remove(record.id);
+      _factsControllers[record.id]?.dispose();
+      _factsControllers.remove(record.id);
     }
 
     if (_activeTopic?.profile.name == active.name) {

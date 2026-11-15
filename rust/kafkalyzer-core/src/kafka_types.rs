@@ -30,6 +30,8 @@ pub struct ClusterProfile {
     pub ssl_pem_key_password: Option<String>,
     #[serde(default)]
     pub ssl_verification_disabled: bool,
+    #[serde(default)]
+    pub extra_properties: Vec<(String, String)>,
 }
 
 impl ClusterProfile {
@@ -92,6 +94,45 @@ pub struct SchemaCompatibilityResult {
     pub messages: Vec<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum LocalSchemaMode {
+    #[default]
+    Fallback,
+    Always,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LocalSchemaAssignment {
+    pub path: String,
+    pub format: crate::local_schema::LocalSchemaFormat,
+    #[serde(default)]
+    pub message_type: Option<String>,
+    #[serde(default)]
+    pub framing: crate::local_schema::Framing,
+    #[serde(default)]
+    pub mode: LocalSchemaMode,
+    #[serde(default)]
+    pub expected_sha256: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TopicLocalSchemas {
+    #[serde(default)]
+    pub key: Option<LocalSchemaAssignment>,
+    #[serde(default)]
+    pub value: Option<LocalSchemaAssignment>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LocalSchemaUse {
+    pub file_name: String,
+    pub format: crate::local_schema::LocalSchemaFormat,
+    pub message_type: Option<String>,
+    pub framing: crate::local_schema::Framing,
+    pub wire_schema_id: Option<u32>,
+    pub error: Option<crate::local_schema::LocalDecodeError>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KafkaMessage {
     pub topic: String,
@@ -105,6 +146,12 @@ pub struct KafkaMessage {
     pub key_schema: Option<MessageSchema>,
     /// Schema the value was encoded with, `None` for a plain payload.
     pub value_schema: Option<MessageSchema>,
+    /// Local schema provenance (or decode failure) for the key side.
+    #[serde(default)]
+    pub key_local_schema: Option<LocalSchemaUse>,
+    /// Local schema provenance (or decode failure) for the value side.
+    #[serde(default)]
+    pub value_local_schema: Option<LocalSchemaUse>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -219,6 +266,25 @@ pub struct DuplicateAnalysisResult {
     pub duplicate_messages: i64,
     pub duplicate_rate: f64,
     pub top_duplicates: Vec<TopDuplicateOccurrence>,
+    #[serde(default)]
+    pub estimated: bool,
+    #[serde(default)]
+    pub untracked_messages: i64,
+    #[serde(default)]
+    pub fingerprint_limit: Option<i64>,
+    #[serde(default)]
+    pub samples_capped: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnalysisScopeSummary {
+    pub scope: crate::analysis_scope::AnalysisScope,
+    #[serde(default)]
+    pub ranges: Vec<crate::analysis_scope::PlannedRange>,
+    #[serde(default)]
+    pub unreadable: Vec<crate::analysis_scope::UnreadablePartition>,
+    #[serde(default)]
+    pub excluded_by_time_range: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -234,6 +300,30 @@ pub struct TopicAnalysisOptions {
     pub value_filter: Option<FieldValueFilter>,
     #[serde(default)]
     pub duplicate_scope: Option<DuplicateDetectionScope>,
+    #[serde(default)]
+    pub scope: Option<crate::analysis_scope::AnalysisScope>,
+    #[serde(default)]
+    pub local_schemas: Option<TopicLocalSchemas>,
+}
+
+impl TopicAnalysisOptions {
+    pub fn effective_scope(&self) -> crate::analysis_scope::AnalysisScope {
+        if let Some(scope) = &self.scope {
+            return scope.clone();
+        }
+        match self.max_messages {
+            Some(limit) => crate::analysis_scope::AnalysisScope {
+                message_limit: Some(limit),
+                limit_from: if self.sample_from_latest {
+                    crate::analysis_scope::ScopeLimitFrom::Newest
+                } else {
+                    crate::analysis_scope::ScopeLimitFrom::Oldest
+                },
+                ..Default::default()
+            },
+            None => crate::analysis_scope::AnalysisScope::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -306,6 +396,16 @@ pub struct TopicAnalysisReport {
     pub value_filter_result: Option<ValueFilterResult>,
     #[serde(default)]
     pub duplicate_analysis_result: Option<DuplicateAnalysisResult>,
+    #[serde(default)]
+    pub cleanup_policy_unknown: bool,
+    #[serde(default)]
+    pub scan_scope: Option<AnalysisScopeSummary>,
+    #[serde(default)]
+    pub analysis_limits: Option<Vec<crate::analysis_limits::AnalysisLimit>>,
+    #[serde(default)]
+    pub tracked_field_count: Option<i64>,
+    #[serde(default)]
+    pub complete_until_ms: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -366,6 +466,27 @@ mod tests {
         assert!(report.value_filter_result.is_none());
         assert!(!report.field_frequencies[0].values_capped);
         assert!(!report.field_frequencies[0].top_values[0].truncated);
+        assert!(report.scan_scope.is_none());
+        assert!(report.analysis_limits.is_none());
+        assert_eq!(report.tracked_field_count, None);
+        assert_eq!(report.complete_until_ms, None);
+    }
+
+    #[test]
+    fn test_duplicate_result_deserialization_without_new_fields() {
+        let json = r#"{
+            "scope": "PayloadOnly",
+            "total_messages": 100,
+            "unique_messages": 85,
+            "duplicate_messages": 15,
+            "duplicate_rate": 15.0,
+            "top_duplicates": []
+        }"#;
+        let res: DuplicateAnalysisResult = serde_json::from_str(json).unwrap();
+        assert!(!res.estimated);
+        assert_eq!(res.untracked_messages, 0);
+        assert_eq!(res.fingerprint_limit, None);
+        assert!(!res.samples_capped);
     }
 
     #[test]
@@ -403,5 +524,14 @@ mod tests {
             ..Default::default()
         };
         assert!(lowercase_sasl_ssl.uses_tls());
+    }
+
+    #[test]
+    fn topic_analysis_options_without_local_schemas_deserializes() {
+        let json = r#"{"max_messages":100,"sample_from_latest":true}"#;
+        let opts: TopicAnalysisOptions = serde_json::from_str(json).unwrap();
+        assert_eq!(opts.max_messages, Some(100));
+        assert!(opts.sample_from_latest);
+        assert!(opts.local_schemas.is_none());
     }
 }

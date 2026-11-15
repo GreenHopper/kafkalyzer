@@ -1,8 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
+import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
 import 'widgets/lag_trend.dart';
 
@@ -56,6 +58,12 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     });
 
     try {
+      final localSchemas = getIt.isRegistered<LocalSchemaAssignmentService>()
+          ? await getIt<LocalSchemaAssignmentService>().scanOptionsFor(
+              widget.profile.name,
+              part.topic,
+            )
+          : null;
       final stream = consumer.consumeWithFilter(
         profile: widget.profile,
         topic: part.topic,
@@ -65,6 +73,7 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
         startPartition: part.partition,
         maxResults: 1,
         runForever: false,
+        localSchemas: localSchemas,
       );
 
       consumer.KafkaMessage? message;

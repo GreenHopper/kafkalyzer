@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 
 void main() {
@@ -181,5 +182,67 @@ void main() {
       expect(fullText.startsWith('dat'), isTrue);
       expect(fullText.endsWith('HEADER'), isTrue);
     });
+
+    test('highlights regex matches via highlightPattern', () {
+      final spans = buildTopicNameSpans(
+        topicName: 'orders.v2',
+        prefixStyle: prefixStyle,
+        leafStyle: leafStyle,
+        highlightStyle: highlightStyle,
+        ellipsisStyle: ellipsisStyle,
+        highlightPattern: RegExp(r'v[0-9]+$'),
+      );
+
+      expect(spans.map((s) => s.text).join(), 'orders.v2');
+      final highlighted = spans.where(
+        (s) => s.style?.backgroundColor == Colors.yellow,
+      );
+      expect(highlighted.map((s) => s.text).join(), 'v2');
+    });
+
+    test('leaves spans unhighlighted when highlightPattern is null (glob)', () {
+      final spans = buildTopicNameSpans(
+        topicName: 'orders.v2',
+        prefixStyle: prefixStyle,
+        leafStyle: leafStyle,
+        highlightStyle: highlightStyle,
+        ellipsisStyle: ellipsisStyle,
+        highlightPattern: null,
+      );
+
+      expect(
+        spans.where((s) => s.style?.backgroundColor == Colors.yellow),
+        isEmpty,
+      );
+    });
+  });
+
+  group('formatRetentionDuration and formatRetentionBytes', () {
+    test('formats durations in en and de and handles special values', () async {
+      final en = await AppLocalizations.delegate.load(const Locale('en'));
+      final de = await AppLocalizations.delegate.load(const Locale('de'));
+
+      expect(formatRetentionDuration('129600000', en), '1 day 12 hours');
+      expect(formatRetentionDuration('129600000', de), '1 Tag 12 Stunden');
+      expect(formatRetentionDuration('5400000', en), '1 hour 30 minutes');
+      expect(formatRetentionDuration('-1', en), 'unlimited');
+      expect(formatRetentionDuration('-1', de), 'unbegrenzt');
+      expect(formatRetentionDuration('0', en), '0 minutes');
+      expect(formatRetentionDuration('45000', en), '45 seconds');
+      expect(formatRetentionDuration('not-a-number', en), 'not-a-number');
+    });
+
+    test(
+      'formats retention bytes per partition and unlimited/raw values',
+      () async {
+        final en = await AppLocalizations.delegate.load(const Locale('en'));
+        final de = await AppLocalizations.delegate.load(const Locale('de'));
+
+        expect(formatRetentionBytes('1073741824', en), '1.00 GB / partition');
+        expect(formatRetentionBytes('1073741824', de), '1.00 GB / Partition');
+        expect(formatRetentionBytes('-1', en), 'unlimited');
+        expect(formatRetentionBytes('invalid', en), 'invalid');
+      },
+    );
   });
 }

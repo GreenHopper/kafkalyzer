@@ -1,12 +1,22 @@
-import 'package:material_ui/material_ui.dart';
-import 'package:json_diff/json_diff.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_converter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/diff_tree_builder.dart';
+import 'package:kafkalyzer/src/rust/api/json_diff.dart';
+import 'package:material_ui/material_ui.dart';
 
 class JsonDiffWidget extends StatefulWidget {
-  final DiffNode diffNode;
+  final List<JsonDiffEntry> entries;
+  final void Function(String path)? onIgnorePath;
+  final int hiddenCount;
+  final VoidCallback? onHiddenTap;
 
-  const JsonDiffWidget({super.key, required this.diffNode});
+  const JsonDiffWidget({
+    super.key,
+    required this.entries,
+    this.onIgnorePath,
+    this.hiddenCount = 0,
+    this.onHiddenTap,
+  });
 
   @override
   State<JsonDiffWidget> createState() => _JsonDiffWidgetState();
@@ -18,34 +28,108 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
   @override
   void initState() {
     super.initState();
-    _nodes = JsonConverter.fromDiff(widget.diffNode);
+    _nodes = DiffTreeBuilder.fromEntries(widget.entries);
   }
 
   @override
   void didUpdateWidget(covariant JsonDiffWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.diffNode != oldWidget.diffNode) {
-      _nodes = JsonConverter.fromDiff(widget.diffNode);
+    if (!listEquals(widget.entries, oldWidget.entries)) {
+      _nodes = DiffTreeBuilder.fromEntries(widget.entries);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_nodes.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          AppLocalizations.of(context)!.noDifferencesFound,
-          style: const TextStyle(
-            fontStyle: FontStyle.italic,
-            color: Colors.grey,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              AppLocalizations.of(context)!.noDifferencesFound,
+              style: const TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.grey,
+              ),
+            ),
           ),
-        ),
+          if (widget.hiddenCount > 0) _buildHiddenFooter(context),
+        ],
       );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: _nodes.map((n) => _buildNode(n)).toList(),
+      children: [
+        ..._nodes.map(_buildNode),
+        if (widget.hiddenCount > 0) _buildHiddenFooter(context),
+      ],
+    );
+  }
+
+  Widget _buildHiddenFooter(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final label = 'Hidden (${widget.hiddenCount})';
+    final textWidget = Padding(
+      padding: const EdgeInsets.only(top: 4.0, left: 4.0),
+      child: Text(
+        l10n != null ? _localizedHiddenCount(l10n, widget.hiddenCount) : label,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+    if (widget.onHiddenTap == null) return textWidget;
+    return InkWell(onTap: widget.onHiddenTap, child: textWidget);
+  }
+
+  String _localizedHiddenCount(AppLocalizations l10n, int count) {
+    return l10n.diffHiddenCount(count);
+  }
+
+  Widget _wrapWithContextMenu(DiffViewNode node, Widget child) {
+    final path = node.path;
+    final onIgnore = widget.onIgnorePath;
+    if (onIgnore == null || path == null || path.isEmpty) {
+      return child;
+    }
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onSecondaryTapUp: (details) async {
+        final overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox?;
+        final position = details.globalPosition;
+        final rect = overlay != null
+            ? RelativeRect.fromRect(
+                Rect.fromLTWH(position.dx, position.dy, 0, 0),
+                Offset.zero & overlay.size,
+              )
+            : RelativeRect.fromLTRB(
+                position.dx,
+                position.dy,
+                position.dx,
+                position.dy,
+              );
+        final selected = await showMenu<String>(
+          context: context,
+          position: rect,
+          items: [
+            PopupMenuItem<String>(
+              value: path,
+              child: Text(
+                AppLocalizations.of(context)?.ignoreThisField ??
+                    'Ignore this field',
+              ),
+            ),
+          ],
+        );
+        if (selected != null) {
+          onIgnore(selected);
+        }
+      },
+      child: child,
     );
   }
 
@@ -95,54 +179,60 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.only(left: node.depth * indentSize),
-          child: InkWell(
-            onTap: () {
-              setState(() {
-                node.isExpanded = !node.isExpanded;
-              });
-            },
-            child: Row(
-              children: [
-                Icon(
-                  node.isExpanded
-                      ? (icon == Icons.folder ? Icons.folder_open : icon)
-                      : icon,
-                  size: 14,
-                  color: iconColor,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  node.key,
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.bold,
-                    color: keyColor,
-                  ).merge(textStyle),
-                ),
-              ],
+        _wrapWithContextMenu(
+          node,
+          Padding(
+            padding: EdgeInsets.only(left: node.depth * indentSize),
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  node.isExpanded = !node.isExpanded;
+                });
+              },
+              child: Row(
+                children: [
+                  Icon(
+                    node.isExpanded
+                        ? (icon == Icons.folder ? Icons.folder_open : icon)
+                        : icon,
+                    size: 14,
+                    color: iconColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    node.key,
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.bold,
+                      color: keyColor,
+                    ).merge(textStyle),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        if (node.isExpanded) ...node.children.map((child) => _buildNode(child)),
+        if (node.isExpanded) ...node.children.map(_buildNode),
       ],
     );
   }
 
   Widget _buildAddedNode(DiffViewNode node) {
     const double indentSize = 16.0;
-    return Padding(
-      padding: EdgeInsets.only(left: node.depth * indentSize),
-      child: DefaultTextStyle(
-        style: const TextStyle(color: Colors.green, fontFamily: 'monospace'),
-        child: Row(
-          children: [
-            const Icon(Icons.add, size: 12, color: Colors.green),
-            const SizedBox(width: 4),
-            Text("${node.key}: "),
-            Expanded(child: Text("${node.newValue}")),
-          ],
+    return _wrapWithContextMenu(
+      node,
+      Padding(
+        padding: EdgeInsets.only(left: node.depth * indentSize),
+        child: DefaultTextStyle(
+          style: const TextStyle(color: Colors.green, fontFamily: 'monospace'),
+          child: Row(
+            children: [
+              const Icon(Icons.add, size: 12, color: Colors.green),
+              const SizedBox(width: 4),
+              Text("${node.key}: "),
+              Expanded(child: Text("${node.newValue}")),
+            ],
+          ),
         ),
       ),
     );
@@ -150,21 +240,24 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
 
   Widget _buildRemovedNode(DiffViewNode node) {
     const double indentSize = 16.0;
-    return Padding(
-      padding: EdgeInsets.only(left: node.depth * indentSize),
-      child: DefaultTextStyle(
-        style: const TextStyle(
-          color: Colors.red,
-          decoration: TextDecoration.lineThrough,
-          fontFamily: 'monospace',
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.remove, size: 12, color: Colors.red),
-            const SizedBox(width: 4),
-            Text("${node.key}: "),
-            Expanded(child: Text("${node.oldValue}")),
-          ],
+    return _wrapWithContextMenu(
+      node,
+      Padding(
+        padding: EdgeInsets.only(left: node.depth * indentSize),
+        child: DefaultTextStyle(
+          style: const TextStyle(
+            color: Colors.red,
+            decoration: TextDecoration.lineThrough,
+            fontFamily: 'monospace',
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.remove, size: 12, color: Colors.red),
+              const SizedBox(width: 4),
+              Text("${node.key}: "),
+              Expanded(child: Text("${node.oldValue}")),
+            ],
+          ),
         ),
       ),
     );
@@ -172,48 +265,51 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
 
   Widget _buildChangedNode(DiffViewNode node) {
     const double indentSize = 16.0;
-    return Padding(
-      padding: EdgeInsets.only(left: node.depth * indentSize),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.edit, size: 12, color: Colors.orange),
-          const SizedBox(width: 4),
-          Text(
-            "${node.key}: ",
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  color: Colors.black87,
-                ),
-                children: [
-                  TextSpan(
-                    text: "${node.oldValue}",
-                    style: const TextStyle(
-                      color: Colors.red,
-                      decoration: TextDecoration.lineThrough,
-                    ),
-                  ),
-                  const TextSpan(
-                    text: "  ➔  ",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  TextSpan(
-                    text: "${node.newValue}",
-                    style: const TextStyle(color: Colors.green),
-                  ),
-                ],
+    return _wrapWithContextMenu(
+      node,
+      Padding(
+        padding: EdgeInsets.only(left: node.depth * indentSize),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.edit, size: 12, color: Colors.orange),
+            const SizedBox(width: 4),
+            Text(
+              "${node.key}: ",
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    color: Colors.black87,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: "${node.oldValue}",
+                      style: const TextStyle(
+                        color: Colors.red,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: "  ➔  ",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    TextSpan(
+                      text: "${node.newValue}",
+                      style: const TextStyle(color: Colors.green),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

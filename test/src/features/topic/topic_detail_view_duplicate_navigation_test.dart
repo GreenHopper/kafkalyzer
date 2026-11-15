@@ -10,6 +10,7 @@ import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search
 import 'package:kafkalyzer/src/features/topic/models/duplicate_navigation_target.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_view.dart';
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
@@ -114,16 +115,42 @@ class _FakeActiveConnectionController extends ChangeNotifier
   ]) => streamController;
 
   @override
+  OpenTopicRecord? get activeTopic => null;
+
+  @override
   TopicAnalysisController getAnalysisController(
     String tabIdOrTopicName, [
     String? clusterName,
   ]) => analysisController;
+
+  TopicFactsController? _factsController;
+
+  @override
+  TopicFactsController getTopicFactsController(
+    String tabIdOrTopicName,
+    ClusterProfile profile,
+    String topicName, [
+    String? clusterName,
+  ]) => _factsController ??= TopicFactsController(
+    profile: profile,
+    topicName: topicName,
+  );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeSchemaController extends ChangeNotifier implements SchemaController {
+  @override
+  String? errorFor(ClusterProfile profile) => null;
+
+  @override
+  SchemaTypeState schemaTypeFor(
+    ClusterProfile profile,
+    String subject, {
+    int? version,
+  }) => const SchemaTypeNotLoaded();
+
   @override
   List<String>? getSchemas(ClusterProfile profile) => [];
 

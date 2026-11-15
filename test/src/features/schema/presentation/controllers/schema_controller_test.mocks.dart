@@ -33,6 +33,12 @@ class _FakeSchemaCompatibilityResult_0 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakeSubjectSchemaViewDto_1 extends _i1.SmartFake
+    implements _i2.SubjectSchemaViewDto {
+  _FakeSubjectSchemaViewDto_1(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [SchemaRegistryService].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -132,4 +138,76 @@ class MockSchemaRegistryService extends _i1.Mock
             returnValue: _i4.Future<List<String>>.value(<String>[]),
           )
           as _i4.Future<List<String>>);
+
+  @override
+  _i4.Future<_i2.SubjectSchemaViewDto> fetchSubjectSchemaView({
+    required _i5.ClusterProfile? profile,
+    required String? subject,
+    int? version,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#fetchSubjectSchemaView, [], {
+              #profile: profile,
+              #subject: subject,
+              #version: version,
+            }),
+            returnValue: _i4.Future<_i2.SubjectSchemaViewDto>.value(
+              _FakeSubjectSchemaViewDto_1(
+                this,
+                Invocation.method(#fetchSubjectSchemaView, [], {
+                  #profile: profile,
+                  #subject: subject,
+                  #version: version,
+                }),
+              ),
+            ),
+          )
+          as _i4.Future<_i2.SubjectSchemaViewDto>);
+
+  @override
+  _i4.Future<String> fetchGlobalCompatibility({
+    required _i5.ClusterProfile? profile,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#fetchGlobalCompatibility, [], {
+              #profile: profile,
+            }),
+            returnValue: _i4.Future<String>.value(
+              _i6.dummyValue<String>(
+                this,
+                Invocation.method(#fetchGlobalCompatibility, [], {
+                  #profile: profile,
+                }),
+              ),
+            ),
+          )
+          as _i4.Future<String>);
+
+  @override
+  _i4.Future<String?> fetchSubjectCompatibility({
+    required _i5.ClusterProfile? profile,
+    required String? subject,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#fetchSubjectCompatibility, [], {
+              #profile: profile,
+              #subject: subject,
+            }),
+            returnValue: _i4.Future<String?>.value(),
+          )
+          as _i4.Future<String?>);
+
+  @override
+  List<_i2.SubjectAssociationDto> associateSubjects({
+    required List<String>? subjects,
+    required List<String>? topics,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#associateSubjects, [], {
+              #subjects: subjects,
+              #topics: topics,
+            }),
+            returnValue: <_i2.SubjectAssociationDto>[],
+          )
+          as List<_i2.SubjectAssociationDto>);
 }

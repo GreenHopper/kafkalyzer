@@ -810,6 +810,7 @@ class ScriptRunner extends ChangeNotifier {
     final startConfig = _resolveStartStrategy(step);
     final endConfig = _resolveEndStrategy(step);
     final filterConfig = _resolveFilterConfiguration(step);
+    final resolvedExprVars = _resolveExpressionVariables(step.filterExpression);
 
     final target = SearchTarget(
       profile: cluster,
@@ -824,6 +825,8 @@ class ScriptRunner extends ChangeNotifier {
       filterTerms: filterConfig.expandedTerms,
       filterType: filterConfig.filterType,
       scope: step.scope,
+      filterExpression: step.filterExpression,
+      filterVariables: resolvedExprVars,
       startOffset: startConfig.offset,
       startTimestamp: startConfig.timestamp,
       startPartition: _resolveInt(step.startPartition),
@@ -952,6 +955,28 @@ class ScriptRunner extends ChangeNotifier {
       expandedTerms: expandedFilterTerms,
       filterType: filterType,
     );
+  }
+
+  Map<String, List<String>>? _resolveExpressionVariables(String? expr) {
+    if (expr == null || expr.trim().isEmpty) return null;
+    final varRegex = RegExp(r'\{\{([^}]+)\}\}');
+    final matches = varRegex.allMatches(expr).toList();
+    if (matches.isEmpty) return null;
+
+    final result = <String, List<String>>{};
+    for (final match in matches) {
+      final key = match.group(1)!.trim();
+      final val = _variableValues[key];
+      if (val == null) {
+        throw Exception("Unknown variable '{{$key}}' in filter expression");
+      }
+      result[key] = val
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+    return result;
   }
 
   List<String> _expandMultiValueFilter(String template, RegExp varRegex) {

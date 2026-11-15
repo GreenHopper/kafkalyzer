@@ -4,10 +4,13 @@ import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:group_button/group_button.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/search/domain/filter_field_suggestions.dart';
 import 'package:kafkalyzer/src/features/search/domain/filter_terms.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
+import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/end_condition_configuration.dart';
+import 'package:kafkalyzer/src/features/search/presentation/widgets/filter_expression_editor.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condition_configuration.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -51,6 +54,8 @@ class TopicSearchBar extends StatefulWidget {
   final VoidCallback onStart;
 
   final Future<List<String>> Function()? schemaFieldsFetcher;
+  final FilterExpressionEditingController? filterExpressionController;
+  final FilterFieldSuggestions? filterSuggestions;
 
   const TopicSearchBar({
     super.key,
@@ -79,6 +84,8 @@ class TopicSearchBar extends StatefulWidget {
     required this.endTimestampController,
     required this.onStart,
     this.schemaFieldsFetcher,
+    this.filterExpressionController,
+    this.filterSuggestions,
   });
 
   @override
@@ -221,6 +228,11 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
   Future<void> _onStart() async {
     await _validatePatterns();
     if (!mounted || _invalidPattern != null) return;
+    final exprCtrl = widget.filterExpressionController;
+    if (exprCtrl != null && !exprCtrl.validateNow()) {
+      setState(() => _isAdvancedExpanded = true);
+      return;
+    }
     widget.onStart();
   }
 
@@ -319,7 +331,8 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
         widget.filterType != FilterType.contains ||
         widget.searchScope != SearchScope.both ||
         widget.partitionController.text.isNotEmpty ||
-        widget.fastTraceEnabled;
+        widget.fastTraceEnabled ||
+        (widget.filterExpressionController?.text.trim().isNotEmpty ?? false);
   }
 
   Widget _buildScanModeSelector(
@@ -650,6 +663,43 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
       );
     }
 
+    if (widget.filterExpressionController != null &&
+        widget.filterExpressionController!.text.trim().isNotEmpty) {
+      final exprText = widget.filterExpressionController!.text.trim();
+      final hasErr = !widget.filterExpressionController!.isValid;
+      chips.add(
+        Tooltip(
+          message: hasErr
+              ? '${l10n.filterExpressionInvalidTooltip}: $exprText'
+              : exprText,
+          child: InputChip(
+            key: const Key('filter_expression_chip'),
+            visualDensity: VisualDensity.compact,
+            avatar: hasErr
+                ? Icon(Icons.error, size: 14, color: colorScheme.error)
+                : null,
+            label: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 220),
+              child: Text(
+                l10n.filterExpressionChipSummary(exprText),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: hasErr ? colorScheme.error : null,
+                ),
+              ),
+            ),
+            onPressed: () => setState(() => _isAdvancedExpanded = true),
+            deleteIcon: const Icon(Icons.clear, size: 14),
+            onDeleted: () {
+              widget.filterExpressionController!.setText('');
+              setState(() {});
+            },
+          ),
+        ),
+      );
+    }
+
     if (widget.partitionController.text.isNotEmpty) {
       chips.add(
         InputChip(
@@ -838,6 +888,13 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
           if (widget.fastTraceEnabled) ...[
             const SizedBox(height: 8),
             _buildFastTracePreview(context, l10n, colorScheme),
+          ],
+          if (widget.filterExpressionController != null) ...[
+            const SizedBox(height: 12),
+            FilterExpressionEditor(
+              controller: widget.filterExpressionController!,
+              suggestions: widget.filterSuggestions,
+            ),
           ],
         ],
       ),

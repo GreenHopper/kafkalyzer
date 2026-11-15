@@ -1,12 +1,32 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_analyzer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/report_compare.dart';
+import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+
+typedef ScopeEstimator =
+    Future<AnalysisScopeEstimate> Function({
+      required ClusterProfile profile,
+      required String topic,
+      required AnalysisScope scope,
+    });
+
+typedef AnalysisStreamFactory =
+    Stream<TopicAnalysisProgress> Function({
+      required ClusterProfile profile,
+      required String topic,
+      required TopicAnalysisOptions options,
+    });
+
+typedef HistoryMaxPerTopicReader = Future<int> Function();
 
 /// Whether the currently displayed report came from a live scan or was
 /// imported from a file.
@@ -18,10 +38,20 @@ enum TopicAnalysisErrorKind { emptyFieldPath, noPreviousScope }
 class TopicAnalysisController extends ChangeNotifier {
   final Logger _logger;
   final TopicAnalysisExportService _exportService;
+  final TopicAnalysisHistoryService _historyService;
+  final ScopeEstimator _scopeEstimator;
+  final AnalysisStreamFactory _streamFactory;
+  final HistoryMaxPerTopicReader _historyMaxPerTopicReader;
+  final LocalSchemaAssignmentService? _localSchemaService;
 
   TopicAnalysisController({
     Logger? logger,
     TopicAnalysisExportService? exportService,
+    TopicAnalysisHistoryService? historyService,
+    ScopeEstimator? scopeEstimator,
+    AnalysisStreamFactory? streamFactory,
+    HistoryMaxPerTopicReader? historyMaxPerTopicReader,
+    LocalSchemaAssignmentService? localSchemaService,
   }) : _logger =
            logger ??
            (getIt.isRegistered<Logger>() ? getIt<Logger>() : Logger()),
@@ -29,7 +59,29 @@ class TopicAnalysisController extends ChangeNotifier {
            exportService ??
            (getIt.isRegistered<TopicAnalysisExportService>()
                ? getIt<TopicAnalysisExportService>()
-               : TopicAnalysisExportService());
+               : TopicAnalysisExportService()),
+       _historyService =
+           historyService ??
+           (getIt.isRegistered<TopicAnalysisHistoryService>()
+               ? getIt<TopicAnalysisHistoryService>()
+               : TopicAnalysisHistoryService()),
+       _scopeEstimator = scopeEstimator ?? estimateAnalysisScope,
+       _streamFactory = streamFactory ?? analyzeTopicContentWithOptions,
+       _historyMaxPerTopicReader =
+           historyMaxPerTopicReader ?? _defaultHistoryMaxPerTopicReader,
+       _localSchemaService =
+           localSchemaService ??
+           (getIt.isRegistered<LocalSchemaAssignmentService>()
+               ? getIt<LocalSchemaAssignmentService>()
+               : null);
+
+  static Future<int> _defaultHistoryMaxPerTopicReader() async {
+    final prefs = await SharedPreferences.getInstance();
+    return SettingsService.readInt(
+      prefs,
+      SettingsService.analysisHistoryPerTopicSetting,
+    );
+  }
 
   StreamSubscription<TopicAnalysisProgress>? _subscription;
   bool _isAnalyzing = false;
@@ -45,8 +97,12 @@ class TopicAnalysisController extends ChangeNotifier {
   TopicAnalysisImportErrorKind? _importErrorKind;
   int? _importErrorFoundVersion;
 
-  int? _maxMessages;
-  bool _sampleFromLatest = true;
+  AnalysisScope _scope = const AnalysisScope(limitFrom: ScopeLimitFrom.newest);
+  bool _isEstimating = false;
+  AnalysisScopeEstimate? _lastEstimate;
+  String? _estimateError;
+  String? _historySaveError;
+  bool _savedCurrentScan = false;
   FieldValueFilter? _valueFilter;
   DuplicateDetectionScope _duplicateScope = DuplicateDetectionScope.payloadOnly;
 
@@ -69,8 +125,11 @@ class TopicAnalysisController extends ChangeNotifier {
   String? get error => _error;
   TopicAnalysisErrorKind? get errorKind => _errorKind;
   DateTime? get startTime => _startTime;
-  int? get maxMessages => _maxMessages;
-  bool get sampleFromLatest => _sampleFromLatest;
+  AnalysisScope get scope => _scope;
+  bool get isEstimating => _isEstimating;
+  AnalysisScopeEstimate? get lastEstimate => _lastEstimate;
+  String? get estimateError => _estimateError;
+  String? get historySaveError => _historySaveError;
   bool get isImported => _reportSource == TopicAnalysisSource.imported;
   String? get reportClusterName => _reportClusterName;
   DateTime? get reportExportedAt => _reportExportedAt;
@@ -114,13 +173,56 @@ class TopicAnalysisController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setMaxMessages(int? count) {
-    _maxMessages = count;
+  void setScope(AnalysisScope scope) {
+    _scope = scope;
     notifyListeners();
   }
 
-  void setSampleFromLatest(bool value) {
-    _sampleFromLatest = value;
+  void clearHistorySaveError() {
+    if (_historySaveError == null) return;
+    _historySaveError = null;
+    notifyListeners();
+  }
+
+  Future<AnalysisScopeEstimate?> estimateScope(
+    ClusterProfile profile,
+    String topic, {
+    AnalysisScope? scope,
+  }) async {
+    _isEstimating = true;
+    _estimateError = null;
+    notifyListeners();
+    try {
+      final estimate = await _scopeEstimator(
+        profile: profile,
+        topic: topic,
+        scope: scope ?? _scope,
+      );
+      _lastEstimate = estimate;
+      _isEstimating = false;
+      notifyListeners();
+      return estimate;
+    } catch (e) {
+      _logger.w('Failed to estimate analysis scope for $topic: $e');
+      _estimateError = e.toString();
+      _isEstimating = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<HistoryListing> listHistory(String clusterName, String topic) {
+    return _historyService.list(clusterName, topic);
+  }
+
+  void openSavedReport(TopicAnalysisHistoryEntry entry) {
+    _importErrorKind = null;
+    _importErrorFoundVersion = null;
+    _report = entry.report;
+    _reportSource = TopicAnalysisSource.imported;
+    _reportClusterName = entry.clusterName;
+    _reportExportedAt = entry.exportedAt;
+    _error = null;
     notifyListeners();
   }
 
@@ -246,8 +348,7 @@ class TopicAnalysisController extends ChangeNotifier {
   Future<void> startAnalysis(
     ClusterProfile profile,
     String topic, {
-    int? maxMessages,
-    bool sampleFromLatest = true,
+    AnalysisScope? scope,
     FieldValueFilter? valueFilter,
     DuplicateDetectionScope? duplicateScope,
   }) async {
@@ -268,8 +369,11 @@ class TopicAnalysisController extends ChangeNotifier {
 
     _lastProfile = profile;
     _lastTopic = topic;
-    _maxMessages = maxMessages;
-    _sampleFromLatest = sampleFromLatest;
+    if (scope != null) {
+      _scope = scope;
+    }
+    _savedCurrentScan = false;
+    _historySaveError = null;
     _isAnalyzing = true;
     _progress = null;
     _error = null;
@@ -284,14 +388,20 @@ class TopicAnalysisController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final stream = analyzeTopicContentWithOptions(
+      final localSchemas = await _localSchemaService?.scanOptionsFor(
+        profile.name,
+        topic,
+      );
+      final stream = _streamFactory(
         profile: profile,
         topic: topic,
         options: TopicAnalysisOptions(
-          maxMessages: _maxMessages,
-          sampleFromLatest: _sampleFromLatest,
+          maxMessages: null,
+          sampleFromLatest: false,
           valueFilter: _valueFilter,
           duplicateScope: _duplicateScope,
+          scope: _scope,
+          localSchemas: localSchemas,
         ),
       );
 
@@ -335,8 +445,7 @@ class TopicAnalysisController extends ChangeNotifier {
     return startAnalysis(
       _lastProfile!,
       _lastTopic!,
-      maxMessages: _maxMessages,
-      sampleFromLatest: _sampleFromLatest,
+      scope: _scope,
       valueFilter: filter,
     );
   }
@@ -351,8 +460,38 @@ class TopicAnalysisController extends ChangeNotifier {
     }
     if (progress.isComplete) {
       _isAnalyzing = false;
+      if (progress.errorMessage == null &&
+          _reportSource == TopicAnalysisSource.live &&
+          !_savedCurrentScan &&
+          _report != null &&
+          _lastProfile != null) {
+        _savedCurrentScan = true;
+        unawaited(_saveCompletedReport(_lastProfile!.name, _report!));
+      }
     }
     notifyListeners();
+  }
+
+  Future<void> _saveCompletedReport(
+    String clusterName,
+    TopicAnalysisReport report,
+  ) async {
+    try {
+      final maxPerTopic = await _historyMaxPerTopicReader();
+      final result = await _historyService.save(
+        clusterName: clusterName,
+        report: report,
+        maxPerTopic: maxPerTopic,
+      );
+      if (result.cleanupError != null) {
+        _historySaveError = result.cleanupError;
+        notifyListeners();
+      }
+    } catch (e) {
+      _logger.w('Failed to save topic analysis history: $e');
+      _historySaveError = e.toString();
+      notifyListeners();
+    }
   }
 
   Future<void> stopAnalysis() async {

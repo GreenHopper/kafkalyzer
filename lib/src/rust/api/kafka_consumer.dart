@@ -5,6 +5,7 @@
 
 import '../frb_generated.dart';
 import 'kafka_types.dart';
+import 'local_schema.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`
@@ -16,6 +17,8 @@ Stream<KafkaMessage> consumeWithFilter({
   String? filterField,
   required FilterType filterType,
   required SearchScope searchScope,
+  String? filterExpression,
+  Map<String, List<String>>? filterVariables,
   PlatformInt64? startOffset,
   PlatformInt64? startTimestamp,
   int? startPartition,
@@ -25,6 +28,7 @@ Stream<KafkaMessage> consumeWithFilter({
   int? maxResults,
   required bool runForever,
   bool? startFromTail,
+  TopicLocalSchemasDto? localSchemas,
 }) => KafkalyzerRustLib.instance.api.crateApiKafkaConsumerConsumeWithFilter(
   profile: profile,
   topic: topic,
@@ -32,6 +36,8 @@ Stream<KafkaMessage> consumeWithFilter({
   filterField: filterField,
   filterType: filterType,
   searchScope: searchScope,
+  filterExpression: filterExpression,
+  filterVariables: filterVariables,
   startOffset: startOffset,
   startTimestamp: startTimestamp,
   startPartition: startPartition,
@@ -41,6 +47,7 @@ Stream<KafkaMessage> consumeWithFilter({
   maxResults: maxResults,
   runForever: runForever,
   startFromTail: startFromTail,
+  localSchemas: localSchemas,
 );
 
 class KafkaHeader {
@@ -71,6 +78,8 @@ class KafkaMessage {
   final List<KafkaHeader>? headers;
   final MessageSchema? keySchema;
   final MessageSchema? valueSchema;
+  final LocalSchemaUseDto? keyLocalSchema;
+  final LocalSchemaUseDto? valueLocalSchema;
 
   const KafkaMessage({
     required this.topic,
@@ -82,6 +91,8 @@ class KafkaMessage {
     this.headers,
     this.keySchema,
     this.valueSchema,
+    this.keyLocalSchema,
+    this.valueLocalSchema,
   });
 
   @override
@@ -94,7 +105,9 @@ class KafkaMessage {
       timestamp.hashCode ^
       headers.hashCode ^
       keySchema.hashCode ^
-      valueSchema.hashCode;
+      valueSchema.hashCode ^
+      keyLocalSchema.hashCode ^
+      valueLocalSchema.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -109,7 +122,9 @@ class KafkaMessage {
           timestamp == other.timestamp &&
           headers == other.headers &&
           keySchema == other.keySchema &&
-          valueSchema == other.valueSchema;
+          valueSchema == other.valueSchema &&
+          keyLocalSchema == other.keyLocalSchema &&
+          valueLocalSchema == other.valueLocalSchema;
 }
 
 class MessageSchema {

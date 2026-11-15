@@ -62,6 +62,24 @@ class SettingsService {
     1,
     100000,
   );
+  static const partitionSkewThresholdSetting = IntSetting(
+    'topic_partition_skew_threshold_percent',
+    50,
+    1,
+    100,
+  );
+  static const analysisConfirmThresholdSetting = IntSetting(
+    'analysis_confirm_threshold',
+    1000000,
+    1000,
+    1000000000000,
+  );
+  static const analysisHistoryPerTopicSetting = IntSetting(
+    'analysis_history_per_topic',
+    10,
+    0,
+    100,
+  );
 
   static int readInt(SharedPreferences prefs, IntSetting setting) {
     final raw = prefs.get(setting.key);
@@ -215,6 +233,18 @@ class SettingsService {
     await writeInt(
       lagWarnThresholdSetting,
       lagWarnThresholdSetting.defaultValue,
+    );
+    await writeInt(
+      partitionSkewThresholdSetting,
+      partitionSkewThresholdSetting.defaultValue,
+    );
+    await writeInt(
+      analysisConfirmThresholdSetting,
+      analysisConfirmThresholdSetting.defaultValue,
+    );
+    await writeInt(
+      analysisHistoryPerTopicSetting,
+      analysisHistoryPerTopicSetting.defaultValue,
     );
     await setMessageBufferLimit(defaultMessageBufferLimit);
     await prefs.setBool('general_restore_tabs', true);

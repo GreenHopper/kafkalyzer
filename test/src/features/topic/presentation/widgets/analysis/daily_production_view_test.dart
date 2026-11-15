@@ -19,6 +19,7 @@ TopicAnalysisReport _testReport({
     avgMessageSize: 50.0,
     tombstonesCount: 0,
     isCompacted: false,
+    cleanupPolicyUnknown: false,
     nullKeysCount: 0,
     partitionStats: const [],
     hourlyDistribution: const [],

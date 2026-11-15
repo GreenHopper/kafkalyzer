@@ -6,12 +6,15 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/local_schema_error_formatter.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
 import 'package:kafkalyzer/src/features/navigation/models/message_reference.dart';
+import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/topic/utils/dlq_topic_detector.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/dlq_failure_diagnostics_card.dart';
 import 'package:kafkalyzer/src/utils/app_fonts.dart';
@@ -872,6 +875,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
             l10n,
             l10n.schemaSideKey,
             widget.message.keySchema,
+            widget.message.keyLocalSchema,
             'provenance_key_entry',
           ),
           _buildProvenanceEntry(
@@ -879,6 +883,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
             l10n,
             l10n.schemaSideValue,
             widget.message.valueSchema,
+            widget.message.valueLocalSchema,
             'provenance_value_entry',
           ),
         ],
@@ -891,6 +896,7 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
     AppLocalizations l10n,
     String side,
     MessageSchema? schema,
+    LocalSchemaUseDto? localSchema,
     String key,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -898,6 +904,28 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
       fontSize: 11,
       color: colorScheme.onSurfaceVariant,
     );
+
+    if (localSchema != null) {
+      if (localSchema.error != null) {
+        final err = localSchema.error!;
+        final msg =
+            '$side: ${l10n.localSchemaProvenanceFailed(localSchema.fileName)} — ${describeLocalDecodeError(l10n, err.kind, err.detail)}';
+        return Text(
+          msg,
+          key: Key(key),
+          style: style.copyWith(color: colorScheme.error),
+        );
+      }
+      final formatName = localSchemaFormatLabel(l10n, localSchema.format);
+      final desc = localSchema.messageType != null
+          ? l10n.localSchemaProvenanceDecodedWithMsg(
+              localSchema.fileName,
+              formatName,
+              localSchema.messageType!,
+            )
+          : l10n.localSchemaProvenanceDecoded(localSchema.fileName, formatName);
+      return Text('$side: $desc', key: Key(key), style: style);
+    }
 
     if (schema == null) {
       return Text(
@@ -941,9 +969,29 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
   String _schemaMetadataLine(AppLocalizations l10n) {
     final keySchema = widget.message.keySchema;
     final valueSchema = widget.message.valueSchema;
-    if (keySchema == null && valueSchema == null) return '';
+    final keyLocal = widget.message.keyLocalSchema;
+    final valueLocal = widget.message.valueLocalSchema;
+    if (keySchema == null &&
+        valueSchema == null &&
+        keyLocal == null &&
+        valueLocal == null) {
+      return '';
+    }
 
-    String describe(MessageSchema? schema) {
+    String describe(MessageSchema? schema, LocalSchemaUseDto? local) {
+      if (local != null) {
+        if (local.error != null) {
+          return '${l10n.localSchemaProvenanceFailed(local.fileName)}: ${describeLocalDecodeError(l10n, local.error!.kind, local.error!.detail)}';
+        }
+        final fmt = localSchemaFormatLabel(l10n, local.format);
+        return local.messageType != null
+            ? l10n.localSchemaProvenanceDecodedWithMsg(
+                local.fileName,
+                fmt,
+                local.messageType!,
+              )
+            : l10n.localSchemaProvenanceDecoded(local.fileName, fmt);
+      }
       if (schema == null) return l10n.schemaNone;
       if (schema.subject != null && schema.version != null) {
         return '${schema.subject} v${schema.version} (#${schema.schemaId})';
@@ -951,8 +999,8 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
       return '#${schema.schemaId} (unresolved)';
     }
 
-    return '\n${l10n.schemaSideKey}: ${describe(keySchema)}'
-        '\n${l10n.schemaSideValue}: ${describe(valueSchema)}';
+    return '\n${l10n.schemaSideKey}: ${describe(keySchema, keyLocal)}'
+        '\n${l10n.schemaSideValue}: ${describe(valueSchema, valueLocal)}';
   }
 
   Widget _buildCompactChip(BuildContext context, String label, IconData icon) {
@@ -1025,12 +1073,15 @@ class _MessageInspectorPanelState extends State<MessageInspectorPanel>
   ) {
     if (getIt.isRegistered<ActiveConnectionController>()) {
       final activeCtrl = getIt<ActiveConnectionController>();
-      final topicMeta = activeCtrl.topics
-          .where((t) => t.name == topicName)
-          .firstOrNull;
-      if (topicMeta != null) {
-        activeCtrl.setActiveTopic(topicMeta, widget.profile);
-      }
+      final profile = widget.profile ?? activeCtrl.activeProfile;
+      if (profile == null) return;
+      openTopicByNameWithFeedback(
+        controller: activeCtrl,
+        profile: profile,
+        topicName: topicName,
+        messenger: ScaffoldMessenger.maybeOf(context),
+        l10n: AppLocalizations.of(context),
+      );
     }
   }
 

@@ -55,6 +55,7 @@ abstract class ScriptStep with _$ScriptStep {
     required String clusterName, // Reference by name for persistence
     @Default([]) List<String> topicNames, // Reference by name for persistence
     String? filterTemplate,
+    String? filterExpression,
     @Default(FilterType.contains) FilterType filterType,
     @Default(SearchScope.both) SearchScope scope,
 
@@ -89,6 +90,7 @@ extension ScriptStepX on ScriptStep {
 
     return copyWith(
       filterTemplate: replace(filterTemplate),
+      filterExpression: replace(filterExpression),
       startOffset: replace(startOffset),
       startTimestamp: replace(startTimestamp),
       startPartition: replace(startPartition),

@@ -3,14 +3,20 @@ import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/controllers/cluster_overview_controller.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/explorer_view.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/subject_browser_list.dart';
+import 'package:kafkalyzer/src/features/topic/domain/topic_list_query.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as schema_api;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,6 +51,15 @@ class FakeMetadataService implements KafkaMetadataService {
   );
 
   @override
+  Future<ClusterOverview> fetchClusterOverview({
+    required ClusterProfile profile,
+  }) async => const ClusterOverview(
+    brokers: [BrokerEndpoint(id: 1, host: 'localhost', port: 9092)],
+    clusterId: 'cid',
+    controllerId: 1,
+  );
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -65,7 +80,7 @@ void main() {
     tlsVerification: TlsVerification.enabled,
   );
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
     mockClusterListController = MockClusterListController();
     mockActiveConnectionController = MockActiveConnectionController();
@@ -74,7 +89,7 @@ void main() {
     mockSchemaController = FixedMockSchemaController();
 
     final getIt = GetIt.instance;
-    getIt.reset();
+    await getIt.reset();
     getIt.registerLazySingleton<Logger>(() => MockLogger());
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
     getIt.registerSingleton<ActiveConnectionController>(
@@ -84,6 +99,9 @@ void main() {
     getIt.registerSingleton<SchemaController>(mockSchemaController);
     getIt.registerSingleton<RecentTopicsService>(RecentTopicsService());
     getIt.registerSingleton<KafkaMetadataService>(FakeMetadataService());
+    getIt.registerSingleton<ClusterOverviewController>(
+      ClusterOverviewController(),
+    );
 
     // Stub ChangeNotifier methods to prevent watch_it hangs
     when(mockActiveConnectionController.addListener(any)).thenReturn(null);
@@ -104,7 +122,54 @@ void main() {
     when(mockSchemaController.getSchemas(any)).thenReturn([]);
     when(mockSchemaController.isLoading(any)).thenReturn(false);
     when(mockTopicController.hasCachedTopics(any)).thenReturn(false);
+    when(mockTopicController.getTopics(any)).thenReturn(const []);
+    when(mockTopicController.findTopic(any, any)).thenReturn(null);
     when(mockTopicController.isLoading(any)).thenReturn(false);
+    when(mockTopicController.fetchedAt(any)).thenReturn(null);
+    when(
+      mockTopicController.configFor(any, any),
+    ).thenReturn(const TopicConfigView.loading());
+    when(mockActiveConnectionController.topics).thenReturn(const []);
+    when(
+      mockActiveConnectionController.topicListQuery,
+    ).thenReturn(const TopicListQuery());
+    when(
+      mockActiveConnectionController.topicFilterMode,
+    ).thenReturn(TopicFilterMode.substring);
+    when(
+      mockActiveConnectionController.topicSortOrder,
+    ).thenReturn(TopicSortOrder.name);
+    when(mockActiveConnectionController.groupTopicsByPrefix).thenReturn(false);
+    when(
+      mockActiveConnectionController.favouriteTopics,
+    ).thenReturn(const <String>{});
+    when(
+      mockActiveConnectionController.topicPreferencesUnreadable,
+    ).thenReturn(false);
+    when(
+      mockActiveConnectionController.topicPreferencesWriteBlocked,
+    ).thenReturn(false);
+    when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+    when(mockActiveConnectionController.unhealthyTopicsOnly).thenReturn(false);
+    when(
+      mockActiveConnectionController.getTopicFactsController(
+        any,
+        any,
+        any,
+        any,
+      ),
+    ).thenAnswer(
+      (inv) => TopicFactsController(
+        profile: inv.positionalArguments[1] as ClusterProfile,
+        topicName: inv.positionalArguments[2] as String,
+      ),
+    );
+    when(mockActiveConnectionController.topicListView).thenAnswer(
+      (_) => buildTopicListView(
+        mockActiveConnectionController.topics,
+        mockActiveConnectionController.topicListQuery,
+      ),
+    );
     fakeStreamController = FakeMessageStreamController();
     when(
       mockActiveConnectionController.getStreamController(any),
@@ -192,6 +257,22 @@ void main() {
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(
+        mockActiveConnectionController.unhealthyTopicsOnly,
+      ).thenReturn(false);
+      when(
+        mockActiveConnectionController.getTopicFactsController(
+          any,
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer(
+        (inv) => TopicFactsController(
+          profile: inv.positionalArguments[1] as ClusterProfile,
+          topicName: inv.positionalArguments[2] as String,
+        ),
+      );
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
       when(mockActiveConnectionController.topics).thenReturn([
@@ -229,6 +310,22 @@ void main() {
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(
+        mockActiveConnectionController.unhealthyTopicsOnly,
+      ).thenReturn(false);
+      when(
+        mockActiveConnectionController.getTopicFactsController(
+          any,
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer(
+        (inv) => TopicFactsController(
+          profile: inv.positionalArguments[1] as ClusterProfile,
+          topicName: inv.positionalArguments[2] as String,
+        ),
+      );
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
 
@@ -260,6 +357,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
 
@@ -288,6 +401,22 @@ void main() {
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(
+        mockActiveConnectionController.unhealthyTopicsOnly,
+      ).thenReturn(false);
+      when(
+        mockActiveConnectionController.getTopicFactsController(
+          any,
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer(
+        (inv) => TopicFactsController(
+          profile: inv.positionalArguments[1] as ClusterProfile,
+          topicName: inv.positionalArguments[2] as String,
+        ),
+      );
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
       when(mockActiveConnectionController.openTopics).thenReturn([]);
@@ -322,6 +451,22 @@ void main() {
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(
+        mockActiveConnectionController.unhealthyTopicsOnly,
+      ).thenReturn(false);
+      when(
+        mockActiveConnectionController.getTopicFactsController(
+          any,
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer(
+        (inv) => TopicFactsController(
+          profile: inv.positionalArguments[1] as ClusterProfile,
+          topicName: inv.positionalArguments[2] as String,
+        ),
+      );
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
       when(mockActiveConnectionController.openTopics).thenReturn([]);
@@ -380,6 +525,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
         when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -420,6 +581,22 @@ void main() {
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(
+        mockActiveConnectionController.unhealthyTopicsOnly,
+      ).thenReturn(false);
+      when(
+        mockActiveConnectionController.getTopicFactsController(
+          any,
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer(
+        (inv) => TopicFactsController(
+          profile: inv.positionalArguments[1] as ClusterProfile,
+          topicName: inv.positionalArguments[2] as String,
+        ),
+      );
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
       when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -468,6 +645,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
         when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -525,6 +718,22 @@ void main() {
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(
+        mockActiveConnectionController.unhealthyTopicsOnly,
+      ).thenReturn(false);
+      when(
+        mockActiveConnectionController.getTopicFactsController(
+          any,
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer(
+        (inv) => TopicFactsController(
+          profile: inv.positionalArguments[1] as ClusterProfile,
+          topicName: inv.positionalArguments[2] as String,
+        ),
+      );
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
       when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -588,6 +797,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
         when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -631,6 +856,22 @@ void main() {
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(
+        mockActiveConnectionController.unhealthyTopicsOnly,
+      ).thenReturn(false);
+      when(
+        mockActiveConnectionController.getTopicFactsController(
+          any,
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer(
+        (inv) => TopicFactsController(
+          profile: inv.positionalArguments[1] as ClusterProfile,
+          topicName: inv.positionalArguments[2] as String,
+        ),
+      );
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
       when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -689,6 +930,22 @@ void main() {
       when(mockActiveConnectionController.isConnecting).thenReturn(false);
       when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
       when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+      when(
+        mockActiveConnectionController.unhealthyTopicsOnly,
+      ).thenReturn(false);
+      when(
+        mockActiveConnectionController.getTopicFactsController(
+          any,
+          any,
+          any,
+          any,
+        ),
+      ).thenAnswer(
+        (inv) => TopicFactsController(
+          profile: inv.positionalArguments[1] as ClusterProfile,
+          topicName: inv.positionalArguments[2] as String,
+        ),
+      );
       when(mockActiveConnectionController.error).thenReturn(null);
       when(mockActiveConnectionController.topicFilter).thenReturn('');
       when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -923,6 +1180,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
         when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -971,6 +1244,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
         when(mockActiveConnectionController.topics).thenReturn([]);
@@ -1014,6 +1303,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
         when(mockActiveConnectionController.topics).thenReturn([]);
@@ -1051,6 +1356,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
         when(mockActiveConnectionController.topics).thenReturn(const []);
@@ -1098,6 +1419,22 @@ void main() {
           mockActiveConnectionController.showInternalTopics,
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
+        when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
         when(mockActiveConnectionController.topics).thenReturn([topic]);
@@ -1156,6 +1493,22 @@ void main() {
         ).thenReturn(false);
         when(mockActiveConnectionController.showStreamTopics).thenReturn(false);
         when(
+          mockActiveConnectionController.unhealthyTopicsOnly,
+        ).thenReturn(false);
+        when(
+          mockActiveConnectionController.getTopicFactsController(
+            any,
+            any,
+            any,
+            any,
+          ),
+        ).thenAnswer(
+          (inv) => TopicFactsController(
+            profile: inv.positionalArguments[1] as ClusterProfile,
+            topicName: inv.positionalArguments[2] as String,
+          ),
+        );
+        when(
           mockActiveConnectionController.error,
         ).thenAnswer((_) => currentError);
         when(mockActiveConnectionController.clearError()).thenAnswer((_) {
@@ -1196,6 +1549,514 @@ void main() {
           find.text('TLS-Zertifikatsprüfung fehlgeschlagen'),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgets('shows relative age text in German locale', (tester) async {
+      stubIdleSidebarState();
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
+      when(mockActiveConnectionController.openTopics).thenReturn(const []);
+      when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+      when(
+        mockTopicController.fetchedAt(testProfile),
+      ).thenReturn(DateTime.now().subtract(const Duration(minutes: 5)));
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(locale: const Locale('de')),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('topic_list_age_label')), findsOneWidget);
+      expect(find.text('vor 5 Min. aktualisiert'), findsOneWidget);
+    });
+
+    testWidgets('refresh button stays enabled while schema registry loads', (
+      tester,
+    ) async {
+      stubIdleSidebarState();
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
+      when(mockActiveConnectionController.openTopics).thenReturn(const []);
+      when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+      when(mockTopicController.isLoading(testProfile)).thenReturn(false);
+      when(mockSchemaController.isLoading(testProfile)).thenReturn(true);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+
+      final btn = tester.widget<IconButton>(
+        find.byKey(const Key('explorer_refresh_topics_button')),
+      );
+      expect(btn.onPressed, isNotNull);
+
+      await tester.tap(find.byKey(const Key('explorer_refresh_topics_button')));
+      await tester.pump();
+      verify(
+        mockTopicController.fetchTopics(testProfile, force: true),
+      ).called(1);
+    });
+
+    testWidgets(
+      'old topic list stays visible during refresh with inline progress',
+      (tester) async {
+        stubIdleSidebarState();
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.openTopics).thenReturn(const []);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        when(mockTopicController.isLoading(testProfile)).thenReturn(true);
+        const cachedTopic = TopicMetadata(
+          name: 'cached-orders',
+          partitionCount: 3,
+          replicationFactor: 1,
+        );
+        when(mockActiveConnectionController.topics).thenReturn([cachedTopic]);
+        when(
+          mockTopicController.getTopics(testProfile),
+        ).thenReturn([cachedTopic]);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+
+        expect(
+          find.byKey(const Key('topic_list_refresh_progress')),
+          findsOneWidget,
+        );
+        expect(find.text('cached-orders'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'failed refresh with cached list shows inline notice and Retry',
+      (tester) async {
+        stubIdleSidebarState();
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.openTopics).thenReturn(const []);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        (mockTopicController as FixedMockTopicController).mockError = 'timeout';
+        const cachedTopic = TopicMetadata(
+          name: 'cached-orders',
+          partitionCount: 3,
+          replicationFactor: 1,
+        );
+        when(mockActiveConnectionController.topics).thenReturn([cachedTopic]);
+        when(
+          mockTopicController.getTopics(testProfile),
+        ).thenReturn([cachedTopic]);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+
+        expect(
+          find.byKey(const Key('topic_list_refresh_error_notice')),
+          findsOneWidget,
+        );
+        expect(find.text('Refresh failed: timeout'), findsOneWidget);
+        expect(find.text('cached-orders'), findsOneWidget);
+
+        await tester.tap(find.text('Retry'));
+        await tester.pump();
+        verify(
+          mockTopicController.fetchTopics(testProfile, force: true),
+        ).called(1);
+      },
+    );
+
+    testWidgets('shows invalid pattern error for invalid regex', (
+      tester,
+    ) async {
+      stubIdleSidebarState();
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
+      when(mockActiveConnectionController.openTopics).thenReturn(const []);
+      when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+      when(
+        mockActiveConnectionController.topicFilterMode,
+      ).thenReturn(TopicFilterMode.regex);
+      when(mockActiveConnectionController.topicFilter).thenReturn('[unclosed');
+      when(mockActiveConnectionController.topicListQuery).thenReturn(
+        const TopicListQuery(text: '[unclosed', mode: TopicFilterMode.regex),
+      );
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+
+      expect(find.text('Invalid pattern'), findsOneWidget);
+    });
+
+    testWidgets('shows hidden count chip and calls showAllTopics on tap', (
+      tester,
+    ) async {
+      stubIdleSidebarState();
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
+      when(mockActiveConnectionController.openTopics).thenReturn(const []);
+      when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+      const internalTopic = TopicMetadata(
+        name: '__consumer_offsets',
+        partitionCount: 50,
+        replicationFactor: 1,
+      );
+      const visibleTopic = TopicMetadata(
+        name: 'orders',
+        partitionCount: 3,
+        replicationFactor: 1,
+      );
+      when(
+        mockActiveConnectionController.topics,
+      ).thenReturn([internalTopic, visibleTopic]);
+      when(
+        mockTopicController.getTopics(testProfile),
+      ).thenReturn([internalTopic, visibleTopic]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+
+      final chip = find.byKey(const Key('topic_hidden_count_chip'));
+      expect(chip, findsOneWidget);
+      expect(find.text('1 hidden · Show all'), findsOneWidget);
+
+      await tester.tap(chip);
+      await tester.pump();
+      verify(mockActiveConnectionController.showAllTopics()).called(1);
+    });
+
+    testWidgets(
+      'renders collapsible group headers and DLQ badges in grouped mode',
+      (tester) async {
+        stubIdleSidebarState();
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(testProfile);
+        when(mockActiveConnectionController.openTopics).thenReturn(const []);
+        when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+        when(
+          mockActiveConnectionController.groupTopicsByPrefix,
+        ).thenReturn(true);
+        when(
+          mockActiveConnectionController.topicListQuery,
+        ).thenReturn(const TopicListQuery(groupByPrefix: true));
+        const topics = [
+          TopicMetadata(
+            name: 'orders.created',
+            partitionCount: 3,
+            replicationFactor: 1,
+          ),
+          TopicMetadata(
+            name: 'orders.created-dlq',
+            partitionCount: 1,
+            replicationFactor: 1,
+          ),
+        ];
+        when(mockActiveConnectionController.topics).thenReturn(topics);
+        when(mockTopicController.getTopics(testProfile)).thenReturn(topics);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+
+        final groupHeader = find.byKey(const Key('topic_group_header_orders'));
+        expect(groupHeader, findsOneWidget);
+        expect(find.text('DLQ'), findsOneWidget);
+
+        await tester.tap(groupHeader);
+        await tester.pump();
+        verify(
+          mockActiveConnectionController.toggleGroupCollapsed('orders'),
+        ).called(1);
+      },
+    );
+
+    testWidgets('pins favourites section at the top of the topic list', (
+      tester,
+    ) async {
+      stubIdleSidebarState();
+      when(
+        mockActiveConnectionController.activeProfile,
+      ).thenReturn(testProfile);
+      when(mockActiveConnectionController.openTopics).thenReturn(const []);
+      when(mockTopicController.hasCachedTopics(testProfile)).thenReturn(true);
+      when(
+        mockActiveConnectionController.favouriteTopics,
+      ).thenReturn(const {'zebra'});
+      when(
+        mockActiveConnectionController.topicListQuery,
+      ).thenReturn(const TopicListQuery(favourites: {'zebra'}));
+      const topics = [
+        TopicMetadata(name: 'alpha', partitionCount: 1, replicationFactor: 1),
+        TopicMetadata(name: 'zebra', partitionCount: 1, replicationFactor: 1),
+      ];
+      when(mockActiveConnectionController.topics).thenReturn(topics);
+      when(mockTopicController.getTopics(testProfile)).thenReturn(topics);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('topic_favourites_section_header')),
+        findsOneWidget,
+      );
+      expect(find.text('Favourites (1)'), findsOneWidget);
+      expect(
+        find.byKey(const Key('topic_favourite_button_zebra')),
+        findsNWidgets(2),
+      );
+    });
+
+    testWidgets(
+      'tapping recent topic calls openTopicByName and shows loaded partition count',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        provideDummy<SchemaTypeState>(const SchemaTypeNotLoaded());
+        stubIdleSidebarState();
+        ClusterProfile? connectedProfile;
+        final openTabs = <OpenTopicRecord>[];
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenAnswer((_) => connectedProfile);
+        when(
+          mockActiveConnectionController.openTopics,
+        ).thenAnswer((_) => openTabs);
+        when(
+          mockActiveConnectionController.activeTopic,
+        ).thenAnswer((_) => openTabs.isEmpty ? null : openTabs.first);
+        when(mockActiveConnectionController.connect(testProfile)).thenAnswer((
+          _,
+        ) async {
+          connectedProfile = testProfile;
+        });
+        await tester.runAsync(() async {
+          final prefs = await SharedPreferences.getInstance();
+          final svc = RecentTopicsService(prefs: prefs);
+          await svc.recordVisit(
+            clusterName: testProfile.name,
+            topicName: 'recent-missing',
+          );
+          GetIt.instance.unregister<RecentTopicsService>();
+          GetIt.instance.registerSingleton<RecentTopicsService>(svc);
+        });
+
+        when(
+          mockActiveConnectionController.openTopicByName(
+            testProfile,
+            'recent-missing',
+            forceNew: false,
+          ),
+        ).thenAnswer((_) async {
+          final record = OpenTopicRecord(
+            const TopicMetadata(
+              name: 'recent-missing',
+              partitionCount: 12,
+              replicationFactor: 2,
+            ),
+            testProfile,
+          );
+          openTabs.add(record);
+          return record;
+        });
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        await tester.tap(find.text('recent-missing'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        verify(
+          mockActiveConnectionController.openTopicByName(
+            testProfile,
+            'recent-missing',
+            forceNew: false,
+          ),
+        ).called(1);
+        tester.element(find.byType(ExplorerView)).markNeedsBuild();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.text('12 Partitions'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'failing openTopicByName from recent topic opens no tab and shows Retry SnackBar',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        provideDummy<SchemaTypeState>(const SchemaTypeNotLoaded());
+        stubIdleSidebarState();
+        when(mockActiveConnectionController.openTopics).thenReturn(const []);
+        when(mockActiveConnectionController.activeTopic).thenReturn(null);
+        when(
+          mockActiveConnectionController.connect(testProfile),
+        ).thenAnswer((_) async {});
+        await tester.runAsync(() async {
+          final prefs = await SharedPreferences.getInstance();
+          final svc = RecentTopicsService(prefs: prefs);
+          await svc.recordVisit(
+            clusterName: testProfile.name,
+            topicName: 'broken-topic',
+          );
+          GetIt.instance.unregister<RecentTopicsService>();
+          GetIt.instance.registerSingleton<RecentTopicsService>(svc);
+        });
+
+        when(
+          mockActiveConnectionController.openTopicByName(
+            testProfile,
+            'broken-topic',
+            forceNew: false,
+          ),
+        ).thenThrow(Exception('broker unreachable'));
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        await tester.tap(find.text('broken-topic'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(find.byType(SnackBar), findsOneWidget);
+        expect(find.text('Retry'), findsOneWidget);
+        verifyNever(
+          mockActiveConnectionController.openTopic(
+            topic: anyNamed('topic'),
+            profile: anyNamed('profile'),
+            forceNew: anyNamed('forceNew'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'Topics | Subjects switcher swaps sidebar, preserves topic filter, and opens SchemaViewerDialog',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        provideDummy<SchemaTypeState>(const SchemaTypeNotLoaded());
+        stubIdleSidebarState();
+
+        const srProfile = ClusterProfile(
+          name: 'prod-sr',
+          bootstrapServers: 'localhost:9092',
+          schemaRegistryUrl: 'https://sr.internal:8081',
+          tlsVerification: TlsVerification.enabled,
+        );
+        when(mockClusterListController.clusters).thenReturn([srProfile]);
+        when(
+          mockActiveConnectionController.activeProfile,
+        ).thenReturn(srProfile);
+        when(mockActiveConnectionController.openTopics).thenReturn(const []);
+        when(mockActiveConnectionController.activeTopic).thenReturn(null);
+        when(mockActiveConnectionController.topicFilter).thenReturn('orders');
+        when(mockSchemaController.errorObjectFor(srProfile)).thenReturn(null);
+        when(
+          mockSchemaController.globalCompatibilityFor(srProfile),
+        ).thenReturn('BACKWARD');
+        when(mockTopicController.getTopics(srProfile)).thenReturn([
+          const TopicMetadata(
+            name: 'orders',
+            partitionCount: 1,
+            replicationFactor: 1,
+          ),
+        ]);
+        when(
+          mockSchemaController.getSchemas(srProfile),
+        ).thenReturn(['orders-value']);
+        when(
+          mockSchemaController.associatedTopics(srProfile, ['orders']),
+        ).thenReturn(const [
+          schema_api.SubjectAssociationDto(
+            subject: 'orders-value',
+            topic: 'orders',
+            side: schema_api.TopicSideDto.value,
+            onCluster: true,
+          ),
+        ]);
+        when(
+          mockSchemaController.schemaTypeFor(srProfile, 'orders-value'),
+        ).thenReturn(const SchemaTypeNotLoaded());
+        when(
+          mockSchemaController.fetchGlobalCompatibility(srProfile),
+        ).thenAnswer((_) async => 'BACKWARD');
+        when(
+          mockSchemaController.fetchSchemaVersions(srProfile, 'orders-value'),
+        ).thenAnswer((_) async => [1]);
+        when(
+          mockSchemaController.fetchSubjectSchemaView(
+            srProfile,
+            'orders-value',
+            version: 1,
+          ),
+        ).thenAnswer(
+          (_) async => const schema_api.SubjectSchemaViewDto(
+            schema: schema_api.SubjectSchemaDto(
+              subject: 'orders-value',
+              version: 1,
+              id: 1,
+              schemaType: schema_api.SchemaKindDto.protobuf,
+              schema: 'syntax = "proto3"; message Order {}',
+              references: [],
+            ),
+            fields: schema_api.SchemaFieldModelDto(
+              kind: schema_api.SchemaKindDto.protobuf,
+              messages: ['Order'],
+              fields: [],
+              truncated: false,
+            ),
+          ),
+        );
+        when(
+          mockSchemaController.fetchSubjectCompatibility(
+            srProfile,
+            'orders-value',
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          mockSchemaController.getAssociatedTopics('orders-value', ['orders']),
+        ).thenAnswer((_) async => ['orders']);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('explorer_browse_mode_switcher')),
+          findsOneWidget,
+        );
+
+        // Switch to Subjects mode
+        await tester.tap(find.text('Subjects'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SubjectBrowserList), findsOneWidget);
+        expect(find.text('orders-value'), findsOneWidget);
+
+        // Tap subject -> opens SchemaViewerDialog with initialSubject
+        await tester.tap(find.text('orders-value'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SchemaViewerDialog), findsOneWidget);
+        expect(find.text('Schema: orders-value'), findsOneWidget);
+
+        // Close dialog and switch back to Topics -> topic filter preserved
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Topics'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SubjectBrowserList), findsNothing);
+        expect(find.text('orders'), findsWidgets);
       },
     );
   });
@@ -1281,6 +2142,14 @@ class FakeMessageStreamController extends ChangeNotifier
     notifyListeners();
   }
 
+  Future<ClusterOverview> fetchClusterOverview({
+    required ClusterProfile profile,
+  }) async => const ClusterOverview(
+    brokers: [BrokerEndpoint(id: 1, host: 'localhost', port: 9092)],
+    clusterId: 'cid',
+    controllerId: 1,
+  );
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -1307,10 +2176,8 @@ class FakeTopicAnalysisController extends ChangeNotifier
   DateTime? get startTime => _startTime;
 
   @override
-  int? get maxMessages => null;
-
-  @override
-  bool get sampleFromLatest => true;
+  AnalysisScope get scope =>
+      const AnalysisScope(limitFrom: ScopeLimitFrom.newest);
 
   @override
   double get progressRatio => _progressRatio;
@@ -1336,6 +2203,14 @@ class FakeTopicAnalysisController extends ChangeNotifier
     _startTime = DateTime.now().subtract(const Duration(seconds: 30));
     notifyListeners();
   }
+
+  Future<ClusterOverview> fetchClusterOverview({
+    required ClusterProfile profile,
+  }) async => const ClusterOverview(
+    brokers: [BrokerEndpoint(id: 1, host: 'localhost', port: 9092)],
+    clusterId: 'cid',
+    controllerId: 1,
+  );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

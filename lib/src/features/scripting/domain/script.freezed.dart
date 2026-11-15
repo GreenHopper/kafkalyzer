@@ -844,7 +844,7 @@ as ScriptExtractionSource,
 /// @nodoc
 mixin _$ScriptStep {
 
- String get id; String get name; String get clusterName; List<String> get topicNames; String? get filterTemplate; FilterType get filterType; SearchScope get scope; MultiSearchStartStrategy get startStrategy; MultiSearchEndStrategy get endStrategy; String? get startOffset; String? get startTimestamp; String? get startPartition; bool get fastTraceEnabled; String? get endOffset; String? get endTimestamp; String? get maxResults; List<ScriptExtraction> get extractions;
+ String get id; String get name; String get clusterName; List<String> get topicNames; String? get filterTemplate; String? get filterExpression; FilterType get filterType; SearchScope get scope; MultiSearchStartStrategy get startStrategy; MultiSearchEndStrategy get endStrategy; String? get startOffset; String? get startTimestamp; String? get startPartition; bool get fastTraceEnabled; String? get endOffset; String? get endTimestamp; String? get maxResults; List<ScriptExtraction> get extractions;
 /// Create a copy of ScriptStep
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -857,16 +857,16 @@ $ScriptStepCopyWith<ScriptStep> get copyWith => _$ScriptStepCopyWithImpl<ScriptS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScriptStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.clusterName, clusterName) || other.clusterName == clusterName)&&const DeepCollectionEquality().equals(other.topicNames, topicNames)&&(identical(other.filterTemplate, filterTemplate) || other.filterTemplate == filterTemplate)&&(identical(other.filterType, filterType) || other.filterType == filterType)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.startStrategy, startStrategy) || other.startStrategy == startStrategy)&&(identical(other.endStrategy, endStrategy) || other.endStrategy == endStrategy)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.startTimestamp, startTimestamp) || other.startTimestamp == startTimestamp)&&(identical(other.startPartition, startPartition) || other.startPartition == startPartition)&&(identical(other.fastTraceEnabled, fastTraceEnabled) || other.fastTraceEnabled == fastTraceEnabled)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.endTimestamp, endTimestamp) || other.endTimestamp == endTimestamp)&&(identical(other.maxResults, maxResults) || other.maxResults == maxResults)&&const DeepCollectionEquality().equals(other.extractions, extractions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScriptStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.clusterName, clusterName) || other.clusterName == clusterName)&&const DeepCollectionEquality().equals(other.topicNames, topicNames)&&(identical(other.filterTemplate, filterTemplate) || other.filterTemplate == filterTemplate)&&(identical(other.filterExpression, filterExpression) || other.filterExpression == filterExpression)&&(identical(other.filterType, filterType) || other.filterType == filterType)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.startStrategy, startStrategy) || other.startStrategy == startStrategy)&&(identical(other.endStrategy, endStrategy) || other.endStrategy == endStrategy)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.startTimestamp, startTimestamp) || other.startTimestamp == startTimestamp)&&(identical(other.startPartition, startPartition) || other.startPartition == startPartition)&&(identical(other.fastTraceEnabled, fastTraceEnabled) || other.fastTraceEnabled == fastTraceEnabled)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.endTimestamp, endTimestamp) || other.endTimestamp == endTimestamp)&&(identical(other.maxResults, maxResults) || other.maxResults == maxResults)&&const DeepCollectionEquality().equals(other.extractions, extractions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,clusterName,const DeepCollectionEquality().hash(topicNames),filterTemplate,filterType,scope,startStrategy,endStrategy,startOffset,startTimestamp,startPartition,fastTraceEnabled,endOffset,endTimestamp,maxResults,const DeepCollectionEquality().hash(extractions));
+int get hashCode => Object.hash(runtimeType,id,name,clusterName,const DeepCollectionEquality().hash(topicNames),filterTemplate,filterExpression,filterType,scope,startStrategy,endStrategy,startOffset,startTimestamp,startPartition,fastTraceEnabled,endOffset,endTimestamp,maxResults,const DeepCollectionEquality().hash(extractions));
 
 @override
 String toString() {
-  return 'ScriptStep(id: $id, name: $name, clusterName: $clusterName, topicNames: $topicNames, filterTemplate: $filterTemplate, filterType: $filterType, scope: $scope, startStrategy: $startStrategy, endStrategy: $endStrategy, startOffset: $startOffset, startTimestamp: $startTimestamp, startPartition: $startPartition, fastTraceEnabled: $fastTraceEnabled, endOffset: $endOffset, endTimestamp: $endTimestamp, maxResults: $maxResults, extractions: $extractions)';
+  return 'ScriptStep(id: $id, name: $name, clusterName: $clusterName, topicNames: $topicNames, filterTemplate: $filterTemplate, filterExpression: $filterExpression, filterType: $filterType, scope: $scope, startStrategy: $startStrategy, endStrategy: $endStrategy, startOffset: $startOffset, startTimestamp: $startTimestamp, startPartition: $startPartition, fastTraceEnabled: $fastTraceEnabled, endOffset: $endOffset, endTimestamp: $endTimestamp, maxResults: $maxResults, extractions: $extractions)';
 }
 
 
@@ -877,7 +877,7 @@ abstract mixin class $ScriptStepCopyWith<$Res>  {
   factory $ScriptStepCopyWith(ScriptStep value, $Res Function(ScriptStep) _then) = _$ScriptStepCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String clusterName, List<String> topicNames, String? filterTemplate, FilterType filterType, SearchScope scope, MultiSearchStartStrategy startStrategy, MultiSearchEndStrategy endStrategy, String? startOffset, String? startTimestamp, String? startPartition, bool fastTraceEnabled, String? endOffset, String? endTimestamp, String? maxResults, List<ScriptExtraction> extractions
+ String id, String name, String clusterName, List<String> topicNames, String? filterTemplate, String? filterExpression, FilterType filterType, SearchScope scope, MultiSearchStartStrategy startStrategy, MultiSearchEndStrategy endStrategy, String? startOffset, String? startTimestamp, String? startPartition, bool fastTraceEnabled, String? endOffset, String? endTimestamp, String? maxResults, List<ScriptExtraction> extractions
 });
 
 
@@ -894,13 +894,14 @@ class _$ScriptStepCopyWithImpl<$Res>
 
 /// Create a copy of ScriptStep
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? clusterName = null,Object? topicNames = null,Object? filterTemplate = freezed,Object? filterType = null,Object? scope = null,Object? startStrategy = null,Object? endStrategy = null,Object? startOffset = freezed,Object? startTimestamp = freezed,Object? startPartition = freezed,Object? fastTraceEnabled = null,Object? endOffset = freezed,Object? endTimestamp = freezed,Object? maxResults = freezed,Object? extractions = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? clusterName = null,Object? topicNames = null,Object? filterTemplate = freezed,Object? filterExpression = freezed,Object? filterType = null,Object? scope = null,Object? startStrategy = null,Object? endStrategy = null,Object? startOffset = freezed,Object? startTimestamp = freezed,Object? startPartition = freezed,Object? fastTraceEnabled = null,Object? endOffset = freezed,Object? endTimestamp = freezed,Object? maxResults = freezed,Object? extractions = null,}) {
   return _then(ScriptStep(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,clusterName: null == clusterName ? _self.clusterName : clusterName // ignore: cast_nullable_to_non_nullable
 as String,topicNames: null == topicNames ? _self.topicNames : topicNames // ignore: cast_nullable_to_non_nullable
 as List<String>,filterTemplate: freezed == filterTemplate ? _self.filterTemplate : filterTemplate // ignore: cast_nullable_to_non_nullable
+as String?,filterExpression: freezed == filterExpression ? _self.filterExpression : filterExpression // ignore: cast_nullable_to_non_nullable
 as String?,filterType: null == filterType ? _self.filterType : filterType // ignore: cast_nullable_to_non_nullable
 as FilterType,scope: null == scope ? _self.scope : scope // ignore: cast_nullable_to_non_nullable
 as SearchScope,startStrategy: null == startStrategy ? _self.startStrategy : startStrategy // ignore: cast_nullable_to_non_nullable
@@ -998,10 +999,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String clusterName,  List<String> topicNames,  String? filterTemplate,  FilterType filterType,  SearchScope scope,  MultiSearchStartStrategy startStrategy,  MultiSearchEndStrategy endStrategy,  String? startOffset,  String? startTimestamp,  String? startPartition,  bool fastTraceEnabled,  String? endOffset,  String? endTimestamp,  String? maxResults,  List<ScriptExtraction> extractions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String clusterName,  List<String> topicNames,  String? filterTemplate,  String? filterExpression,  FilterType filterType,  SearchScope scope,  MultiSearchStartStrategy startStrategy,  MultiSearchEndStrategy endStrategy,  String? startOffset,  String? startTimestamp,  String? startPartition,  bool fastTraceEnabled,  String? endOffset,  String? endTimestamp,  String? maxResults,  List<ScriptExtraction> extractions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ScriptStep() when $default != null:
-return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.filterTemplate,_that.filterType,_that.scope,_that.startStrategy,_that.endStrategy,_that.startOffset,_that.startTimestamp,_that.startPartition,_that.fastTraceEnabled,_that.endOffset,_that.endTimestamp,_that.maxResults,_that.extractions);case _:
+return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.filterTemplate,_that.filterExpression,_that.filterType,_that.scope,_that.startStrategy,_that.endStrategy,_that.startOffset,_that.startTimestamp,_that.startPartition,_that.fastTraceEnabled,_that.endOffset,_that.endTimestamp,_that.maxResults,_that.extractions);case _:
   return orElse();
 
 }
@@ -1019,10 +1020,10 @@ return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.fil
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String clusterName,  List<String> topicNames,  String? filterTemplate,  FilterType filterType,  SearchScope scope,  MultiSearchStartStrategy startStrategy,  MultiSearchEndStrategy endStrategy,  String? startOffset,  String? startTimestamp,  String? startPartition,  bool fastTraceEnabled,  String? endOffset,  String? endTimestamp,  String? maxResults,  List<ScriptExtraction> extractions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String clusterName,  List<String> topicNames,  String? filterTemplate,  String? filterExpression,  FilterType filterType,  SearchScope scope,  MultiSearchStartStrategy startStrategy,  MultiSearchEndStrategy endStrategy,  String? startOffset,  String? startTimestamp,  String? startPartition,  bool fastTraceEnabled,  String? endOffset,  String? endTimestamp,  String? maxResults,  List<ScriptExtraction> extractions)  $default,) {final _that = this;
 switch (_that) {
 case _ScriptStep():
-return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.filterTemplate,_that.filterType,_that.scope,_that.startStrategy,_that.endStrategy,_that.startOffset,_that.startTimestamp,_that.startPartition,_that.fastTraceEnabled,_that.endOffset,_that.endTimestamp,_that.maxResults,_that.extractions);case _:
+return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.filterTemplate,_that.filterExpression,_that.filterType,_that.scope,_that.startStrategy,_that.endStrategy,_that.startOffset,_that.startTimestamp,_that.startPartition,_that.fastTraceEnabled,_that.endOffset,_that.endTimestamp,_that.maxResults,_that.extractions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1039,10 +1040,10 @@ return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.fil
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String clusterName,  List<String> topicNames,  String? filterTemplate,  FilterType filterType,  SearchScope scope,  MultiSearchStartStrategy startStrategy,  MultiSearchEndStrategy endStrategy,  String? startOffset,  String? startTimestamp,  String? startPartition,  bool fastTraceEnabled,  String? endOffset,  String? endTimestamp,  String? maxResults,  List<ScriptExtraction> extractions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String clusterName,  List<String> topicNames,  String? filterTemplate,  String? filterExpression,  FilterType filterType,  SearchScope scope,  MultiSearchStartStrategy startStrategy,  MultiSearchEndStrategy endStrategy,  String? startOffset,  String? startTimestamp,  String? startPartition,  bool fastTraceEnabled,  String? endOffset,  String? endTimestamp,  String? maxResults,  List<ScriptExtraction> extractions)?  $default,) {final _that = this;
 switch (_that) {
 case _ScriptStep() when $default != null:
-return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.filterTemplate,_that.filterType,_that.scope,_that.startStrategy,_that.endStrategy,_that.startOffset,_that.startTimestamp,_that.startPartition,_that.fastTraceEnabled,_that.endOffset,_that.endTimestamp,_that.maxResults,_that.extractions);case _:
+return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.filterTemplate,_that.filterExpression,_that.filterType,_that.scope,_that.startStrategy,_that.endStrategy,_that.startOffset,_that.startTimestamp,_that.startPartition,_that.fastTraceEnabled,_that.endOffset,_that.endTimestamp,_that.maxResults,_that.extractions);case _:
   return null;
 
 }
@@ -1054,7 +1055,7 @@ return $default(_that.id,_that.name,_that.clusterName,_that.topicNames,_that.fil
 @JsonSerializable()
 
 class _ScriptStep implements ScriptStep {
-  const _ScriptStep({required this.id, required this.name, required this.clusterName,  List<String> topicNames = const [], this.filterTemplate, this.filterType = FilterType.contains, this.scope = SearchScope.both, this.startStrategy = MultiSearchStartStrategy.latest, this.endStrategy = MultiSearchEndStrategy.latest, this.startOffset, this.startTimestamp, this.startPartition, this.fastTraceEnabled = false, this.endOffset, this.endTimestamp, this.maxResults,  List<ScriptExtraction> extractions = const []}): _topicNames = topicNames,_extractions = extractions;
+  const _ScriptStep({required this.id, required this.name, required this.clusterName,  List<String> topicNames = const [], this.filterTemplate, this.filterExpression, this.filterType = FilterType.contains, this.scope = SearchScope.both, this.startStrategy = MultiSearchStartStrategy.latest, this.endStrategy = MultiSearchEndStrategy.latest, this.startOffset, this.startTimestamp, this.startPartition, this.fastTraceEnabled = false, this.endOffset, this.endTimestamp, this.maxResults,  List<ScriptExtraction> extractions = const []}): _topicNames = topicNames,_extractions = extractions;
   factory _ScriptStep.fromJson(Map<String, dynamic> json) => _$ScriptStepFromJson(json);
 
 @override final  String id;
@@ -1068,6 +1069,7 @@ class _ScriptStep implements ScriptStep {
 }
 
 @override final  String? filterTemplate;
+@override final  String? filterExpression;
 @override@JsonKey() final  FilterType filterType;
 @override@JsonKey() final  SearchScope scope;
 @override@JsonKey() final  MultiSearchStartStrategy startStrategy;
@@ -1100,16 +1102,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScriptStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.clusterName, clusterName) || other.clusterName == clusterName)&&const DeepCollectionEquality().equals(other._topicNames, _topicNames)&&(identical(other.filterTemplate, filterTemplate) || other.filterTemplate == filterTemplate)&&(identical(other.filterType, filterType) || other.filterType == filterType)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.startStrategy, startStrategy) || other.startStrategy == startStrategy)&&(identical(other.endStrategy, endStrategy) || other.endStrategy == endStrategy)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.startTimestamp, startTimestamp) || other.startTimestamp == startTimestamp)&&(identical(other.startPartition, startPartition) || other.startPartition == startPartition)&&(identical(other.fastTraceEnabled, fastTraceEnabled) || other.fastTraceEnabled == fastTraceEnabled)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.endTimestamp, endTimestamp) || other.endTimestamp == endTimestamp)&&(identical(other.maxResults, maxResults) || other.maxResults == maxResults)&&const DeepCollectionEquality().equals(other._extractions, _extractions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScriptStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.clusterName, clusterName) || other.clusterName == clusterName)&&const DeepCollectionEquality().equals(other._topicNames, _topicNames)&&(identical(other.filterTemplate, filterTemplate) || other.filterTemplate == filterTemplate)&&(identical(other.filterExpression, filterExpression) || other.filterExpression == filterExpression)&&(identical(other.filterType, filterType) || other.filterType == filterType)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.startStrategy, startStrategy) || other.startStrategy == startStrategy)&&(identical(other.endStrategy, endStrategy) || other.endStrategy == endStrategy)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.startTimestamp, startTimestamp) || other.startTimestamp == startTimestamp)&&(identical(other.startPartition, startPartition) || other.startPartition == startPartition)&&(identical(other.fastTraceEnabled, fastTraceEnabled) || other.fastTraceEnabled == fastTraceEnabled)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.endTimestamp, endTimestamp) || other.endTimestamp == endTimestamp)&&(identical(other.maxResults, maxResults) || other.maxResults == maxResults)&&const DeepCollectionEquality().equals(other._extractions, _extractions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,clusterName,const DeepCollectionEquality().hash(_topicNames),filterTemplate,filterType,scope,startStrategy,endStrategy,startOffset,startTimestamp,startPartition,fastTraceEnabled,endOffset,endTimestamp,maxResults,const DeepCollectionEquality().hash(_extractions));
+int get hashCode => Object.hash(runtimeType,id,name,clusterName,const DeepCollectionEquality().hash(_topicNames),filterTemplate,filterExpression,filterType,scope,startStrategy,endStrategy,startOffset,startTimestamp,startPartition,fastTraceEnabled,endOffset,endTimestamp,maxResults,const DeepCollectionEquality().hash(_extractions));
 
 @override
 String toString() {
-  return 'ScriptStep(id: $id, name: $name, clusterName: $clusterName, topicNames: $topicNames, filterTemplate: $filterTemplate, filterType: $filterType, scope: $scope, startStrategy: $startStrategy, endStrategy: $endStrategy, startOffset: $startOffset, startTimestamp: $startTimestamp, startPartition: $startPartition, fastTraceEnabled: $fastTraceEnabled, endOffset: $endOffset, endTimestamp: $endTimestamp, maxResults: $maxResults, extractions: $extractions)';
+  return 'ScriptStep(id: $id, name: $name, clusterName: $clusterName, topicNames: $topicNames, filterTemplate: $filterTemplate, filterExpression: $filterExpression, filterType: $filterType, scope: $scope, startStrategy: $startStrategy, endStrategy: $endStrategy, startOffset: $startOffset, startTimestamp: $startTimestamp, startPartition: $startPartition, fastTraceEnabled: $fastTraceEnabled, endOffset: $endOffset, endTimestamp: $endTimestamp, maxResults: $maxResults, extractions: $extractions)';
 }
 
 
@@ -1120,7 +1122,7 @@ abstract mixin class _$ScriptStepCopyWith<$Res> implements $ScriptStepCopyWith<$
   factory _$ScriptStepCopyWith(_ScriptStep value, $Res Function(_ScriptStep) _then) = __$ScriptStepCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String clusterName, List<String> topicNames, String? filterTemplate, FilterType filterType, SearchScope scope, MultiSearchStartStrategy startStrategy, MultiSearchEndStrategy endStrategy, String? startOffset, String? startTimestamp, String? startPartition, bool fastTraceEnabled, String? endOffset, String? endTimestamp, String? maxResults, List<ScriptExtraction> extractions
+ String id, String name, String clusterName, List<String> topicNames, String? filterTemplate, String? filterExpression, FilterType filterType, SearchScope scope, MultiSearchStartStrategy startStrategy, MultiSearchEndStrategy endStrategy, String? startOffset, String? startTimestamp, String? startPartition, bool fastTraceEnabled, String? endOffset, String? endTimestamp, String? maxResults, List<ScriptExtraction> extractions
 });
 
 
@@ -1137,13 +1139,14 @@ class __$ScriptStepCopyWithImpl<$Res>
 
 /// Create a copy of ScriptStep
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? clusterName = null,Object? topicNames = null,Object? filterTemplate = freezed,Object? filterType = null,Object? scope = null,Object? startStrategy = null,Object? endStrategy = null,Object? startOffset = freezed,Object? startTimestamp = freezed,Object? startPartition = freezed,Object? fastTraceEnabled = null,Object? endOffset = freezed,Object? endTimestamp = freezed,Object? maxResults = freezed,Object? extractions = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? clusterName = null,Object? topicNames = null,Object? filterTemplate = freezed,Object? filterExpression = freezed,Object? filterType = null,Object? scope = null,Object? startStrategy = null,Object? endStrategy = null,Object? startOffset = freezed,Object? startTimestamp = freezed,Object? startPartition = freezed,Object? fastTraceEnabled = null,Object? endOffset = freezed,Object? endTimestamp = freezed,Object? maxResults = freezed,Object? extractions = null,}) {
   return _then(_ScriptStep(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,clusterName: null == clusterName ? _self.clusterName : clusterName // ignore: cast_nullable_to_non_nullable
 as String,topicNames: null == topicNames ? _self._topicNames : topicNames // ignore: cast_nullable_to_non_nullable
 as List<String>,filterTemplate: freezed == filterTemplate ? _self.filterTemplate : filterTemplate // ignore: cast_nullable_to_non_nullable
+as String?,filterExpression: freezed == filterExpression ? _self.filterExpression : filterExpression // ignore: cast_nullable_to_non_nullable
 as String?,filterType: null == filterType ? _self.filterType : filterType // ignore: cast_nullable_to_non_nullable
 as FilterType,scope: null == scope ? _self.scope : scope // ignore: cast_nullable_to_non_nullable
 as SearchScope,startStrategy: null == startStrategy ? _self.startStrategy : startStrategy // ignore: cast_nullable_to_non_nullable

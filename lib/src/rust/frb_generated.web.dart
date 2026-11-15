@@ -9,16 +9,20 @@
 import 'api.dart';
 import 'api/connection_diagnostics.dart';
 import 'api/diagnostics.dart';
+import 'api/filter_expr.dart';
+import 'api/json_diff.dart';
 import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
 import 'api/kafka_consumer.dart';
 import 'api/kafka_metadata.dart';
 import 'api/kafka_types.dart';
 import 'api/kafka_utils.dart';
+import 'api/local_schema.dart';
 import 'api/profile_crypto.dart';
 import 'api/profile_tools.dart';
 import 'api/report_compare.dart';
 import 'api/schema_registry.dart';
+import 'api/topic_config.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -47,6 +51,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  Map<String, List<String>> dco_decode_Map_String_list_String_None(dynamic raw);
+
+  @protected
   ClientConfig
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
     dynamic raw,
@@ -73,6 +80,21 @@ abstract class KafkalyzerRustLibApiImplPlatform
   AllowedExtraProperty dco_decode_allowed_extra_property(dynamic raw);
 
   @protected
+  AnalysisLimit dco_decode_analysis_limit(dynamic raw);
+
+  @protected
+  AnalysisLimitKind dco_decode_analysis_limit_kind(dynamic raw);
+
+  @protected
+  AnalysisScope dco_decode_analysis_scope(dynamic raw);
+
+  @protected
+  AnalysisScopeEstimate dco_decode_analysis_scope_estimate(dynamic raw);
+
+  @protected
+  AnalysisScopeSummary dco_decode_analysis_scope_summary(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
 
   @protected
@@ -80,6 +102,14 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   BootstrapServerIssueKind dco_decode_bootstrap_server_issue_kind(dynamic raw);
+
+  @protected
+  AnalysisScope dco_decode_box_autoadd_analysis_scope(dynamic raw);
+
+  @protected
+  AnalysisScopeSummary dco_decode_box_autoadd_analysis_scope_summary(
+    dynamic raw,
+  );
 
   @protected
   bool dco_decode_box_autoadd_bool(dynamic raw);
@@ -109,7 +139,19 @@ abstract class KafkalyzerRustLibApiImplPlatform
   double dco_decode_box_autoadd_f_64(dynamic raw);
 
   @protected
+  FieldNoteDto dco_decode_box_autoadd_field_note_dto(dynamic raw);
+
+  @protected
   FieldValueFilter dco_decode_box_autoadd_field_value_filter(dynamic raw);
+
+  @protected
+  FilterConditionDto dco_decode_box_autoadd_filter_condition_dto(dynamic raw);
+
+  @protected
+  FilterErrorDto dco_decode_box_autoadd_filter_error_dto(dynamic raw);
+
+  @protected
+  FilterScalarDto dco_decode_box_autoadd_filter_scalar_dto(dynamic raw);
 
   @protected
   int dco_decode_box_autoadd_i_32(dynamic raw);
@@ -118,13 +160,49 @@ abstract class KafkalyzerRustLibApiImplPlatform
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
 
   @protected
+  JsonDiffInvalidSide dco_decode_box_autoadd_json_diff_invalid_side(
+    dynamic raw,
+  );
+
+  @protected
+  LocalSchemaAssignmentDto dco_decode_box_autoadd_local_schema_assignment_dto(
+    dynamic raw,
+  );
+
+  @protected
+  LocalSchemaErrorDto dco_decode_box_autoadd_local_schema_error_dto(
+    dynamic raw,
+  );
+
+  @protected
+  LocalSchemaFormatDto dco_decode_box_autoadd_local_schema_format_dto(
+    dynamic raw,
+  );
+
+  @protected
+  LocalSchemaUseDto dco_decode_box_autoadd_local_schema_use_dto(dynamic raw);
+
+  @protected
   MessageSchema dco_decode_box_autoadd_message_schema(dynamic raw);
 
   @protected
   NotCheckedReason dco_decode_box_autoadd_not_checked_reason(dynamic raw);
 
   @protected
+  PartitionTimestamp dco_decode_box_autoadd_partition_timestamp(dynamic raw);
+
+  @protected
+  SchemaFieldModelDto dco_decode_box_autoadd_schema_field_model_dto(
+    dynamic raw,
+  );
+
+  @protected
   SizePercentiles dco_decode_box_autoadd_size_percentiles(dynamic raw);
+
+  @protected
+  TimeRangeTimestampKind dco_decode_box_autoadd_time_range_timestamp_kind(
+    dynamic raw,
+  );
 
   @protected
   TopicAnalysisOptions dco_decode_box_autoadd_topic_analysis_options(
@@ -135,7 +213,24 @@ abstract class KafkalyzerRustLibApiImplPlatform
   TopicAnalysisReport dco_decode_box_autoadd_topic_analysis_report(dynamic raw);
 
   @protected
+  TopicConfigEntry dco_decode_box_autoadd_topic_config_entry(dynamic raw);
+
+  @protected
+  TopicConfigSnapshot dco_decode_box_autoadd_topic_config_snapshot(dynamic raw);
+
+  @protected
+  TopicLocalSchemasDto dco_decode_box_autoadd_topic_local_schemas_dto(
+    dynamic raw,
+  );
+
+  @protected
+  TopicMetadataError dco_decode_box_autoadd_topic_metadata_error(dynamic raw);
+
+  @protected
   int dco_decode_box_autoadd_u_16(dynamic raw);
+
+  @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw);
 
   @protected
   ValueFilterResult dco_decode_box_autoadd_value_filter_result(dynamic raw);
@@ -154,6 +249,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   ClientPropertySkipReason dco_decode_client_property_skip_reason(dynamic raw);
+
+  @protected
+  ClusterOverview dco_decode_cluster_overview(dynamic raw);
 
   @protected
   ClusterProfile dco_decode_cluster_profile(dynamic raw);
@@ -195,6 +293,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   FieldDelta dco_decode_field_delta(dynamic raw);
 
   @protected
+  FieldNoteDto dco_decode_field_note_dto(dynamic raw);
+
+  @protected
   FieldOccurrence dco_decode_field_occurrence(dynamic raw);
 
   @protected
@@ -204,7 +305,37 @@ abstract class KafkalyzerRustLibApiImplPlatform
   FieldValueOccurrence dco_decode_field_value_occurrence(dynamic raw);
 
   @protected
+  FilterConditionDto dco_decode_filter_condition_dto(dynamic raw);
+
+  @protected
+  FilterErrorDto dco_decode_filter_error_dto(dynamic raw);
+
+  @protected
+  FilterFieldKind dco_decode_filter_field_kind(dynamic raw);
+
+  @protected
+  FilterNodeDto dco_decode_filter_node_dto(dynamic raw);
+
+  @protected
+  FilterNodeKind dco_decode_filter_node_kind(dynamic raw);
+
+  @protected
+  FilterOpDto dco_decode_filter_op_dto(dynamic raw);
+
+  @protected
+  FilterParseResultDto dco_decode_filter_parse_result_dto(dynamic raw);
+
+  @protected
+  FilterScalarDto dco_decode_filter_scalar_dto(dynamic raw);
+
+  @protected
+  FilterScalarKind dco_decode_filter_scalar_kind(dynamic raw);
+
+  @protected
   FilterType dco_decode_filter_type(dynamic raw);
+
+  @protected
+  FramingDto dco_decode_framing_dto(dynamic raw);
 
   @protected
   HourBucket dco_decode_hour_bucket(dynamic raw);
@@ -217,6 +348,21 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   PlatformInt64 dco_decode_i_64(dynamic raw);
+
+  @protected
+  JsonDiffEntry dco_decode_json_diff_entry(dynamic raw);
+
+  @protected
+  JsonDiffInvalidSide dco_decode_json_diff_invalid_side(dynamic raw);
+
+  @protected
+  JsonDiffKind dco_decode_json_diff_kind(dynamic raw);
+
+  @protected
+  JsonDiffRequest dco_decode_json_diff_request(dynamic raw);
+
+  @protected
+  JsonDiffResult dco_decode_json_diff_result(dynamic raw);
 
   @protected
   KafkaHeader dco_decode_kafka_header(dynamic raw);
@@ -234,6 +380,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<AllowedExtraProperty> dco_decode_list_allowed_extra_property(
     dynamic raw,
   );
+
+  @protected
+  List<AnalysisLimit> dco_decode_list_analysis_limit(dynamic raw);
 
   @protected
   List<BootstrapServerIssue> dco_decode_list_bootstrap_server_issue(
@@ -264,10 +413,25 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  List<FilterNodeDto> dco_decode_list_filter_node_dto(dynamic raw);
+
+  @protected
+  List<FilterScalarDto> dco_decode_list_filter_scalar_dto(dynamic raw);
+
+  @protected
   List<HourBucket> dco_decode_list_hour_bucket(dynamic raw);
 
   @protected
   List<HourlyCount> dco_decode_list_hourly_count(dynamic raw);
+
+  @protected
+  List<JsonDiffEntry> dco_decode_list_json_diff_entry(dynamic raw);
+
+  @protected
+  List<JsonDiffRequest> dco_decode_list_json_diff_request(dynamic raw);
+
+  @protected
+  List<JsonDiffResult> dco_decode_list_json_diff_result(dynamic raw);
 
   @protected
   List<KafkaHeader> dco_decode_list_kafka_header(dynamic raw);
@@ -285,16 +449,41 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<PartitionAnalysis> dco_decode_list_partition_analysis(dynamic raw);
 
   @protected
+  List<PartitionOffsetRow> dco_decode_list_partition_offset_row(dynamic raw);
+
+  @protected
   List<PartitionRow> dco_decode_list_partition_row(dynamic raw);
 
   @protected
+  List<PartitionTimeProbe> dco_decode_list_partition_time_probe(dynamic raw);
+
+  @protected
+  List<PlannedPartitionRange> dco_decode_list_planned_partition_range(
+    dynamic raw,
+  );
+
+  @protected
   Int32List dco_decode_list_prim_i_32_strict(dynamic raw);
+
+  @protected
+  Uint32List dco_decode_list_prim_u_32_strict(dynamic raw);
 
   @protected
   List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
 
   @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  List<(String, List<String>)> dco_decode_list_record_string_list_string(
+    dynamic raw,
+  );
+
+  @protected
+  List<SchemaFieldEntryDto> dco_decode_list_schema_field_entry_dto(dynamic raw);
+
+  @protected
+  List<SchemaReferenceDto> dco_decode_list_schema_reference_dto(dynamic raw);
 
   @protected
   List<ServerCheck> dco_decode_list_server_check(dynamic raw);
@@ -308,9 +497,23 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<StageResult> dco_decode_list_stage_result(dynamic raw);
 
   @protected
+  List<SubjectAssociationDto> dco_decode_list_subject_association_dto(
+    dynamic raw,
+  );
+
+  @protected
   List<TopDuplicateOccurrence> dco_decode_list_top_duplicate_occurrence(
     dynamic raw,
   );
+
+  @protected
+  List<TopicConfigDiffRow> dco_decode_list_topic_config_diff_row(dynamic raw);
+
+  @protected
+  List<TopicConfigEntry> dco_decode_list_topic_config_entry(dynamic raw);
+
+  @protected
+  List<TopicConfigResult> dco_decode_list_topic_config_result(dynamic raw);
 
   @protected
   List<TopicMetadata> dco_decode_list_topic_metadata(dynamic raw);
@@ -325,6 +528,30 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<TypeOccurrence> dco_decode_list_type_occurrence(dynamic raw);
 
   @protected
+  List<UnreadablePartition> dco_decode_list_unreadable_partition(dynamic raw);
+
+  @protected
+  LocalDecodeErrorKindDto dco_decode_local_decode_error_kind_dto(dynamic raw);
+
+  @protected
+  LocalSchemaAssignmentDto dco_decode_local_schema_assignment_dto(dynamic raw);
+
+  @protected
+  LocalSchemaErrorDto dco_decode_local_schema_error_dto(dynamic raw);
+
+  @protected
+  LocalSchemaFormatDto dco_decode_local_schema_format_dto(dynamic raw);
+
+  @protected
+  LocalSchemaInfo dco_decode_local_schema_info(dynamic raw);
+
+  @protected
+  LocalSchemaModeDto dco_decode_local_schema_mode_dto(dynamic raw);
+
+  @protected
+  LocalSchemaUseDto dco_decode_local_schema_use_dto(dynamic raw);
+
+  @protected
   MessageSchema dco_decode_message_schema(dynamic raw);
 
   @protected
@@ -334,7 +561,23 @@ abstract class KafkalyzerRustLibApiImplPlatform
   NotCheckedReason dco_decode_not_checked_reason(dynamic raw);
 
   @protected
+  OffsetSkewStatus dco_decode_offset_skew_status(dynamic raw);
+
+  @protected
+  Map<String, List<String>>? dco_decode_opt_Map_String_list_String_None(
+    dynamic raw,
+  );
+
+  @protected
   String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  AnalysisScope? dco_decode_opt_box_autoadd_analysis_scope(dynamic raw);
+
+  @protected
+  AnalysisScopeSummary? dco_decode_opt_box_autoadd_analysis_scope_summary(
+    dynamic raw,
+  );
 
   @protected
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
@@ -361,7 +604,21 @@ abstract class KafkalyzerRustLibApiImplPlatform
   double? dco_decode_opt_box_autoadd_f_64(dynamic raw);
 
   @protected
+  FieldNoteDto? dco_decode_opt_box_autoadd_field_note_dto(dynamic raw);
+
+  @protected
   FieldValueFilter? dco_decode_opt_box_autoadd_field_value_filter(dynamic raw);
+
+  @protected
+  FilterConditionDto? dco_decode_opt_box_autoadd_filter_condition_dto(
+    dynamic raw,
+  );
+
+  @protected
+  FilterErrorDto? dco_decode_opt_box_autoadd_filter_error_dto(dynamic raw);
+
+  @protected
+  FilterScalarDto? dco_decode_opt_box_autoadd_filter_scalar_dto(dynamic raw);
 
   @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
@@ -370,13 +627,52 @@ abstract class KafkalyzerRustLibApiImplPlatform
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
 
   @protected
+  JsonDiffInvalidSide? dco_decode_opt_box_autoadd_json_diff_invalid_side(
+    dynamic raw,
+  );
+
+  @protected
+  LocalSchemaAssignmentDto?
+  dco_decode_opt_box_autoadd_local_schema_assignment_dto(dynamic raw);
+
+  @protected
+  LocalSchemaErrorDto? dco_decode_opt_box_autoadd_local_schema_error_dto(
+    dynamic raw,
+  );
+
+  @protected
+  LocalSchemaFormatDto? dco_decode_opt_box_autoadd_local_schema_format_dto(
+    dynamic raw,
+  );
+
+  @protected
+  LocalSchemaUseDto? dco_decode_opt_box_autoadd_local_schema_use_dto(
+    dynamic raw,
+  );
+
+  @protected
   MessageSchema? dco_decode_opt_box_autoadd_message_schema(dynamic raw);
 
   @protected
   NotCheckedReason? dco_decode_opt_box_autoadd_not_checked_reason(dynamic raw);
 
   @protected
+  PartitionTimestamp? dco_decode_opt_box_autoadd_partition_timestamp(
+    dynamic raw,
+  );
+
+  @protected
+  SchemaFieldModelDto? dco_decode_opt_box_autoadd_schema_field_model_dto(
+    dynamic raw,
+  );
+
+  @protected
   SizePercentiles? dco_decode_opt_box_autoadd_size_percentiles(dynamic raw);
+
+  @protected
+  TimeRangeTimestampKind? dco_decode_opt_box_autoadd_time_range_timestamp_kind(
+    dynamic raw,
+  );
 
   @protected
   TopicAnalysisReport? dco_decode_opt_box_autoadd_topic_analysis_report(
@@ -384,7 +680,23 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  TopicConfigEntry? dco_decode_opt_box_autoadd_topic_config_entry(dynamic raw);
+
+  @protected
+  TopicLocalSchemasDto? dco_decode_opt_box_autoadd_topic_local_schemas_dto(
+    dynamic raw,
+  );
+
+  @protected
+  TopicMetadataError? dco_decode_opt_box_autoadd_topic_metadata_error(
+    dynamic raw,
+  );
+
+  @protected
   int? dco_decode_opt_box_autoadd_u_16(dynamic raw);
+
+  @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
 
   @protected
   ValueFilterResult? dco_decode_opt_box_autoadd_value_filter_result(
@@ -395,7 +707,13 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<String>? dco_decode_opt_list_String(dynamic raw);
 
   @protected
+  List<AnalysisLimit>? dco_decode_opt_list_analysis_limit(dynamic raw);
+
+  @protected
   List<KafkaHeader>? dco_decode_opt_list_kafka_header(dynamic raw);
+
+  @protected
+  Int32List? dco_decode_opt_list_prim_i_32_strict(dynamic raw);
 
   @protected
   Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw);
@@ -407,7 +725,38 @@ abstract class KafkalyzerRustLibApiImplPlatform
   PartitionLagStatus dco_decode_partition_lag_status(dynamic raw);
 
   @protected
+  PartitionOffsetDistribution dco_decode_partition_offset_distribution(
+    dynamic raw,
+  );
+
+  @protected
+  PartitionOffsetRow dco_decode_partition_offset_row(dynamic raw);
+
+  @protected
+  PartitionOffsetState dco_decode_partition_offset_state(dynamic raw);
+
+  @protected
   PartitionRow dco_decode_partition_row(dynamic raw);
+
+  @protected
+  PartitionTimeProbe dco_decode_partition_time_probe(dynamic raw);
+
+  @protected
+  PartitionTimeProbeOutcome dco_decode_partition_time_probe_outcome(
+    dynamic raw,
+  );
+
+  @protected
+  PartitionTimestamp dco_decode_partition_timestamp(dynamic raw);
+
+  @protected
+  PlannedPartitionRange dco_decode_planned_partition_range(dynamic raw);
+
+  @protected
+  ProbeOutcomeKind dco_decode_probe_outcome_kind(dynamic raw);
+
+  @protected
+  (String, List<String>) dco_decode_record_string_list_string(dynamic raw);
 
   @protected
   ReportComparison dco_decode_report_comparison(dynamic raw);
@@ -420,6 +769,29 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   SchemaCompatibilityResult dco_decode_schema_compatibility_result(dynamic raw);
+
+  @protected
+  SchemaFieldEntryDto dco_decode_schema_field_entry_dto(dynamic raw);
+
+  @protected
+  SchemaFieldModelDto dco_decode_schema_field_model_dto(dynamic raw);
+
+  @protected
+  SchemaKindDto dco_decode_schema_kind_dto(dynamic raw);
+
+  @protected
+  SchemaReferenceDto dco_decode_schema_reference_dto(dynamic raw);
+
+  @protected
+  SchemaRegistryErrorDto dco_decode_schema_registry_error_dto(dynamic raw);
+
+  @protected
+  SchemaRegistryErrorKindDto dco_decode_schema_registry_error_kind_dto(
+    dynamic raw,
+  );
+
+  @protected
+  ScopeLimitFrom dco_decode_scope_limit_from(dynamic raw);
 
   @protected
   SearchScope dco_decode_search_scope(dynamic raw);
@@ -443,6 +815,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   StepState dco_decode_step_state(dynamic raw);
 
   @protected
+  SubjectAssociationDto dco_decode_subject_association_dto(dynamic raw);
+
+  @protected
+  SubjectSchemaDto dco_decode_subject_schema_dto(dynamic raw);
+
+  @protected
+  SubjectSchemaViewDto dco_decode_subject_schema_view_dto(dynamic raw);
+
+  @protected
+  TimeRangeTimestampKind dco_decode_time_range_timestamp_kind(dynamic raw);
+
+  @protected
   TlsProbeOutcome dco_decode_tls_probe_outcome(dynamic raw);
 
   @protected
@@ -464,7 +848,43 @@ abstract class KafkalyzerRustLibApiImplPlatform
   TopicAnalysisReport dco_decode_topic_analysis_report(dynamic raw);
 
   @protected
+  TopicConfigAvailability dco_decode_topic_config_availability(dynamic raw);
+
+  @protected
+  TopicConfigDiff dco_decode_topic_config_diff(dynamic raw);
+
+  @protected
+  TopicConfigDiffRow dco_decode_topic_config_diff_row(dynamic raw);
+
+  @protected
+  TopicConfigDiffStatus dco_decode_topic_config_diff_status(dynamic raw);
+
+  @protected
+  TopicConfigEntry dco_decode_topic_config_entry(dynamic raw);
+
+  @protected
+  TopicConfigResult dco_decode_topic_config_result(dynamic raw);
+
+  @protected
+  TopicConfigSnapshot dco_decode_topic_config_snapshot(dynamic raw);
+
+  @protected
+  TopicConfigSource dco_decode_topic_config_source(dynamic raw);
+
+  @protected
+  TopicConfigStatus dco_decode_topic_config_status(dynamic raw);
+
+  @protected
+  TopicLocalSchemasDto dco_decode_topic_local_schemas_dto(dynamic raw);
+
+  @protected
   TopicMetadata dco_decode_topic_metadata(dynamic raw);
+
+  @protected
+  TopicMetadataError dco_decode_topic_metadata_error(dynamic raw);
+
+  @protected
+  TopicMetadataErrorKind dco_decode_topic_metadata_error_kind(dynamic raw);
 
   @protected
   TopicPartition dco_decode_topic_partition(dynamic raw);
@@ -474,6 +894,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   TopicPartitionLag dco_decode_topic_partition_lag(dynamic raw);
+
+  @protected
+  TopicSideDto dco_decode_topic_side_dto(dynamic raw);
+
+  @protected
+  TopicTimeRange dco_decode_topic_time_range(dynamic raw);
 
   @protected
   TypeOccurrence dco_decode_type_occurrence(dynamic raw);
@@ -494,6 +920,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void dco_decode_unit(dynamic raw);
 
   @protected
+  UnreadablePartition dco_decode_unreadable_partition(dynamic raw);
+
+  @protected
   BigInt dco_decode_usize(dynamic raw);
 
   @protected
@@ -505,6 +934,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   ClientConfig
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Map<String, List<String>> sse_decode_Map_String_list_String_None(
     SseDeserializer deserializer,
   );
 
@@ -539,6 +973,27 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  AnalysisLimit sse_decode_analysis_limit(SseDeserializer deserializer);
+
+  @protected
+  AnalysisLimitKind sse_decode_analysis_limit_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  AnalysisScope sse_decode_analysis_scope(SseDeserializer deserializer);
+
+  @protected
+  AnalysisScopeEstimate sse_decode_analysis_scope_estimate(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  AnalysisScopeSummary sse_decode_analysis_scope_summary(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
@@ -548,6 +1003,16 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   BootstrapServerIssueKind sse_decode_bootstrap_server_issue_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  AnalysisScope sse_decode_box_autoadd_analysis_scope(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  AnalysisScopeSummary sse_decode_box_autoadd_analysis_scope_summary(
     SseDeserializer deserializer,
   );
 
@@ -583,7 +1048,27 @@ abstract class KafkalyzerRustLibApiImplPlatform
   double sse_decode_box_autoadd_f_64(SseDeserializer deserializer);
 
   @protected
+  FieldNoteDto sse_decode_box_autoadd_field_note_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FieldValueFilter sse_decode_box_autoadd_field_value_filter(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FilterConditionDto sse_decode_box_autoadd_filter_condition_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FilterErrorDto sse_decode_box_autoadd_filter_error_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FilterScalarDto sse_decode_box_autoadd_filter_scalar_dto(
     SseDeserializer deserializer,
   );
 
@@ -592,6 +1077,31 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  JsonDiffInvalidSide sse_decode_box_autoadd_json_diff_invalid_side(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaAssignmentDto sse_decode_box_autoadd_local_schema_assignment_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaErrorDto sse_decode_box_autoadd_local_schema_error_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaFormatDto sse_decode_box_autoadd_local_schema_format_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaUseDto sse_decode_box_autoadd_local_schema_use_dto(
+    SseDeserializer deserializer,
+  );
 
   @protected
   MessageSchema sse_decode_box_autoadd_message_schema(
@@ -604,7 +1114,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  PartitionTimestamp sse_decode_box_autoadd_partition_timestamp(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SchemaFieldModelDto sse_decode_box_autoadd_schema_field_model_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SizePercentiles sse_decode_box_autoadd_size_percentiles(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TimeRangeTimestampKind sse_decode_box_autoadd_time_range_timestamp_kind(
     SseDeserializer deserializer,
   );
 
@@ -619,7 +1144,30 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  TopicConfigEntry sse_decode_box_autoadd_topic_config_entry(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicConfigSnapshot sse_decode_box_autoadd_topic_config_snapshot(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicLocalSchemasDto sse_decode_box_autoadd_topic_local_schemas_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicMetadataError sse_decode_box_autoadd_topic_metadata_error(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   int sse_decode_box_autoadd_u_16(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
 
   @protected
   ValueFilterResult sse_decode_box_autoadd_value_filter_result(
@@ -648,6 +1196,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ClientPropertySkipReason sse_decode_client_property_skip_reason(
     SseDeserializer deserializer,
   );
+
+  @protected
+  ClusterOverview sse_decode_cluster_overview(SseDeserializer deserializer);
 
   @protected
   ClusterProfile sse_decode_cluster_profile(SseDeserializer deserializer);
@@ -701,6 +1252,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   FieldDelta sse_decode_field_delta(SseDeserializer deserializer);
 
   @protected
+  FieldNoteDto sse_decode_field_note_dto(SseDeserializer deserializer);
+
+  @protected
   FieldOccurrence sse_decode_field_occurrence(SseDeserializer deserializer);
 
   @protected
@@ -712,7 +1266,41 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  FilterConditionDto sse_decode_filter_condition_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FilterErrorDto sse_decode_filter_error_dto(SseDeserializer deserializer);
+
+  @protected
+  FilterFieldKind sse_decode_filter_field_kind(SseDeserializer deserializer);
+
+  @protected
+  FilterNodeDto sse_decode_filter_node_dto(SseDeserializer deserializer);
+
+  @protected
+  FilterNodeKind sse_decode_filter_node_kind(SseDeserializer deserializer);
+
+  @protected
+  FilterOpDto sse_decode_filter_op_dto(SseDeserializer deserializer);
+
+  @protected
+  FilterParseResultDto sse_decode_filter_parse_result_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FilterScalarDto sse_decode_filter_scalar_dto(SseDeserializer deserializer);
+
+  @protected
+  FilterScalarKind sse_decode_filter_scalar_kind(SseDeserializer deserializer);
+
+  @protected
   FilterType sse_decode_filter_type(SseDeserializer deserializer);
+
+  @protected
+  FramingDto sse_decode_framing_dto(SseDeserializer deserializer);
 
   @protected
   HourBucket sse_decode_hour_bucket(SseDeserializer deserializer);
@@ -725,6 +1313,23 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+
+  @protected
+  JsonDiffEntry sse_decode_json_diff_entry(SseDeserializer deserializer);
+
+  @protected
+  JsonDiffInvalidSide sse_decode_json_diff_invalid_side(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  JsonDiffKind sse_decode_json_diff_kind(SseDeserializer deserializer);
+
+  @protected
+  JsonDiffRequest sse_decode_json_diff_request(SseDeserializer deserializer);
+
+  @protected
+  JsonDiffResult sse_decode_json_diff_result(SseDeserializer deserializer);
 
   @protected
   KafkaHeader sse_decode_kafka_header(SseDeserializer deserializer);
@@ -740,6 +1345,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   List<AllowedExtraProperty> sse_decode_list_allowed_extra_property(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<AnalysisLimit> sse_decode_list_analysis_limit(
     SseDeserializer deserializer,
   );
 
@@ -782,10 +1392,35 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  List<FilterNodeDto> sse_decode_list_filter_node_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<FilterScalarDto> sse_decode_list_filter_scalar_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<HourBucket> sse_decode_list_hour_bucket(SseDeserializer deserializer);
 
   @protected
   List<HourlyCount> sse_decode_list_hourly_count(SseDeserializer deserializer);
+
+  @protected
+  List<JsonDiffEntry> sse_decode_list_json_diff_entry(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<JsonDiffRequest> sse_decode_list_json_diff_request(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<JsonDiffResult> sse_decode_list_json_diff_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<KafkaHeader> sse_decode_list_kafka_header(SseDeserializer deserializer);
@@ -807,7 +1442,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  List<PartitionOffsetRow> sse_decode_list_partition_offset_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<PartitionRow> sse_decode_list_partition_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<PartitionTimeProbe> sse_decode_list_partition_time_probe(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<PlannedPartitionRange> sse_decode_list_planned_partition_range(
     SseDeserializer deserializer,
   );
 
@@ -815,10 +1465,28 @@ abstract class KafkalyzerRustLibApiImplPlatform
   Int32List sse_decode_list_prim_i_32_strict(SseDeserializer deserializer);
 
   @protected
+  Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer);
+
+  @protected
   List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  List<(String, List<String>)> sse_decode_list_record_string_list_string(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<SchemaFieldEntryDto> sse_decode_list_schema_field_entry_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<SchemaReferenceDto> sse_decode_list_schema_reference_dto(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<ServerCheck> sse_decode_list_server_check(SseDeserializer deserializer);
@@ -832,7 +1500,27 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<StageResult> sse_decode_list_stage_result(SseDeserializer deserializer);
 
   @protected
+  List<SubjectAssociationDto> sse_decode_list_subject_association_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<TopDuplicateOccurrence> sse_decode_list_top_duplicate_occurrence(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TopicConfigDiffRow> sse_decode_list_topic_config_diff_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TopicConfigEntry> sse_decode_list_topic_config_entry(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TopicConfigResult> sse_decode_list_topic_config_result(
     SseDeserializer deserializer,
   );
 
@@ -857,6 +1545,44 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  List<UnreadablePartition> sse_decode_list_unreadable_partition(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalDecodeErrorKindDto sse_decode_local_decode_error_kind_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaAssignmentDto sse_decode_local_schema_assignment_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaErrorDto sse_decode_local_schema_error_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaFormatDto sse_decode_local_schema_format_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaInfo sse_decode_local_schema_info(SseDeserializer deserializer);
+
+  @protected
+  LocalSchemaModeDto sse_decode_local_schema_mode_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaUseDto sse_decode_local_schema_use_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   MessageSchema sse_decode_message_schema(SseDeserializer deserializer);
 
   @protected
@@ -866,7 +1592,25 @@ abstract class KafkalyzerRustLibApiImplPlatform
   NotCheckedReason sse_decode_not_checked_reason(SseDeserializer deserializer);
 
   @protected
+  OffsetSkewStatus sse_decode_offset_skew_status(SseDeserializer deserializer);
+
+  @protected
+  Map<String, List<String>>? sse_decode_opt_Map_String_list_String_None(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  AnalysisScope? sse_decode_opt_box_autoadd_analysis_scope(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  AnalysisScopeSummary? sse_decode_opt_box_autoadd_analysis_scope_summary(
+    SseDeserializer deserializer,
+  );
 
   @protected
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
@@ -895,7 +1639,27 @@ abstract class KafkalyzerRustLibApiImplPlatform
   double? sse_decode_opt_box_autoadd_f_64(SseDeserializer deserializer);
 
   @protected
+  FieldNoteDto? sse_decode_opt_box_autoadd_field_note_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FieldValueFilter? sse_decode_opt_box_autoadd_field_value_filter(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FilterConditionDto? sse_decode_opt_box_autoadd_filter_condition_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FilterErrorDto? sse_decode_opt_box_autoadd_filter_error_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FilterScalarDto? sse_decode_opt_box_autoadd_filter_scalar_dto(
     SseDeserializer deserializer,
   );
 
@@ -904,6 +1668,32 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  JsonDiffInvalidSide? sse_decode_opt_box_autoadd_json_diff_invalid_side(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaAssignmentDto?
+  sse_decode_opt_box_autoadd_local_schema_assignment_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaErrorDto? sse_decode_opt_box_autoadd_local_schema_error_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaFormatDto? sse_decode_opt_box_autoadd_local_schema_format_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  LocalSchemaUseDto? sse_decode_opt_box_autoadd_local_schema_use_dto(
+    SseDeserializer deserializer,
+  );
 
   @protected
   MessageSchema? sse_decode_opt_box_autoadd_message_schema(
@@ -916,7 +1706,22 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  PartitionTimestamp? sse_decode_opt_box_autoadd_partition_timestamp(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SchemaFieldModelDto? sse_decode_opt_box_autoadd_schema_field_model_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SizePercentiles? sse_decode_opt_box_autoadd_size_percentiles(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TimeRangeTimestampKind? sse_decode_opt_box_autoadd_time_range_timestamp_kind(
     SseDeserializer deserializer,
   );
 
@@ -926,7 +1731,25 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  TopicConfigEntry? sse_decode_opt_box_autoadd_topic_config_entry(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicLocalSchemasDto? sse_decode_opt_box_autoadd_topic_local_schemas_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicMetadataError? sse_decode_opt_box_autoadd_topic_metadata_error(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   int? sse_decode_opt_box_autoadd_u_16(SseDeserializer deserializer);
+
+  @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
 
   @protected
   ValueFilterResult? sse_decode_opt_box_autoadd_value_filter_result(
@@ -937,9 +1760,17 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<String>? sse_decode_opt_list_String(SseDeserializer deserializer);
 
   @protected
+  List<AnalysisLimit>? sse_decode_opt_list_analysis_limit(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<KafkaHeader>? sse_decode_opt_list_kafka_header(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Int32List? sse_decode_opt_list_prim_i_32_strict(SseDeserializer deserializer);
 
   @protected
   Uint8List? sse_decode_opt_list_prim_u_8_strict(SseDeserializer deserializer);
@@ -953,7 +1784,50 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  PartitionOffsetDistribution sse_decode_partition_offset_distribution(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PartitionOffsetRow sse_decode_partition_offset_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PartitionOffsetState sse_decode_partition_offset_state(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   PartitionRow sse_decode_partition_row(SseDeserializer deserializer);
+
+  @protected
+  PartitionTimeProbe sse_decode_partition_time_probe(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PartitionTimeProbeOutcome sse_decode_partition_time_probe_outcome(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PartitionTimestamp sse_decode_partition_timestamp(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PlannedPartitionRange sse_decode_planned_partition_range(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ProbeOutcomeKind sse_decode_probe_outcome_kind(SseDeserializer deserializer);
+
+  @protected
+  (String, List<String>) sse_decode_record_string_list_string(
+    SseDeserializer deserializer,
+  );
 
   @protected
   ReportComparison sse_decode_report_comparison(SseDeserializer deserializer);
@@ -968,6 +1842,37 @@ abstract class KafkalyzerRustLibApiImplPlatform
   SchemaCompatibilityResult sse_decode_schema_compatibility_result(
     SseDeserializer deserializer,
   );
+
+  @protected
+  SchemaFieldEntryDto sse_decode_schema_field_entry_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SchemaFieldModelDto sse_decode_schema_field_model_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SchemaKindDto sse_decode_schema_kind_dto(SseDeserializer deserializer);
+
+  @protected
+  SchemaReferenceDto sse_decode_schema_reference_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SchemaRegistryErrorDto sse_decode_schema_registry_error_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SchemaRegistryErrorKindDto sse_decode_schema_registry_error_kind_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ScopeLimitFrom sse_decode_scope_limit_from(SseDeserializer deserializer);
 
   @protected
   SearchScope sse_decode_search_scope(SseDeserializer deserializer);
@@ -991,6 +1896,24 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   StepState sse_decode_step_state(SseDeserializer deserializer);
+
+  @protected
+  SubjectAssociationDto sse_decode_subject_association_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SubjectSchemaDto sse_decode_subject_schema_dto(SseDeserializer deserializer);
+
+  @protected
+  SubjectSchemaViewDto sse_decode_subject_schema_view_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TimeRangeTimestampKind sse_decode_time_range_timestamp_kind(
+    SseDeserializer deserializer,
+  );
 
   @protected
   TlsProbeOutcome sse_decode_tls_probe_outcome(SseDeserializer deserializer);
@@ -1022,7 +1945,63 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  TopicConfigAvailability sse_decode_topic_config_availability(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicConfigDiff sse_decode_topic_config_diff(SseDeserializer deserializer);
+
+  @protected
+  TopicConfigDiffRow sse_decode_topic_config_diff_row(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicConfigDiffStatus sse_decode_topic_config_diff_status(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicConfigEntry sse_decode_topic_config_entry(SseDeserializer deserializer);
+
+  @protected
+  TopicConfigResult sse_decode_topic_config_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicConfigSnapshot sse_decode_topic_config_snapshot(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicConfigSource sse_decode_topic_config_source(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicConfigStatus sse_decode_topic_config_status(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicLocalSchemasDto sse_decode_topic_local_schemas_dto(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   TopicMetadata sse_decode_topic_metadata(SseDeserializer deserializer);
+
+  @protected
+  TopicMetadataError sse_decode_topic_metadata_error(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TopicMetadataErrorKind sse_decode_topic_metadata_error_kind(
+    SseDeserializer deserializer,
+  );
 
   @protected
   TopicPartition sse_decode_topic_partition(SseDeserializer deserializer);
@@ -1036,6 +2015,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   TopicPartitionLag sse_decode_topic_partition_lag(
     SseDeserializer deserializer,
   );
+
+  @protected
+  TopicSideDto sse_decode_topic_side_dto(SseDeserializer deserializer);
+
+  @protected
+  TopicTimeRange sse_decode_topic_time_range(SseDeserializer deserializer);
 
   @protected
   TypeOccurrence sse_decode_type_occurrence(SseDeserializer deserializer);
@@ -1056,6 +2041,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_decode_unit(SseDeserializer deserializer);
 
   @protected
+  UnreadablePartition sse_decode_unreadable_partition(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   BigInt sse_decode_usize(SseDeserializer deserializer);
 
   @protected
@@ -1073,6 +2063,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerClientConfig(
     ClientConfig self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_Map_String_list_String_None(
+    Map<String, List<String>> self,
     SseSerializer serializer,
   );
 
@@ -1111,6 +2107,30 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_analysis_limit(AnalysisLimit self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_analysis_limit_kind(
+    AnalysisLimitKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_analysis_scope(AnalysisScope self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_analysis_scope_estimate(
+    AnalysisScopeEstimate self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_analysis_scope_summary(
+    AnalysisScopeSummary self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
@@ -1122,6 +2142,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_bootstrap_server_issue_kind(
     BootstrapServerIssueKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_analysis_scope(
+    AnalysisScope self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_analysis_scope_summary(
+    AnalysisScopeSummary self,
     SseSerializer serializer,
   );
 
@@ -1162,8 +2194,32 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_box_autoadd_f_64(double self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_field_note_dto(
+    FieldNoteDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_field_value_filter(
     FieldValueFilter self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_filter_condition_dto(
+    FilterConditionDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_filter_error_dto(
+    FilterErrorDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_filter_scalar_dto(
+    FilterScalarDto self,
     SseSerializer serializer,
   );
 
@@ -1173,6 +2229,36 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_box_autoadd_i_64(
     PlatformInt64 self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_json_diff_invalid_side(
+    JsonDiffInvalidSide self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_local_schema_assignment_dto(
+    LocalSchemaAssignmentDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_local_schema_error_dto(
+    LocalSchemaErrorDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_local_schema_format_dto(
+    LocalSchemaFormatDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_local_schema_use_dto(
+    LocalSchemaUseDto self,
     SseSerializer serializer,
   );
 
@@ -1189,8 +2275,26 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_partition_timestamp(
+    PartitionTimestamp self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_schema_field_model_dto(
+    SchemaFieldModelDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_size_percentiles(
     SizePercentiles self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_time_range_timestamp_kind(
+    TimeRangeTimestampKind self,
     SseSerializer serializer,
   );
 
@@ -1207,7 +2311,34 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_topic_config_entry(
+    TopicConfigEntry self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_topic_config_snapshot(
+    TopicConfigSnapshot self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_topic_local_schemas_dto(
+    TopicLocalSchemasDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_topic_metadata_error(
+    TopicMetadataError self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_u_16(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_box_autoadd_value_filter_result(
@@ -1242,6 +2373,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_client_property_skip_reason(
     ClientPropertySkipReason self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_cluster_overview(
+    ClusterOverview self,
     SseSerializer serializer,
   );
 
@@ -1315,6 +2452,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_field_delta(FieldDelta self, SseSerializer serializer);
 
   @protected
+  void sse_encode_field_note_dto(FieldNoteDto self, SseSerializer serializer);
+
+  @protected
   void sse_encode_field_occurrence(
     FieldOccurrence self,
     SseSerializer serializer,
@@ -1333,7 +2473,58 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_filter_condition_dto(
+    FilterConditionDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_filter_error_dto(
+    FilterErrorDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_filter_field_kind(
+    FilterFieldKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_filter_node_dto(FilterNodeDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_filter_node_kind(
+    FilterNodeKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_filter_op_dto(FilterOpDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_filter_parse_result_dto(
+    FilterParseResultDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_filter_scalar_dto(
+    FilterScalarDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_filter_scalar_kind(
+    FilterScalarKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_filter_type(FilterType self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_framing_dto(FramingDto self, SseSerializer serializer);
 
   @protected
   void sse_encode_hour_bucket(HourBucket self, SseSerializer serializer);
@@ -1346,6 +2537,30 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_json_diff_entry(JsonDiffEntry self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_json_diff_invalid_side(
+    JsonDiffInvalidSide self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_json_diff_kind(JsonDiffKind self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_json_diff_request(
+    JsonDiffRequest self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_json_diff_result(
+    JsonDiffResult self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_kafka_header(KafkaHeader self, SseSerializer serializer);
@@ -1362,6 +2577,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_list_allowed_extra_property(
     List<AllowedExtraProperty> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_analysis_limit(
+    List<AnalysisLimit> self,
     SseSerializer serializer,
   );
 
@@ -1414,6 +2635,18 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_filter_node_dto(
+    List<FilterNodeDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_filter_scalar_dto(
+    List<FilterScalarDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_hour_bucket(
     List<HourBucket> self,
     SseSerializer serializer,
@@ -1422,6 +2655,24 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_list_hourly_count(
     List<HourlyCount> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_json_diff_entry(
+    List<JsonDiffEntry> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_json_diff_request(
+    List<JsonDiffRequest> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_json_diff_result(
+    List<JsonDiffResult> self,
     SseSerializer serializer,
   );
 
@@ -1453,8 +2704,26 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_partition_offset_row(
+    List<PartitionOffsetRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_partition_row(
     List<PartitionRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_partition_time_probe(
+    List<PartitionTimeProbe> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_planned_partition_range(
+    List<PlannedPartitionRange> self,
     SseSerializer serializer,
   );
 
@@ -1465,11 +2734,35 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_prim_u_32_strict(
+    Uint32List self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_prim_u_8_loose(List<int> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_record_string_list_string(
+    List<(String, List<String>)> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_schema_field_entry_dto(
+    List<SchemaFieldEntryDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_schema_reference_dto(
+    List<SchemaReferenceDto> self,
     SseSerializer serializer,
   );
 
@@ -1492,8 +2785,32 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_subject_association_dto(
+    List<SubjectAssociationDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_top_duplicate_occurrence(
     List<TopDuplicateOccurrence> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_topic_config_diff_row(
+    List<TopicConfigDiffRow> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_topic_config_entry(
+    List<TopicConfigEntry> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_topic_config_result(
+    List<TopicConfigResult> self,
     SseSerializer serializer,
   );
 
@@ -1522,6 +2839,54 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_unreadable_partition(
+    List<UnreadablePartition> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_local_decode_error_kind_dto(
+    LocalDecodeErrorKindDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_local_schema_assignment_dto(
+    LocalSchemaAssignmentDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_local_schema_error_dto(
+    LocalSchemaErrorDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_local_schema_format_dto(
+    LocalSchemaFormatDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_local_schema_info(
+    LocalSchemaInfo self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_local_schema_mode_dto(
+    LocalSchemaModeDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_local_schema_use_dto(
+    LocalSchemaUseDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_message_schema(MessageSchema self, SseSerializer serializer);
 
   @protected
@@ -1534,7 +2899,31 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_offset_skew_status(
+    OffsetSkewStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_Map_String_list_String_None(
+    Map<String, List<String>>? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_analysis_scope(
+    AnalysisScope? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_analysis_scope_summary(
+    AnalysisScopeSummary? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
@@ -1567,8 +2956,32 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_opt_box_autoadd_f_64(double? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_box_autoadd_field_note_dto(
+    FieldNoteDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_field_value_filter(
     FieldValueFilter? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_filter_condition_dto(
+    FilterConditionDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_filter_error_dto(
+    FilterErrorDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_filter_scalar_dto(
+    FilterScalarDto? self,
     SseSerializer serializer,
   );
 
@@ -1578,6 +2991,36 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_opt_box_autoadd_i_64(
     PlatformInt64? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_json_diff_invalid_side(
+    JsonDiffInvalidSide? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_local_schema_assignment_dto(
+    LocalSchemaAssignmentDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_local_schema_error_dto(
+    LocalSchemaErrorDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_local_schema_format_dto(
+    LocalSchemaFormatDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_local_schema_use_dto(
+    LocalSchemaUseDto? self,
     SseSerializer serializer,
   );
 
@@ -1594,8 +3037,26 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_partition_timestamp(
+    PartitionTimestamp? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_schema_field_model_dto(
+    SchemaFieldModelDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_size_percentiles(
     SizePercentiles? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_time_range_timestamp_kind(
+    TimeRangeTimestampKind? self,
     SseSerializer serializer,
   );
 
@@ -1606,7 +3067,28 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_topic_config_entry(
+    TopicConfigEntry? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_topic_local_schemas_dto(
+    TopicLocalSchemasDto? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_topic_metadata_error(
+    TopicMetadataError? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_u_16(int? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
 
   @protected
   void sse_encode_opt_box_autoadd_value_filter_result(
@@ -1618,8 +3100,20 @@ abstract class KafkalyzerRustLibApiImplPlatform
   void sse_encode_opt_list_String(List<String>? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_list_analysis_limit(
+    List<AnalysisLimit>? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_list_kafka_header(
     List<KafkaHeader>? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_list_prim_i_32_strict(
+    Int32List? self,
     SseSerializer serializer,
   );
 
@@ -1642,7 +3136,61 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_partition_offset_distribution(
+    PartitionOffsetDistribution self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_partition_offset_row(
+    PartitionOffsetRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_partition_offset_state(
+    PartitionOffsetState self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_partition_row(PartitionRow self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_partition_time_probe(
+    PartitionTimeProbe self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_partition_time_probe_outcome(
+    PartitionTimeProbeOutcome self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_partition_timestamp(
+    PartitionTimestamp self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_planned_partition_range(
+    PlannedPartitionRange self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_probe_outcome_kind(
+    ProbeOutcomeKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_string_list_string(
+    (String, List<String>) self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_report_comparison(
@@ -1659,6 +3207,45 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_schema_compatibility_result(
     SchemaCompatibilityResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_schema_field_entry_dto(
+    SchemaFieldEntryDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_schema_field_model_dto(
+    SchemaFieldModelDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_schema_kind_dto(SchemaKindDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_schema_reference_dto(
+    SchemaReferenceDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_schema_registry_error_dto(
+    SchemaRegistryErrorDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_schema_registry_error_kind_dto(
+    SchemaRegistryErrorKindDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_scope_limit_from(
+    ScopeLimitFrom self,
     SseSerializer serializer,
   );
 
@@ -1688,6 +3275,30 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_step_state(StepState self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_subject_association_dto(
+    SubjectAssociationDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_subject_schema_dto(
+    SubjectSchemaDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_subject_schema_view_dto(
+    SubjectSchemaViewDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_time_range_timestamp_kind(
+    TimeRangeTimestampKind self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_tls_probe_outcome(
@@ -1732,7 +3343,79 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_topic_config_availability(
+    TopicConfigAvailability self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_config_diff(
+    TopicConfigDiff self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_config_diff_row(
+    TopicConfigDiffRow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_config_diff_status(
+    TopicConfigDiffStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_config_entry(
+    TopicConfigEntry self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_config_result(
+    TopicConfigResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_config_snapshot(
+    TopicConfigSnapshot self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_config_source(
+    TopicConfigSource self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_config_status(
+    TopicConfigStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_local_schemas_dto(
+    TopicLocalSchemasDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_topic_metadata(TopicMetadata self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_topic_metadata_error(
+    TopicMetadataError self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_metadata_error_kind(
+    TopicMetadataErrorKind self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_topic_partition(
@@ -1749,6 +3432,15 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_topic_partition_lag(
     TopicPartitionLag self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_topic_side_dto(TopicSideDto self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_topic_time_range(
+    TopicTimeRange self,
     SseSerializer serializer,
   );
 
@@ -1772,6 +3464,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_unit(void self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_unreadable_partition(
+    UnreadablePartition self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_usize(BigInt self, SseSerializer serializer);

@@ -146,24 +146,6 @@ abstract class AppLocalizations {
   /// **'Full Scan (All Messages)'**
   String get fullTopicScan;
 
-  /// No description provided for @sampleLast10k.
-  ///
-  /// In en, this message translates to:
-  /// **'Sample Last 10,000 Messages'**
-  String get sampleLast10k;
-
-  /// No description provided for @sampleLast50k.
-  ///
-  /// In en, this message translates to:
-  /// **'Sample Last 50,000 Messages'**
-  String get sampleLast50k;
-
-  /// No description provided for @sampleLast100k.
-  ///
-  /// In en, this message translates to:
-  /// **'Sample Last 100,000 Messages'**
-  String get sampleLast100k;
-
   /// No description provided for @totalMessages.
   ///
   /// In en, this message translates to:
@@ -2468,11 +2450,11 @@ abstract class AppLocalizations {
   /// **'Schema Viewer'**
   String get schemaViewerTitle;
 
-  /// No description provided for @noAvroSchemaFound.
+  /// No description provided for @noSchemaFound.
   ///
   /// In en, this message translates to:
-  /// **'No Avro schema found for this topic.'**
-  String get noAvroSchemaFound;
+  /// **'No schema found for this topic.'**
+  String get noSchemaFound;
 
   /// No description provided for @errorLoadingSchema.
   ///
@@ -6278,6 +6260,2393 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to copy to clipboard'**
   String get copyFailed;
+
+  /// No description provided for @topicListUpdatedJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'updated just now'**
+  String get topicListUpdatedJustNow;
+
+  /// No description provided for @topicListUpdatedMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{updated 1 min ago} other{updated {count} min ago}}'**
+  String topicListUpdatedMinutesAgo(int count);
+
+  /// No description provided for @topicListUpdatedHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{updated 1 hr ago} other{updated {count} hr ago}}'**
+  String topicListUpdatedHoursAgo(int count);
+
+  /// No description provided for @topicListHiddenCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hidden} other{{count} hidden}}'**
+  String topicListHiddenCount(int count);
+
+  /// No description provided for @topicListHiddenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden: {internal} internal, {stream} stream, {filter} filtered'**
+  String topicListHiddenTooltip(int internal, int stream, int filter);
+
+  /// No description provided for @topicListShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all'**
+  String get topicListShowAll;
+
+  /// No description provided for @topicListInvalidPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid pattern'**
+  String get topicListInvalidPattern;
+
+  /// No description provided for @topicListFilterModeSubstring.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get topicListFilterModeSubstring;
+
+  /// No description provided for @topicListFilterModeGlob.
+  ///
+  /// In en, this message translates to:
+  /// **'Glob'**
+  String get topicListFilterModeGlob;
+
+  /// No description provided for @topicListFilterModeRegex.
+  ///
+  /// In en, this message translates to:
+  /// **'Regex'**
+  String get topicListFilterModeRegex;
+
+  /// No description provided for @topicListFilterModeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter mode'**
+  String get topicListFilterModeTooltip;
+
+  /// No description provided for @topicListSortTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort topics'**
+  String get topicListSortTooltip;
+
+  /// No description provided for @topicListSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (A–Z)'**
+  String get topicListSortName;
+
+  /// No description provided for @topicListSortPartitions.
+  ///
+  /// In en, this message translates to:
+  /// **'Partitions'**
+  String get topicListSortPartitions;
+
+  /// No description provided for @topicListSortHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get topicListSortHealth;
+
+  /// No description provided for @topicListGroupByPrefixTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by prefix'**
+  String get topicListGroupByPrefixTooltip;
+
+  /// No description provided for @topicListFavouritesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get topicListFavouritesSection;
+
+  /// No description provided for @topicListAddFavouriteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favourites'**
+  String get topicListAddFavouriteTooltip;
+
+  /// No description provided for @topicListRemoveFavouriteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favourites'**
+  String get topicListRemoveFavouriteTooltip;
+
+  /// No description provided for @topicListNotInList.
+  ///
+  /// In en, this message translates to:
+  /// **'not in topic list'**
+  String get topicListNotInList;
+
+  /// No description provided for @topicListRefreshFailedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh failed: {error}'**
+  String topicListRefreshFailedNotice(String error);
+
+  /// No description provided for @topicListPrefsUnreadableNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved topic list settings could not be read; using defaults.'**
+  String get topicListPrefsUnreadableNotice;
+
+  /// No description provided for @topicListPrefsWriteBlockedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved topic list settings could not be backed up and will not be overwritten.'**
+  String get topicListPrefsWriteBlockedNotice;
+
+  /// No description provided for @topicConfigLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'loading'**
+  String get topicConfigLoading;
+
+  /// No description provided for @topicConfigNotReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'not readable — permission?'**
+  String get topicConfigNotReadable;
+
+  /// No description provided for @topicConfigLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'could not be loaded'**
+  String get topicConfigLoadFailed;
+
+  /// No description provided for @topicMetadataNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'topic not found'**
+  String get topicMetadataNotFound;
+
+  /// No description provided for @topicMetadataUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get topicMetadataUnknown;
+
+  /// No description provided for @topicPartitionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Partition} other{{count} Partitions}}'**
+  String topicPartitionsLabel(int count);
+
+  /// No description provided for @topicRfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'RF: {count}'**
+  String topicRfLabel(int count);
+
+  /// No description provided for @topicOpenFailedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open topic \"{topic}\": {error}'**
+  String topicOpenFailedNotice(String topic, String error);
+
+  /// No description provided for @cleanupPolicyNotReadableSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not readable'**
+  String get cleanupPolicyNotReadableSubtitle;
+
+  /// No description provided for @cleanupPolicyUnknownBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'?'**
+  String get cleanupPolicyUnknownBadge;
+
+  /// No description provided for @partitionOffsetSkewThresholdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition skew threshold (%)'**
+  String get partitionOffsetSkewThresholdLabel;
+
+  /// No description provided for @partitionOffsetSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated distribution (offset span)'**
+  String get partitionOffsetSectionTitle;
+
+  /// No description provided for @partitionOffsetLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading partition offsets…'**
+  String get partitionOffsetLoading;
+
+  /// No description provided for @partitionOffsetLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load partition offsets: {error}'**
+  String partitionOffsetLoadError(String error);
+
+  /// No description provided for @partitionOffsetRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get partitionOffsetRetry;
+
+  /// No description provided for @partitionOffsetRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh offsets'**
+  String get partitionOffsetRefreshTooltip;
+
+  /// No description provided for @partitionOffsetReadAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Read at {time}'**
+  String partitionOffsetReadAt(String time);
+
+  /// No description provided for @partitionOffsetReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh failed: {error}'**
+  String partitionOffsetReadFailed(String error);
+
+  /// No description provided for @partitionOffsetStaleNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing offsets from previous connection — cluster connection changed or disconnected.'**
+  String get partitionOffsetStaleNotice;
+
+  /// No description provided for @partitionOffsetTotalSpan.
+  ///
+  /// In en, this message translates to:
+  /// **'Total offset span: {span}'**
+  String partitionOffsetTotalSpan(String span);
+
+  /// No description provided for @partitionOffsetKnownSpan.
+  ///
+  /// In en, this message translates to:
+  /// **'Known offset span: {span}'**
+  String partitionOffsetKnownSpan(String span);
+
+  /// No description provided for @partitionOffsetUnknownValue.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get partitionOffsetUnknownValue;
+
+  /// No description provided for @partitionOffsetColumnPartition.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition'**
+  String get partitionOffsetColumnPartition;
+
+  /// No description provided for @partitionOffsetColumnLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get partitionOffsetColumnLow;
+
+  /// No description provided for @partitionOffsetColumnHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get partitionOffsetColumnHigh;
+
+  /// No description provided for @partitionOffsetColumnSpan.
+  ///
+  /// In en, this message translates to:
+  /// **'Offset span'**
+  String get partitionOffsetColumnSpan;
+
+  /// No description provided for @partitionOffsetColumnShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get partitionOffsetColumnShare;
+
+  /// No description provided for @partitionOffsetStateNotReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Offsets not readable — permission?'**
+  String get partitionOffsetStateNotReadable;
+
+  /// No description provided for @partitionOffsetStateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Read failed'**
+  String get partitionOffsetStateFailed;
+
+  /// No description provided for @partitionOffsetStateTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out'**
+  String get partitionOffsetStateTimedOut;
+
+  /// No description provided for @partitionOffsetEstimateNote.
+  ///
+  /// In en, this message translates to:
+  /// **'High − low watermark only; not an exact message count.'**
+  String get partitionOffsetEstimateNote;
+
+  /// No description provided for @partitionOffsetCompactedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Compacted topic: retained messages may be fewer than the offset span.'**
+  String get partitionOffsetCompactedNote;
+
+  /// No description provided for @partitionOffsetPolicyUnknownNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleanup policy unknown; topic may be compacted.'**
+  String get partitionOffsetPolicyUnknownNote;
+
+  /// No description provided for @partitionOffsetIncompleteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Some partitions could not be read; total span and shares are unavailable.'**
+  String get partitionOffsetIncompleteNote;
+
+  /// No description provided for @partitionOffsetEmptyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'All partitions are empty (total offset span is 0).'**
+  String get partitionOffsetEmptyNote;
+
+  /// No description provided for @partitionOffsetSkewBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Skewed (≥ {threshold}%)'**
+  String partitionOffsetSkewBadge(int threshold);
+
+  /// No description provided for @partitionOffsetSkewRowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Exceeds {threshold}% share threshold'**
+  String partitionOffsetSkewRowTooltip(int threshold);
+
+  /// No description provided for @partitionOffsetOpenAnalysisAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Count exact messages in Analysis'**
+  String get partitionOffsetOpenAnalysisAction;
+
+  /// No description provided for @retentionUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'unlimited'**
+  String get retentionUnlimited;
+
+  /// No description provided for @retentionBytesPerPartition.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} / partition'**
+  String retentionBytesPerPartition(String size);
+
+  /// No description provided for @durationDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String durationDays(int count);
+
+  /// No description provided for @durationHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour} other{{count} hours}}'**
+  String durationHours(int count);
+
+  /// No description provided for @durationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
+  String durationMinutes(int count);
+
+  /// No description provided for @durationSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 second} other{{count} seconds}}'**
+  String durationSeconds(int count);
+
+  /// No description provided for @clusterOverviewRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh cluster overview'**
+  String get clusterOverviewRefreshTooltip;
+
+  /// No description provided for @clusterOverviewBrokersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Brokers ({count})'**
+  String clusterOverviewBrokersTitle(int count);
+
+  /// No description provided for @clusterOverviewClusterIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cluster ID'**
+  String get clusterOverviewClusterIdLabel;
+
+  /// No description provided for @clusterOverviewControllerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Controller'**
+  String get clusterOverviewControllerLabel;
+
+  /// No description provided for @clusterOverviewBrokerIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Broker {id}'**
+  String clusterOverviewBrokerIdLabel(int id);
+
+  /// No description provided for @clusterOverviewBrokersLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading brokers…'**
+  String get clusterOverviewBrokersLoading;
+
+  /// No description provided for @clusterOverviewBrokersError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load brokers: {error}'**
+  String clusterOverviewBrokersError(String error);
+
+  /// No description provided for @clusterOverviewBrokersNotReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Brokers not readable — permission?'**
+  String get clusterOverviewBrokersNotReadable;
+
+  /// No description provided for @clusterOverviewTopicsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Topic} other{{count} Topics}}'**
+  String clusterOverviewTopicsCount(int count);
+
+  /// No description provided for @clusterOverviewPartitionsTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 Partition} other{{count} Partitions}}'**
+  String clusterOverviewPartitionsTotal(int count);
+
+  /// No description provided for @clusterOverviewTotalsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading topic totals…'**
+  String get clusterOverviewTotalsLoading;
+
+  /// No description provided for @clusterOverviewTotalsUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic & partition totals: unknown'**
+  String get clusterOverviewTotalsUnknown;
+
+  /// No description provided for @clusterOverviewHealthHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'All topics fully replicated (0 unhealthy)'**
+  String get clusterOverviewHealthHealthy;
+
+  /// No description provided for @clusterOverviewHealthUnhealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 topic with unhealthy partitions} other{{count} topics with unhealthy partitions}}'**
+  String clusterOverviewHealthUnhealthy(int count);
+
+  /// No description provided for @clusterOverviewHealthPartitionCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{underReplicated} under-replicated, {leaderless} leaderless'**
+  String clusterOverviewHealthPartitionCounts(
+    int underReplicated,
+    int leaderless,
+  );
+
+  /// No description provided for @clusterOverviewHealthUnknownCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 topic with unknown health} other{{count} topics with unknown health}}'**
+  String clusterOverviewHealthUnknownCount(int count);
+
+  /// No description provided for @clusterOverviewHealthStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Replication health: unknown'**
+  String get clusterOverviewHealthStatusUnknown;
+
+  /// No description provided for @clusterOverviewHealthStatusLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Replication health: loading…'**
+  String get clusterOverviewHealthStatusLoading;
+
+  /// No description provided for @clusterOverviewShowUnhealthyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter topic list to unhealthy topics'**
+  String get clusterOverviewShowUnhealthyTooltip;
+
+  /// No description provided for @topicListUnhealthyOnlyChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Only unhealthy topics ({count})'**
+  String topicListUnhealthyOnlyChip(int count);
+
+  /// No description provided for @topicHeaderRefreshFactsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh topic facts'**
+  String get topicHeaderRefreshFactsTooltip;
+
+  /// No description provided for @topicHeaderEstimateValue.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {count} messages (estimate)'**
+  String topicHeaderEstimateValue(String count);
+
+  /// No description provided for @topicHeaderEstimateCompactedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Compacted or unknown-policy topic: offset spans are not message counts; use Topic Analysis for exact counts.'**
+  String get topicHeaderEstimateCompactedNote;
+
+  /// No description provided for @topicHeaderEstimateUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages: unknown'**
+  String get topicHeaderEstimateUnknown;
+
+  /// No description provided for @topicHeaderEstimateNotReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages: not readable'**
+  String get topicHeaderEstimateNotReadable;
+
+  /// No description provided for @topicHeaderRetentionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retention: {duration}'**
+  String topicHeaderRetentionLabel(String duration);
+
+  /// No description provided for @topicHeaderRetentionBytesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max size: {size}'**
+  String topicHeaderRetentionBytesLabel(String size);
+
+  /// No description provided for @topicHeaderRetentionNotReadable.
+  ///
+  /// In en, this message translates to:
+  /// **'not readable'**
+  String get topicHeaderRetentionNotReadable;
+
+  /// No description provided for @topicHeaderLoadTimeRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Load time range'**
+  String get topicHeaderLoadTimeRange;
+
+  /// No description provided for @topicHeaderLoadTimeRangeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Read oldest & newest message timestamps across {count} partitions'**
+  String topicHeaderLoadTimeRangeTooltip(int count);
+
+  /// No description provided for @topicHeaderTimeRangeLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading time range…'**
+  String get topicHeaderTimeRangeLoading;
+
+  /// No description provided for @topicHeaderTimeRangeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages'**
+  String get topicHeaderTimeRangeEmpty;
+
+  /// No description provided for @topicHeaderTimeRangeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{oldest} – {newest}'**
+  String topicHeaderTimeRangeValue(String oldest, String newest);
+
+  /// No description provided for @topicHeaderTimeRangePartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial ({oldestKnown}/{total} oldest, {newestKnown}/{total} newest)'**
+  String topicHeaderTimeRangePartial(
+    int oldestKnown,
+    int newestKnown,
+    int total,
+  );
+
+  /// No description provided for @topicHeaderTimeRangeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Time range: unknown'**
+  String get topicHeaderTimeRangeUnknown;
+
+  /// No description provided for @topicHeaderTimeRangeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Time range failed: {error}'**
+  String topicHeaderTimeRangeError(String error);
+
+  /// No description provided for @topicModeConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
+  String get topicModeConfig;
+
+  /// No description provided for @topicConfigRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh configuration'**
+  String get topicConfigRefreshTooltip;
+
+  /// No description provided for @topicConfigNonDefaultToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-defaults only'**
+  String get topicConfigNonDefaultToggle;
+
+  /// No description provided for @topicConfigNonDefaultToggleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show topic overrides, dynamic broker settings, and static broker settings'**
+  String get topicConfigNonDefaultToggleTooltip;
+
+  /// No description provided for @topicConfigDiffToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Only differences & non-defaults'**
+  String get topicConfigDiffToggle;
+
+  /// No description provided for @topicConfigCompareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare…'**
+  String get topicConfigCompareAction;
+
+  /// No description provided for @topicConfigCloseComparisonAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Close comparison'**
+  String get topicConfigCloseComparisonAction;
+
+  /// No description provided for @topicConfigCopyAsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as text'**
+  String get topicConfigCopyAsText;
+
+  /// No description provided for @topicConfigCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration copied to clipboard'**
+  String get topicConfigCopiedToClipboard;
+
+  /// No description provided for @topicConfigColumnName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get topicConfigColumnName;
+
+  /// No description provided for @topicConfigColumnValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get topicConfigColumnValue;
+
+  /// No description provided for @topicConfigColumnSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get topicConfigColumnSource;
+
+  /// No description provided for @topicConfigColumnDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get topicConfigColumnDefault;
+
+  /// No description provided for @topicConfigColumnLeftValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Left value'**
+  String get topicConfigColumnLeftValue;
+
+  /// No description provided for @topicConfigColumnLeftSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Left source'**
+  String get topicConfigColumnLeftSource;
+
+  /// No description provided for @topicConfigColumnRightValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Right value'**
+  String get topicConfigColumnRightValue;
+
+  /// No description provided for @topicConfigColumnRightSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Right source'**
+  String get topicConfigColumnRightSource;
+
+  /// No description provided for @topicConfigColumnStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get topicConfigColumnStatus;
+
+  /// No description provided for @topicConfigDefaultYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get topicConfigDefaultYes;
+
+  /// No description provided for @topicConfigDefaultNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Override'**
+  String get topicConfigDefaultNo;
+
+  /// No description provided for @topicConfigSourceDynamicTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic override'**
+  String get topicConfigSourceDynamicTopic;
+
+  /// No description provided for @topicConfigSourceDynamicBroker.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic broker setting'**
+  String get topicConfigSourceDynamicBroker;
+
+  /// No description provided for @topicConfigSourceDynamicDefaultBroker.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic cluster-wide broker default'**
+  String get topicConfigSourceDynamicDefaultBroker;
+
+  /// No description provided for @topicConfigSourceStaticBroker.
+  ///
+  /// In en, this message translates to:
+  /// **'Static broker setting'**
+  String get topicConfigSourceStaticBroker;
+
+  /// No description provided for @topicConfigSourceDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in default'**
+  String get topicConfigSourceDefault;
+
+  /// No description provided for @topicConfigSourceUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get topicConfigSourceUnknown;
+
+  /// No description provided for @topicConfigStatusEqual.
+  ///
+  /// In en, this message translates to:
+  /// **'Equal'**
+  String get topicConfigStatusEqual;
+
+  /// No description provided for @topicConfigStatusDifferent.
+  ///
+  /// In en, this message translates to:
+  /// **'Different'**
+  String get topicConfigStatusDifferent;
+
+  /// No description provided for @topicConfigStatusOnlyLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on left'**
+  String get topicConfigStatusOnlyLeft;
+
+  /// No description provided for @topicConfigStatusOnlyRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Only on right'**
+  String get topicConfigStatusOnlyRight;
+
+  /// No description provided for @topicConfigStatusNotComparable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not comparable'**
+  String get topicConfigStatusNotComparable;
+
+  /// No description provided for @topicConfigStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get topicConfigStatusUnknown;
+
+  /// No description provided for @topicConfigPlaceholderNoValue.
+  ///
+  /// In en, this message translates to:
+  /// **'no value'**
+  String get topicConfigPlaceholderNoValue;
+
+  /// No description provided for @topicConfigPlaceholderSensitive.
+  ///
+  /// In en, this message translates to:
+  /// **'hidden (sensitive)'**
+  String get topicConfigPlaceholderSensitive;
+
+  /// No description provided for @topicConfigPlaceholderUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get topicConfigPlaceholderUnknown;
+
+  /// No description provided for @topicConfigUnavailableNotAuthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Not readable — missing DescribeConfigs permission?'**
+  String get topicConfigUnavailableNotAuthorized;
+
+  /// No description provided for @topicConfigUnavailableNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Topic not found'**
+  String get topicConfigUnavailableNotFound;
+
+  /// No description provided for @topicConfigUnavailableFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read configuration: {message}'**
+  String topicConfigUnavailableFailed(String message);
+
+  /// No description provided for @topicConfigEmptyReported.
+  ///
+  /// In en, this message translates to:
+  /// **'No configuration entries reported.'**
+  String get topicConfigEmptyReported;
+
+  /// No description provided for @topicConfigEmptyNonDefaultFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'All reported entries use default values.'**
+  String get topicConfigEmptyNonDefaultFilter;
+
+  /// No description provided for @topicConfigEmptyDiffFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Configurations do not differ and use only defaults.'**
+  String get topicConfigEmptyDiffFilter;
+
+  /// No description provided for @topicConfigDifferencesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{0 differences} =1{1 difference} other{{count} differences}}'**
+  String topicConfigDifferencesCount(int count);
+
+  /// No description provided for @topicConfigDifferencesUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Differences: unknown'**
+  String get topicConfigDifferencesUnknown;
+
+  /// No description provided for @topicConfigComparisonInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading comparison…'**
+  String get topicConfigComparisonInProgress;
+
+  /// No description provided for @topicConfigCompareDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare Topic Configuration'**
+  String get topicConfigCompareDialogTitle;
+
+  /// No description provided for @topicConfigCompareProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target cluster profile'**
+  String get topicConfigCompareProfileLabel;
+
+  /// No description provided for @topicConfigCompareTopicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target topic'**
+  String get topicConfigCompareTopicLabel;
+
+  /// No description provided for @topicConfigCompareTopicHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter or select topic name'**
+  String get topicConfigCompareTopicHint;
+
+  /// No description provided for @topicConfigCompareSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get topicConfigCompareSubmit;
+
+  /// No description provided for @schemaRegistryErrorNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry is not configured for this profile.'**
+  String get schemaRegistryErrorNotConfigured;
+
+  /// No description provided for @schemaRegistryErrorInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry URL is invalid: {detail}'**
+  String schemaRegistryErrorInvalidUrl(String detail);
+
+  /// No description provided for @schemaRegistryErrorUnauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry authentication failed (HTTP 401). Check your username and password in the cluster profile.'**
+  String get schemaRegistryErrorUnauthorized;
+
+  /// No description provided for @schemaRegistryErrorForbidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry access denied (HTTP 403).'**
+  String get schemaRegistryErrorForbidden;
+
+  /// No description provided for @schemaRegistryErrorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema or subject not found in Schema Registry (HTTP 404).'**
+  String get schemaRegistryErrorNotFound;
+
+  /// No description provided for @schemaRegistryErrorTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry request timed out.'**
+  String get schemaRegistryErrorTimeout;
+
+  /// No description provided for @schemaRegistryErrorUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach Schema Registry: {detail}'**
+  String schemaRegistryErrorUnreachable(String detail);
+
+  /// No description provided for @schemaRegistryErrorCertificateRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry TLS certificate was rejected: {detail}'**
+  String schemaRegistryErrorCertificateRejected(String detail);
+
+  /// No description provided for @schemaRegistryErrorHttpStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry returned HTTP {status}: {detail}'**
+  String schemaRegistryErrorHttpStatus(int status, String detail);
+
+  /// No description provided for @schemaRegistryErrorHttpStatusNoCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry returned an error: {detail}'**
+  String schemaRegistryErrorHttpStatusNoCode(String detail);
+
+  /// No description provided for @schemaRegistryErrorInvalidResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema Registry returned an unexpected response: {detail}'**
+  String schemaRegistryErrorInvalidResponse(String detail);
+
+  /// No description provided for @schemaTypeAvro.
+  ///
+  /// In en, this message translates to:
+  /// **'Avro'**
+  String get schemaTypeAvro;
+
+  /// No description provided for @schemaTypeProtobuf.
+  ///
+  /// In en, this message translates to:
+  /// **'Protobuf'**
+  String get schemaTypeProtobuf;
+
+  /// No description provided for @schemaTypeJson.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON Schema'**
+  String get schemaTypeJson;
+
+  /// No description provided for @schemaTypeGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema'**
+  String get schemaTypeGeneric;
+
+  /// No description provided for @schemaTypeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema (unknown)'**
+  String get schemaTypeUnknown;
+
+  /// No description provided for @schemaTypeMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'{keyType} / {valueType}'**
+  String schemaTypeMixed(String keyType, String valueType);
+
+  /// No description provided for @schemaTopicHasTypeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema: {typeLabel}'**
+  String schemaTopicHasTypeTooltip(String typeLabel);
+
+  /// No description provided for @schemaVersionBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'v{version}'**
+  String schemaVersionBadge(int version);
+
+  /// No description provided for @schemaIdBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'ID {id}'**
+  String schemaIdBadge(int id);
+
+  /// No description provided for @schemaCompatibilityPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility: {level}'**
+  String schemaCompatibilityPrefix(String level);
+
+  /// No description provided for @schemaCompatibilitySubject.
+  ///
+  /// In en, this message translates to:
+  /// **'set on subject'**
+  String get schemaCompatibilitySubject;
+
+  /// No description provided for @schemaCompatibilityInherited.
+  ///
+  /// In en, this message translates to:
+  /// **'inherited'**
+  String get schemaCompatibilityInherited;
+
+  /// No description provided for @schemaCompatibilityUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility: unknown ({reason})'**
+  String schemaCompatibilityUnknown(String reason);
+
+  /// No description provided for @schemaReferencesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'References:'**
+  String get schemaReferencesLabel;
+
+  /// No description provided for @schemaReferenceChip.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} ({subject} v{version})'**
+  String schemaReferenceChip(String name, String subject, int version);
+
+  /// No description provided for @schemaMessagesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages: {messages}'**
+  String schemaMessagesLabel(String messages);
+
+  /// No description provided for @schemaRawUnavailableNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Structured view unavailable: {reason}'**
+  String schemaRawUnavailableNotice(String reason);
+
+  /// No description provided for @schemaUnsupportedTypeNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Structured view is not supported for schema type {type}.'**
+  String schemaUnsupportedTypeNotice(String type);
+
+  /// No description provided for @schemaCopyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy schema'**
+  String get schemaCopyTooltip;
+
+  /// No description provided for @schemaSaveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save schema'**
+  String get schemaSaveTooltip;
+
+  /// No description provided for @schemaCopiedSnackBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema copied to clipboard'**
+  String get schemaCopiedSnackBar;
+
+  /// No description provided for @schemaSavedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema saved to {path}'**
+  String schemaSavedSuccess(String path);
+
+  /// No description provided for @schemaSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save schema: {error}'**
+  String schemaSaveFailed(String error);
+
+  /// No description provided for @schemaSaveDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Schema'**
+  String get schemaSaveDialogTitle;
+
+  /// No description provided for @schemaViewerSubjectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema: {subject}'**
+  String schemaViewerSubjectTitle(String subject);
+
+  /// No description provided for @schemaViewerBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to previous schema'**
+  String get schemaViewerBackTooltip;
+
+  /// No description provided for @schemaViewerAssociatedTopicsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading associated topics…'**
+  String get schemaViewerAssociatedTopicsLoading;
+
+  /// No description provided for @schemaViewerAssociatedTopicsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to resolve associated topics: {error}'**
+  String schemaViewerAssociatedTopicsError(String error);
+
+  /// No description provided for @schemaViewerTopicNotOnCluster.
+  ///
+  /// In en, this message translates to:
+  /// **'{topic} (not on cluster)'**
+  String schemaViewerTopicNotOnCluster(String topic);
+
+  /// No description provided for @subjectBrowserFilterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter subjects…'**
+  String get subjectBrowserFilterHint;
+
+  /// No description provided for @subjectBrowserCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total}'**
+  String subjectBrowserCount(int shown, int total);
+
+  /// No description provided for @subjectBrowserCountUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Subjects: unknown'**
+  String get subjectBrowserCountUnknown;
+
+  /// No description provided for @subjectBrowserGlobalCompatibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Global compatibility: {level}'**
+  String subjectBrowserGlobalCompatibility(String level);
+
+  /// No description provided for @subjectBrowserEmptyRegistry.
+  ///
+  /// In en, this message translates to:
+  /// **'No subjects registered in Schema Registry.'**
+  String get subjectBrowserEmptyRegistry;
+
+  /// No description provided for @subjectBrowserNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No subjects match \"{query}\".'**
+  String subjectBrowserNoMatch(String query);
+
+  /// No description provided for @subjectBrowserRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh subjects'**
+  String get subjectBrowserRefreshTooltip;
+
+  /// No description provided for @subjectBrowserSideKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get subjectBrowserSideKey;
+
+  /// No description provided for @subjectBrowserSideValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get subjectBrowserSideValue;
+
+  /// No description provided for @explorerModeTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics'**
+  String get explorerModeTopics;
+
+  /// No description provided for @explorerModeSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Subjects'**
+  String get explorerModeSubjects;
+
+  /// No description provided for @explorerModeSwitcherSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse mode: Topics or Subjects'**
+  String get explorerModeSwitcherSemantics;
+
+  /// No description provided for @analysisConfirmThresholdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Large-scan confirmation threshold (messages)'**
+  String get analysisConfirmThresholdLabel;
+
+  /// No description provided for @analysisHistoryPerTopicLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved analysis reports per topic'**
+  String get analysisHistoryPerTopicLabel;
+
+  /// No description provided for @deleteSavedAnalysisReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete saved analysis reports'**
+  String get deleteSavedAnalysisReports;
+
+  /// No description provided for @deleteSavedAnalysisReportsConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all saved analysis reports?'**
+  String get deleteSavedAnalysisReportsConfirmTitle;
+
+  /// No description provided for @deleteSavedAnalysisReportsConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes all locally stored topic analysis reports across all clusters. Exported files elsewhere are not affected.'**
+  String get deleteSavedAnalysisReportsConfirmBody;
+
+  /// No description provided for @deleteSavedAnalysisReportsSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved analysis reports deleted.'**
+  String get deleteSavedAnalysisReportsSuccess;
+
+  /// No description provided for @deleteSavedAnalysisReportsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete all saved analysis reports: {error}'**
+  String deleteSavedAnalysisReportsFailed(String error);
+
+  /// No description provided for @scopeSummaryButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope: {summary}'**
+  String scopeSummaryButtonLabel(String summary);
+
+  /// No description provided for @scopeSummaryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All messages'**
+  String get scopeSummaryAll;
+
+  /// No description provided for @scopeSummaryNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest {count}'**
+  String scopeSummaryNewest(String count);
+
+  /// No description provided for @scopeSummaryOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest {count}'**
+  String scopeSummaryOldest(String count);
+
+  /// No description provided for @scopeSummaryPartitions.
+  ///
+  /// In en, this message translates to:
+  /// **'partitions {list}'**
+  String scopeSummaryPartitions(String list);
+
+  /// No description provided for @scopeDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis Scope'**
+  String get scopeDialogTitle;
+
+  /// No description provided for @scopeModeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get scopeModeAll;
+
+  /// No description provided for @scopeModeNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest'**
+  String get scopeModeNewest;
+
+  /// No description provided for @scopeModeOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest'**
+  String get scopeModeOldest;
+
+  /// No description provided for @scopeMessageLimitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message limit (up to N offsets)'**
+  String get scopeMessageLimitLabel;
+
+  /// No description provided for @scopeMessageLimitHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Count is in offsets; compacted or transactional topics may yield fewer messages.'**
+  String get scopeMessageLimitHelper;
+
+  /// No description provided for @scopeTimeRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Time range (optional, resolved via broker timestamp index)'**
+  String get scopeTimeRangeLabel;
+
+  /// No description provided for @scopeStartTimestampLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start timestamp'**
+  String get scopeStartTimestampLabel;
+
+  /// No description provided for @scopeEndTimestampLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End timestamp'**
+  String get scopeEndTimestampLabel;
+
+  /// No description provided for @scopePartitionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Partitions'**
+  String get scopePartitionsLabel;
+
+  /// No description provided for @scopeAllPartitionsChip.
+  ///
+  /// In en, this message translates to:
+  /// **'All partitions'**
+  String get scopeAllPartitionsChip;
+
+  /// No description provided for @scopePartitionChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'P{id}'**
+  String scopePartitionChipLabel(int id);
+
+  /// No description provided for @scopeErrorInvalidCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive integer message limit.'**
+  String get scopeErrorInvalidCount;
+
+  /// No description provided for @scopeErrorInvalidStartTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid start timestamp format.'**
+  String get scopeErrorInvalidStartTimestamp;
+
+  /// No description provided for @scopeErrorInvalidEndTimestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid end timestamp format.'**
+  String get scopeErrorInvalidEndTimestamp;
+
+  /// No description provided for @scopeErrorStartAfterEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Start timestamp must be before end timestamp.'**
+  String get scopeErrorStartAfterEnd;
+
+  /// No description provided for @scopeErrorNoPartitions.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one partition.'**
+  String get scopeErrorNoPartitions;
+
+  /// No description provided for @scopeApplyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get scopeApplyButton;
+
+  /// No description provided for @scopeEstimating.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimating…'**
+  String get scopeEstimating;
+
+  /// No description provided for @scopeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start large analysis?'**
+  String get scopeConfirmTitle;
+
+  /// No description provided for @scopeConfirmPlannedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated scan size: {count} offsets.'**
+  String scopeConfirmPlannedCount(String count);
+
+  /// No description provided for @scopeConfirmAtLeastCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated scan size: at least {count} offsets.'**
+  String scopeConfirmAtLeastCount(String count);
+
+  /// No description provided for @scopeConfirmSizeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan size unknown ({error}). Start anyway?'**
+  String scopeConfirmSizeUnknown(String error);
+
+  /// No description provided for @scopeConfirmUnreadableHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Unreadable partitions:'**
+  String get scopeConfirmUnreadableHeader;
+
+  /// No description provided for @scopeConfirmUnreadableItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Partition {partition}: {reason}'**
+  String scopeConfirmUnreadableItem(int partition, String reason);
+
+  /// No description provided for @scopeConfirmCompactedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a compacted topic; the actual message count may be lower than the offset range.'**
+  String get scopeConfirmCompactedHint;
+
+  /// No description provided for @scopeConfirmStartButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Scan'**
+  String get scopeConfirmStartButton;
+
+  /// No description provided for @historySaveErrorBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save report to local history: {error}'**
+  String historySaveErrorBanner(String error);
+
+  /// No description provided for @reportScopeCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Scope'**
+  String get reportScopeCardTitle;
+
+  /// No description provided for @reportScopeNotRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope not recorded for this report.'**
+  String get reportScopeNotRecorded;
+
+  /// No description provided for @reportScopeExcludedByTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Excluded by time range: {count}'**
+  String reportScopeExcludedByTime(String count);
+
+  /// No description provided for @reportScopeUnreadablePartitions.
+  ///
+  /// In en, this message translates to:
+  /// **'Unreadable partitions: {list}'**
+  String reportScopeUnreadablePartitions(String list);
+
+  /// No description provided for @analysisLimitsCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis Limits'**
+  String get analysisLimitsCardTitle;
+
+  /// No description provided for @analysisLimitsNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available for this report.'**
+  String get analysisLimitsNotAvailable;
+
+  /// No description provided for @analysisLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Reached'**
+  String get analysisLimitReached;
+
+  /// No description provided for @analysisLimitWithin.
+  ///
+  /// In en, this message translates to:
+  /// **'Within limit'**
+  String get analysisLimitWithin;
+
+  /// No description provided for @limitKindTrackedFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked fields'**
+  String get limitKindTrackedFields;
+
+  /// No description provided for @limitKindListedFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Listed fields'**
+  String get limitKindListedFields;
+
+  /// No description provided for @limitKindValuesPerField.
+  ///
+  /// In en, this message translates to:
+  /// **'Values per field'**
+  String get limitKindValuesPerField;
+
+  /// No description provided for @limitKindListedValuesPerField.
+  ///
+  /// In en, this message translates to:
+  /// **'Listed values per field'**
+  String get limitKindListedValuesPerField;
+
+  /// No description provided for @limitKindFieldDepth.
+  ///
+  /// In en, this message translates to:
+  /// **'Field nesting depth'**
+  String get limitKindFieldDepth;
+
+  /// No description provided for @limitKindValueDisplayChars.
+  ///
+  /// In en, this message translates to:
+  /// **'Value display length (chars)'**
+  String get limitKindValueDisplayChars;
+
+  /// No description provided for @limitKindTrackedKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked keys'**
+  String get limitKindTrackedKeys;
+
+  /// No description provided for @limitKindListedKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Listed keys'**
+  String get limitKindListedKeys;
+
+  /// No description provided for @limitKindSizePercentileSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Size percentile sample'**
+  String get limitKindSizePercentileSample;
+
+  /// No description provided for @limitKindTrackedFingerprints.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked duplicate fingerprints'**
+  String get limitKindTrackedFingerprints;
+
+  /// No description provided for @limitKindDuplicateSamples.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate samples'**
+  String get limitKindDuplicateSamples;
+
+  /// No description provided for @limitKindListedDuplicates.
+  ///
+  /// In en, this message translates to:
+  /// **'Listed duplicates'**
+  String get limitKindListedDuplicates;
+
+  /// No description provided for @limitKindPreviewChars.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload preview length (chars)'**
+  String get limitKindPreviewChars;
+
+  /// No description provided for @limitKindTimelineWindowDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline window (days)'**
+  String get limitKindTimelineWindowDays;
+
+  /// No description provided for @fieldTrackedCountSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total} fields'**
+  String fieldTrackedCountSummary(String shown, String total);
+
+  /// No description provided for @fieldFurtherNotTracked.
+  ///
+  /// In en, this message translates to:
+  /// **'Further fields not tracked'**
+  String get fieldFurtherNotTracked;
+
+  /// No description provided for @duplicateEstimatedAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated (at least)'**
+  String get duplicateEstimatedAtLeast;
+
+  /// No description provided for @duplicateUntrackedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} untracked messages'**
+  String duplicateUntrackedCount(String count);
+
+  /// No description provided for @duplicateListPossiblyIncomplete.
+  ///
+  /// In en, this message translates to:
+  /// **'List possibly incomplete'**
+  String get duplicateListPossiblyIncomplete;
+
+  /// No description provided for @historyMenuFromFile.
+  ///
+  /// In en, this message translates to:
+  /// **'From file…'**
+  String get historyMenuFromFile;
+
+  /// No description provided for @historyMenuEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved reports for this topic'**
+  String get historyMenuEmpty;
+
+  /// No description provided for @historyMenuUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unreadable file(s) skipped'**
+  String historyMenuUnreadable(int count);
+
+  /// No description provided for @historyMenuLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load history: {error}'**
+  String historyMenuLoadError(String error);
+
+  /// No description provided for @historyEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{scope} · {messages} messages'**
+  String historyEntrySubtitle(String scope, String messages);
+
+  /// No description provided for @comparisonScopeNotRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope not recorded'**
+  String get comparisonScopeNotRecorded;
+
+  /// No description provided for @comparisonScopesDifferWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparison scopes differ — deltas may reflect scope differences rather than data changes.'**
+  String get comparisonScopesDifferWarning;
+
+  /// No description provided for @comparisonScopeMissingWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope is not recorded on one or both reports — they cannot be reliably compared.'**
+  String get comparisonScopeMissingWarning;
+
+  /// No description provided for @timelinePartitionSubsetNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Timeline covers only a subset of partitions ({partitions}).'**
+  String timelinePartitionSubsetNote(String partitions);
+
+  /// No description provided for @diffIgnoredFieldsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored fields ({count})'**
+  String diffIgnoredFieldsHeader(int count);
+
+  /// No description provided for @diffIgnoredFieldsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored fields'**
+  String get diffIgnoredFieldsButton;
+
+  /// No description provided for @diffIgnoreDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored fields — {topic}'**
+  String diffIgnoreDialogTitle(String topic);
+
+  /// No description provided for @diffIgnorePathHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Field path (e.g. meta.ts or /items/0/id)'**
+  String get diffIgnorePathHint;
+
+  /// No description provided for @diffIgnoreAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get diffIgnoreAddButton;
+
+  /// No description provided for @diffIgnoreRemoveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove ignored field {path}'**
+  String diffIgnoreRemoveTooltip(String path);
+
+  /// No description provided for @diffIgnoreEmptyList.
+  ///
+  /// In en, this message translates to:
+  /// **'No ignored fields for this topic.'**
+  String get diffIgnoreEmptyList;
+
+  /// No description provided for @diffIgnoreSuggestionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested volatile fields'**
+  String get diffIgnoreSuggestionsTitle;
+
+  /// No description provided for @ignoreThisField.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore this field'**
+  String get ignoreThisField;
+
+  /// No description provided for @diffHiddenCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden ({count})'**
+  String diffHiddenCount(int count);
+
+  /// No description provided for @diffTruncatedNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more differences not shown'**
+  String diffTruncatedNotice(int count);
+
+  /// No description provided for @diffIgnoreLoadWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read saved ignore list for {topic}.'**
+  String diffIgnoreLoadWarning(String topic);
+
+  /// No description provided for @diffIgnoreSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save ignore list. Change was not persisted.'**
+  String get diffIgnoreSaveError;
+
+  /// No description provided for @diffIgnoreEmptyPathError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a non-empty field path.'**
+  String get diffIgnoreEmptyPathError;
+
+  /// No description provided for @diffIgnoreDuplicatePathError.
+  ///
+  /// In en, this message translates to:
+  /// **'This field path is already ignored.'**
+  String get diffIgnoreDuplicatePathError;
+
+  /// No description provided for @filterExpressionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter expression'**
+  String get filterExpressionLabel;
+
+  /// No description provided for @filterExpressionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. value.status = \"FAILED\" AND partition = 0'**
+  String get filterExpressionHint;
+
+  /// No description provided for @filterExpressionChipSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Expr: {expr}'**
+  String filterExpressionChipSummary(String expr);
+
+  /// No description provided for @filterExpressionInvalidTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid filter expression'**
+  String get filterExpressionInvalidTooltip;
+
+  /// No description provided for @filterExpressionModeBuilder.
+  ///
+  /// In en, this message translates to:
+  /// **'Builder'**
+  String get filterExpressionModeBuilder;
+
+  /// No description provided for @filterExpressionModeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get filterExpressionModeText;
+
+  /// No description provided for @filterExpressionErrorAtColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Column {column}: {message}'**
+  String filterExpressionErrorAtColumn(int column, String message);
+
+  /// No description provided for @filterExpressionAddCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Add condition'**
+  String get filterExpressionAddCondition;
+
+  /// No description provided for @filterExpressionAddGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Add group'**
+  String get filterExpressionAddGroup;
+
+  /// No description provided for @filterExpressionNotToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'NOT'**
+  String get filterExpressionNotToggle;
+
+  /// No description provided for @filterExpressionAndLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AND'**
+  String get filterExpressionAndLabel;
+
+  /// No description provided for @filterExpressionOrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get filterExpressionOrLabel;
+
+  /// No description provided for @filterExpressionRemoveNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get filterExpressionRemoveNode;
+
+  /// No description provided for @filterExpressionEditCondition.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit condition'**
+  String get filterExpressionEditCondition;
+
+  /// No description provided for @filterExpressionSourceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source'**
+  String get filterExpressionSourceLabel;
+
+  /// No description provided for @filterExpressionPathLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Path / Header'**
+  String get filterExpressionPathLabel;
+
+  /// No description provided for @filterExpressionOperatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Operator'**
+  String get filterExpressionOperatorLabel;
+
+  /// No description provided for @filterExpressionValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get filterExpressionValueLabel;
+
+  /// No description provided for @filterExpressionTypeString.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get filterExpressionTypeString;
+
+  /// No description provided for @filterExpressionTypeNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get filterExpressionTypeNumber;
+
+  /// No description provided for @filterExpressionTypeBoolean.
+  ///
+  /// In en, this message translates to:
+  /// **'Boolean'**
+  String get filterExpressionTypeBoolean;
+
+  /// No description provided for @filterExpressionTypeNull.
+  ///
+  /// In en, this message translates to:
+  /// **'Null'**
+  String get filterExpressionTypeNull;
+
+  /// No description provided for @filterExpressionTypeVariable.
+  ///
+  /// In en, this message translates to:
+  /// **'Variable'**
+  String get filterExpressionTypeVariable;
+
+  /// No description provided for @filterExpressionPlaceholderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-value script variables match if ANY value satisfies the condition.'**
+  String get filterExpressionPlaceholderHint;
+
+  /// No description provided for @filterExpressionSuggestionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Field suggestions'**
+  String get filterExpressionSuggestionsLabel;
+
+  /// No description provided for @filterExpressionSuggestionsSourceSchema.
+  ///
+  /// In en, this message translates to:
+  /// **'From schema'**
+  String get filterExpressionSuggestionsSourceSchema;
+
+  /// No description provided for @filterExpressionSuggestionsSourceAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'From analysis'**
+  String get filterExpressionSuggestionsSourceAnalysis;
+
+  /// No description provided for @filterExpressionSuggestionsSourceSample.
+  ///
+  /// In en, this message translates to:
+  /// **'From loaded messages'**
+  String get filterExpressionSuggestionsSourceSample;
+
+  /// No description provided for @filterExpressionSuggestionsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No field suggestions available'**
+  String get filterExpressionSuggestionsEmpty;
+
+  /// No description provided for @filterExpressionOpEq.
+  ///
+  /// In en, this message translates to:
+  /// **'='**
+  String get filterExpressionOpEq;
+
+  /// No description provided for @filterExpressionOpNe.
+  ///
+  /// In en, this message translates to:
+  /// **'!='**
+  String get filterExpressionOpNe;
+
+  /// No description provided for @filterExpressionOpGt.
+  ///
+  /// In en, this message translates to:
+  /// **'>'**
+  String get filterExpressionOpGt;
+
+  /// No description provided for @filterExpressionOpGe.
+  ///
+  /// In en, this message translates to:
+  /// **'>='**
+  String get filterExpressionOpGe;
+
+  /// No description provided for @filterExpressionOpLt.
+  ///
+  /// In en, this message translates to:
+  /// **'<'**
+  String get filterExpressionOpLt;
+
+  /// No description provided for @filterExpressionOpLe.
+  ///
+  /// In en, this message translates to:
+  /// **'<='**
+  String get filterExpressionOpLe;
+
+  /// No description provided for @filterExpressionOpContains.
+  ///
+  /// In en, this message translates to:
+  /// **'contains'**
+  String get filterExpressionOpContains;
+
+  /// No description provided for @filterExpressionOpStartsWith.
+  ///
+  /// In en, this message translates to:
+  /// **'startsWith'**
+  String get filterExpressionOpStartsWith;
+
+  /// No description provided for @filterExpressionOpEndsWith.
+  ///
+  /// In en, this message translates to:
+  /// **'endsWith'**
+  String get filterExpressionOpEndsWith;
+
+  /// No description provided for @filterExpressionOpMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'matches'**
+  String get filterExpressionOpMatches;
+
+  /// No description provided for @filterExpressionOpIn.
+  ///
+  /// In en, this message translates to:
+  /// **'in'**
+  String get filterExpressionOpIn;
+
+  /// No description provided for @filterExpressionOpExists.
+  ///
+  /// In en, this message translates to:
+  /// **'exists'**
+  String get filterExpressionOpExists;
+
+  /// No description provided for @filterExpressionOpIsNull.
+  ///
+  /// In en, this message translates to:
+  /// **'is null'**
+  String get filterExpressionOpIsNull;
+
+  /// No description provided for @filterExpressionOpIsNotNull.
+  ///
+  /// In en, this message translates to:
+  /// **'is not null'**
+  String get filterExpressionOpIsNotNull;
+
+  /// No description provided for @localSchemaDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Local Schema ({side})'**
+  String localSchemaDialogTitle(String side);
+
+  /// No description provided for @localSchemaSideKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get localSchemaSideKey;
+
+  /// No description provided for @localSchemaSideValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get localSchemaSideValue;
+
+  /// No description provided for @localSchemaFileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema file'**
+  String get localSchemaFileLabel;
+
+  /// No description provided for @localSchemaChooseFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file…'**
+  String get localSchemaChooseFile;
+
+  /// No description provided for @localSchemaNoFileSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No file selected'**
+  String get localSchemaNoFileSelected;
+
+  /// No description provided for @localSchemaFormatLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get localSchemaFormatLabel;
+
+  /// No description provided for @localSchemaFormatAvro.
+  ///
+  /// In en, this message translates to:
+  /// **'Avro (.avsc)'**
+  String get localSchemaFormatAvro;
+
+  /// No description provided for @localSchemaFormatProtobufSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Protobuf source (.proto)'**
+  String get localSchemaFormatProtobufSource;
+
+  /// No description provided for @localSchemaFormatProtobufDescriptor.
+  ///
+  /// In en, this message translates to:
+  /// **'Protobuf descriptor set (.desc)'**
+  String get localSchemaFormatProtobufDescriptor;
+
+  /// No description provided for @localSchemaFormatJsonSchema.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON Schema (.json)'**
+  String get localSchemaFormatJsonSchema;
+
+  /// No description provided for @localSchemaMessageTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message type'**
+  String get localSchemaMessageTypeLabel;
+
+  /// No description provided for @localSchemaMessageTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a message type'**
+  String get localSchemaMessageTypeHint;
+
+  /// No description provided for @localSchemaFramingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Framing'**
+  String get localSchemaFramingLabel;
+
+  /// No description provided for @localSchemaFramingAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get localSchemaFramingAuto;
+
+  /// No description provided for @localSchemaFramingPrefixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confluent prefixed'**
+  String get localSchemaFramingPrefixed;
+
+  /// No description provided for @localSchemaFramingRaw.
+  ///
+  /// In en, this message translates to:
+  /// **'Raw payload'**
+  String get localSchemaFramingRaw;
+
+  /// No description provided for @localSchemaModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Precedence'**
+  String get localSchemaModeLabel;
+
+  /// No description provided for @localSchemaModeFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback (registry first)'**
+  String get localSchemaModeFallback;
+
+  /// No description provided for @localSchemaModeAlways.
+  ///
+  /// In en, this message translates to:
+  /// **'Always (skip registry)'**
+  String get localSchemaModeAlways;
+
+  /// No description provided for @localSchemaPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Field preview'**
+  String get localSchemaPreviewTitle;
+
+  /// No description provided for @localSchemaPreviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No fields extracted'**
+  String get localSchemaPreviewEmpty;
+
+  /// No description provided for @localSchemaRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get localSchemaRemoveAction;
+
+  /// No description provided for @localSchemaSaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get localSchemaSaveAction;
+
+  /// No description provided for @localSchemaProto2DescriptorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Compile with protoc --include_imports --descriptor_set_out=<file>.desc and select the descriptor file.'**
+  String get localSchemaProto2DescriptorHint;
+
+  /// No description provided for @localSchemaCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local schema'**
+  String get localSchemaCardTitle;
+
+  /// No description provided for @localSchemaAssignAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign local schema'**
+  String get localSchemaAssignAction;
+
+  /// No description provided for @localSchemaChangeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get localSchemaChangeAction;
+
+  /// No description provided for @localSchemaConfirmChangedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm updated file'**
+  String get localSchemaConfirmChangedAction;
+
+  /// No description provided for @localSchemaStateUsable.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get localSchemaStateUsable;
+
+  /// No description provided for @localSchemaStateChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'File modified since assignment'**
+  String get localSchemaStateChanged;
+
+  /// No description provided for @localSchemaStateFileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'File not found'**
+  String get localSchemaStateFileNotFound;
+
+  /// No description provided for @localSchemaStateFileUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'File unreadable'**
+  String get localSchemaStateFileUnreadable;
+
+  /// No description provided for @localSchemaStateSchemaInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema invalid'**
+  String get localSchemaStateSchemaInvalid;
+
+  /// No description provided for @localSchemaStateMessageTypeMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Message type not found'**
+  String get localSchemaStateMessageTypeMissing;
+
+  /// No description provided for @localSchemaStateUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unverified'**
+  String get localSchemaStateUnknown;
+
+  /// No description provided for @localSchemaTagPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Local: {type}'**
+  String localSchemaTagPrefix(String type);
+
+  /// No description provided for @localSchemaUnreadableBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored local schema assignment could not be read: {reason}'**
+  String localSchemaUnreadableBanner(String reason);
+
+  /// No description provided for @localSchemaProvenanceDecoded.
+  ///
+  /// In en, this message translates to:
+  /// **'Decoded using local schema: {fileName} ({format})'**
+  String localSchemaProvenanceDecoded(String fileName, String format);
+
+  /// No description provided for @localSchemaProvenanceDecodedWithMsg.
+  ///
+  /// In en, this message translates to:
+  /// **'Decoded using local schema: {fileName} ({format}, {messageType})'**
+  String localSchemaProvenanceDecodedWithMsg(
+    String fileName,
+    String format,
+    String messageType,
+  );
+
+  /// No description provided for @localSchemaProvenanceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Local schema decode failed ({fileName})'**
+  String localSchemaProvenanceFailed(String fileName);
+
+  /// No description provided for @localSchemaCardBadgeKey.
+  ///
+  /// In en, this message translates to:
+  /// **'K: local'**
+  String get localSchemaCardBadgeKey;
+
+  /// No description provided for @localSchemaCardBadgeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'V: local'**
+  String get localSchemaCardBadgeValue;
+
+  /// No description provided for @localSchemaCardBadgeKeyError.
+  ///
+  /// In en, this message translates to:
+  /// **'K: local !'**
+  String get localSchemaCardBadgeKeyError;
+
+  /// No description provided for @localSchemaCardBadgeValueError.
+  ///
+  /// In en, this message translates to:
+  /// **'V: local !'**
+  String get localSchemaCardBadgeValueError;
+
+  /// No description provided for @localSchemaAnalysisNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Some messages in this analysis were decoded using a local schema.'**
+  String get localSchemaAnalysisNotice;
+
+  /// No description provided for @localDecodeErrorFileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema file not found: {detail}'**
+  String localDecodeErrorFileNotFound(String detail);
+
+  /// No description provided for @localDecodeErrorFileUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read schema file: {detail}'**
+  String localDecodeErrorFileUnreadable(String detail);
+
+  /// No description provided for @localDecodeErrorFileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Schema file exceeds the 10 MiB limit: {detail}'**
+  String localDecodeErrorFileTooLarge(String detail);
+
+  /// No description provided for @localDecodeErrorSchemaInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid schema: {detail}'**
+  String localDecodeErrorSchemaInvalid(String detail);
+
+  /// No description provided for @localDecodeErrorUnsupportedProto2.
+  ///
+  /// In en, this message translates to:
+  /// **'Proto2 source files are not supported directly; compile to a FileDescriptorSet (.desc) instead. ({detail})'**
+  String localDecodeErrorUnsupportedProto2(String detail);
+
+  /// No description provided for @localDecodeErrorUnresolvedImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Unresolved import in schema: {detail}. Compile with protoc --include_imports --descriptor_set_out=...'**
+  String localDecodeErrorUnresolvedImport(String detail);
+
+  /// No description provided for @localDecodeErrorMessageTypeNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Message type not found in schema: {detail}'**
+  String localDecodeErrorMessageTypeNotFound(String detail);
+
+  /// No description provided for @localDecodeErrorMissingPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected Confluent 5-byte wire prefix, but payload did not start with magic byte 0x00: {detail}'**
+  String localDecodeErrorMissingPrefix(String detail);
+
+  /// No description provided for @localDecodeErrorUnknownMessageIndex.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Protobuf message index in wire prefix: {detail}'**
+  String localDecodeErrorUnknownMessageIndex(String detail);
+
+  /// No description provided for @localDecodeErrorPayloadMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload does not match schema: {detail}'**
+  String localDecodeErrorPayloadMismatch(String detail);
+
+  /// No description provided for @localDecodeErrorTrailingBytes.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected trailing bytes after decoded payload: {detail}'**
+  String localDecodeErrorTrailingBytes(String detail);
+
+  /// No description provided for @localDecodeErrorNotJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Payload is not valid UTF-8 JSON: {detail}'**
+  String localDecodeErrorNotJson(String detail);
 }
 
 class _AppLocalizationsDelegate

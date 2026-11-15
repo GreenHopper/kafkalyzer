@@ -7,7 +7,8 @@ import '../frb_generated.dart';
 import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `clone`, `eq`, `fmt`, `from`
+// These functions are ignored because they are not marked as `pub`: `other_type_name`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 Future<List<String>> fetchSubjects({required ClusterProfile profile}) =>
     KafkalyzerRustLib.instance.api.crateApiSchemaRegistryFetchSubjects(
@@ -45,6 +46,30 @@ Future<SchemaCompatibilityResult> checkSchemaCompatibility({
       schema: schema,
     );
 
+Future<SubjectSchemaViewDto> fetchSubjectSchemaView({
+  required ClusterProfile profile,
+  required String subject,
+  int? version,
+}) =>
+    KafkalyzerRustLib.instance.api.crateApiSchemaRegistryFetchSubjectSchemaView(
+      profile: profile,
+      subject: subject,
+      version: version,
+    );
+
+Future<String> fetchGlobalCompatibility({required ClusterProfile profile}) =>
+    KafkalyzerRustLib.instance.api
+        .crateApiSchemaRegistryFetchGlobalCompatibility(profile: profile);
+
+Future<String?> fetchSubjectCompatibility({
+  required ClusterProfile profile,
+  required String subject,
+}) => KafkalyzerRustLib.instance.api
+    .crateApiSchemaRegistryFetchSubjectCompatibility(
+      profile: profile,
+      subject: subject,
+    );
+
 Future<List<String>> resolveAssociatedTopicsForSubject({
   required String subject,
   required List<String> availableTopics,
@@ -53,6 +78,16 @@ Future<List<String>> resolveAssociatedTopicsForSubject({
       subject: subject,
       availableTopics: availableTopics,
     );
+
+List<SubjectAssociationDto> associateSubjects({
+  required List<String> subjects,
+  required List<String> topics,
+}) => KafkalyzerRustLib.instance.api.crateApiSchemaRegistryAssociateSubjects(
+  subjects: subjects,
+  topics: topics,
+);
+
+enum FieldNoteDto { recursive, unresolvedReference }
 
 class SchemaCompatibilityResult {
   final bool isCompatible;
@@ -74,3 +109,258 @@ class SchemaCompatibilityResult {
           isCompatible == other.isCompatible &&
           messages == other.messages;
 }
+
+class SchemaFieldEntryDto {
+  final String path;
+  final String name;
+  final int depth;
+  final String typeLabel;
+  final String? doc;
+  final bool optional;
+  final bool repeated;
+  final FieldNoteDto? note;
+  final String? unresolvedReference;
+
+  const SchemaFieldEntryDto({
+    required this.path,
+    required this.name,
+    required this.depth,
+    required this.typeLabel,
+    this.doc,
+    required this.optional,
+    required this.repeated,
+    this.note,
+    this.unresolvedReference,
+  });
+
+  @override
+  int get hashCode =>
+      path.hashCode ^
+      name.hashCode ^
+      depth.hashCode ^
+      typeLabel.hashCode ^
+      doc.hashCode ^
+      optional.hashCode ^
+      repeated.hashCode ^
+      note.hashCode ^
+      unresolvedReference.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SchemaFieldEntryDto &&
+          runtimeType == other.runtimeType &&
+          path == other.path &&
+          name == other.name &&
+          depth == other.depth &&
+          typeLabel == other.typeLabel &&
+          doc == other.doc &&
+          optional == other.optional &&
+          repeated == other.repeated &&
+          note == other.note &&
+          unresolvedReference == other.unresolvedReference;
+}
+
+class SchemaFieldModelDto {
+  final SchemaKindDto kind;
+  final String? otherSchemaType;
+  final String? rootName;
+  final List<String> messages;
+  final List<SchemaFieldEntryDto> fields;
+  final bool truncated;
+  final String? unavailableReason;
+
+  const SchemaFieldModelDto({
+    required this.kind,
+    this.otherSchemaType,
+    this.rootName,
+    required this.messages,
+    required this.fields,
+    required this.truncated,
+    this.unavailableReason,
+  });
+
+  @override
+  int get hashCode =>
+      kind.hashCode ^
+      otherSchemaType.hashCode ^
+      rootName.hashCode ^
+      messages.hashCode ^
+      fields.hashCode ^
+      truncated.hashCode ^
+      unavailableReason.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SchemaFieldModelDto &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          otherSchemaType == other.otherSchemaType &&
+          rootName == other.rootName &&
+          messages == other.messages &&
+          fields == other.fields &&
+          truncated == other.truncated &&
+          unavailableReason == other.unavailableReason;
+}
+
+enum SchemaKindDto { avro, protobuf, json, other }
+
+class SchemaReferenceDto {
+  final String name;
+  final String subject;
+  final int version;
+
+  const SchemaReferenceDto({
+    required this.name,
+    required this.subject,
+    required this.version,
+  });
+
+  @override
+  int get hashCode => name.hashCode ^ subject.hashCode ^ version.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SchemaReferenceDto &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          subject == other.subject &&
+          version == other.version;
+}
+
+class SchemaRegistryErrorDto implements FrbException {
+  final SchemaRegistryErrorKindDto kind;
+  final int? status;
+  final PlatformInt64? registryErrorCode;
+  final String detail;
+
+  const SchemaRegistryErrorDto({
+    required this.kind,
+    this.status,
+    this.registryErrorCode,
+    required this.detail,
+  });
+
+  @override
+  int get hashCode =>
+      kind.hashCode ^
+      status.hashCode ^
+      registryErrorCode.hashCode ^
+      detail.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SchemaRegistryErrorDto &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          status == other.status &&
+          registryErrorCode == other.registryErrorCode &&
+          detail == other.detail;
+}
+
+enum SchemaRegistryErrorKindDto {
+  notConfigured,
+  invalidUrl,
+  unauthorized,
+  forbidden,
+  notFound,
+  timeout,
+  unreachable,
+  certificateRejected,
+  httpStatus,
+  invalidResponse,
+}
+
+class SubjectAssociationDto {
+  final String subject;
+  final String? topic;
+  final TopicSideDto side;
+  final bool onCluster;
+
+  const SubjectAssociationDto({
+    required this.subject,
+    this.topic,
+    required this.side,
+    required this.onCluster,
+  });
+
+  @override
+  int get hashCode =>
+      subject.hashCode ^ topic.hashCode ^ side.hashCode ^ onCluster.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SubjectAssociationDto &&
+          runtimeType == other.runtimeType &&
+          subject == other.subject &&
+          topic == other.topic &&
+          side == other.side &&
+          onCluster == other.onCluster;
+}
+
+class SubjectSchemaDto {
+  final String subject;
+  final int version;
+  final int id;
+  final SchemaKindDto schemaType;
+  final String? otherSchemaType;
+  final String schema;
+  final List<SchemaReferenceDto> references;
+
+  const SubjectSchemaDto({
+    required this.subject,
+    required this.version,
+    required this.id,
+    required this.schemaType,
+    this.otherSchemaType,
+    required this.schema,
+    required this.references,
+  });
+
+  @override
+  int get hashCode =>
+      subject.hashCode ^
+      version.hashCode ^
+      id.hashCode ^
+      schemaType.hashCode ^
+      otherSchemaType.hashCode ^
+      schema.hashCode ^
+      references.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SubjectSchemaDto &&
+          runtimeType == other.runtimeType &&
+          subject == other.subject &&
+          version == other.version &&
+          id == other.id &&
+          schemaType == other.schemaType &&
+          otherSchemaType == other.otherSchemaType &&
+          schema == other.schema &&
+          references == other.references;
+}
+
+class SubjectSchemaViewDto {
+  final SubjectSchemaDto schema;
+  final SchemaFieldModelDto fields;
+
+  const SubjectSchemaViewDto({required this.schema, required this.fields});
+
+  @override
+  int get hashCode => schema.hashCode ^ fields.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SubjectSchemaViewDto &&
+          runtimeType == other.runtimeType &&
+          schema == other.schema &&
+          fields == other.fields;
+}
+
+enum TopicSideDto { key, value, none }

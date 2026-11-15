@@ -52,7 +52,9 @@ restore, which keeps reporting topics missing from the list as "not restored".
   longer filled; a doc comment points to `describe_topic_configs`.
 - New `fetch_topic_metadata(profile, topic) -> Result<TopicMetadata>`: `fetch_metadata(Some(&topic), 10 s)`, then
   `topic_metadata_from`. `Err` only for transport or client errors. A missing topic entry in the response becomes
-  `NotFound`.
+  `NotFound`. (Spike 1.1 confirmed: `fetch_metadata(Some("does-not-exist-..."))` returns
+  `RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART` with 0 partitions, and `kafka-topics --list` confirms the topic is not
+  created.)
 - Alternative rejected: computing partition count and RF in Dart from `fetch_topic_partitions`. That would duplicate
   the RF and health rules that live in Rust today (`summarize_topic_health`).
 
@@ -63,8 +65,10 @@ restore, which keeps reporting topics missing from the list as "not restored".
   `TopicConfigEntry { name, value: Option<String>, source: TopicConfigSource, is_default, is_sensitive, is_read_only }`.
   `TopicConfigSource` mirrors `ConfigSource` 1:1, so rdkafka types do not leak to callers.
 - One `Runtime` and one `AdminClient` per call. Input names are de-duplicated with order kept. Internal chunks of
-  `CONFIG_CHUNK_SIZE = 100` (spike 1.1 may lower it). Each chunk uses `AdminOptions::operation_timeout(10 s)` and
-  `request_timeout(15 s)`, so the whole call never hangs on one chunk.
+  `CONFIG_CHUNK_SIZE = 100` (Spike 1.1 measured 100 topics in < 1 ms and 500 topics in 1 ms on local Kafka, well under
+  the 2 s threshold, so `CONFIG_CHUNK_SIZE` stays 100; it also confirmed a missing topic in `describe_configs` comes back
+  as `Ok(ConfigResource)` with `entries.len() == 0`, matching `NotReadable`). Each chunk uses
+  `AdminOptions::operation_timeout(10 s)` and `request_timeout(15 s)`, so the whole call never hangs on one chunk.
 - Classification is a pure `fn classify_chunk(requested: &[&str], result: KafkaResult<Vec<ConfigResourceResult>>)`
   and is unit-tested without a broker:
   - `Err(AdminOp(TopicAuthorizationFailed | ClusterAuthorizationFailed))`: every topic in the chunk is `NotReadable`.

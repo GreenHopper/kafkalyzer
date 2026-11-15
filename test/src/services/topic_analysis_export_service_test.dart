@@ -69,6 +69,7 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
     avgMessageSize: 20.48,
     tombstonesCount: 3,
     isCompacted: true,
+    cleanupPolicyUnknown: false,
     nullKeysCount: 12,
     partitionStats: const [
       PartitionAnalysis(

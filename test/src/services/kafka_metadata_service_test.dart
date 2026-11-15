@@ -188,5 +188,57 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('fetchClusterOverview delegates to api', () async {
+      const overview = api.ClusterOverview(
+        brokers: [api.BrokerEndpoint(id: 1, host: 'b1', port: 9092)],
+        clusterId: 'cid',
+        controllerId: 1,
+      );
+      when(
+        mockApi.crateApiKafkaMetadataFetchClusterOverview(profile: profile),
+      ).thenAnswer((_) async => overview);
+
+      final service = KafkaMetadataService();
+      final result = await service.fetchClusterOverview(profile: profile);
+
+      expect(result, overview);
+      verify(
+        mockApi.crateApiKafkaMetadataFetchClusterOverview(profile: profile),
+      ).called(1);
+    });
+
+    test('fetchTopicTimeRange delegates to api', () async {
+      const range = api.TopicTimeRange(
+        oldest: null,
+        newest: null,
+        partitionsTotal: 2,
+        partitionsEmpty: 2,
+        oldestKnown: 0,
+        newestKnown: 0,
+        allEmpty: true,
+        probes: [],
+      );
+      when(
+        mockApi.crateApiKafkaMetadataFetchTopicTimeRange(
+          profile: profile,
+          topic: 'orders',
+        ),
+      ).thenAnswer((_) async => range);
+
+      final service = KafkaMetadataService();
+      final result = await service.fetchTopicTimeRange(
+        profile: profile,
+        topic: 'orders',
+      );
+
+      expect(result, range);
+      verify(
+        mockApi.crateApiKafkaMetadataFetchTopicTimeRange(
+          profile: profile,
+          topic: 'orders',
+        ),
+      ).called(1);
+    });
   });
 }

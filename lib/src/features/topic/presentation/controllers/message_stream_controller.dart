@@ -5,6 +5,8 @@ import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/api/local_schema.dart';
+import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
 
@@ -17,6 +19,8 @@ typedef MessageConsumeStreamFactory =
       String? filterField,
       required FilterType filterType,
       required SearchScope searchScope,
+      String? filterExpression,
+      Map<String, List<String>>? filterVariables,
       String? fastTraceKey,
       int? startOffset,
       int? startTimestamp,
@@ -26,6 +30,7 @@ typedef MessageConsumeStreamFactory =
       int? endTimestamp,
       required bool runForever,
       bool? startFromTail,
+      TopicLocalSchemasDto? localSchemas,
     });
 
 class MessageStreamController extends ChangeNotifier {
@@ -33,9 +38,15 @@ class MessageStreamController extends ChangeNotifier {
     Logger? logger,
     MessageConsumeStreamFactory? consumeStreamFactory,
     int Function()? bufferLimitProvider,
+    LocalSchemaAssignmentService? localSchemaService,
   }) : _logger = logger ?? getIt<Logger>(),
        _consumeStreamFactory = consumeStreamFactory ?? _defaultConsumeStream,
-       _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit {
+       _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit,
+       _localSchemaService =
+           localSchemaService ??
+           (getIt.isRegistered<LocalSchemaAssignmentService>()
+               ? getIt<LocalSchemaAssignmentService>()
+               : null) {
     final limit = _resolveBufferLimit();
     _buffer = MessageRingBuffer(limit);
     _published = _buffer.snapshot();
@@ -44,6 +55,7 @@ class MessageStreamController extends ChangeNotifier {
   final Logger _logger;
   final MessageConsumeStreamFactory _consumeStreamFactory;
   final int Function() _bufferLimitProvider;
+  final LocalSchemaAssignmentService? _localSchemaService;
 
   static int _defaultBufferLimit() {
     if (getIt.isRegistered<SettingsService>()) {
@@ -64,6 +76,8 @@ class MessageStreamController extends ChangeNotifier {
     String? filterField,
     required FilterType filterType,
     required SearchScope searchScope,
+    String? filterExpression,
+    Map<String, List<String>>? filterVariables,
     String? fastTraceKey,
     int? startOffset,
     int? startTimestamp,
@@ -73,6 +87,7 @@ class MessageStreamController extends ChangeNotifier {
     int? endTimestamp,
     required bool runForever,
     bool? startFromTail,
+    TopicLocalSchemasDto? localSchemas,
   }) => consumeWithFilter(
     profile: profile,
     topic: topic,
@@ -80,6 +95,8 @@ class MessageStreamController extends ChangeNotifier {
     filterField: filterField,
     filterType: filterType,
     searchScope: searchScope,
+    filterExpression: filterExpression,
+    filterVariables: filterVariables,
     fastTraceKey: fastTraceKey,
     startOffset: startOffset,
     startTimestamp: startTimestamp,
@@ -89,6 +106,7 @@ class MessageStreamController extends ChangeNotifier {
     endTimestamp: endTimestamp,
     runForever: runForever,
     startFromTail: startFromTail,
+    localSchemas: localSchemas,
   );
 
   StreamSubscription<KafkaMessage>? _subscription;
@@ -132,6 +150,8 @@ class MessageStreamController extends ChangeNotifier {
     String? filterField,
     required FilterType filterType,
     required SearchScope searchScope,
+    String? filterExpression,
+    Map<String, List<String>>? filterVariables,
     bool fastTraceEnabled = false,
     int? startOffset,
     int? startTimestamp,
@@ -156,6 +176,10 @@ class MessageStreamController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final localSchemas = await _localSchemaService?.scanOptionsFor(
+        profile.name,
+        topic,
+      );
       final stream = _consumeStreamFactory(
         profile: profile,
         topic: topic,
@@ -163,6 +187,8 @@ class MessageStreamController extends ChangeNotifier {
         filterField: filterField,
         filterType: filterType,
         searchScope: searchScope,
+        filterExpression: filterExpression,
+        filterVariables: filterVariables,
         startOffset: startOffset,
         startTimestamp: startTimestamp,
         startPartition: startPartition,
@@ -172,6 +198,7 @@ class MessageStreamController extends ChangeNotifier {
         runForever: runForever,
         maxResults: maxResults,
         startFromTail: startFromTail,
+        localSchemas: localSchemas,
       );
       _subscription = stream.listen(
         _onMessageReceived,

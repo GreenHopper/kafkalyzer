@@ -5,7 +5,18 @@
 
 import '../frb_generated.dart';
 import 'kafka_types.dart';
+import 'local_schema.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+
+Future<AnalysisScopeEstimate> estimateAnalysisScope({
+  required ClusterProfile profile,
+  required String topic,
+  required AnalysisScope scope,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaAnalyzerEstimateAnalysisScope(
+  profile: profile,
+  topic: topic,
+  scope: scope,
+);
 
 Stream<TopicAnalysisProgress> analyzeTopicContent({
   required ClusterProfile profile,

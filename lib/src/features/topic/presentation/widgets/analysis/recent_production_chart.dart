@@ -169,6 +169,20 @@ class _RecentProductionChartState extends State<RecentProductionChart> {
                 ),
               ],
             ),
+            if (widget.timeline.partitionSubset != null &&
+                widget.timeline.partitionSubset!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.timelinePartitionSubsetNote(
+                  (widget.timeline.partitionSubset!.toList()..sort()).join(
+                    ', ',
+                  ),
+                ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             if (isPartiallyCovered) ...[
               const SizedBox(height: 12),
               Container(

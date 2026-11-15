@@ -4,6 +4,7 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/navigation/models/message_reference.dart';
+import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
 class QuickJumpDialog extends StatefulWidget {
@@ -151,6 +152,7 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
     final offset = ref.offset;
     final filter = ref.filter;
 
+    final messenger = ScaffoldMessenger.maybeOf(context);
     Navigator.of(context).pop();
 
     if (widget.onJump != null) {
@@ -165,16 +167,13 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
         await activeCtrl.connect(cluster);
       }
 
-      final topicMeta = activeCtrl.topics
-          .where((t) => t.name == topic)
-          .firstOrNull;
-      if (topicMeta != null) {
-        activeCtrl.openTopic(
-          topic: topicMeta,
-          profile: cluster,
-          forceNew: false,
-        );
-      }
+      await openTopicByNameWithFeedback(
+        controller: activeCtrl,
+        profile: cluster,
+        topicName: topic,
+        messenger: messenger,
+        l10n: l10n,
+      );
     }
   }
 

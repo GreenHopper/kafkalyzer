@@ -119,6 +119,10 @@ Worst case wall time ≈ `ceil(P / 8) × 5 s`, capped at ~30 s + 5 s for the las
 1,000-partition topic at ~125 round trips per worker while staying well under librdkafka's request pipelining limits.
 Constants live in the kafka crate as named `const`s; they are not user settings (YAGNI).
 
+*Spike 1.1 findings (2026-11-15, `sift_kafka` `localhost:9094`, 60-partition topic `spike-offset-dist-60p`):*
+- 8 scoped threads sharing one `&BaseConsumer` produced identical `(low, high)` tuples to the sequential loop (`seq_ms=6`, `par_ms=4`). Parallel `fetch_watermarks` is safe and fast; fallback D3 (b) is not needed.
+- `KafkaError::rdkafka_error_code()` surfaces `RDKafkaErrorCode::TopicAuthorizationFailed` / `ClusterAuthorizationFailed` for ACL denials (`-> NotReadable`), while leaderless/broker errors (`LeaderNotAvailable`, `NotLeaderForPartition`, `UnknownTopicOrPart`, etc.) map to `Failed`.
+
 *Alternatives:* (a) sequential loop like the existing code — a 500-partition topic with one slow leader would block
 for minutes; (b) librdkafka 2.3 `rd_kafka_ListOffsets` via raw FFI (one request per leader) — fastest, but new unsafe
 FFI surface; kept as fallback if the spike (task 1.1) shows parallel `fetch_watermarks` is unsafe or does not scale;

@@ -4,10 +4,152 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'local_schema.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`, `to_domain`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
+
+class AnalysisLimit {
+  final AnalysisLimitKind kind;
+  final PlatformInt64 limit;
+  final bool reached;
+
+  const AnalysisLimit({
+    required this.kind,
+    required this.limit,
+    required this.reached,
+  });
+
+  @override
+  int get hashCode => kind.hashCode ^ limit.hashCode ^ reached.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnalysisLimit &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          limit == other.limit &&
+          reached == other.reached;
+}
+
+enum AnalysisLimitKind {
+  trackedFields,
+  listedFields,
+  valuesPerField,
+  listedValuesPerField,
+  fieldDepth,
+  valueDisplayChars,
+  trackedKeys,
+  listedKeys,
+  sizePercentileSample,
+  trackedFingerprints,
+  duplicateSamples,
+  listedDuplicates,
+  previewChars,
+  timelineWindowDays,
+}
+
+class AnalysisScope {
+  final Int32List? partitions;
+  final PlatformInt64? startTimestampMs;
+  final PlatformInt64? endTimestampMs;
+  final PlatformInt64? messageLimit;
+  final ScopeLimitFrom limitFrom;
+
+  const AnalysisScope({
+    this.partitions,
+    this.startTimestampMs,
+    this.endTimestampMs,
+    this.messageLimit,
+    required this.limitFrom,
+  });
+
+  static Future<AnalysisScope> default_() =>
+      KafkalyzerRustLib.instance.api.crateApiKafkaTypesAnalysisScopeDefault();
+
+  @override
+  int get hashCode =>
+      partitions.hashCode ^
+      startTimestampMs.hashCode ^
+      endTimestampMs.hashCode ^
+      messageLimit.hashCode ^
+      limitFrom.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnalysisScope &&
+          runtimeType == other.runtimeType &&
+          partitions == other.partitions &&
+          startTimestampMs == other.startTimestampMs &&
+          endTimestampMs == other.endTimestampMs &&
+          messageLimit == other.messageLimit &&
+          limitFrom == other.limitFrom;
+}
+
+class AnalysisScopeEstimate {
+  final PlatformInt64? plannedTotal;
+  final PlatformInt64 knownTotal;
+  final bool complete;
+  final List<UnreadablePartition> unreadable;
+
+  const AnalysisScopeEstimate({
+    this.plannedTotal,
+    required this.knownTotal,
+    required this.complete,
+    required this.unreadable,
+  });
+
+  @override
+  int get hashCode =>
+      plannedTotal.hashCode ^
+      knownTotal.hashCode ^
+      complete.hashCode ^
+      unreadable.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnalysisScopeEstimate &&
+          runtimeType == other.runtimeType &&
+          plannedTotal == other.plannedTotal &&
+          knownTotal == other.knownTotal &&
+          complete == other.complete &&
+          unreadable == other.unreadable;
+}
+
+class AnalysisScopeSummary {
+  final AnalysisScope scope;
+  final List<PlannedPartitionRange> ranges;
+  final List<UnreadablePartition> unreadable;
+  final PlatformInt64 excludedByTimeRange;
+
+  const AnalysisScopeSummary({
+    required this.scope,
+    required this.ranges,
+    required this.unreadable,
+    required this.excludedByTimeRange,
+  });
+
+  @override
+  int get hashCode =>
+      scope.hashCode ^
+      ranges.hashCode ^
+      unreadable.hashCode ^
+      excludedByTimeRange.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnalysisScopeSummary &&
+          runtimeType == other.runtimeType &&
+          scope == other.scope &&
+          ranges == other.ranges &&
+          unreadable == other.unreadable &&
+          excludedByTimeRange == other.excludedByTimeRange;
+}
 
 class ClusterProfile {
   final String name;
@@ -228,6 +370,10 @@ class DuplicateAnalysisResult {
   final PlatformInt64 duplicateMessages;
   final double duplicateRate;
   final List<TopDuplicateOccurrence> topDuplicates;
+  final bool estimated;
+  final PlatformInt64 untrackedMessages;
+  final PlatformInt64? fingerprintLimit;
+  final bool samplesCapped;
 
   const DuplicateAnalysisResult({
     required this.scope,
@@ -236,6 +382,10 @@ class DuplicateAnalysisResult {
     required this.duplicateMessages,
     required this.duplicateRate,
     required this.topDuplicates,
+    required this.estimated,
+    required this.untrackedMessages,
+    this.fingerprintLimit,
+    required this.samplesCapped,
   });
 
   @override
@@ -245,7 +395,11 @@ class DuplicateAnalysisResult {
       uniqueMessages.hashCode ^
       duplicateMessages.hashCode ^
       duplicateRate.hashCode ^
-      topDuplicates.hashCode;
+      topDuplicates.hashCode ^
+      estimated.hashCode ^
+      untrackedMessages.hashCode ^
+      fingerprintLimit.hashCode ^
+      samplesCapped.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -257,7 +411,11 @@ class DuplicateAnalysisResult {
           uniqueMessages == other.uniqueMessages &&
           duplicateMessages == other.duplicateMessages &&
           duplicateRate == other.duplicateRate &&
-          topDuplicates == other.topDuplicates;
+          topDuplicates == other.topDuplicates &&
+          estimated == other.estimated &&
+          untrackedMessages == other.untrackedMessages &&
+          fingerprintLimit == other.fingerprintLimit &&
+          samplesCapped == other.samplesCapped;
 }
 
 enum DuplicateDetectionScope { payloadOnly, keyAndPayload }
@@ -462,6 +620,38 @@ enum PartitionLagStatus {
       .crateApiKafkaTypesPartitionLagStatusDefault();
 }
 
+class PlannedPartitionRange {
+  final int partition;
+  final PlatformInt64 start;
+  final PlatformInt64 end;
+
+  const PlannedPartitionRange({
+    required this.partition,
+    required this.start,
+    required this.end,
+  });
+
+  @override
+  int get hashCode => partition.hashCode ^ start.hashCode ^ end.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PlannedPartitionRange &&
+          runtimeType == other.runtimeType &&
+          partition == other.partition &&
+          start == other.start &&
+          end == other.end;
+}
+
+enum ScopeLimitFrom {
+  newest,
+  oldest;
+
+  static Future<ScopeLimitFrom> default_() =>
+      KafkalyzerRustLib.instance.api.crateApiKafkaTypesScopeLimitFromDefault();
+}
+
 enum SearchScope { key, value, both }
 
 /// Message-size percentiles at the bridge boundary.
@@ -546,12 +736,16 @@ class TopicAnalysisOptions {
   final bool sampleFromLatest;
   final FieldValueFilter? valueFilter;
   final DuplicateDetectionScope? duplicateScope;
+  final AnalysisScope? scope;
+  final TopicLocalSchemasDto? localSchemas;
 
   const TopicAnalysisOptions({
     this.maxMessages,
     required this.sampleFromLatest,
     this.valueFilter,
     this.duplicateScope,
+    this.scope,
+    this.localSchemas,
   });
 
   static Future<TopicAnalysisOptions> default_() => KafkalyzerRustLib
@@ -564,7 +758,9 @@ class TopicAnalysisOptions {
       maxMessages.hashCode ^
       sampleFromLatest.hashCode ^
       valueFilter.hashCode ^
-      duplicateScope.hashCode;
+      duplicateScope.hashCode ^
+      scope.hashCode ^
+      localSchemas.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -574,7 +770,9 @@ class TopicAnalysisOptions {
           maxMessages == other.maxMessages &&
           sampleFromLatest == other.sampleFromLatest &&
           valueFilter == other.valueFilter &&
-          duplicateScope == other.duplicateScope;
+          duplicateScope == other.duplicateScope &&
+          scope == other.scope &&
+          localSchemas == other.localSchemas;
 }
 
 class TopicAnalysisProgress {
@@ -652,6 +850,11 @@ class TopicAnalysisReport {
   final PlatformInt64 timelineOutsideCount;
   final ValueFilterResult? valueFilterResult;
   final DuplicateAnalysisResult? duplicateAnalysisResult;
+  final bool cleanupPolicyUnknown;
+  final AnalysisScopeSummary? scanScope;
+  final List<AnalysisLimit>? analysisLimits;
+  final PlatformInt64? trackedFieldCount;
+  final PlatformInt64? completeUntilMs;
 
   const TopicAnalysisReport({
     required this.topic,
@@ -679,6 +882,11 @@ class TopicAnalysisReport {
     required this.timelineOutsideCount,
     this.valueFilterResult,
     this.duplicateAnalysisResult,
+    required this.cleanupPolicyUnknown,
+    this.scanScope,
+    this.analysisLimits,
+    this.trackedFieldCount,
+    this.completeUntilMs,
   });
 
   @override
@@ -707,7 +915,12 @@ class TopicAnalysisReport {
       completeFromMs.hashCode ^
       timelineOutsideCount.hashCode ^
       valueFilterResult.hashCode ^
-      duplicateAnalysisResult.hashCode;
+      duplicateAnalysisResult.hashCode ^
+      cleanupPolicyUnknown.hashCode ^
+      scanScope.hashCode ^
+      analysisLimits.hashCode ^
+      trackedFieldCount.hashCode ^
+      completeUntilMs.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -738,7 +951,12 @@ class TopicAnalysisReport {
           completeFromMs == other.completeFromMs &&
           timelineOutsideCount == other.timelineOutsideCount &&
           valueFilterResult == other.valueFilterResult &&
-          duplicateAnalysisResult == other.duplicateAnalysisResult;
+          duplicateAnalysisResult == other.duplicateAnalysisResult &&
+          cleanupPolicyUnknown == other.cleanupPolicyUnknown &&
+          scanScope == other.scanScope &&
+          analysisLimits == other.analysisLimits &&
+          trackedFieldCount == other.trackedFieldCount &&
+          completeUntilMs == other.completeUntilMs;
 }
 
 class TopicPartition {
@@ -824,6 +1042,24 @@ class TypeOccurrence {
           typeName == other.typeName &&
           count == other.count &&
           percentage == other.percentage;
+}
+
+class UnreadablePartition {
+  final int partition;
+  final String reason;
+
+  const UnreadablePartition({required this.partition, required this.reason});
+
+  @override
+  int get hashCode => partition.hashCode ^ reason.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is UnreadablePartition &&
+          runtimeType == other.runtimeType &&
+          partition == other.partition &&
+          reason == other.reason;
 }
 
 class ValueFilterResult {

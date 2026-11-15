@@ -8,9 +8,6 @@
   "analyzingTopic": "Analyzing topic...",
   "scanScope": "Scan Scope",
   "fullTopicScan": "Full Scan (All Messages)",
-  "sampleLast10k": "Sample Last 10,000 Messages",
-  "sampleLast50k": "Sample Last 50,000 Messages",
-  "sampleLast100k": "Sample Last 100,000 Messages",
   "totalMessages": "Total Messages",
   "totalPayloadSize": "Total Payload Size",
   "avgMessageSize": "Avg Message Size",
@@ -772,7 +769,7 @@
   "schemaRegistryUrlTypoPort": "Likely typo: use ':' for port instead of '.'",
   "schemaRegistryUrlMissingProtocol": "Missing protocol (http:// or https://)",
   "schemaViewerTitle": "Schema Viewer",
-  "noAvroSchemaFound": "No Avro schema found for this topic.",
+  "noSchemaFound": "No schema found for this topic.",
   "errorLoadingSchema": "Error loading schema: {error}",
   "@errorLoadingSchema": {
     "placeholders": {
@@ -2490,5 +2487,955 @@
   "compositeBadgeTooltip": "Show nested fields",
   "skewedLabel": "Skewed",
   "copy": "Copy",
-  "copyFailed": "Failed to copy to clipboard"
+  "copyFailed": "Failed to copy to clipboard",
+  "topicListUpdatedJustNow": "updated just now",
+  "topicListUpdatedMinutesAgo": "{count, plural, =1{updated 1 min ago} other{updated {count} min ago}}",
+  "@topicListUpdatedMinutesAgo": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicListUpdatedHoursAgo": "{count, plural, =1{updated 1 hr ago} other{updated {count} hr ago}}",
+  "@topicListUpdatedHoursAgo": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicListHiddenCount": "{count, plural, =1{1 hidden} other{{count} hidden}}",
+  "@topicListHiddenCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicListHiddenTooltip": "Hidden: {internal} internal, {stream} stream, {filter} filtered",
+  "@topicListHiddenTooltip": {
+    "placeholders": {
+      "internal": { "type": "int" },
+      "stream": { "type": "int" },
+      "filter": { "type": "int" }
+    }
+  },
+  "topicListShowAll": "Show all",
+  "topicListInvalidPattern": "Invalid pattern",
+  "topicListFilterModeSubstring": "Text",
+  "topicListFilterModeGlob": "Glob",
+  "topicListFilterModeRegex": "Regex",
+  "topicListFilterModeTooltip": "Filter mode",
+  "topicListSortTooltip": "Sort topics",
+  "topicListSortName": "Name (A–Z)",
+  "topicListSortPartitions": "Partitions",
+  "topicListSortHealth": "Health",
+  "topicListGroupByPrefixTooltip": "Group by prefix",
+  "topicListFavouritesSection": "Favourites",
+  "topicListAddFavouriteTooltip": "Add to favourites",
+  "topicListRemoveFavouriteTooltip": "Remove from favourites",
+  "topicListNotInList": "not in topic list",
+  "topicListRefreshFailedNotice": "Refresh failed: {error}",
+  "@topicListRefreshFailedNotice": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "topicListPrefsUnreadableNotice": "Saved topic list settings could not be read; using defaults.",
+  "topicListPrefsWriteBlockedNotice": "Saved topic list settings could not be backed up and will not be overwritten.",
+  "topicConfigLoading": "loading",
+  "topicConfigNotReadable": "not readable — permission?",
+  "topicConfigLoadFailed": "could not be loaded",
+  "topicMetadataNotFound": "topic not found",
+  "topicMetadataUnknown": "unknown",
+  "topicPartitionsLabel": "{count, plural, =1{1 Partition} other{{count} Partitions}}",
+  "@topicPartitionsLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicRfLabel": "RF: {count}",
+  "@topicRfLabel": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicOpenFailedNotice": "Could not open topic \"{topic}\": {error}",
+  "@topicOpenFailedNotice": {
+    "placeholders": {
+      "topic": { "type": "String" },
+      "error": { "type": "String" }
+    }
+  },
+  "cleanupPolicyNotReadableSubtitle": "Not readable",
+  "cleanupPolicyUnknownBadge": "?",
+  "partitionOffsetSkewThresholdLabel": "Partition skew threshold (%)",
+  "partitionOffsetSectionTitle": "Estimated distribution (offset span)",
+  "partitionOffsetLoading": "Loading partition offsets…",
+  "partitionOffsetLoadError": "Could not load partition offsets: {error}",
+  "@partitionOffsetLoadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "partitionOffsetRetry": "Retry",
+  "partitionOffsetRefreshTooltip": "Refresh offsets",
+  "partitionOffsetReadAt": "Read at {time}",
+  "@partitionOffsetReadAt": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "partitionOffsetReadFailed": "Refresh failed: {error}",
+  "@partitionOffsetReadFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "partitionOffsetStaleNotice": "Showing offsets from previous connection — cluster connection changed or disconnected.",
+  "partitionOffsetTotalSpan": "Total offset span: {span}",
+  "@partitionOffsetTotalSpan": {
+    "placeholders": {
+      "span": { "type": "String" }
+    }
+  },
+  "partitionOffsetKnownSpan": "Known offset span: {span}",
+  "@partitionOffsetKnownSpan": {
+    "placeholders": {
+      "span": { "type": "String" }
+    }
+  },
+  "partitionOffsetUnknownValue": "unknown",
+  "partitionOffsetColumnPartition": "Partition",
+  "partitionOffsetColumnLow": "Low",
+  "partitionOffsetColumnHigh": "High",
+  "partitionOffsetColumnSpan": "Offset span",
+  "partitionOffsetColumnShare": "Share",
+  "partitionOffsetStateNotReadable": "Offsets not readable — permission?",
+  "partitionOffsetStateFailed": "Read failed",
+  "partitionOffsetStateTimedOut": "Timed out",
+  "partitionOffsetEstimateNote": "High − low watermark only; not an exact message count.",
+  "partitionOffsetCompactedNote": "Compacted topic: retained messages may be fewer than the offset span.",
+  "partitionOffsetPolicyUnknownNote": "Cleanup policy unknown; topic may be compacted.",
+  "partitionOffsetIncompleteNote": "Some partitions could not be read; total span and shares are unavailable.",
+  "partitionOffsetEmptyNote": "All partitions are empty (total offset span is 0).",
+  "partitionOffsetSkewBadge": "Skewed (≥ {threshold}%)",
+  "@partitionOffsetSkewBadge": {
+    "placeholders": {
+      "threshold": { "type": "int" }
+    }
+  },
+  "partitionOffsetSkewRowTooltip": "Exceeds {threshold}% share threshold",
+  "@partitionOffsetSkewRowTooltip": {
+    "placeholders": {
+      "threshold": { "type": "int" }
+    }
+  },
+  "partitionOffsetOpenAnalysisAction": "Count exact messages in Analysis",
+  "retentionUnlimited": "unlimited",
+  "retentionBytesPerPartition": "{size} / partition",
+  "@retentionBytesPerPartition": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "durationDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@durationDays": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@durationHours": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@durationMinutes": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationSeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
+  "@durationSeconds": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "clusterOverviewRefreshTooltip": "Refresh cluster overview",
+  "clusterOverviewBrokersTitle": "Brokers ({count})",
+  "@clusterOverviewBrokersTitle": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "clusterOverviewClusterIdLabel": "Cluster ID",
+  "clusterOverviewControllerLabel": "Controller",
+  "clusterOverviewBrokerIdLabel": "Broker {id}",
+  "@clusterOverviewBrokerIdLabel": {
+    "placeholders": {
+      "id": { "type": "int" }
+    }
+  },
+  "clusterOverviewBrokersLoading": "Loading brokers…",
+  "clusterOverviewBrokersError": "Could not load brokers: {error}",
+  "@clusterOverviewBrokersError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "clusterOverviewBrokersNotReadable": "Brokers not readable — permission?",
+  "clusterOverviewTopicsCount": "{count, plural, =1{1 Topic} other{{count} Topics}}",
+  "@clusterOverviewTopicsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "clusterOverviewPartitionsTotal": "{count, plural, =1{1 Partition} other{{count} Partitions}}",
+  "@clusterOverviewPartitionsTotal": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "clusterOverviewTotalsLoading": "Loading topic totals…",
+  "clusterOverviewTotalsUnknown": "Topic & partition totals: unknown",
+  "clusterOverviewHealthHealthy": "All topics fully replicated (0 unhealthy)",
+  "clusterOverviewHealthUnhealthy": "{count, plural, =1{1 topic with unhealthy partitions} other{{count} topics with unhealthy partitions}}",
+  "@clusterOverviewHealthUnhealthy": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "clusterOverviewHealthPartitionCounts": "{underReplicated} under-replicated, {leaderless} leaderless",
+  "@clusterOverviewHealthPartitionCounts": {
+    "placeholders": {
+      "underReplicated": { "type": "int" },
+      "leaderless": { "type": "int" }
+    }
+  },
+  "clusterOverviewHealthUnknownCount": "{count, plural, =1{1 topic with unknown health} other{{count} topics with unknown health}}",
+  "@clusterOverviewHealthUnknownCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "clusterOverviewHealthStatusUnknown": "Replication health: unknown",
+  "clusterOverviewHealthStatusLoading": "Replication health: loading…",
+  "clusterOverviewShowUnhealthyTooltip": "Filter topic list to unhealthy topics",
+  "topicListUnhealthyOnlyChip": "Only unhealthy topics ({count})",
+  "@topicListUnhealthyOnlyChip": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicHeaderRefreshFactsTooltip": "Refresh topic facts",
+  "topicHeaderEstimateValue": "≈ {count} messages (estimate)",
+  "@topicHeaderEstimateValue": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "topicHeaderEstimateCompactedNote": "Compacted or unknown-policy topic: offset spans are not message counts; use Topic Analysis for exact counts.",
+  "topicHeaderEstimateUnknown": "Messages: unknown",
+  "topicHeaderEstimateNotReadable": "Messages: not readable",
+  "topicHeaderRetentionLabel": "Retention: {duration}",
+  "@topicHeaderRetentionLabel": {
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "topicHeaderRetentionBytesLabel": "Max size: {size}",
+  "@topicHeaderRetentionBytesLabel": {
+    "placeholders": {
+      "size": { "type": "String" }
+    }
+  },
+  "topicHeaderRetentionNotReadable": "not readable",
+  "topicHeaderLoadTimeRange": "Load time range",
+  "topicHeaderLoadTimeRangeTooltip": "Read oldest & newest message timestamps across {count} partitions",
+  "@topicHeaderLoadTimeRangeTooltip": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicHeaderTimeRangeLoading": "Loading time range…",
+  "topicHeaderTimeRangeEmpty": "No messages",
+  "topicHeaderTimeRangeValue": "{oldest} – {newest}",
+  "@topicHeaderTimeRangeValue": {
+    "placeholders": {
+      "oldest": { "type": "String" },
+      "newest": { "type": "String" }
+    }
+  },
+  "topicHeaderTimeRangePartial": "Partial ({oldestKnown}/{total} oldest, {newestKnown}/{total} newest)",
+  "@topicHeaderTimeRangePartial": {
+    "placeholders": {
+      "oldestKnown": { "type": "int" },
+      "newestKnown": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "topicHeaderTimeRangeUnknown": "Time range: unknown",
+  "topicHeaderTimeRangeError": "Time range failed: {error}",
+  "@topicHeaderTimeRangeError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "topicModeConfig": "Configuration",
+  "topicConfigRefreshTooltip": "Refresh configuration",
+  "topicConfigNonDefaultToggle": "Non-defaults only",
+  "topicConfigNonDefaultToggleTooltip": "Show topic overrides, dynamic broker settings, and static broker settings",
+  "topicConfigDiffToggle": "Only differences & non-defaults",
+  "topicConfigCompareAction": "Compare…",
+  "topicConfigCloseComparisonAction": "Close comparison",
+  "topicConfigCopyAsText": "Copy as text",
+  "topicConfigCopiedToClipboard": "Configuration copied to clipboard",
+  "topicConfigColumnName": "Name",
+  "topicConfigColumnValue": "Value",
+  "topicConfigColumnSource": "Source",
+  "topicConfigColumnDefault": "Default",
+  "topicConfigColumnLeftValue": "Left value",
+  "topicConfigColumnLeftSource": "Left source",
+  "topicConfigColumnRightValue": "Right value",
+  "topicConfigColumnRightSource": "Right source",
+  "topicConfigColumnStatus": "Status",
+  "topicConfigDefaultYes": "Default",
+  "topicConfigDefaultNo": "Override",
+  "topicConfigSourceDynamicTopic": "Topic override",
+  "topicConfigSourceDynamicBroker": "Dynamic broker setting",
+  "topicConfigSourceDynamicDefaultBroker": "Dynamic cluster-wide broker default",
+  "topicConfigSourceStaticBroker": "Static broker setting",
+  "topicConfigSourceDefault": "Built-in default",
+  "topicConfigSourceUnknown": "Unknown",
+  "topicConfigStatusEqual": "Equal",
+  "topicConfigStatusDifferent": "Different",
+  "topicConfigStatusOnlyLeft": "Only on left",
+  "topicConfigStatusOnlyRight": "Only on right",
+  "topicConfigStatusNotComparable": "Not comparable",
+  "topicConfigStatusUnknown": "Unknown",
+  "topicConfigPlaceholderNoValue": "no value",
+  "topicConfigPlaceholderSensitive": "hidden (sensitive)",
+  "topicConfigPlaceholderUnknown": "unknown",
+  "topicConfigUnavailableNotAuthorized": "Not readable — missing DescribeConfigs permission?",
+  "topicConfigUnavailableNotFound": "Topic not found",
+  "topicConfigUnavailableFailed": "Could not read configuration: {message}",
+  "@topicConfigUnavailableFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "topicConfigEmptyReported": "No configuration entries reported.",
+  "topicConfigEmptyNonDefaultFilter": "All reported entries use default values.",
+  "topicConfigEmptyDiffFilter": "Configurations do not differ and use only defaults.",
+  "topicConfigDifferencesCount": "{count, plural, =0{0 differences} =1{1 difference} other{{count} differences}}",
+  "@topicConfigDifferencesCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "topicConfigDifferencesUnknown": "Differences: unknown",
+  "topicConfigComparisonInProgress": "Loading comparison…",
+  "topicConfigCompareDialogTitle": "Compare Topic Configuration",
+  "topicConfigCompareProfileLabel": "Target cluster profile",
+  "topicConfigCompareTopicLabel": "Target topic",
+  "topicConfigCompareTopicHint": "Enter or select topic name",
+  "topicConfigCompareSubmit": "Compare",
+  "schemaRegistryErrorNotConfigured": "Schema Registry is not configured for this profile.",
+  "schemaRegistryErrorInvalidUrl": "Schema Registry URL is invalid: {detail}",
+  "@schemaRegistryErrorInvalidUrl": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "schemaRegistryErrorUnauthorized": "Schema Registry authentication failed (HTTP 401). Check your username and password in the cluster profile.",
+  "schemaRegistryErrorForbidden": "Schema Registry access denied (HTTP 403).",
+  "schemaRegistryErrorNotFound": "Schema or subject not found in Schema Registry (HTTP 404).",
+  "schemaRegistryErrorTimeout": "Schema Registry request timed out.",
+  "schemaRegistryErrorUnreachable": "Could not reach Schema Registry: {detail}",
+  "@schemaRegistryErrorUnreachable": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "schemaRegistryErrorCertificateRejected": "Schema Registry TLS certificate was rejected: {detail}",
+  "@schemaRegistryErrorCertificateRejected": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "schemaRegistryErrorHttpStatus": "Schema Registry returned HTTP {status}: {detail}",
+  "@schemaRegistryErrorHttpStatus": {
+    "placeholders": {
+      "status": { "type": "int" },
+      "detail": { "type": "String" }
+    }
+  },
+  "schemaRegistryErrorHttpStatusNoCode": "Schema Registry returned an error: {detail}",
+  "@schemaRegistryErrorHttpStatusNoCode": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "schemaRegistryErrorInvalidResponse": "Schema Registry returned an unexpected response: {detail}",
+  "@schemaRegistryErrorInvalidResponse": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "schemaTypeAvro": "Avro",
+  "schemaTypeProtobuf": "Protobuf",
+  "schemaTypeJson": "JSON Schema",
+  "schemaTypeGeneric": "Schema",
+  "schemaTypeUnknown": "Schema (unknown)",
+  "schemaTypeMixed": "{keyType} / {valueType}",
+  "@schemaTypeMixed": {
+    "placeholders": {
+      "keyType": { "type": "String" },
+      "valueType": { "type": "String" }
+    }
+  },
+  "schemaTopicHasTypeTooltip": "Schema: {typeLabel}",
+  "@schemaTopicHasTypeTooltip": {
+    "placeholders": {
+      "typeLabel": { "type": "String" }
+    }
+  },
+  "schemaVersionBadge": "v{version}",
+  "@schemaVersionBadge": {
+    "placeholders": {
+      "version": { "type": "int" }
+    }
+  },
+  "schemaIdBadge": "ID {id}",
+  "@schemaIdBadge": {
+    "placeholders": {
+      "id": { "type": "int" }
+    }
+  },
+  "schemaCompatibilityPrefix": "Compatibility: {level}",
+  "@schemaCompatibilityPrefix": {
+    "placeholders": {
+      "level": { "type": "String" }
+    }
+  },
+  "schemaCompatibilitySubject": "set on subject",
+  "schemaCompatibilityInherited": "inherited",
+  "schemaCompatibilityUnknown": "Compatibility: unknown ({reason})",
+  "@schemaCompatibilityUnknown": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "schemaReferencesLabel": "References:",
+  "schemaReferenceChip": "{name} ({subject} v{version})",
+  "@schemaReferenceChip": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "subject": { "type": "String" },
+      "version": { "type": "int" }
+    }
+  },
+  "schemaMessagesLabel": "Messages: {messages}",
+  "@schemaMessagesLabel": {
+    "placeholders": {
+      "messages": { "type": "String" }
+    }
+  },
+  "schemaRawUnavailableNotice": "Structured view unavailable: {reason}",
+  "@schemaRawUnavailableNotice": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "schemaUnsupportedTypeNotice": "Structured view is not supported for schema type {type}.",
+  "@schemaUnsupportedTypeNotice": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "schemaCopyTooltip": "Copy schema",
+  "schemaSaveTooltip": "Save schema",
+  "schemaCopiedSnackBar": "Schema copied to clipboard",
+  "schemaSavedSuccess": "Schema saved to {path}",
+  "@schemaSavedSuccess": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "schemaSaveFailed": "Failed to save schema: {error}",
+  "@schemaSaveFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "schemaSaveDialogTitle": "Save Schema",
+  "schemaViewerSubjectTitle": "Schema: {subject}",
+  "@schemaViewerSubjectTitle": {
+    "placeholders": {
+      "subject": { "type": "String" }
+    }
+  },
+  "schemaViewerBackTooltip": "Back to previous schema",
+  "schemaViewerAssociatedTopicsLoading": "Loading associated topics…",
+  "schemaViewerAssociatedTopicsError": "Failed to resolve associated topics: {error}",
+  "@schemaViewerAssociatedTopicsError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "schemaViewerTopicNotOnCluster": "{topic} (not on cluster)",
+  "@schemaViewerTopicNotOnCluster": {
+    "placeholders": {
+      "topic": { "type": "String" }
+    }
+  },
+  "subjectBrowserFilterHint": "Filter subjects…",
+  "subjectBrowserCount": "{shown} of {total}",
+  "@subjectBrowserCount": {
+    "placeholders": {
+      "shown": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "subjectBrowserCountUnknown": "Subjects: unknown",
+  "subjectBrowserGlobalCompatibility": "Global compatibility: {level}",
+  "@subjectBrowserGlobalCompatibility": {
+    "placeholders": {
+      "level": { "type": "String" }
+    }
+  },
+  "subjectBrowserEmptyRegistry": "No subjects registered in Schema Registry.",
+  "subjectBrowserNoMatch": "No subjects match \"{query}\".",
+  "@subjectBrowserNoMatch": {
+    "placeholders": {
+      "query": { "type": "String" }
+    }
+  },
+  "subjectBrowserRefreshTooltip": "Refresh subjects",
+  "subjectBrowserSideKey": "Key",
+  "subjectBrowserSideValue": "Value",
+  "explorerModeTopics": "Topics",
+  "explorerModeSubjects": "Subjects",
+  "explorerModeSwitcherSemantics": "Browse mode: Topics or Subjects",
+  "analysisConfirmThresholdLabel": "Large-scan confirmation threshold (messages)",
+  "analysisHistoryPerTopicLabel": "Saved analysis reports per topic",
+  "deleteSavedAnalysisReports": "Delete saved analysis reports",
+  "deleteSavedAnalysisReportsConfirmTitle": "Delete all saved analysis reports?",
+  "deleteSavedAnalysisReportsConfirmBody": "This removes all locally stored topic analysis reports across all clusters. Exported files elsewhere are not affected.",
+  "deleteSavedAnalysisReportsSuccess": "Saved analysis reports deleted.",
+  "deleteSavedAnalysisReportsFailed": "Could not delete all saved analysis reports: {error}",
+  "@deleteSavedAnalysisReportsFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "scopeSummaryButtonLabel": "Scope: {summary}",
+  "@scopeSummaryButtonLabel": {
+    "placeholders": {
+      "summary": { "type": "String" }
+    }
+  },
+  "scopeSummaryAll": "All messages",
+  "scopeSummaryNewest": "Newest {count}",
+  "@scopeSummaryNewest": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "scopeSummaryOldest": "Oldest {count}",
+  "@scopeSummaryOldest": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "scopeSummaryPartitions": "partitions {list}",
+  "@scopeSummaryPartitions": {
+    "placeholders": {
+      "list": { "type": "String" }
+    }
+  },
+  "scopeDialogTitle": "Analysis Scope",
+  "scopeModeAll": "All",
+  "scopeModeNewest": "Newest",
+  "scopeModeOldest": "Oldest",
+  "scopeMessageLimitLabel": "Message limit (up to N offsets)",
+  "scopeMessageLimitHelper": "Count is in offsets; compacted or transactional topics may yield fewer messages.",
+  "scopeTimeRangeLabel": "Time range (optional, resolved via broker timestamp index)",
+  "scopeStartTimestampLabel": "Start timestamp",
+  "scopeEndTimestampLabel": "End timestamp",
+  "scopePartitionsLabel": "Partitions",
+  "scopeAllPartitionsChip": "All partitions",
+  "scopePartitionChipLabel": "P{id}",
+  "@scopePartitionChipLabel": {
+    "placeholders": {
+      "id": { "type": "int" }
+    }
+  },
+  "scopeErrorInvalidCount": "Enter a positive integer message limit.",
+  "scopeErrorInvalidStartTimestamp": "Invalid start timestamp format.",
+  "scopeErrorInvalidEndTimestamp": "Invalid end timestamp format.",
+  "scopeErrorStartAfterEnd": "Start timestamp must be before end timestamp.",
+  "scopeErrorNoPartitions": "Select at least one partition.",
+  "scopeApplyButton": "Apply",
+  "scopeEstimating": "Estimating…",
+  "scopeConfirmTitle": "Start large analysis?",
+  "scopeConfirmPlannedCount": "Estimated scan size: {count} offsets.",
+  "@scopeConfirmPlannedCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "scopeConfirmAtLeastCount": "Estimated scan size: at least {count} offsets.",
+  "@scopeConfirmAtLeastCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "scopeConfirmSizeUnknown": "Scan size unknown ({error}). Start anyway?",
+  "@scopeConfirmSizeUnknown": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "scopeConfirmUnreadableHeader": "Unreadable partitions:",
+  "scopeConfirmUnreadableItem": "Partition {partition}: {reason}",
+  "@scopeConfirmUnreadableItem": {
+    "placeholders": {
+      "partition": { "type": "int" },
+      "reason": { "type": "String" }
+    }
+  },
+  "scopeConfirmCompactedHint": "This is a compacted topic; the actual message count may be lower than the offset range.",
+  "scopeConfirmStartButton": "Start Scan",
+  "historySaveErrorBanner": "Could not save report to local history: {error}",
+  "@historySaveErrorBanner": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "reportScopeCardTitle": "Scan Scope",
+  "reportScopeNotRecorded": "Scope not recorded for this report.",
+  "reportScopeExcludedByTime": "Excluded by time range: {count}",
+  "@reportScopeExcludedByTime": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "reportScopeUnreadablePartitions": "Unreadable partitions: {list}",
+  "@reportScopeUnreadablePartitions": {
+    "placeholders": {
+      "list": { "type": "String" }
+    }
+  },
+  "analysisLimitsCardTitle": "Analysis Limits",
+  "analysisLimitsNotAvailable": "Not available for this report.",
+  "analysisLimitReached": "Reached",
+  "analysisLimitWithin": "Within limit",
+  "limitKindTrackedFields": "Tracked fields",
+  "limitKindListedFields": "Listed fields",
+  "limitKindValuesPerField": "Values per field",
+  "limitKindListedValuesPerField": "Listed values per field",
+  "limitKindFieldDepth": "Field nesting depth",
+  "limitKindValueDisplayChars": "Value display length (chars)",
+  "limitKindTrackedKeys": "Tracked keys",
+  "limitKindListedKeys": "Listed keys",
+  "limitKindSizePercentileSample": "Size percentile sample",
+  "limitKindTrackedFingerprints": "Tracked duplicate fingerprints",
+  "limitKindDuplicateSamples": "Duplicate samples",
+  "limitKindListedDuplicates": "Listed duplicates",
+  "limitKindPreviewChars": "Payload preview length (chars)",
+  "limitKindTimelineWindowDays": "Timeline window (days)",
+  "fieldTrackedCountSummary": "{shown} of {total} fields",
+  "@fieldTrackedCountSummary": {
+    "placeholders": {
+      "shown": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "fieldFurtherNotTracked": "Further fields not tracked",
+  "duplicateEstimatedAtLeast": "Estimated (at least)",
+  "duplicateUntrackedCount": "{count} untracked messages",
+  "@duplicateUntrackedCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "duplicateListPossiblyIncomplete": "List possibly incomplete",
+  "historyMenuFromFile": "From file…",
+  "historyMenuEmpty": "No saved reports for this topic",
+  "historyMenuUnreadable": "{count} unreadable file(s) skipped",
+  "@historyMenuUnreadable": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "historyMenuLoadError": "Could not load history: {error}",
+  "@historyMenuLoadError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "historyEntrySubtitle": "{scope} · {messages} messages",
+  "@historyEntrySubtitle": {
+    "placeholders": {
+      "scope": { "type": "String" },
+      "messages": { "type": "String" }
+    }
+  },
+  "comparisonScopeNotRecorded": "Scope not recorded",
+  "comparisonScopesDifferWarning": "Comparison scopes differ — deltas may reflect scope differences rather than data changes.",
+  "comparisonScopeMissingWarning": "Scope is not recorded on one or both reports — they cannot be reliably compared.",
+  "timelinePartitionSubsetNote": "Note: Timeline covers only a subset of partitions ({partitions}).",
+  "@timelinePartitionSubsetNote": {
+    "placeholders": {
+      "partitions": { "type": "String" }
+    }
+  },
+  "diffIgnoredFieldsHeader": "Ignored fields ({count})",
+  "@diffIgnoredFieldsHeader": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "diffIgnoredFieldsButton": "Ignored fields",
+  "diffIgnoreDialogTitle": "Ignored fields — {topic}",
+  "@diffIgnoreDialogTitle": {
+    "placeholders": {
+      "topic": { "type": "String" }
+    }
+  },
+  "diffIgnorePathHint": "Field path (e.g. meta.ts or /items/0/id)",
+  "diffIgnoreAddButton": "Add",
+  "diffIgnoreRemoveTooltip": "Remove ignored field {path}",
+  "@diffIgnoreRemoveTooltip": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "diffIgnoreEmptyList": "No ignored fields for this topic.",
+  "diffIgnoreSuggestionsTitle": "Suggested volatile fields",
+  "ignoreThisField": "Ignore this field",
+  "diffHiddenCount": "Hidden ({count})",
+  "@diffHiddenCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "diffTruncatedNotice": "{count} more differences not shown",
+  "@diffTruncatedNotice": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "diffIgnoreLoadWarning": "Could not read saved ignore list for {topic}.",
+  "@diffIgnoreLoadWarning": {
+    "placeholders": {
+      "topic": { "type": "String" }
+    }
+  },
+  "diffIgnoreSaveError": "Failed to save ignore list. Change was not persisted.",
+  "diffIgnoreEmptyPathError": "Enter a non-empty field path.",
+  "diffIgnoreDuplicatePathError": "This field path is already ignored.",
+  "filterExpressionLabel": "Filter expression",
+  "filterExpressionHint": "e.g. value.status = \"FAILED\" AND partition = 0",
+  "filterExpressionChipSummary": "Expr: {expr}",
+  "@filterExpressionChipSummary": {
+    "placeholders": {
+      "expr": { "type": "String" }
+    }
+  },
+  "filterExpressionInvalidTooltip": "Invalid filter expression",
+  "filterExpressionModeBuilder": "Builder",
+  "filterExpressionModeText": "Text",
+  "filterExpressionErrorAtColumn": "Column {column}: {message}",
+  "@filterExpressionErrorAtColumn": {
+    "placeholders": {
+      "column": { "type": "int" },
+      "message": { "type": "String" }
+    }
+  },
+  "filterExpressionAddCondition": "Add condition",
+  "filterExpressionAddGroup": "Add group",
+  "filterExpressionNotToggle": "NOT",
+  "filterExpressionAndLabel": "AND",
+  "filterExpressionOrLabel": "OR",
+  "filterExpressionRemoveNode": "Remove",
+  "filterExpressionEditCondition": "Edit condition",
+  "filterExpressionSourceLabel": "Source",
+  "filterExpressionPathLabel": "Path / Header",
+  "filterExpressionOperatorLabel": "Operator",
+  "filterExpressionValueLabel": "Value",
+  "filterExpressionTypeString": "Text",
+  "filterExpressionTypeNumber": "Number",
+  "filterExpressionTypeBoolean": "Boolean",
+  "filterExpressionTypeNull": "Null",
+  "filterExpressionTypeVariable": "Variable",
+  "filterExpressionPlaceholderHint": "Multi-value script variables match if ANY value satisfies the condition.",
+  "filterExpressionSuggestionsLabel": "Field suggestions",
+  "filterExpressionSuggestionsSourceSchema": "From schema",
+  "filterExpressionSuggestionsSourceAnalysis": "From analysis",
+  "filterExpressionSuggestionsSourceSample": "From loaded messages",
+  "filterExpressionSuggestionsEmpty": "No field suggestions available",
+  "filterExpressionOpEq": "=",
+  "filterExpressionOpNe": "!=",
+  "filterExpressionOpGt": ">",
+  "filterExpressionOpGe": ">=",
+  "filterExpressionOpLt": "<",
+  "filterExpressionOpLe": "<=",
+  "filterExpressionOpContains": "contains",
+  "filterExpressionOpStartsWith": "startsWith",
+  "filterExpressionOpEndsWith": "endsWith",
+  "filterExpressionOpMatches": "matches",
+  "filterExpressionOpIn": "in",
+  "filterExpressionOpExists": "exists",
+  "filterExpressionOpIsNull": "is null",
+  "filterExpressionOpIsNotNull": "is not null",
+  "localSchemaDialogTitle": "Assign Local Schema ({side})",
+  "@localSchemaDialogTitle": {
+    "placeholders": {
+      "side": { "type": "String" }
+    }
+  },
+  "localSchemaSideKey": "Key",
+  "localSchemaSideValue": "Value",
+  "localSchemaFileLabel": "Schema file",
+  "localSchemaChooseFile": "Choose file…",
+  "localSchemaNoFileSelected": "No file selected",
+  "localSchemaFormatLabel": "Format",
+  "localSchemaFormatAvro": "Avro (.avsc)",
+  "localSchemaFormatProtobufSource": "Protobuf source (.proto)",
+  "localSchemaFormatProtobufDescriptor": "Protobuf descriptor set (.desc)",
+  "localSchemaFormatJsonSchema": "JSON Schema (.json)",
+  "localSchemaMessageTypeLabel": "Message type",
+  "localSchemaMessageTypeHint": "Select a message type",
+  "localSchemaFramingLabel": "Framing",
+  "localSchemaFramingAuto": "Auto",
+  "localSchemaFramingPrefixed": "Confluent prefixed",
+  "localSchemaFramingRaw": "Raw payload",
+  "localSchemaModeLabel": "Precedence",
+  "localSchemaModeFallback": "Fallback (registry first)",
+  "localSchemaModeAlways": "Always (skip registry)",
+  "localSchemaPreviewTitle": "Field preview",
+  "localSchemaPreviewEmpty": "No fields extracted",
+  "localSchemaRemoveAction": "Remove",
+  "localSchemaSaveAction": "Save",
+  "localSchemaProto2DescriptorHint": "Compile with protoc --include_imports --descriptor_set_out=<file>.desc and select the descriptor file.",
+  "localSchemaCardTitle": "Local schema",
+  "localSchemaAssignAction": "Assign local schema",
+  "localSchemaChangeAction": "Change",
+  "localSchemaConfirmChangedAction": "Confirm updated file",
+  "localSchemaStateUsable": "Ready",
+  "localSchemaStateChanged": "File modified since assignment",
+  "localSchemaStateFileNotFound": "File not found",
+  "localSchemaStateFileUnreadable": "File unreadable",
+  "localSchemaStateSchemaInvalid": "Schema invalid",
+  "localSchemaStateMessageTypeMissing": "Message type not found",
+  "localSchemaStateUnknown": "Unverified",
+  "localSchemaTagPrefix": "Local: {type}",
+  "@localSchemaTagPrefix": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "localSchemaUnreadableBanner": "Stored local schema assignment could not be read: {reason}",
+  "@localSchemaUnreadableBanner": {
+    "placeholders": {
+      "reason": { "type": "String" }
+    }
+  },
+  "localSchemaProvenanceDecoded": "Decoded using local schema: {fileName} ({format})",
+  "@localSchemaProvenanceDecoded": {
+    "placeholders": {
+      "fileName": { "type": "String" },
+      "format": { "type": "String" }
+    }
+  },
+  "localSchemaProvenanceDecodedWithMsg": "Decoded using local schema: {fileName} ({format}, {messageType})",
+  "@localSchemaProvenanceDecodedWithMsg": {
+    "placeholders": {
+      "fileName": { "type": "String" },
+      "format": { "type": "String" },
+      "messageType": { "type": "String" }
+    }
+  },
+  "localSchemaProvenanceFailed": "Local schema decode failed ({fileName})",
+  "@localSchemaProvenanceFailed": {
+    "placeholders": {
+      "fileName": { "type": "String" }
+    }
+  },
+  "localSchemaCardBadgeKey": "K: local",
+  "localSchemaCardBadgeValue": "V: local",
+  "localSchemaCardBadgeKeyError": "K: local !",
+  "localSchemaCardBadgeValueError": "V: local !",
+  "localSchemaAnalysisNotice": "Some messages in this analysis were decoded using a local schema.",
+  "localDecodeErrorFileNotFound": "Schema file not found: {detail}",
+  "@localDecodeErrorFileNotFound": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorFileUnreadable": "Could not read schema file: {detail}",
+  "@localDecodeErrorFileUnreadable": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorFileTooLarge": "Schema file exceeds the 10 MiB limit: {detail}",
+  "@localDecodeErrorFileTooLarge": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorSchemaInvalid": "Invalid schema: {detail}",
+  "@localDecodeErrorSchemaInvalid": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorUnsupportedProto2": "Proto2 source files are not supported directly; compile to a FileDescriptorSet (.desc) instead. ({detail})",
+  "@localDecodeErrorUnsupportedProto2": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorUnresolvedImport": "Unresolved import in schema: {detail}. Compile with protoc --include_imports --descriptor_set_out=...",
+  "@localDecodeErrorUnresolvedImport": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorMessageTypeNotFound": "Message type not found in schema: {detail}",
+  "@localDecodeErrorMessageTypeNotFound": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorMissingPrefix": "Expected Confluent 5-byte wire prefix, but payload did not start with magic byte 0x00: {detail}",
+  "@localDecodeErrorMissingPrefix": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorUnknownMessageIndex": "Unknown Protobuf message index in wire prefix: {detail}",
+  "@localDecodeErrorUnknownMessageIndex": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorPayloadMismatch": "Payload does not match schema: {detail}",
+  "@localDecodeErrorPayloadMismatch": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorTrailingBytes": "Unexpected trailing bytes after decoded payload: {detail}",
+  "@localDecodeErrorTrailingBytes": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "localDecodeErrorNotJson": "Payload is not valid UTF-8 JSON: {detail}",
+  "@localDecodeErrorNotJson": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  }
 }

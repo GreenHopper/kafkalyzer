@@ -207,6 +207,51 @@ pub fn resolve_batch(payloads: &[String], paths: &[String]) -> Vec<Option<String
         .collect()
 }
 
+/// Collect canonical field paths from `value` (recursing into objects and index `0` of arrays),
+/// capped at `limit` entries.
+pub fn collect_paths(value: &Value, limit: usize) -> Vec<String> {
+    let mut out = Vec::new();
+    if limit == 0 {
+        return out;
+    }
+    let mut segments = Vec::new();
+    collect_paths_rec(value, &mut segments, &mut out, limit);
+    out
+}
+
+fn collect_paths_rec(
+    value: &Value,
+    segments: &mut Vec<String>,
+    out: &mut Vec<String>,
+    limit: usize,
+) {
+    if out.len() >= limit {
+        return;
+    }
+    match value {
+        Value::Object(map) if !map.is_empty() => {
+            for (k, v) in map {
+                if out.len() >= limit {
+                    break;
+                }
+                segments.push(k.clone());
+                collect_paths_rec(v, segments, out, limit);
+                segments.pop();
+            }
+        }
+        Value::Array(arr) if !arr.is_empty() => {
+            segments.push("0".to_string());
+            collect_paths_rec(&arr[0], segments, out, limit);
+            segments.pop();
+        }
+        _ => {
+            if !segments.is_empty() {
+                out.push(build_canonical_path(segments));
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -246,6 +291,24 @@ mod tests {
             resolve(PAYLOAD, "order.items[0]").as_deref(),
             Some(r#"{"sku":"A-1"}"#)
         );
+    }
+
+    #[test]
+    fn collect_paths_recurses_objects_arrays_and_caps() {
+        let val: Value = serde_json::json!({
+            "order": {
+                "status": "shipped",
+                "items": [{"sku": "A-1"}, {"sku": "B-2"}],
+                "a.b": 1
+            },
+            "flag": true
+        });
+        let paths = collect_paths(&val, 10);
+        assert!(paths.contains(&"order.status".to_string()));
+        assert!(paths.contains(&"/order/items/0/sku".to_string()));
+        assert!(paths.contains(&"/order/a.b".to_string()));
+        assert!(paths.contains(&"flag".to_string()));
+        assert_eq!(collect_paths(&val, 2).len(), 2);
     }
 
     #[test]

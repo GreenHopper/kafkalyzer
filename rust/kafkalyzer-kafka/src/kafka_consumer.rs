@@ -56,9 +56,13 @@ fn get_cached_schema(
 }
 
 use crate::kafka_utils::{create_config, murmur2, to_positive};
+use crate::local_schema_loader::{
+    load_topic_local_schemas, LoadedTopicLocalSchemas, SideLocalSchema,
+};
 use crate::schema_registry::SchemaProvenance;
 use kafkalyzer_core::kafka_types::{
-    ClusterProfile, FilterType, KafkaMessage, MessageSchema, SearchScope,
+    ClusterProfile, FilterType, KafkaMessage, LocalSchemaMode, LocalSchemaUse, MessageSchema,
+    SearchScope, TopicLocalSchemas,
 };
 
 #[derive(Clone)]
@@ -84,6 +88,28 @@ pub struct SrDecoders<'a> {
     pub provenance: Option<SchemaProvenance>,
 }
 
+pub(crate) fn compile_filter_expression(
+    filter_expression: Option<&str>,
+    filter_variables: Option<&std::collections::HashMap<String, Vec<String>>>,
+) -> Result<Option<(kafkalyzer_core::filter_expr::CompiledExpr, String)>> {
+    let Some(raw_expr) = filter_expression.map(str::trim).filter(|s| !s.is_empty()) else {
+        return Ok(None);
+    };
+    let ast = kafkalyzer_core::filter_expr::parse(raw_expr).map_err(|e| {
+        anyhow::anyhow!(
+            "Invalid filter expression at byte {}: {}",
+            e.start,
+            e.message
+        )
+    })?;
+    let canonical = kafkalyzer_core::filter_expr::format_expr(&ast);
+    let empty_bindings = std::collections::HashMap::new();
+    let bindings = filter_variables.unwrap_or(&empty_bindings);
+    let compiled = kafkalyzer_core::filter_expr::compile(&ast, bindings)
+        .map_err(|e| anyhow::anyhow!("Invalid filter expression: {}", e.message))?;
+    Ok(Some((compiled, canonical)))
+}
+
 pub fn consume_with_filter(
     profile: ClusterProfile,
     topic: String,
@@ -91,6 +117,8 @@ pub fn consume_with_filter(
     filter_field: Option<String>,
     filter_type: FilterType,
     search_scope: SearchScope,
+    filter_expression: Option<String>,
+    filter_variables: Option<std::collections::HashMap<String, Vec<String>>>,
     start_offset: Option<i64>,
     start_timestamp: Option<i64>,
     start_partition: Option<i32>,
@@ -100,8 +128,19 @@ pub fn consume_with_filter(
     max_results: Option<i32>,
     run_forever: bool,
     start_from_tail: bool,
+    local_schemas: Option<TopicLocalSchemas>,
     sink: StreamSink<KafkaMessage>,
 ) -> Result<()> {
+    // 0. Parse and compile structured filter expression before touching any broker/registry
+    let compiled_filter_expr =
+        match compile_filter_expression(filter_expression.as_deref(), filter_variables.as_ref())? {
+            Some((compiled, canonical)) => {
+                log_to_dart(&sink, format!("Filter expression: {canonical}"));
+                Some(compiled)
+            }
+            None => None,
+        };
+
     // 1. Setup Runtime & Config
     let tokio_runtime = shared_runtime();
 
@@ -112,6 +151,21 @@ pub fn consume_with_filter(
     } else {
         (None, false, false)
     };
+
+    // 2b. Load local schemas once for the scan (never per message)
+    let loaded_local = load_topic_local_schemas(local_schemas.as_ref());
+    if let Some((file_name, err)) = loaded_local.key.as_ref().and_then(|s| s.load_error()) {
+        log_to_dart(
+            &sink,
+            format!("Local key schema '{}' error: {}", file_name, err.detail),
+        );
+    }
+    if let Some((file_name, err)) = loaded_local.value.as_ref().and_then(|s| s.load_error()) {
+        log_to_dart(
+            &sink,
+            format!("Local value schema '{}' error: {}", file_name, err.detail),
+        );
+    }
 
     // 3. Create Consumer
     let is_seeking = start_offset.is_some() || start_timestamp.is_some() || start_from_tail;
@@ -179,6 +233,8 @@ pub fn consume_with_filter(
         headers: None,
         key_schema: None,
         value_schema: None,
+        key_local_schema: None,
+        value_local_schema: None,
     };
     sink.add(initial_msg).ok();
 
@@ -213,6 +269,7 @@ pub fn consume_with_filter(
         filter_field,
         filter_type,
         search_scope,
+        compiled_filter_expr,
         max_results,
         run_forever,
         sink,
@@ -220,6 +277,7 @@ pub fn consume_with_filter(
         decoders,
         key_is_avro,
         value_is_avro,
+        &loaded_local,
         total_to_scan,
     )?;
 
@@ -227,31 +285,25 @@ pub fn consume_with_filter(
 }
 
 pub(crate) fn create_sr_settings(profile: &ClusterProfile) -> Option<SrSettings> {
-    if let Some(url) = &profile.schema_registry_url {
-        let mut sr_url = url.trim().to_string();
-        if !sr_url.is_empty() && !sr_url.starts_with("http://") && !sr_url.starts_with("https://") {
-            sr_url = format!("http://{}", sr_url);
-        }
-        if !sr_url.is_empty() {
-            let mut builder = SrSettings::new_builder(sr_url);
+    let raw_url = profile.schema_registry_url.as_deref()?;
+    let normalized = crate::schema_registry::normalize_registry_base_url(raw_url).ok()?;
+    let mut builder =
+        SrSettings::new_builder(normalized.as_str().trim_end_matches('/').to_string());
+    builder.set_timeout(kafkalyzer_core::connection_diagnostics::REGISTRY_TIMEOUT);
 
-            // 1. Basic Auth
-            if let (Some(u), Some(p)) = (
-                &profile.schema_registry_username,
-                &profile.schema_registry_password,
-            ) {
-                builder.set_basic_authorization(u, Some(p));
-            }
-
-            // 2. Shared SSL/TLS client builder
-            let client_builder = crate::schema_registry::schema_registry_client_builder(profile);
-
-            if let Ok(settings) = builder.build_with(client_builder) {
-                return Some(settings);
-            }
-        }
+    // 1. Basic Auth
+    if let Some(u) = profile
+        .schema_registry_username
+        .as_deref()
+        .filter(|u| !u.is_empty())
+    {
+        builder.set_basic_authorization(u, profile.schema_registry_password.as_deref());
     }
-    None
+
+    // 2. Shared SSL/TLS client builder
+    let client_builder = crate::schema_registry::schema_registry_client_builder(profile);
+
+    builder.build_with(client_builder).ok()
 }
 
 fn create_consumer(profile: &ClusterProfile, is_seeking: bool) -> Result<BaseConsumer> {
@@ -561,6 +613,7 @@ fn run_poll_loop<'a>(
     filter_field: Option<String>,
     filter_type: FilterType,
     search_scope: SearchScope,
+    filter_expression: Option<kafkalyzer_core::filter_expr::CompiledExpr>,
     max_results: Option<i32>,
     run_forever: bool,
     sink: StreamSink<KafkaMessage>,
@@ -568,6 +621,7 @@ fn run_poll_loop<'a>(
     decoder: Option<SrDecoders<'a>>,
     key_is_avro: bool,
     value_is_avro: bool,
+    loaded_local: &LoadedTopicLocalSchemas,
     total_to_scan: i64,
 ) -> Result<()> {
     let mut scanned_count: u64 = 0;
@@ -692,11 +746,13 @@ fn run_poll_loop<'a>(
                     &decoder,
                     key_is_avro,
                     value_is_avro,
+                    &loaded_local,
                     &filter_terms,
                     &compiled_regexes,
                     &filter_field,
                     &filter_type,
                     search_scope,
+                    filter_expression.as_ref(),
                     &sink,
                     &mut matched_count,
                 ) {
@@ -766,6 +822,8 @@ fn run_poll_loop<'a>(
                     headers: None,
                     key_schema: None,
                     value_schema: None,
+                    key_local_schema: None,
+                    value_local_schema: None,
                 };
                 if sink.add(heartbeat_msg).is_err() {
                     break;
@@ -812,6 +870,8 @@ fn send_progress(
         headers: None,
         key_schema: None,
         value_schema: None,
+        key_local_schema: None,
+        value_local_schema: None,
     };
     sink.add(progress_msg)
         .map_err(|e| anyhow::anyhow!("Sink Error: {:?}", e))
@@ -823,52 +883,242 @@ enum ProcessMessageResult {
     SinkClosed,
 }
 
+struct LazyMessage<'a, 'd, M: KafkaMessageTrait> {
+    msg: &'a M,
+    tokio_runtime: &'a Runtime,
+    decoder: &'a Option<SrDecoders<'d>>,
+    key_is_avro: bool,
+    value_is_avro: bool,
+    key_local: Option<&'a SideLocalSchema>,
+    value_local: Option<&'a SideLocalSchema>,
+    key_cell: std::cell::OnceCell<DecodedSide>,
+    value_cell: std::cell::OnceCell<DecodedSide>,
+    #[cfg(test)]
+    value_decode_calls: std::cell::Cell<usize>,
+}
+
+impl<'a, 'd, M: KafkaMessageTrait> LazyMessage<'a, 'd, M> {
+    fn new(
+        msg: &'a M,
+        tokio_runtime: &'a Runtime,
+        decoder: &'a Option<SrDecoders<'d>>,
+        key_is_avro: bool,
+        value_is_avro: bool,
+        key_local: Option<&'a SideLocalSchema>,
+        value_local: Option<&'a SideLocalSchema>,
+    ) -> Self {
+        Self {
+            msg,
+            tokio_runtime,
+            decoder,
+            key_is_avro,
+            value_is_avro,
+            key_local,
+            value_local,
+            key_cell: std::cell::OnceCell::new(),
+            value_cell: std::cell::OnceCell::new(),
+            #[cfg(test)]
+            value_decode_calls: std::cell::Cell::new(0),
+        }
+    }
+
+    fn decoded_key_side(&self) -> &DecodedSide {
+        self.key_cell.get_or_init(|| {
+            decode_side(
+                self.tokio_runtime,
+                self.decoder,
+                self.msg.key(),
+                self.key_is_avro,
+                "<Binary Key>",
+                self.key_local,
+            )
+        })
+    }
+
+    fn decoded_value_side(&self) -> &DecodedSide {
+        self.value_cell.get_or_init(|| {
+            #[cfg(test)]
+            self.value_decode_calls
+                .set(self.value_decode_calls.get() + 1);
+            decode_side(
+                self.tokio_runtime,
+                self.decoder,
+                self.msg.payload(),
+                self.value_is_avro,
+                "<Binary Data>",
+                self.value_local,
+            )
+        })
+    }
+
+    fn decoded_key(&self) -> &DecodedComponent {
+        &self.decoded_key_side().component
+    }
+
+    fn decoded_value(&self) -> &DecodedComponent {
+        &self.decoded_value_side().component
+    }
+
+    fn into_parts(
+        mut self,
+    ) -> (
+        Option<String>,
+        Option<String>,
+        Option<MessageSchema>,
+        Option<MessageSchema>,
+        Option<LocalSchemaUse>,
+        Option<LocalSchemaUse>,
+    ) {
+        let _ = self.decoded_key_side();
+        let _ = self.decoded_value_side();
+        let key_side = self.key_cell.take();
+        let val_side = self.value_cell.take();
+        let (key_text, key_schema, key_local) = match key_side {
+            Some(s) => (s.component.text, s.registry_schema, s.local_schema),
+            None => (None, None, None),
+        };
+        let (val_text, val_schema, val_local) = match val_side {
+            Some(s) => (s.component.text, s.registry_schema, s.local_schema),
+            None => (None, None, None),
+        };
+        (
+            key_text, val_text, key_schema, val_schema, key_local, val_local,
+        )
+    }
+}
+
+impl<'a, 'd, M: KafkaMessageTrait> kafkalyzer_core::filter_expr::MessageView
+    for LazyMessage<'a, 'd, M>
+{
+    fn partition(&self) -> i32 {
+        self.msg.partition()
+    }
+
+    fn offset(&self) -> i64 {
+        self.msg.offset()
+    }
+
+    fn timestamp(&self) -> Option<i64> {
+        self.msg.timestamp().to_millis()
+    }
+
+    fn header(&self, name: &str) -> Option<&[u8]> {
+        use rdkafka::message::Headers;
+        let headers = self.msg.headers()?;
+        for i in 0..headers.count() {
+            let h = headers.get(i);
+            if h.key == name {
+                return h.value;
+            }
+        }
+        None
+    }
+
+    fn headers(&self, name: &str) -> Vec<Option<&[u8]>> {
+        use rdkafka::message::Headers;
+        let Some(headers) = self.msg.headers() else {
+            return Vec::new();
+        };
+        let mut out = Vec::new();
+        for i in 0..headers.count() {
+            let h = headers.get(i);
+            if h.key == name {
+                out.push(h.value);
+            }
+        }
+        out
+    }
+
+    fn key_bytes(&self) -> Option<&[u8]> {
+        self.msg.key()
+    }
+
+    fn key_json(&self) -> Option<&serde_json::Value> {
+        self.decoded_key().json.as_ref()
+    }
+
+    fn key_text(&self) -> Option<&str> {
+        self.decoded_key().text.as_deref()
+    }
+
+    fn value_json(&self) -> Option<&serde_json::Value> {
+        self.decoded_value().json.as_ref()
+    }
+
+    fn value_text(&self) -> Option<&str> {
+        self.decoded_value().text.as_deref()
+    }
+}
+
 fn process_and_send_message<'a, M: KafkaMessageTrait>(
     msg: &M,
     tokio_runtime: &Runtime,
     decoder: &Option<SrDecoders<'a>>,
     key_is_avro: bool,
     value_is_avro: bool,
+    loaded_local: &LoadedTopicLocalSchemas,
     filter_terms: &Option<Vec<String>>,
     compiled_regexes: &[Regex],
     filter_field: &Option<String>,
     filter_type: &FilterType,
     search_scope: SearchScope,
+    filter_expression: Option<&kafkalyzer_core::filter_expr::CompiledExpr>,
     sink: &StreamSink<KafkaMessage>,
     matched_count: &mut i32,
 ) -> ProcessMessageResult {
-    let payload = decode_message_component(
+    let lazy = LazyMessage::new(
+        msg,
         tokio_runtime,
         decoder,
-        msg.payload(),
-        value_is_avro,
-        "<Binary Data>",
-    );
-
-    let key = decode_message_component(
-        tokio_runtime,
-        decoder,
-        msg.key(),
         key_is_avro,
-        "<Binary Key>",
+        value_is_avro,
+        loaded_local.key.as_ref(),
+        loaded_local.value.as_ref(),
     );
 
-    match matches_filter(
-        &key,
-        &payload,
-        filter_terms,
-        filter_field,
-        filter_type,
-        search_scope,
-        compiled_regexes,
-    ) {
-        FilterOutcome::NotMatched => return ProcessMessageResult::NotMatched,
-        FilterOutcome::Matched(term) => log_to_dart(
-            sink,
-            match_diagnostic(msg.topic(), msg.partition(), msg.offset(), &term),
-        ),
-        FilterOutcome::Pass => {}
+    if let Some(expr) = filter_expression {
+        if !expr.evaluate(&lazy) {
+            return ProcessMessageResult::NotMatched;
+        }
     }
+
+    let has_legacy_filter = filter_terms.as_ref().is_some_and(|t| !t.is_empty());
+
+    if has_legacy_filter {
+        let key_opt = lazy.decoded_key().text.clone();
+        let payload_opt = lazy.decoded_value().text.clone();
+        match matches_filter(
+            &key_opt,
+            &payload_opt,
+            filter_terms,
+            filter_field,
+            filter_type,
+            search_scope,
+            compiled_regexes,
+        ) {
+            FilterOutcome::NotMatched => return ProcessMessageResult::NotMatched,
+            FilterOutcome::Matched(term) => log_to_dart(
+                sink,
+                match_diagnostic(msg.topic(), msg.partition(), msg.offset(), &term),
+            ),
+            FilterOutcome::Pass => {
+                if filter_expression.is_some() {
+                    log_to_dart(
+                        sink,
+                        match_diagnostic(msg.topic(), msg.partition(), msg.offset(), "expression"),
+                    );
+                }
+            }
+        }
+    } else if filter_expression.is_some() {
+        log_to_dart(
+            sink,
+            match_diagnostic(msg.topic(), msg.partition(), msg.offset(), "expression"),
+        );
+    }
+
+    let (key, payload, key_schema, value_schema, key_local_schema, value_local_schema) =
+        lazy.into_parts();
 
     use rdkafka::message::Headers;
     let headers = msg.headers().map(|headers| {
@@ -896,8 +1146,10 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
         key,
         payload,
         headers,
-        key_schema: message_schema(tokio_runtime, decoder, msg.key()),
-        value_schema: message_schema(tokio_runtime, decoder, msg.payload()),
+        key_schema,
+        value_schema,
+        key_local_schema,
+        value_local_schema,
     };
 
     if sink.add(kafka_msg).is_err() {
@@ -1233,151 +1485,209 @@ pub(crate) fn message_schema<'a>(
     Some(provenance.resolve(tokio_runtime, schema_id))
 }
 
-pub(crate) fn decode_message_to_value<'a>(
+pub(crate) struct DecodedComponent {
+    pub json: Option<serde_json::Value>,
+    pub text: Option<String>,
+}
+
+pub(crate) struct DecodedSide {
+    pub component: DecodedComponent,
+    pub registry_schema: Option<MessageSchema>,
+    pub local_schema: Option<LocalSchemaUse>,
+}
+
+fn decode_raw_fallback(bytes: &[u8], binary_placeholder: &str) -> DecodedComponent {
+    let json = serde_json::from_slice::<serde_json::Value>(bytes).ok();
+    let text = match std::str::from_utf8(bytes) {
+        Ok(string_val) => Some(string_val.to_string()),
+        Err(_) => Some(format!("{}:{}", binary_placeholder, hex::encode(bytes))),
+    };
+    DecodedComponent { json, text }
+}
+
+fn try_decode_registry<'a>(
     tokio_runtime: &Runtime,
     decoders: &Option<SrDecoders<'a>>,
-    data: Option<&[u8]>,
+    bytes: &[u8],
     has_schema: bool,
-) -> Option<serde_json::Value> {
-    let bytes = data?;
+) -> Option<DecodedComponent> {
+    if !has_schema {
+        return None;
+    }
+    let sr_decoders = decoders.as_ref()?;
+    if bytes.len() < 5 || bytes[0] != 0 {
+        return None;
+    }
+    let mut id_bytes = [0u8; 4];
+    id_bytes.copy_from_slice(&bytes[1..5]);
+    let schema_id = u32::from_be_bytes(id_bytes);
+    let registered_schema = get_cached_schema(tokio_runtime, &sr_decoders.settings, schema_id)?;
 
-    if has_schema {
-        if let Some(ref sr_decoders) = decoders {
-            if bytes.len() >= 5 && bytes[0] == 0 {
-                let mut id_bytes = [0u8; 4];
-                id_bytes.copy_from_slice(&bytes[1..5]);
-                let schema_id = u32::from_be_bytes(id_bytes);
-
-                if let Some(registered_schema) =
-                    get_cached_schema(tokio_runtime, &sr_decoders.settings, schema_id)
-                {
-                    match registered_schema.schema_type {
-                        schema_registry_converter::schema_registry_common::SchemaType::Avro => {
-                            let future = sr_decoders.avro.decode_with_schema(Some(bytes));
-                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                                let schema = &decoded_result.schema.parsed;
-                                let mut resolved_schemas = std::collections::HashMap::new();
-                                kafkalyzer_core::avro_utils::extract_named_schemas(
-                                    schema,
-                                    &mut resolved_schemas,
-                                );
-                                if let Ok(json_val) =
-                                    kafkalyzer_core::avro_utils::convert_avro_value(
-                                        &decoded_result.value,
-                                        Some(schema),
-                                        &resolved_schemas,
-                                    )
-                                {
-                                    return Some(json_val);
-                                }
-                            }
-                        }
-                        schema_registry_converter::schema_registry_common::SchemaType::Json => {
-                            let future = sr_decoders.json.decode(Some(bytes));
-                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                                return Some(decoded_result.value);
-                            }
-                        }
-                        schema_registry_converter::schema_registry_common::SchemaType::Protobuf => {
-                            let future = sr_decoders.proto.decode_with_context(Some(bytes));
-                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                                let json_val = convert_protofish_message(
-                                    &decoded_result.value,
-                                    &decoded_result.context.context,
-                                );
-                                return Some(json_val);
-                            }
-                        }
-                        _ => {}
-                    }
+    let mut decoded_json: Option<serde_json::Value> = None;
+    match registered_schema.schema_type {
+        schema_registry_converter::schema_registry_common::SchemaType::Avro => {
+            let future = sr_decoders.avro.decode_with_schema(Some(bytes));
+            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                let schema = &decoded_result.schema.parsed;
+                let mut resolved_schemas = std::collections::HashMap::new();
+                kafkalyzer_core::avro_utils::extract_named_schemas(schema, &mut resolved_schemas);
+                if let Ok(json_val) = kafkalyzer_core::avro_utils::convert_avro_value(
+                    &decoded_result.value,
+                    Some(schema),
+                    &resolved_schemas,
+                ) {
+                    decoded_json = Some(json_val);
                 }
             }
         }
+        schema_registry_converter::schema_registry_common::SchemaType::Json => {
+            let future = sr_decoders.json.decode(Some(bytes));
+            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                decoded_json = Some(decoded_result.value);
+            }
+        }
+        schema_registry_converter::schema_registry_common::SchemaType::Protobuf => {
+            let future = sr_decoders.proto.decode_with_context(Some(bytes));
+            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
+                decoded_json = Some(kafkalyzer_core::proto_json::convert_protofish_message(
+                    &decoded_result.value,
+                    &decoded_result.context.context,
+                ));
+            }
+        }
+        _ => {}
     }
 
-    serde_json::from_slice::<serde_json::Value>(bytes).ok()
+    decoded_json.map(|json_val| {
+        let text = serde_json::to_string_pretty(&json_val).ok();
+        DecodedComponent {
+            json: Some(json_val),
+            text,
+        }
+    })
 }
 
-pub(crate) fn decode_message_component<'a>(
+pub(crate) fn decode_component<'a>(
     tokio_runtime: &Runtime,
     decoders: &Option<SrDecoders<'a>>,
     data: Option<&[u8]>,
     has_schema: bool,
     binary_placeholder: &str,
-) -> Option<String> {
-    let bytes = data?;
+) -> DecodedComponent {
+    let Some(bytes) = data else {
+        return DecodedComponent {
+            json: None,
+            text: None,
+        };
+    };
+    if let Some(comp) = try_decode_registry(tokio_runtime, decoders, bytes, has_schema) {
+        return comp;
+    }
+    decode_raw_fallback(bytes, binary_placeholder)
+}
 
-    let mut decoded_val = None;
-    if has_schema {
-        if let Some(ref sr_decoders) = decoders {
-            if bytes.len() >= 5 && bytes[0] == 0 {
-                let mut id_bytes = [0u8; 4];
-                id_bytes.copy_from_slice(&bytes[1..5]);
-                let schema_id = u32::from_be_bytes(id_bytes);
+pub(crate) fn decode_side<'a>(
+    tokio_runtime: &Runtime,
+    decoders: &Option<SrDecoders<'a>>,
+    data: Option<&[u8]>,
+    has_subject: bool,
+    binary_placeholder: &str,
+    local: Option<&SideLocalSchema>,
+) -> DecodedSide {
+    let Some(bytes) = data else {
+        return DecodedSide {
+            component: DecodedComponent {
+                json: None,
+                text: None,
+            },
+            registry_schema: None,
+            local_schema: None,
+        };
+    };
 
-                if let Some(registered_schema) =
-                    get_cached_schema(tokio_runtime, &sr_decoders.settings, schema_id)
-                {
-                    match registered_schema.schema_type {
-                        schema_registry_converter::schema_registry_common::SchemaType::Avro => {
-                            let future = sr_decoders.avro.decode_with_schema(Some(bytes));
-                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                                let schema = &decoded_result.schema.parsed;
-                                let mut resolved_schemas = std::collections::HashMap::new();
-                                kafkalyzer_core::avro_utils::extract_named_schemas(
-                                    schema,
-                                    &mut resolved_schemas,
-                                );
-                                if let Ok(json_val) =
-                                    kafkalyzer_core::avro_utils::convert_avro_value(
-                                        &decoded_result.value,
-                                        Some(schema),
-                                        &resolved_schemas,
-                                    )
-                                {
-                                    if let Ok(json) = serde_json::to_string_pretty(&json_val) {
-                                        decoded_val = Some(json);
-                                    }
-                                }
-                            }
-                        }
-                        schema_registry_converter::schema_registry_common::SchemaType::Json => {
-                            let future = sr_decoders.json.decode(Some(bytes));
-                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                                if let Ok(json) =
-                                    serde_json::to_string_pretty(&decoded_result.value)
-                                {
-                                    decoded_val = Some(json);
-                                }
-                            }
-                        }
-                        schema_registry_converter::schema_registry_common::SchemaType::Protobuf => {
-                            let future = sr_decoders.proto.decode_with_context(Some(bytes));
-                            if let Ok(Some(decoded_result)) = tokio_runtime.block_on(future) {
-                                let json_val = convert_protofish_message(
-                                    &decoded_result.value,
-                                    &decoded_result.context.context,
-                                );
-                                if let Ok(json) = serde_json::to_string_pretty(&json_val) {
-                                    decoded_val = Some(json);
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
+    if bytes.is_empty() {
+        return DecodedSide {
+            component: decode_raw_fallback(bytes, binary_placeholder),
+            registry_schema: None,
+            local_schema: None,
+        };
+    }
+
+    let Some(side_local) = local else {
+        return DecodedSide {
+            component: decode_component(
+                tokio_runtime,
+                decoders,
+                Some(bytes),
+                has_subject,
+                binary_placeholder,
+            ),
+            registry_schema: message_schema(tokio_runtime, decoders, Some(bytes)),
+            local_schema: None,
+        };
+    };
+
+    if side_local.mode() == LocalSchemaMode::Fallback {
+        if let Some(comp) = try_decode_registry(tokio_runtime, decoders, bytes, has_subject) {
+            return DecodedSide {
+                component: comp,
+                registry_schema: message_schema(tokio_runtime, decoders, Some(bytes)),
+                local_schema: None,
+            };
         }
     }
 
-    if decoded_val.is_some() {
-        decoded_val
-    } else {
-        match std::str::from_utf8(bytes) {
-            Ok(string_val) => Some(string_val.to_string()),
-            Err(_) => {
-                let hex_str = hex::encode(bytes);
-                Some(format!("{}:{}", binary_placeholder, hex_str))
+    match side_local {
+        SideLocalSchema::LoadError {
+            file_name,
+            format,
+            message_type,
+            framing,
+            error,
+            ..
+        } => DecodedSide {
+            component: decode_raw_fallback(bytes, binary_placeholder),
+            registry_schema: None,
+            local_schema: Some(LocalSchemaUse {
+                file_name: file_name.clone(),
+                format: *format,
+                message_type: message_type.clone(),
+                framing: *framing,
+                wire_schema_id: None,
+                error: Some(error.clone()),
+            }),
+        },
+        SideLocalSchema::Loaded { schema, .. } => {
+            match kafkalyzer_core::local_schema::decode_with_local(schema, bytes) {
+                Ok(decoded) => DecodedSide {
+                    component: DecodedComponent {
+                        json: decoded.json,
+                        text: decoded.text,
+                    },
+                    registry_schema: None,
+                    local_schema: Some(LocalSchemaUse {
+                        file_name: schema.file_name.clone(),
+                        format: schema.format,
+                        message_type: decoded
+                            .message_type
+                            .or_else(|| schema.selected_message.clone()),
+                        framing: decoded.framing_used,
+                        wire_schema_id: decoded.wire_schema_id,
+                        error: None,
+                    }),
+                },
+                Err(err) => DecodedSide {
+                    component: decode_raw_fallback(bytes, binary_placeholder),
+                    registry_schema: None,
+                    local_schema: Some(LocalSchemaUse {
+                        file_name: schema.file_name.clone(),
+                        format: schema.format,
+                        message_type: schema.selected_message.clone(),
+                        framing: schema.framing,
+                        wire_schema_id: None,
+                        error: Some(err),
+                    }),
+                },
             }
         }
     }
@@ -1998,6 +2308,8 @@ fn log_to_dart(sink: &StreamSink<KafkaMessage>, message: String) {
         headers: None,
         key_schema: None,
         value_schema: None,
+        key_local_schema: None,
+        value_local_schema: None,
     };
     sink.add(msg).ok();
 }
@@ -2013,95 +2325,10 @@ fn send_eof(sink: &StreamSink<KafkaMessage>, topic: &str) {
         headers: None,
         key_schema: None,
         value_schema: None,
+        key_local_schema: None,
+        value_local_schema: None,
     };
     let _ = sink.add(eof_msg);
-}
-
-fn convert_protofish_message(
-    msg: &protofish::decode::MessageValue,
-    context: &protofish::context::Context,
-) -> serde_json::Value {
-    let mut map = serde_json::Map::new();
-    let message_info = context.resolve_message(msg.msg_ref);
-
-    for field in &msg.fields {
-        let field_name = message_info
-            .get_field(field.number)
-            .map(|f| f.name.clone())
-            .unwrap_or_else(|| format!("field_{}", field.number));
-
-        let json_val = convert_protofish_value(&field.value, context);
-        map.insert(field_name, json_val);
-    }
-    serde_json::Value::Object(map)
-}
-
-fn convert_protofish_value(
-    val: &protofish::decode::Value,
-    context: &protofish::context::Context,
-) -> serde_json::Value {
-    use protofish::decode::Value;
-    match val {
-        Value::Double(v) => serde_json::json!(v),
-        Value::Float(v) => serde_json::json!(v),
-        Value::Int32(v) => serde_json::json!(v),
-        Value::Int64(v) => serde_json::json!(v),
-        Value::UInt32(v) => serde_json::json!(v),
-        Value::UInt64(v) => serde_json::json!(v),
-        Value::SInt32(v) => serde_json::json!(v),
-        Value::SInt64(v) => serde_json::json!(v),
-        Value::Fixed32(v) => serde_json::json!(v),
-        Value::Fixed64(v) => serde_json::json!(v),
-        Value::SFixed32(v) => serde_json::json!(v),
-        Value::SFixed64(v) => serde_json::json!(v),
-        Value::Bool(v) => serde_json::json!(v),
-        Value::String(v) => serde_json::Value::String(v.clone()),
-        Value::Bytes(v) => serde_json::Value::String(format!("0x{}", hex::encode(v))),
-        Value::Message(msg) => convert_protofish_message(msg, context),
-        Value::Enum(ev) => {
-            let enum_info = context.resolve_enum(ev.enum_ref);
-            let name = enum_info
-                .get_field_by_value(ev.value)
-                .map(|f| f.name.clone())
-                .unwrap_or_else(|| ev.value.to_string());
-            serde_json::Value::String(name)
-        }
-        Value::Packed(arr) => {
-            use protofish::decode::PackedArray;
-            match arr {
-                PackedArray::Double(v) => serde_json::json!(v),
-                PackedArray::Float(v) => serde_json::json!(v),
-                PackedArray::Int32(v) => serde_json::json!(v),
-                PackedArray::Int64(v) => serde_json::json!(v),
-                PackedArray::UInt32(v) => serde_json::json!(v),
-                PackedArray::UInt64(v) => serde_json::json!(v),
-                PackedArray::SInt32(v) => serde_json::json!(v),
-                PackedArray::SInt64(v) => serde_json::json!(v),
-                PackedArray::Fixed32(v) => serde_json::json!(v),
-                PackedArray::Fixed64(v) => serde_json::json!(v),
-                PackedArray::SFixed32(v) => serde_json::json!(v),
-                PackedArray::SFixed64(v) => serde_json::json!(v),
-                PackedArray::Bool(v) => serde_json::json!(v),
-            }
-        }
-        Value::Incomplete(_, bytes) => {
-            serde_json::Value::String(format!("Incomplete: 0x{}", hex::encode(bytes)))
-        }
-        Value::Unknown(uk) => {
-            use protofish::decode::UnknownValue;
-            match uk {
-                UnknownValue::Varint(v) => serde_json::json!(v.to_string()),
-                UnknownValue::Fixed64(v) => serde_json::json!(v),
-                UnknownValue::VariableLength(v) => {
-                    serde_json::Value::String(format!("0x{}", hex::encode(v)))
-                }
-                UnknownValue::Fixed32(v) => serde_json::json!(v),
-                UnknownValue::Invalid(_, bytes) => {
-                    serde_json::Value::String(format!("Invalid: 0x{}", hex::encode(bytes)))
-                }
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -2266,5 +2493,377 @@ mod schema_side_tests {
     fn a_plain_key_next_to_an_encoded_value_stays_without_a_schema() {
         let decoders = decoders();
         assert!(message_schema(shared_runtime(), &decoders, Some(b"order-1")).is_none());
+    }
+}
+
+#[cfg(test)]
+mod filter_expression_integration_tests {
+    use super::*;
+    use kafkalyzer_core::filter_expr::MessageView;
+    use rdkafka::message::{OwnedHeaders, OwnedMessage};
+
+    #[test]
+    fn decode_component_regression_json_utf8_binary() {
+        let rt = shared_runtime();
+        let json_comp = decode_component(rt, &None, Some(br#"{"a":1}"#), false, "<Binary Data>");
+        assert_eq!(json_comp.json, Some(serde_json::json!({"a": 1})));
+        assert_eq!(json_comp.text.as_deref(), Some(r#"{"a":1}"#));
+
+        let text_comp = decode_component(rt, &None, Some(b"hello"), false, "<Binary Data>");
+        assert_eq!(text_comp.json, None);
+        assert_eq!(text_comp.text.as_deref(), Some("hello"));
+
+        let bin_comp =
+            decode_component(rt, &None, Some(&[0xff, 0x00, 0xfe]), false, "<Binary Data>");
+        assert_eq!(bin_comp.json, None);
+        assert_eq!(bin_comp.text.as_deref(), Some("<Binary Data>:ff00fe"));
+    }
+
+    #[test]
+    fn lazy_message_does_not_decode_value_on_key_or_partition_mismatch() {
+        let msg = OwnedMessage::new(
+            Some(br#"{"status":"FAILED"}"#.to_vec()),
+            Some(b"order-1".to_vec()),
+            "orders".to_string(),
+            rdkafka::Timestamp::NotAvailable,
+            2,
+            42,
+            Some(OwnedHeaders::new().insert(rdkafka::message::Header {
+                key: "eventType",
+                value: Some(b"OrderCreated"),
+            })),
+        );
+
+        let lazy = LazyMessage::new(&msg, shared_runtime(), &None, false, false, None, None);
+        let (expr, canonical) = compile_filter_expression(
+            Some(r#"key = "order-999" AND value.status = "FAILED""#),
+            None,
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(
+            canonical,
+            r#"key = "order-999" AND value.status = "FAILED""#
+        );
+        assert!(!expr.evaluate(&lazy));
+        assert_eq!(lazy.value_decode_calls.get(), 0);
+        assert_eq!(lazy.timestamp(), None);
+        assert_eq!(lazy.header("eventType"), Some(b"OrderCreated".as_slice()));
+    }
+
+    #[test]
+    fn invalid_filter_expression_fails_before_broker_connection() {
+        let err = compile_filter_expression(Some("invalidSource = 1"), None).unwrap_err();
+        assert!(err.to_string().contains("Invalid filter expression"));
+    }
+}
+
+#[cfg(test)]
+mod spike_s1_proto_index_tests {
+    use protofish::context::{Context as ProtoContext, TypeRef};
+    use schema_registry_converter::proto_resolver::MessageResolver;
+
+    fn read_varint_i64(input: &[u8]) -> Result<(i64, &[u8]), &'static str> {
+        let mut val: u64 = 0;
+        let mut shift = 0u32;
+        for (idx, &b) in input.iter().enumerate() {
+            if idx >= 10 {
+                return Err("varint too long");
+            }
+            val |= u64::from(b & 0x7f) << shift;
+            if b & 0x80 == 0 {
+                // Confluent wire format uses zigzag-encoded signed varint (or unsigned; for small >=0 they match,
+                // wait: schema_registry_converter uses VarIntReader which is unsigned/LEB128 or zigzag? Let's test!)
+                return Ok((val as i64, &input[idx + 1..]));
+            }
+            shift += 7;
+        }
+        Err("truncated varint")
+    }
+
+    fn parse_message_indexes(payload_after_id: &[u8]) -> Result<(Vec<i32>, &[u8]), &'static str> {
+        let Some((&first, rest)) = payload_after_id.split_first() else {
+            return Err("empty index list");
+        };
+        if first == 0 {
+            return Ok((vec![0], rest));
+        }
+        let (count, mut cursor) = read_varint_i64(payload_after_id)?;
+        if count <= 0 || count > 32 {
+            return Err("invalid index count");
+        }
+        let mut indexes = Vec::with_capacity(count as usize);
+        for _ in 0..count {
+            let (idx, next) = read_varint_i64(cursor)?;
+            if idx < 0 || idx > i64::from(i32::MAX) {
+                return Err("negative or out-of-range index");
+            }
+            indexes.push(idx as i32);
+            cursor = next;
+        }
+        Ok((indexes, cursor))
+    }
+
+    fn scan_top_level(source: &str) -> Vec<String> {
+        let mut pkg: Option<String> = None;
+        let mut msgs = Vec::new();
+        let mut depth = 0i32;
+        for line in source.lines() {
+            let trimmed = line.trim();
+            if depth == 0 {
+                if let Some(rest) = trimmed.strip_prefix("package ") {
+                    if let Some(p) = rest.strip_suffix(';') {
+                        pkg = Some(p.trim().to_string());
+                    }
+                } else if let Some(rest) = trimmed.strip_prefix("message ") {
+                    if let Some(name) = rest.split('{').next().map(str::trim) {
+                        let full = match &pkg {
+                            Some(p) => format!("{p}.{name}"),
+                            None => name.to_string(),
+                        };
+                        msgs.push(full);
+                    }
+                }
+            }
+            depth += trimmed.matches('{').count() as i32;
+            depth -= trimmed.matches('}').count() as i32;
+        }
+        msgs
+    }
+
+    fn resolve_index_path(
+        ctx: &ProtoContext,
+        top_level: &[String],
+        indexes: &[i32],
+    ) -> Option<String> {
+        let (&first, rest) = indexes.split_first()?;
+        let top_name = top_level.get(usize::try_from(first).ok()?)?;
+        let mut current = ctx.get_message(top_name)?;
+        for &idx in rest {
+            let idx_usize = usize::try_from(idx).ok()?;
+            let msg_ref = current
+                .inner_types
+                .iter()
+                .filter_map(|t| match t {
+                    TypeRef::Message(m) => Some(*m),
+                    _ => None,
+                })
+                .nth(idx_usize)?;
+            current = ctx.resolve_message(msg_ref);
+        }
+        Some(current.full_name.clone())
+    }
+
+    #[test]
+    fn spike_s1_compare_message_index_resolution() {
+        let proto = r#"
+syntax = "proto3";
+package acme;
+
+message Order {
+  enum Status {
+    NEW = 0;
+  }
+  message Line {
+    string sku = 1;
+  }
+  message Meta {
+    string k = 1;
+  }
+  message Deep {
+    enum Flag {
+      NONE = 0;
+    }
+    message A { int32 a = 1; }
+    message B { int32 b = 1; }
+    B b = 1;
+  }
+  string id = 1;
+}
+
+enum GlobalKind {
+  GK_UNSPECIFIED = 0;
+}
+
+message Envelope {
+  message Item {
+    string name = 1;
+  }
+  Item item = 1;
+}
+"#;
+        let ctx = ProtoContext::parse([proto]).unwrap();
+        let top_level = scan_top_level(proto);
+        let resolver = MessageResolver::new(proto);
+
+        let cases: &[(&[u8], &[i32], &str)] = &[
+            (&[0x00, 0xaa], &[0], "acme.Order"),
+            (&[0x01, 0x01, 0xaa], &[1], "acme.Envelope"),
+            (&[0x02, 0x01, 0x00, 0xaa], &[1, 0], "acme.Envelope.Item"),
+            (
+                &[0x03, 0x00, 0x02, 0x01, 0xaa],
+                &[0, 2, 1],
+                "acme.Order.Deep.B",
+            ),
+        ];
+
+        for (wire, expected_path, expected_name) in cases {
+            let (parsed, rest) = parse_message_indexes(wire).unwrap();
+            assert_eq!(parsed.as_slice(), *expected_path);
+            assert_eq!(rest, &[0xaa]);
+
+            let ours = resolve_index_path(&ctx, &top_level, &parsed).unwrap();
+            let theirs = resolver
+                .find_name(&parsed)
+                .unwrap()
+                .trim_start_matches('.')
+                .to_string();
+            assert_eq!(ours, *expected_name);
+            assert_eq!(ours, theirs);
+        }
+
+        // Truncated and over-long varint / count lists never panic
+        assert!(parse_message_indexes(&[]).is_err());
+        assert!(parse_message_indexes(&[0x80]).is_err()); // truncated varint
+        assert!(parse_message_indexes(&[0x02, 0x00]).is_err()); // truncated list
+        assert!(parse_message_indexes(&[33, 0]).is_err()); // count > 32
+        assert!(parse_message_indexes(&[
+            0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01
+        ])
+        .is_err());
+    }
+}
+
+#[cfg(test)]
+mod local_schema_decode_side_tests {
+    use super::*;
+    use kafkalyzer_core::local_schema::{
+        load_local_schema, Framing, LocalDecodeError, LocalDecodeErrorKind, LocalSchemaFormat,
+    };
+    use rdkafka::message::OwnedMessage;
+
+    const AVRO_SCHEMA: &str =
+        r#"{"type":"record","name":"Order","fields":[{"name":"id","type":"string"}]}"#;
+
+    fn avro_prefixed_payload(schema_id: u32, id_val: &str) -> Vec<u8> {
+        let schema = apache_avro::Schema::parse_str(AVRO_SCHEMA).unwrap();
+        let datum = apache_avro::to_avro_datum(
+            &schema,
+            apache_avro::types::Value::Record(vec![(
+                "id".to_string(),
+                apache_avro::types::Value::String(id_val.to_string()),
+            )]),
+        )
+        .unwrap();
+        let mut out = vec![0x00];
+        out.extend_from_slice(&schema_id.to_be_bytes());
+        out.extend_from_slice(&datum);
+        out
+    }
+
+    #[test]
+    fn decode_side_no_registry_local_avro_and_failure_keeps_raw() {
+        let rt = shared_runtime();
+        let loaded = std::sync::Arc::new(
+            load_local_schema(
+                "orders.avsc",
+                AVRO_SCHEMA.as_bytes(),
+                LocalSchemaFormat::Avro,
+                None,
+                Framing::Auto,
+            )
+            .unwrap(),
+        );
+        let side_local = SideLocalSchema::Loaded {
+            schema: loaded,
+            mode: LocalSchemaMode::Fallback,
+        };
+
+        let payload = avro_prefixed_payload(42, "ord-7");
+        let ok = decode_side(
+            rt,
+            &None,
+            Some(&payload),
+            false,
+            "<Binary Data>",
+            Some(&side_local),
+        );
+        assert_eq!(ok.component.json.unwrap()["id"], "ord-7");
+        let prov = ok.local_schema.unwrap();
+        assert_eq!(prov.file_name, "orders.avsc");
+        assert_eq!(prov.wire_schema_id, Some(42));
+        assert_eq!(prov.error, None);
+
+        // Local failure keeps raw rendering + error
+        let bad_bytes = &[0xff, 0x00, 0xfe];
+        let baseline = decode_component(rt, &None, Some(bad_bytes), false, "<Binary Data>");
+        let fail = decode_side(
+            rt,
+            &None,
+            Some(bad_bytes),
+            false,
+            "<Binary Data>",
+            Some(&side_local),
+        );
+        assert_eq!(fail.component.text, baseline.text);
+        assert!(fail.local_schema.unwrap().error.is_some());
+
+        // No assignment -> byte-identical to decode_component
+        let none_side = decode_side(rt, &None, Some(bad_bytes), false, "<Binary Data>", None);
+        assert_eq!(none_side.component.text, baseline.text);
+        assert!(none_side.local_schema.is_none());
+    }
+
+    #[test]
+    fn process_message_with_missing_local_file_emits_raw_with_file_not_found() {
+        let rt = shared_runtime();
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        let sink = StreamSink::new(tx);
+        let loaded_local = LoadedTopicLocalSchemas {
+            key: None,
+            value: Some(SideLocalSchema::LoadError {
+                file_name: "missing.avsc".to_string(),
+                format: LocalSchemaFormat::Avro,
+                message_type: None,
+                framing: Framing::Auto,
+                mode: LocalSchemaMode::Fallback,
+                error: LocalDecodeError::new(
+                    LocalDecodeErrorKind::FileNotFound,
+                    "Local schema file 'missing.avsc' was not found",
+                ),
+            }),
+        };
+        let msg = OwnedMessage::new(
+            Some(b"raw-payload".to_vec()),
+            Some(b"k1".to_vec()),
+            "orders".to_string(),
+            rdkafka::Timestamp::CreateTime(1000),
+            0,
+            5,
+            None,
+        );
+        let mut matched = 0;
+        let res = process_and_send_message(
+            &msg,
+            rt,
+            &None,
+            false,
+            false,
+            &loaded_local,
+            &None,
+            &[],
+            &None,
+            &FilterType::Contains,
+            SearchScope::Both,
+            None,
+            &sink,
+            &mut matched,
+        );
+        assert!(matches!(res, ProcessMessageResult::Matched));
+        let emitted = rx.try_recv().unwrap();
+        assert_eq!(emitted.payload.as_deref(), Some("raw-payload"));
+        let prov = emitted.value_local_schema.unwrap();
+        assert_eq!(prov.file_name, "missing.avsc");
+        assert_eq!(prov.error.unwrap().kind, LocalDecodeErrorKind::FileNotFound);
     }
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -14,6 +15,7 @@ import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
+import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
 import 'package:material_ui/material_ui.dart';
@@ -91,6 +93,11 @@ void main() {
     getIt.registerSingleton<SettingsService>(mockSettingsService);
     getIt.registerSingleton<SessionRestoreService>(SessionRestoreService());
     getIt.registerSingleton<AppearanceSettings>(AppearanceSettings());
+    getIt.registerSingleton<TopicAnalysisHistoryService>(
+      TopicAnalysisHistoryService(
+        supportDirectoryProvider: () async => Directory.systemTemp,
+      ),
+    );
     when(mockSettingsService.writeInt(any, any)).thenAnswer((invocation) async {
       final setting = invocation.positionalArguments[0] as IntSetting;
       final value = invocation.positionalArguments[1] as int;
@@ -116,6 +123,15 @@ void main() {
   }
 
   group('SettingsView', () {
+    Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+      await tester.scrollUntilVisible(
+        finder,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('renders general settings', (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.0;
@@ -132,11 +148,24 @@ void main() {
       expect(find.text('General'), findsOneWidget);
       expect(find.text('Default Script Output Directory'), findsOneWidget);
       expect(find.text('/tmp'), findsOneWidget);
-      expect(find.text('Restore open tabs on startup'), findsOneWidget);
       expect(find.text('Max Script Runs to keep'), findsOneWidget);
-      expect(find.text('50'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('max_run_history_field')),
+          matching: find.text('50'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Maximum Concurrent Lag Queries'), findsOneWidget);
-      expect(find.text('10'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('max_concurrent_lag_queries_field')),
+          matching: find.text('10'),
+        ),
+        findsOneWidget,
+      );
+      await scrollTo(tester, find.text('Restore open tabs on startup'));
+      expect(find.text('Restore open tabs on startup'), findsOneWidget);
     });
 
     testWidgets('toggles restore open tabs on startup setting', (tester) async {
@@ -152,6 +181,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final switchFinder = find.byKey(const Key('restore_open_tabs_switch'));
+      await scrollTo(tester, switchFinder);
       expect(switchFinder, findsOneWidget);
 
       final sessionService = GetIt.instance<SessionRestoreService>();
@@ -203,19 +233,11 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
+      await scrollTo(tester, find.text('Configuration'));
       expect(find.text('Configuration'), findsOneWidget);
       expect(find.text('Export Configuration'), findsOneWidget);
       expect(find.text('Import Configuration'), findsOneWidget);
     });
-
-    Future<void> scrollTo(WidgetTester tester, Finder finder) async {
-      await tester.scrollUntilVisible(
-        finder,
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-    }
 
     testWidgets('renders cluster list', (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
@@ -890,6 +912,66 @@ void main() {
       },
     );
 
+    testWidgets(
+      'partition_skew_threshold_field rejects 0 and 150, persists valid value, and resets to 50',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final realSettings = SettingsService();
+        GetIt.instance.unregister<SettingsService>();
+        GetIt.instance.registerSingleton<SettingsService>(realSettings);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        final fieldFinder = find.byKey(
+          const Key('partition_skew_threshold_field'),
+        );
+        await scrollTo(tester, fieldFinder);
+
+        for (final invalid in ['0', '150']) {
+          await tester.enterText(fieldFinder, invalid);
+          await tester.pumpAndSettle();
+          expect(
+            tester.widget<TextField>(fieldFinder).decoration?.errorText,
+            isNotNull,
+          );
+        }
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getInt(SettingsService.partitionSkewThresholdSetting.key),
+          isNull,
+        );
+
+        await tester.enterText(fieldFinder, '75');
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<TextField>(fieldFinder).decoration?.errorText,
+          isNull,
+        );
+        expect(
+          prefs.getInt(SettingsService.partitionSkewThresholdSetting.key),
+          75,
+        );
+
+        await scrollTo(tester, find.byKey(const Key('reset_general_button')));
+        await tester.tap(find.byKey(const Key('reset_general_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Reset'));
+        await tester.pumpAndSettle();
+        expect(
+          prefs.getInt(SettingsService.partitionSkewThresholdSetting.key),
+          50,
+        );
+      },
+    );
+
     testWidgets('renders German settings labels when locale is de', (
       tester,
     ) async {
@@ -908,5 +990,51 @@ void main() {
 
       expect(find.text('Einstellungen'), findsOneWidget);
     });
+
+    testWidgets(
+      'delete saved analysis reports button confirms and shows success SnackBar',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        var cleared = false;
+        GetIt.instance.unregister<TopicAnalysisHistoryService>();
+        GetIt.instance.registerSingleton<TopicAnalysisHistoryService>(
+          _FakeSettingsHistoryService(onClearAll: () => cleared = true),
+        );
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        final btn = find.byKey(
+          const Key('delete_saved_analysis_reports_button'),
+        );
+        await scrollTo(tester, btn);
+        await tester.tap(btn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Delete all saved analysis reports?'), findsOneWidget);
+        await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+        await tester.pumpAndSettle();
+
+        expect(cleared, isTrue);
+        expect(find.text('Saved analysis reports deleted.'), findsOneWidget);
+      },
+    );
   });
+}
+
+class _FakeSettingsHistoryService extends TopicAnalysisHistoryService {
+  final VoidCallback onClearAll;
+  _FakeSettingsHistoryService({required this.onClearAll});
+
+  @override
+  Future<void> clearAll() async {
+    onClearAll();
+  }
 }

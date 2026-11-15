@@ -19,6 +19,13 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topi
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+
+class _EmptyHistoryService extends TopicAnalysisHistoryService {
+  @override
+  Future<HistoryListing> list(String clusterName, String topic) async =>
+      const HistoryListing(entries: [], unreadableCount: 0);
+}
 
 class FakeExportService extends TopicAnalysisExportService {
   String? exportResult;
@@ -57,6 +64,7 @@ TopicAnalysisReportFile _file(String topic, int messages) =>
         avgMessageSize: 20.0,
         tombstonesCount: 0,
         isCompacted: false,
+        cleanupPolicyUnknown: false,
         nullKeysCount: 0,
         partitionStats: const [],
         hourlyDistribution: const [],
@@ -88,6 +96,7 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
     avgMessageSize: 20.48,
     tombstonesCount: 3,
     isCompacted: true,
+    cleanupPolicyUnknown: false,
     nullKeysCount: 12,
     partitionStats: const [
       PartitionAnalysis(
@@ -190,6 +199,11 @@ void main() {
 
   setUp(() {
     resetMockitoState();
+    if (!GetIt.instance.isRegistered<TopicAnalysisHistoryService>()) {
+      GetIt.instance.registerSingleton<TopicAnalysisHistoryService>(
+        _EmptyHistoryService(),
+      );
+    }
     when(
       mockApi.crateApiReportCompareCompareReports(
         before: anyNamed('before'),
@@ -288,6 +302,8 @@ void main() {
       // Tap the Import button's label.
       await tester.tap(find.text('Import Analysis Report'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
+      await tester.pumpAndSettle();
 
       expect(fake.importCalled, isTrue);
       expect(controller.isImported, isTrue);
@@ -322,9 +338,13 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Import Analysis Report'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
+      await tester.pumpAndSettle();
 
       fake.importResult = _file('orders', 1200);
       await tester.tap(find.byKey(const Key('analysis_compare_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('report_comparison_view')), findsOneWidget);
@@ -346,9 +366,13 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Import Analysis Report'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
+      await tester.pumpAndSettle();
 
       fake.importResult = _file('shipments', 1200);
       await tester.tap(find.byKey(const Key('analysis_compare_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('report_comparison_view')), findsNothing);
@@ -374,9 +398,13 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Import Analysis Report'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
+      await tester.pumpAndSettle();
 
       fake.importResult = null;
       await tester.tap(find.byKey(const Key('analysis_compare_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('report_comparison_view')), findsNothing);
@@ -392,6 +420,8 @@ void main() {
       await tester.pumpWidget(buildView(controller));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Import Analysis Report'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
       await tester.pumpAndSettle();
 
       expect(
@@ -420,6 +450,7 @@ void main() {
             avgMessageSize: 20.0,
             tombstonesCount: 0,
             isCompacted: false,
+            cleanupPolicyUnknown: false,
             nullKeysCount: 0,
             partitionStats: const [],
             hourlyDistribution: const [],
@@ -444,6 +475,8 @@ void main() {
         await tester.pumpWidget(buildView(controller));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Import Analysis Report'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('From file…'));
         await tester.pumpAndSettle();
 
         expect(find.text('Recent Production'), findsOneWidget);
@@ -471,6 +504,7 @@ void main() {
             avgMessageSize: 20.0,
             tombstonesCount: 0,
             isCompacted: false,
+            cleanupPolicyUnknown: false,
             nullKeysCount: 0,
             partitionStats: const [],
             hourlyDistribution: const [],
@@ -502,6 +536,8 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Import Analysis Report'));
         await tester.pumpAndSettle();
+        await tester.tap(find.text('From file…'));
+        await tester.pumpAndSettle();
 
         expect(find.text('Filter Matches'), findsOneWidget);
         expect(find.text('attributes.region = "EU"'), findsOneWidget);
@@ -526,6 +562,7 @@ void main() {
           avgMessageSize: 20.0,
           tombstonesCount: 0,
           isCompacted: false,
+          cleanupPolicyUnknown: false,
           nullKeysCount: 0,
           partitionStats: const [],
           hourlyDistribution: const [],
@@ -551,6 +588,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Import Analysis Report'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('From file…'));
+      await tester.pumpAndSettle();
 
       expect(
         find.text('Timeline is not available for this report.'),
@@ -575,6 +614,7 @@ void main() {
             avgMessageSize: 20.0,
             tombstonesCount: 0,
             isCompacted: false,
+            cleanupPolicyUnknown: false,
             nullKeysCount: 0,
             partitionStats: const [],
             hourlyDistribution: const [],
@@ -608,6 +648,9 @@ void main() {
                   sampleTimestampMs: 1730000000000,
                 ),
               ],
+              estimated: false,
+              untrackedMessages: 0,
+              samplesCapped: false,
             ),
           ),
         );
@@ -617,6 +660,8 @@ void main() {
         await tester.pumpWidget(buildView(controller));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Import Analysis Report'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('From file…'));
         await tester.pumpAndSettle();
 
         expect(find.text('Top Duplicated Messages'), findsOneWidget);

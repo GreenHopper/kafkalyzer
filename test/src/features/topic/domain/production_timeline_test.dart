@@ -6,6 +6,7 @@ TopicAnalysisReport _buildReport({
   required List<HourBucket> hourlyTimeline,
   int? scanReferenceTimeMs,
   int? completeFromMs,
+  int? completeUntilMs,
   ValueFilterResult? valueFilterResult,
 }) {
   return TopicAnalysisReport(
@@ -17,6 +18,7 @@ TopicAnalysisReport _buildReport({
     avgMessageSize: 50.0,
     tombstonesCount: 0,
     isCompacted: false,
+    cleanupPolicyUnknown: false,
     nullKeysCount: 0,
     partitionStats: const [],
     hourlyDistribution: const [],
@@ -31,6 +33,7 @@ TopicAnalysisReport _buildReport({
     hourlyTimeline: hourlyTimeline,
     scanReferenceTimeMs: scanReferenceTimeMs,
     completeFromMs: completeFromMs,
+    completeUntilMs: completeUntilMs,
     timelineOutsideCount: 0,
     valueFilterResult: valueFilterResult,
   );
@@ -413,5 +416,55 @@ void main() {
       expect(hours.length, 24);
       expect(domain.dailyDistribution().isNotEmpty, isTrue);
     });
+  });
+
+  group('ProductionTimeline completeUntilMs (7.4)', () {
+    test(
+      'oldest-N ending 3 days before scan moment marks whole 24h window uncovered',
+      () {
+        final scanRef = DateTime.utc(2026, 5, 10, 12, 0).millisecondsSinceEpoch;
+        final endMs = DateTime.utc(2026, 5, 7, 12, 0).millisecondsSinceEpoch;
+        final report = _buildReport(
+          hourlyTimeline: const [],
+          scanReferenceTimeMs: scanRef,
+          completeUntilMs: endMs,
+        );
+        final domain = ProductionTimeline(
+          report: report,
+          toLocal: (ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true),
+        );
+        final hours = domain.recentHours(windowHours: 24);
+        expect(hours.every((h) => !h.isCovered), isTrue);
+        expect(domain.isWindowPartiallyCovered(24), isTrue);
+      },
+    );
+
+    test(
+      '14:00-16:00 range marks before/after uncovered and the day partial',
+      () {
+        final scanRef = DateTime.utc(2026, 5, 10, 20, 0).millisecondsSinceEpoch;
+        final fromMs = DateTime.utc(2026, 5, 10, 14, 0).millisecondsSinceEpoch;
+        final untilMs = DateTime.utc(2026, 5, 10, 16, 0).millisecondsSinceEpoch;
+        final hour14 = fromMs ~/ 3600000;
+        final report = _buildReport(
+          hourlyTimeline: [HourBucket(epochHour: hour14, count: 50)],
+          scanReferenceTimeMs: scanRef,
+          completeFromMs: fromMs,
+          completeUntilMs: untilMs,
+        );
+        final domain = ProductionTimeline(
+          report: report,
+          toLocal: (ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true),
+        );
+        final hours = domain.recentHours(windowHours: 24);
+        final coveredHours = hours
+            .where((h) => h.isCovered)
+            .map((h) => h.startTime.hour)
+            .toList();
+        expect(coveredHours, [14, 15]);
+        final days = domain.dailyDistribution();
+        expect(days.first.isPartiallyCovered, isTrue);
+      },
+    );
   });
 }

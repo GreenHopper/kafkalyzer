@@ -39,6 +39,7 @@ TopicAnalysisReport _report(String topic, int messages) => TopicAnalysisReport(
   avgMessageSize: 20.0,
   tombstonesCount: 0,
   isCompacted: false,
+  cleanupPolicyUnknown: false,
   nullKeysCount: 0,
   partitionStats: const [],
   hourlyDistribution: const [],

@@ -17,8 +17,10 @@ import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_se
 import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search_bar.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
+import 'package:kafkalyzer/src/features/topic/domain/topic_list_query.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as api;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -108,9 +110,8 @@ class _FakeTopicAnalysisController extends ChangeNotifier
   @override
   DateTime? get startTime => null;
   @override
-  int? get maxMessages => null;
-  @override
-  bool get sampleFromLatest => true;
+  AnalysisScope get scope =>
+      const AnalysisScope(limitFrom: ScopeLimitFrom.newest);
   @override
   double get progressRatio => 0.0;
   @override
@@ -273,13 +274,32 @@ void main() {
         when(mockActive.error).thenReturn(null);
         when(mockActive.topicFilter).thenReturn('');
         when(mockActive.topics).thenReturn([testTopic]);
+        when(mockActive.topicListQuery).thenReturn(const TopicListQuery());
+        when(mockActive.topicFilterMode).thenReturn(TopicFilterMode.substring);
+        when(mockActive.topicSortOrder).thenReturn(TopicSortOrder.name);
+        when(mockActive.groupTopicsByPrefix).thenReturn(false);
+        when(mockActive.favouriteTopics).thenReturn(const <String>{});
+        when(mockActive.topicPreferencesUnreadable).thenReturn(false);
+        when(mockActive.topicPreferencesWriteBlocked).thenReturn(false);
+        when(
+          mockActive.topicListView,
+        ).thenReturn(buildTopicListView([testTopic], const TopicListQuery()));
         when(mockActive.openTopics).thenReturn([tab]);
         when(mockActive.activeTopic).thenReturn(tab);
         when(mockActive.unrestoredTopics).thenReturn(const []);
         when(mockActive.getStreamController(any)).thenReturn(streamCtrl);
         when(mockActive.getAnalysisController(any)).thenReturn(analysisCtrl);
+        when(mockActive.unhealthyTopicsOnly).thenReturn(false);
+        when(mockActive.getTopicFactsController(any, any, any, any)).thenReturn(
+          TopicFactsController(profile: testProfile, topicName: testTopic.name),
+        );
         when(mockTopics.hasCachedTopics(testProfile)).thenReturn(true);
         when(mockTopics.getTopics(testProfile)).thenReturn([testTopic]);
+        when(mockTopics.fetchedAt(testProfile)).thenReturn(null);
+        when(mockTopics.findTopic(any, any)).thenReturn(null);
+        when(
+          mockTopics.configFor(any, any),
+        ).thenReturn(const TopicConfigView.loading());
         when(mockTopics.isLoading(testProfile)).thenReturn(false);
         when(mockTopics.errorFor(any)).thenReturn(null);
         when(mockSchemas.isLoading(any)).thenReturn(false);

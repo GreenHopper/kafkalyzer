@@ -144,6 +144,40 @@ class DuplicateAnalysisView extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
+            if (result!.estimated || result!.samplesCapped) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  if (result!.estimated)
+                    Chip(
+                      avatar: Icon(
+                        Icons.warning_amber_rounded,
+                        size: 16,
+                        color: colorScheme.error,
+                      ),
+                      label: Text(
+                        '${l10n?.duplicateEstimatedAtLeast ?? 'Estimated (at least)'} · ${l10n?.duplicateUntrackedCount(numberFormat.format(result!.untrackedMessages)) ?? '${numberFormat.format(result!.untrackedMessages)} untracked messages'}',
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (result!.samplesCapped)
+                    Chip(
+                      avatar: Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      label: Text(
+                        l10n?.duplicateListPossiblyIncomplete ??
+                            'List possibly incomplete',
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
             if (duplicates.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20.0),

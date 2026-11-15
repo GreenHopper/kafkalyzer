@@ -12,6 +12,20 @@ class KafkaMetadataService {
     return api.fetchTopics(profile: profile);
   }
 
+  Future<api.TopicMetadata> fetchTopicMetadata({
+    required ClusterProfile profile,
+    required String topic,
+  }) {
+    return api.fetchTopicMetadata(profile: profile, topic: topic);
+  }
+
+  Future<List<api.TopicConfigResult>> describeTopicConfigs({
+    required ClusterProfile profile,
+    required List<String> topics,
+  }) {
+    return api.describeTopicConfigs(profile: profile, topics: topics);
+  }
+
   Future<api.TopicPartitionDetails> fetchTopicPartitions({
     required ClusterProfile profile,
     required String topic,
@@ -43,5 +57,30 @@ class KafkaMetadataService {
     required List<String> groupIds,
   }) {
     return api.fetchConsumerGroupLags(profile: profile, groupIds: groupIds);
+  }
+
+  Future<api.PartitionOffsetDistribution> fetchPartitionOffsets({
+    required ClusterProfile profile,
+    required String topic,
+    int? skewThresholdPercent,
+  }) {
+    return api.fetchPartitionOffsets(
+      profile: profile,
+      topic: topic,
+      skewThresholdPercent: skewThresholdPercent,
+    );
+  }
+
+  Future<api.ClusterOverview> fetchClusterOverview({
+    required ClusterProfile profile,
+  }) {
+    return api.fetchClusterOverview(profile: profile);
+  }
+
+  Future<api.TopicTimeRange> fetchTopicTimeRange({
+    required ClusterProfile profile,
+    required String topic,
+  }) {
+    return api.fetchTopicTimeRange(profile: profile, topic: topic);
   }
 }

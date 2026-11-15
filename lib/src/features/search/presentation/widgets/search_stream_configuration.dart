@@ -5,7 +5,9 @@ import 'package:uuid/uuid.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_search_preset.dart';
+import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
+import 'package:kafkalyzer/src/features/search/presentation/widgets/filter_expression_editor.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/saved_searches_service.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condition_configuration.dart';
@@ -47,6 +49,8 @@ class SearchStreamConfiguration extends StatefulWidget {
   final String? clusterName;
   final String? topicName;
   final TextEditingController? filterTermController;
+  final FilterExpressionEditingController? filterExpressionController;
+  final bool showPlaceholderHint;
   final ValueChanged<TopicSearchPreset>? onPresetApplied;
 
   const SearchStreamConfiguration({
@@ -77,6 +81,8 @@ class SearchStreamConfiguration extends StatefulWidget {
     this.clusterName,
     this.topicName,
     this.filterTermController,
+    this.filterExpressionController,
+    this.showPlaceholderHint = false,
     this.onPresetApplied,
   });
 
@@ -97,7 +103,8 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
         widget.initiallyExpanded ||
         widget.filterType != FilterType.contains ||
         widget.searchScope != SearchScope.both ||
-        widget.fastTraceEnabled;
+        widget.fastTraceEnabled ||
+        (widget.filterExpressionController?.text.trim().isNotEmpty ?? false);
     _loadPresets();
   }
 
@@ -132,6 +139,13 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
     widget.onSearchScopeChanged(preset.searchScope);
     if (widget.filterTermController != null) {
       widget.filterTermController!.text = preset.filterTerm;
+    }
+    if (widget.filterExpressionController != null) {
+      widget.filterExpressionController!.setText(preset.filterExpression);
+      final valid = widget.filterExpressionController!.validateNow();
+      if (!valid) {
+        setState(() => _isAdvancedExpanded = true);
+      }
     }
     widget.onFastTraceChanged(preset.fastTraceEnabled);
     widget.onLimitResultsChanged(preset.limitResults);
@@ -194,6 +208,7 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
         filterType: widget.filterType,
         searchScope: widget.searchScope,
         filterTerm: widget.filterTermController?.text ?? '',
+        filterExpression: widget.filterExpressionController?.text.trim() ?? '',
         fastTraceEnabled: widget.fastTraceEnabled,
         limitResults: widget.limitResults,
         maxResults: widget.maxResultsController.text,
@@ -635,6 +650,13 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
             mainGroupAlignment: MainGroupAlignment.start,
           ),
         ),
+        if (widget.filterExpressionController != null) ...[
+          const SizedBox(height: 12),
+          FilterExpressionEditor(
+            controller: widget.filterExpressionController!,
+            showPlaceholderHint: widget.showPlaceholderHint,
+          ),
+        ],
       ],
     );
   }

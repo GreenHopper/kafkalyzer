@@ -6,12 +6,18 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_
 import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart';
+import 'package:kafkalyzer/src/services/time_display_settings.dart';
 
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
+import 'package:kafkalyzer/src/rust/api/topic_config.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:kafkalyzer/src/services/topic_config_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:logger/logger.dart';
@@ -43,6 +49,20 @@ class FakeActiveConnectionController extends ChangeNotifier
     String tabIdOrTopicName, [
     String? clusterName,
   ]) => mockAnalysisController;
+
+  TopicFactsController? mockFactsController;
+
+  @override
+  TopicFactsController getTopicFactsController(
+    String tabIdOrTopicName,
+    ClusterProfile profile,
+    String topicName, [
+    String? clusterName,
+  ]) => mockFactsController ??= TopicFactsController(
+    profile: profile,
+    topicName: topicName,
+    metadataService: _NoOpFactsMetadataService(),
+  );
 
   @override
   List<OpenTopicRecord> get openTopics => topic != null && activeProfile != null
@@ -160,14 +180,22 @@ class FakeMessageStreamController extends ChangeNotifier
 }
 
 class FakeSchemaController extends ChangeNotifier implements SchemaController {
-  List<String> schemas = [];
+  List<String>? schemas = [];
   String? errorMessage;
+  final Map<String, SchemaTypeState> types = {};
 
   @override
   List<String>? getSchemas(ClusterProfile profile) => schemas;
 
   @override
   String? errorFor(ClusterProfile profile) => errorMessage;
+
+  @override
+  SchemaTypeState schemaTypeFor(
+    ClusterProfile profile,
+    String subject, {
+    int? version,
+  }) => types[subject] ?? const SchemaTypeNotLoaded();
 
   @override
   Future<void> fetchSchemas(
@@ -189,6 +217,8 @@ class FakeSchemaController extends ChangeNotifier implements SchemaController {
 class FakeKafkaMetadataService implements KafkaMetadataService {
   List<PartitionRow> partitionRows = [];
   bool unavailable = false;
+  int fetchPartitionOffsetsCallCount = 0;
+  PartitionOffsetDistribution? offsetDistribution;
 
   @override
   Future<TopicPartitionDetails> fetchTopicPartitions({
@@ -201,6 +231,26 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
       partitions: partitionRows,
       brokers: const [],
     );
+  }
+
+  @override
+  Future<PartitionOffsetDistribution> fetchPartitionOffsets({
+    required ClusterProfile profile,
+    required String topic,
+    int? skewThresholdPercent,
+  }) async {
+    fetchPartitionOffsetsCallCount++;
+    return offsetDistribution ??
+        PartitionOffsetDistribution(
+          topic: topic,
+          readAtMs: 1700000000000,
+          partitions: const [],
+          totalSpan: 0,
+          knownSpan: 0,
+          complete: true,
+          skewStatus: OffsetSkewStatus.empty,
+          skewThresholdPercent: skewThresholdPercent,
+        );
   }
 
   @override
@@ -242,6 +292,7 @@ void main() {
     getIt.registerSingleton<ScriptRunner>(fakeScriptRunner);
     getIt.registerSingleton<MultiSearchController>(fakeMultiSearchController);
     getIt.registerSingleton<KafkaMetadataService>(fakeMetadataService);
+    getIt.registerSingleton<TopicConfigService>(_FakeTopicConfigService());
     getIt.registerSingleton<Logger>(Logger());
   });
 
@@ -466,7 +517,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Schema'), findsOneWidget);
+      expect(find.text('Schema'), findsNWidgets(2));
       expect(find.text('Stream'), findsOneWidget);
       expect(find.byTooltip('Nachrichten leeren'), findsOneWidget);
       expect(find.byTooltip('Topic-Name kopieren'), findsOneWidget);
@@ -730,4 +781,646 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'not-authorized topic shows not readable tag, no 0 Partitions, and null partitionCount in search bar',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const secretTopic = TopicMetadata(
+        name: 'secret-topic',
+        partitionCount: 0,
+        replicationFactor: 0,
+        metadataError: TopicMetadataError(
+          kind: TopicMetadataErrorKind.notAuthorized,
+          message: 'TopicAuthorizationFailed',
+        ),
+      );
+      fakeActiveController.topic = secretTopic;
+
+      await tester.pumpWidget(detailView(secretTopic));
+      await tester.pumpAndSettle();
+
+      expect(find.text('not readable — permission?'), findsOneWidget);
+      expect(find.text('0 Partitions'), findsNothing);
+      final searchBar = tester.widget<TopicSearchBar>(
+        find.byType(TopicSearchBar),
+      );
+      expect(searchBar.partitionCount, isNull);
+    },
+  );
+
+  testWidgets(
+    'config denial shows not-readable tag and failed config Retry re-queues',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final fakeTopicCtrl = _DetailFakeTopicController();
+      fakeTopicCtrl.view = const TopicConfigView(
+        state: TopicConfigViewState.notReadable,
+      );
+      getIt.registerSingleton<TopicController>(fakeTopicCtrl);
+
+      const bareTopic = TopicMetadata(
+        name: 'bare-topic',
+        partitionCount: 3,
+        replicationFactor: 1,
+      );
+      fakeActiveController.topic = bareTopic;
+
+      await tester.pumpWidget(detailView(bareTopic));
+      await tester.pumpAndSettle();
+
+      expect(fakeTopicCtrl.ensuredTopics, contains('bare-topic'));
+      expect(find.text('not readable — permission?'), findsOneWidget);
+
+      fakeTopicCtrl.view = const TopicConfigView(
+        state: TopicConfigViewState.failed,
+      );
+      fakeTopicCtrl.notifyListeners();
+      await tester.pump();
+
+      final failedTag = find.byKey(const Key('topic_config_failed_tag'));
+      expect(failedTag, findsOneWidget);
+      await tester.tap(failedTag);
+      await tester.pump();
+
+      expect(fakeTopicCtrl.retriedTopics, contains('bare-topic'));
+    },
+  );
+
+  testWidgets(
+    'partition health dialog loads offsets once and exact-values action opens analysis without starting scan',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      fakeMetadataService.offsetDistribution =
+          const PartitionOffsetDistribution(
+            topic: 'orders',
+            readAtMs: 1700000000000,
+            partitions: [
+              PartitionOffsetRow(
+                partition: 0,
+                state: PartitionOffsetState.known,
+                low: 0,
+                high: 80,
+                span: 80,
+                sharePercent: 80.0,
+                skewed: true,
+              ),
+              PartitionOffsetRow(
+                partition: 1,
+                state: PartitionOffsetState.known,
+                low: 0,
+                high: 20,
+                span: 20,
+                sharePercent: 20.0,
+                skewed: false,
+              ),
+            ],
+            totalSpan: 100,
+            knownSpan: 100,
+            complete: true,
+            skewStatus: OffsetSkewStatus.skewed,
+            skewThresholdPercent: 50,
+          );
+
+      await tester.pumpWidget(detailView(threePartitionTopic));
+      await tester.pumpAndSettle();
+
+      // Opening TopicDetailView and switching to Analysis never calls fetchPartitionOffsets.
+      expect(fakeMetadataService.fetchPartitionOffsetsCallCount, 0);
+
+      // Open partition health dialog via partitions tag.
+      await tester.tap(find.byKey(const Key('topic_partitions_tag')));
+      await tester.pumpAndSettle();
+
+      expect(fakeMetadataService.fetchPartitionOffsetsCallCount, 1);
+      expect(
+        find.byKey(const Key('partition_offset_skew_badge')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('partition_offset_row_0')), findsOneWidget);
+
+      // Tap exact-values action -> closes dialog and opens Analysis view without starting scan.
+      final openAnalysisBtn = find.byKey(
+        const Key('partition_offset_open_analysis_button'),
+      );
+      await tester.ensureVisible(openAnalysisBtn);
+      await tester.tap(openAnalysisBtn);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const Key('topic_partition_health_dialog')),
+        findsNothing,
+      );
+      // Analysis view shows "Start Analysis" without running a scan.
+      expect(find.text('Start Analysis'), findsAtLeastNWidgets(1));
+      expect(fakeMetadataService.fetchPartitionOffsetsCallCount, 1);
+    },
+  );
+
+  testWidgets(
+    'topic header shows estimate, compaction note, retention unlimited & bytes, and loads time range only on tap',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const profile = ClusterProfile(
+        name: 'Test Cluster',
+        bootstrapServers: 'localhost:9092',
+        tlsVerification: TlsVerification.disabled,
+      );
+      const topic = TopicMetadata(
+        name: 'orders',
+        partitionCount: 3,
+        replicationFactor: 2,
+      );
+
+      final factsMeta = _ConfigurableFactsMetadataService();
+      var timeRangeCalls = 0;
+      factsMeta.onOffsets = () async => const PartitionOffsetDistribution(
+        topic: 'orders',
+        readAtMs: 1000,
+        partitions: [],
+        totalSpan: 1250,
+        knownSpan: 1250,
+        complete: true,
+        skewStatus: OffsetSkewStatus.balanced,
+      );
+      factsMeta.onConfigs = () async => const [
+        TopicConfigResult(
+          topic: 'orders',
+          status: TopicConfigStatus.available,
+          entries: [
+            TopicConfigEntry(
+              name: 'cleanup.policy',
+              value: 'compact',
+              source: TopicConfigSource.dynamicTopic,
+              isDefault: false,
+              isSensitive: false,
+              isReadOnly: false,
+            ),
+            TopicConfigEntry(
+              name: 'retention.ms',
+              value: '-1',
+              source: TopicConfigSource.dynamicTopic,
+              isDefault: false,
+              isSensitive: false,
+              isReadOnly: false,
+            ),
+            TopicConfigEntry(
+              name: 'retention.bytes',
+              value: '1073741824',
+              source: TopicConfigSource.dynamicTopic,
+              isDefault: false,
+              isSensitive: false,
+              isReadOnly: false,
+            ),
+          ],
+        ),
+      ];
+      factsMeta.onTimeRange = () async {
+        timeRangeCalls++;
+        return const TopicTimeRange(
+          oldest: PartitionTimestamp(
+            partition: 0,
+            offset: 10,
+            timestampMs: 1700000000000,
+            timestampType: TimeRangeTimestampKind.createTime,
+          ),
+          newest: PartitionTimestamp(
+            partition: 2,
+            offset: 99,
+            timestampMs: 1700003600000,
+            timestampType: TimeRangeTimestampKind.logAppendTime,
+          ),
+          partitionsTotal: 3,
+          partitionsEmpty: 0,
+          oldestKnown: 2,
+          newestKnown: 3,
+          allEmpty: false,
+          probes: [
+            PartitionTimeProbe(
+              partition: 1,
+              oldest: PartitionTimeProbeOutcome(
+                kind: ProbeOutcomeKind.timedOut,
+                reason: 'timed out',
+              ),
+              newest: PartitionTimeProbeOutcome(
+                kind: ProbeOutcomeKind.found,
+                offset: 50,
+                timestampMs: 1700001000000,
+                timestampType: TimeRangeTimestampKind.createTime,
+              ),
+            ),
+          ],
+        );
+      };
+
+      final active = FakeActiveConnectionController()
+        ..activeProfile = profile
+        ..topic = topic
+        ..mockFactsController = TopicFactsController(
+          profile: profile,
+          topicName: topic.name,
+          metadataService: factsMeta,
+        );
+      getIt.unregister<ActiveConnectionController>();
+      getIt.registerSingleton<ActiveConnectionController>(active);
+      final timeDisplay = TimeDisplaySettings(TimeDisplayMode.utc);
+      if (getIt.isRegistered<TimeDisplaySettings>()) {
+        getIt.unregister<TimeDisplaySettings>();
+      }
+      getIt.registerSingleton<TimeDisplaySettings>(timeDisplay);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: [Locale('en')],
+          home: Scaffold(
+            body: TopicDetailView(topic: topic, profile: profile),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 Partitions'), findsOneWidget);
+      expect(find.text('RF: 2'), findsOneWidget);
+      expect(find.byKey(const Key('topic_estimate_tag')), findsOneWidget);
+      expect(find.textContaining('1,250'), findsOneWidget);
+      expect(
+        find.byKey(const Key('topic_estimate_compaction_tooltip')),
+        findsOneWidget,
+      );
+      expect(find.text('Retention: unlimited'), findsOneWidget);
+      expect(find.text('Max size: 1.00 GB / partition'), findsOneWidget);
+
+      // Time range must NOT auto-load
+      expect(timeRangeCalls, 0);
+      final loadTrBtn = find.byKey(const Key('topic_load_time_range_button'));
+      expect(loadTrBtn, findsOneWidget);
+
+      await tester.tap(loadTrBtn);
+      await tester.pumpAndSettle();
+
+      expect(timeRangeCalls, 1);
+      expect(find.byKey(const Key('topic_time_range_tag')), findsOneWidget);
+      expect(find.textContaining('UTC'), findsWidgets);
+      expect(
+        find.byKey(const Key('topic_time_range_partial_tag')),
+        findsOneWidget,
+      );
+      expect(find.text('Partial (2/3 oldest, 3/3 newest)'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'background tab does not load facts until active, and handles unknown estimate, empty time range, not readable retention, and German tags',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const profile = ClusterProfile(
+        name: 'Test Cluster',
+        bootstrapServers: 'localhost:9092',
+        tlsVerification: TlsVerification.disabled,
+      );
+      const otherTopic = TopicMetadata(
+        name: 'other',
+        partitionCount: 1,
+        replicationFactor: 1,
+      );
+      const targetTopic = TopicMetadata(
+        name: 'bg-topic',
+        partitionCount: 3,
+        replicationFactor: 2,
+      );
+
+      final factsMeta = _ConfigurableFactsMetadataService();
+      var offsetCalls = 0;
+      factsMeta.onOffsets = () async {
+        offsetCalls++;
+        return const PartitionOffsetDistribution(
+          topic: 'bg-topic',
+          readAtMs: 1000,
+          partitions: [],
+          totalSpan: null,
+          knownSpan: 0,
+          complete: false,
+          skewStatus: OffsetSkewStatus.incomplete,
+        );
+      };
+      factsMeta.onConfigs = () async => const [
+        TopicConfigResult(
+          topic: 'bg-topic',
+          status: TopicConfigStatus.notReadable,
+          entries: [],
+        ),
+      ];
+      factsMeta.onTimeRange = () async => const TopicTimeRange(
+        oldest: null,
+        newest: null,
+        partitionsTotal: 3,
+        partitionsEmpty: 3,
+        oldestKnown: 0,
+        newestKnown: 0,
+        allEmpty: true,
+        probes: [],
+      );
+
+      final active = FakeActiveConnectionController()
+        ..activeProfile = profile
+        ..topic = otherTopic
+        ..mockFactsController = TopicFactsController(
+          profile: profile,
+          topicName: targetTopic.name,
+          metadataService: factsMeta,
+        );
+      getIt.unregister<ActiveConnectionController>();
+      getIt.registerSingleton<ActiveConnectionController>(active);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          locale: Locale('de'),
+          localizationsDelegates: [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          supportedLocales: [Locale('en'), Locale('de')],
+          home: Scaffold(
+            body: TopicDetailView(topic: targetTopic, profile: profile),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Background tab must NOT load facts yet
+      expect(offsetCalls, 0);
+      expect(find.text('3 Partitionen'), findsOneWidget);
+      expect(find.text('RF: 2'), findsOneWidget);
+
+      // Now activate the tab
+      active.topic = targetTopic;
+      active.notifyListeners();
+      await tester.pumpAndSettle();
+
+      expect(offsetCalls, 1);
+      expect(find.text('Nachrichten: unbekannt'), findsOneWidget);
+      expect(find.text('Aufbewahrung: nicht lesbar'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('topic_load_time_range_button')));
+      await tester.pumpAndSettle();
+      expect(find.text('Keine Nachrichten'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'switching to Configuration calls TopicConfigService once and switching back and forth does not re-read',
+    (WidgetTester tester) async {
+      final configService = _FakeTopicConfigService()
+        ..entries = [
+          const TopicConfigEntry(
+            name: 'retention.ms',
+            value: '60000',
+            source: TopicConfigSource.dynamicTopic,
+            isDefault: false,
+            isSensitive: false,
+            isReadOnly: false,
+          ),
+        ];
+      getIt.unregister<TopicConfigService>();
+      getIt.registerSingleton<TopicConfigService>(configService);
+
+      const topic = TopicMetadata(
+        name: 'config-topic',
+        partitionCount: 3,
+        replicationFactor: 2,
+      );
+      const profile = ClusterProfile(
+        name: 'Test Cluster',
+        bootstrapServers: 'localhost:9092',
+        tlsVerification: TlsVerification.enabled,
+      );
+      fakeActiveController.topic = topic;
+      fakeActiveController.activeProfile = profile;
+
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: TopicDetailView(topic: topic, profile: profile),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Not fetched until Configuration mode is selected
+      expect(configService.calls, isEmpty);
+
+      await tester.tap(find.text('Configuration'));
+      await tester.pumpAndSettle();
+
+      expect(configService.calls, [('Test Cluster', 'config-topic')]);
+      expect(find.text('retention.ms'), findsOneWidget);
+
+      // Switch back to Messages and then back to Configuration -> no re-read
+      await tester.tap(find.text('Messages'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Configuration'));
+      await tester.pumpAndSettle();
+
+      expect(configService.calls, [('Test Cluster', 'config-topic')]);
+    },
+  );
+
+  testWidgets(
+    'schema tag shows Protobuf, mixed key/value, not loaded, and failed states',
+    (tester) async {
+      final schemaController =
+          getIt<SchemaController>() as FakeSchemaController;
+      const profile = ClusterProfile(
+        name: 'Test Cluster',
+        bootstrapServers: 'localhost:9092',
+        schemaRegistryUrl: 'http://localhost:8081',
+        tlsVerification: TlsVerification.enabled,
+      );
+      const topic = TopicMetadata(
+        name: 'orders',
+        partitionCount: 1,
+        replicationFactor: 1,
+      );
+
+      // 1. Not loaded (subject present, type not loaded)
+      schemaController.schemas = ['orders-value'];
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: TopicDetailView(topic: topic, profile: profile),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('topic_schema_tag')), findsOneWidget);
+      expect(find.text('Schema'), findsWidgets);
+
+      // 2. Protobuf
+      schemaController.types['orders-value'] = const SchemaTypeKnown(
+        api.SchemaKindDto.protobuf,
+      );
+      schemaController.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.text('Protobuf'), findsOneWidget);
+
+      // 3. Mixed key/value (Avro / Protobuf)
+      schemaController.schemas = ['orders-key', 'orders-value'];
+      schemaController.types['orders-key'] = const SchemaTypeKnown(
+        api.SchemaKindDto.avro,
+      );
+      schemaController.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.text('Avro / Protobuf'), findsOneWidget);
+
+      // 4. Failed subject list
+      schemaController.schemas = null;
+      schemaController.errorMessage = '401 unauthorized';
+      schemaController.notifyListeners();
+      await tester.pumpAndSettle();
+      expect(find.text('Schema (unknown)'), findsOneWidget);
+    },
+  );
+}
+
+class _FakeTopicConfigService implements TopicConfigService {
+  final List<(String, String)> calls = [];
+  List<TopicConfigEntry> entries = const [];
+
+  @override
+  Future<TopicConfigSnapshot> fetchTopicConfig({
+    required ClusterProfile profile,
+    required String topic,
+  }) async {
+    calls.add((profile.name, topic));
+    return TopicConfigSnapshot(
+      topic: topic,
+      availability: TopicConfigAvailability.available,
+      entries: entries,
+    );
+  }
+
+  @override
+  TopicConfigDiff diffTopicConfigs({
+    required TopicConfigSnapshot left,
+    required TopicConfigSnapshot right,
+  }) => const TopicConfigDiff(rows: [], differenceCount: 0);
+}
+
+class _DetailFakeTopicController extends ChangeNotifier
+    implements TopicController {
+  TopicConfigView view = const TopicConfigView.loading();
+  final List<String> ensuredTopics = [];
+  final List<String> retriedTopics = [];
+
+  @override
+  TopicMetadata? findTopic(ClusterProfile cluster, String name) => null;
+
+  @override
+  TopicConfigView configFor(ClusterProfile cluster, String topic) => view;
+
+  @override
+  void ensureConfig(ClusterProfile cluster, String topic) {
+    ensuredTopics.add(topic);
+  }
+
+  @override
+  void retryConfig(ClusterProfile cluster, String topic) {
+    retriedTopics.add(topic);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _NoOpFactsMetadataService implements KafkaMetadataService {
+  @override
+  Future<PartitionOffsetDistribution> fetchPartitionOffsets({
+    required ClusterProfile profile,
+    required String topic,
+    int? skewThresholdPercent,
+  }) async => PartitionOffsetDistribution(
+    topic: topic,
+    readAtMs: 0,
+    partitions: const [],
+    totalSpan: 0,
+    knownSpan: 0,
+    complete: true,
+    skewStatus: OffsetSkewStatus.balanced,
+  );
+
+  @override
+  Future<List<TopicConfigResult>> describeTopicConfigs({
+    required ClusterProfile profile,
+    required List<String> topics,
+  }) async => [
+    for (final t in topics)
+      TopicConfigResult(
+        topic: t,
+        status: TopicConfigStatus.available,
+        entries: const [],
+      ),
+  ];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ConfigurableFactsMetadataService implements KafkaMetadataService {
+  Future<PartitionOffsetDistribution> Function()? onOffsets;
+  Future<List<TopicConfigResult>> Function()? onConfigs;
+  Future<TopicTimeRange> Function()? onTimeRange;
+
+  @override
+  Future<PartitionOffsetDistribution> fetchPartitionOffsets({
+    required ClusterProfile profile,
+    required String topic,
+    int? skewThresholdPercent,
+  }) => onOffsets!();
+
+  @override
+  Future<List<TopicConfigResult>> describeTopicConfigs({
+    required ClusterProfile profile,
+    required List<String> topics,
+  }) => onConfigs!();
+
+  @override
+  Future<TopicTimeRange> fetchTopicTimeRange({
+    required ClusterProfile profile,
+    required String topic,
+  }) => onTimeRange!();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

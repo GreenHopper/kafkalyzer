@@ -8,33 +8,107 @@ use kafkalyzer_core::consumer_lag::{
 use kafkalyzer_core::kafka_types::{
     ClusterProfile, ConsumerGroupLag, ConsumerGroupMember, PartitionLagStatus, TopicPartitionLag,
 };
+use kafkalyzer_core::offset_distribution::{PartitionWatermarks, WatermarkRead};
 use kafkalyzer_core::partition_health::{summarize_topic_health, PartitionMetadata};
 use kafkalyzer_core::tls::{classify_tls_failure, TlsFailureClassification};
-use rdkafka::admin::{AdminClient, AdminOptions, OwnedResourceSpecifier, ResourceSpecifier};
+use kafkalyzer_core::topic_config::{
+    TopicConfigEntry as CoreTopicConfigEntry, TopicConfigSource as CoreTopicConfigSource,
+    TopicConfigUnavailable,
+};
+use rdkafka::admin::{
+    AdminClient, AdminOptions, ConfigEntry as RdkafkaConfigEntry, ConfigResourceResult,
+    ConfigSource, OwnedResourceSpecifier, ResourceSpecifier,
+};
 use rdkafka::client::{ClientContext, DefaultClientContext};
 use rdkafka::config::RDKafkaLogLevel;
 use rdkafka::consumer::{BaseConsumer, Consumer, ConsumerContext};
 use rdkafka::error::KafkaError;
+use rdkafka::types::{RDKafkaErrorCode, RDKafkaRespErr};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::ffi::{CStr, CString};
 use std::ptr;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio::runtime::Runtime;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TopicMetadataErrorKind {
+    NotAuthorized,
+    NotFound,
+    Other,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TopicMetadataError {
+    pub kind: TopicMetadataErrorKind,
+    pub message: String,
+}
 
 #[derive(Debug, Clone)]
 pub struct TopicMetadata {
     pub name: String,
     pub partition_count: i32,
     pub replication_factor: i32,
+    /// Deprecated on `fetch_topics`; use `describe_topic_configs` instead.
     pub cleanup_policy: Option<String>,
+    /// Deprecated on `fetch_topics`; use `describe_topic_configs` instead.
     pub retention_ms: Option<String>,
     /// `None` when the broker gave no usable partition list for this topic.
     pub under_replicated_partitions: Option<i32>,
     pub leaderless_partitions: Option<i32>,
+    pub metadata_error: Option<TopicMetadataError>,
 }
 
-#[derive(Debug, Clone)]
+pub const CONFIG_CHUNK_SIZE: usize = 100;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TopicConfigSource {
+    Unknown,
+    DynamicTopic,
+    DynamicBroker,
+    DynamicDefaultBroker,
+    StaticBroker,
+    Default,
+}
+
+impl From<ConfigSource> for TopicConfigSource {
+    fn from(src: ConfigSource) -> Self {
+        match src {
+            ConfigSource::Unknown => Self::Unknown,
+            ConfigSource::DynamicTopic => Self::DynamicTopic,
+            ConfigSource::DynamicBroker => Self::DynamicBroker,
+            ConfigSource::DynamicDefaultBroker => Self::DynamicDefaultBroker,
+            ConfigSource::StaticBroker => Self::StaticBroker,
+            ConfigSource::Default => Self::Default,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TopicConfigEntry {
+    pub name: String,
+    pub value: Option<String>,
+    pub source: TopicConfigSource,
+    pub is_default: bool,
+    pub is_sensitive: bool,
+    pub is_read_only: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TopicConfigOutcome {
+    Available(Vec<TopicConfigEntry>),
+    NotReadable(String),
+    Failed(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TopicConfigResult {
+    pub topic: String,
+    pub outcome: TopicConfigOutcome,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BrokerEndpoint {
     pub id: i32,
     pub host: String,
@@ -60,6 +134,210 @@ fn partition_metadata(p: &rdkafka::metadata::MetadataPartition) -> PartitionMeta
         replicas: p.replicas().to_vec(),
         in_sync_replicas: p.isr().to_vec(),
     }
+}
+
+pub const OFFSET_READ_MAX_WORKERS: usize = 8;
+pub const OFFSET_READ_METADATA_TIMEOUT: Duration = Duration::from_secs(10);
+pub const OFFSET_READ_PER_PARTITION_TIMEOUT: Duration = Duration::from_secs(5);
+pub const OFFSET_READ_OVERALL_DEADLINE: Duration = Duration::from_secs(30);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TopicPartitionOffsets {
+    pub topic: String,
+    pub read_at_ms: i64,
+    pub partitions: Vec<PartitionWatermarks>,
+}
+
+pub fn classify_watermark_error(err: &KafkaError) -> WatermarkRead {
+    match err.rdkafka_error_code() {
+        Some(
+            RDKafkaErrorCode::TopicAuthorizationFailed
+            | RDKafkaErrorCode::ClusterAuthorizationFailed,
+        ) => WatermarkRead::NotReadable(err.to_string()),
+        _ => WatermarkRead::Failed(err.to_string()),
+    }
+}
+
+fn read_partitions_with_deadline<F>(
+    partitions: &[i32],
+    max_workers: usize,
+    per_read_timeout: Duration,
+    overall_deadline: Duration,
+    reader: F,
+) -> Vec<PartitionWatermarks>
+where
+    F: Fn(i32, Duration) -> WatermarkRead + Sync,
+{
+    if partitions.is_empty() {
+        return Vec::new();
+    }
+
+    let worker_count = max_workers.min(partitions.len()).max(1);
+    let deadline = Instant::now() + overall_deadline;
+    let next_idx = AtomicUsize::new(0);
+    let slots: Vec<Mutex<Option<WatermarkRead>>> =
+        (0..partitions.len()).map(|_| Mutex::new(None)).collect();
+
+    std::thread::scope(|scope| {
+        for _ in 0..worker_count {
+            scope.spawn(|| loop {
+                let remaining = deadline.saturating_duration_since(Instant::now());
+                if remaining.is_zero() {
+                    break;
+                }
+                let idx = next_idx.fetch_add(1, Ordering::Relaxed);
+                if idx >= partitions.len() {
+                    break;
+                }
+                let timeout = per_read_timeout.min(remaining);
+                let read = reader(partitions[idx], timeout);
+                *slots[idx].lock().unwrap() = Some(read);
+            });
+        }
+    });
+
+    let mut out: Vec<PartitionWatermarks> = partitions
+        .iter()
+        .enumerate()
+        .map(|(i, &partition)| PartitionWatermarks {
+            partition,
+            read: slots[i]
+                .lock()
+                .unwrap()
+                .take()
+                .unwrap_or(WatermarkRead::TimedOut),
+        })
+        .collect();
+    out.sort_by_key(|p| p.partition);
+    out
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ClusterOverview {
+    pub brokers: Vec<BrokerEndpoint>,
+    pub cluster_id: Option<String>,
+    pub controller_id: Option<i32>,
+}
+
+fn map_cluster_overview(
+    mut brokers: Vec<BrokerEndpoint>,
+    cluster_id: Option<String>,
+    raw_controller_id: i32,
+) -> ClusterOverview {
+    brokers.sort_by_key(|b| b.id);
+    ClusterOverview {
+        brokers,
+        cluster_id: cluster_id.filter(|s| !s.is_empty()),
+        controller_id: if raw_controller_id >= 0 {
+            Some(raw_controller_id)
+        } else {
+            None
+        },
+    }
+}
+
+/// Fetches cluster broker endpoints, cluster ID, and controller ID using a
+/// single read-only metadata request (`fetch_metadata(None)` + cached client
+/// cluster/controller IDs).
+pub fn fetch_cluster_overview(profile: &ClusterProfile) -> Result<ClusterOverview> {
+    let config = create_config(profile);
+    let consumer: BaseConsumer = config.create()?;
+    let metadata = consumer
+        .fetch_metadata(None, Duration::from_secs(10))
+        .map_err(|e| {
+            let msg = e.to_string();
+            let is_auth = matches!(
+                e,
+                rdkafka::error::KafkaError::MetadataFetch(
+                    rdkafka::types::RDKafkaErrorCode::ClusterAuthorizationFailed
+                        | rdkafka::types::RDKafkaErrorCode::TopicAuthorizationFailed
+                )
+            ) || msg.to_lowercase().contains("authorization");
+            if is_auth {
+                anyhow::anyhow!("not readable: {msg}")
+            } else {
+                anyhow::anyhow!("Failed to fetch cluster metadata: {msg}")
+            }
+        })?;
+
+    let brokers: Vec<BrokerEndpoint> = metadata
+        .brokers()
+        .iter()
+        .map(|b| BrokerEndpoint {
+            id: b.id(),
+            host: b.host().to_string(),
+            port: b.port(),
+        })
+        .collect();
+
+    let client_ptr = consumer.client().native_ptr();
+    // SAFETY: `client_ptr` is a valid librdkafka handle owned by `consumer` for
+    // the duration of this call; timeout 0 reads the response cached by
+    // `fetch_metadata` above, and any non-null cluster ID string is freed via
+    // `rd_kafka_mem_free`.
+    let (cluster_id, raw_controller_id) = unsafe {
+        let cid_ptr = rdkafka::bindings::rd_kafka_clusterid(client_ptr, 0);
+        let cluster_id = if cid_ptr.is_null() {
+            None
+        } else {
+            let s = std::ffi::CStr::from_ptr(cid_ptr)
+                .to_string_lossy()
+                .into_owned();
+            rdkafka::bindings::rd_kafka_mem_free(client_ptr, cid_ptr as *mut std::ffi::c_void);
+            Some(s)
+        };
+        let controller_id = rdkafka::bindings::rd_kafka_controllerid(client_ptr, 0);
+        (cluster_id, controller_id)
+    };
+
+    Ok(map_cluster_overview(brokers, cluster_id, raw_controller_id))
+}
+
+pub fn fetch_partition_offsets(
+    profile: &ClusterProfile,
+    topic: &str,
+) -> Result<TopicPartitionOffsets> {
+    let mut config = create_config(profile);
+    config.set("enable.auto.commit", "false");
+    let consumer: BaseConsumer = config.create()?;
+
+    let metadata = consumer.fetch_metadata(Some(topic), OFFSET_READ_METADATA_TIMEOUT)?;
+    let topic_meta = metadata
+        .topics()
+        .iter()
+        .find(|t| t.name() == topic)
+        .ok_or_else(|| anyhow::anyhow!("Topic '{topic}' not found in broker metadata"))?;
+
+    if let Some(err) = topic_meta.error() {
+        return Err(anyhow::anyhow!("Topic '{topic}' metadata error: {err:?}"));
+    }
+
+    let partitions: Vec<i32> = topic_meta.partitions().iter().map(|p| p.id()).collect();
+    if partitions.is_empty() {
+        return Err(anyhow::anyhow!("Topic '{topic}' has no partitions"));
+    }
+
+    let rows = read_partitions_with_deadline(
+        &partitions,
+        OFFSET_READ_MAX_WORKERS,
+        OFFSET_READ_PER_PARTITION_TIMEOUT,
+        OFFSET_READ_OVERALL_DEADLINE,
+        |partition, timeout| match consumer.fetch_watermarks(topic, partition, timeout) {
+            Ok((low, high)) => WatermarkRead::Known { low, high },
+            Err(e) => classify_watermark_error(&e),
+        },
+    );
+
+    let read_at_ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as i64;
+
+    Ok(TopicPartitionOffsets {
+        topic: topic.to_string(),
+        read_at_ms,
+        partitions: rows,
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -178,105 +456,431 @@ pub fn validate_connection(profile: ClusterProfile) -> Result<bool> {
     Ok(true)
 }
 
+pub fn classify_topic_error(err: RDKafkaRespErr) -> TopicMetadataError {
+    let code = RDKafkaErrorCode::from(err);
+    let kind = match err {
+        RDKafkaRespErr::RD_KAFKA_RESP_ERR_TOPIC_AUTHORIZATION_FAILED => {
+            TopicMetadataErrorKind::NotAuthorized
+        }
+        RDKafkaRespErr::RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART => TopicMetadataErrorKind::NotFound,
+        _ => TopicMetadataErrorKind::Other,
+    };
+    TopicMetadataError {
+        kind,
+        message: code.to_string(),
+    }
+}
+
+fn topic_metadata_from(topic_meta: &rdkafka::metadata::MetadataTopic) -> TopicMetadata {
+    if let Some(err) = topic_meta.error() {
+        return TopicMetadata {
+            name: topic_meta.name().to_string(),
+            partition_count: 0,
+            replication_factor: 0,
+            cleanup_policy: None,
+            retention_ms: None,
+            under_replicated_partitions: None,
+            leaderless_partitions: None,
+            metadata_error: Some(classify_topic_error(err)),
+        };
+    }
+
+    let partitions = topic_meta.partitions();
+    let partition_count = partitions.len() as i32;
+    let replication_factor = if !partitions.is_empty() {
+        partitions[0].replicas().len() as i32
+    } else {
+        0
+    };
+
+    let health = summarize_topic_health(
+        &partitions
+            .iter()
+            .map(partition_metadata)
+            .collect::<Vec<_>>(),
+    );
+
+    TopicMetadata {
+        name: topic_meta.name().to_string(),
+        partition_count,
+        replication_factor,
+        cleanup_policy: None,
+        retention_ms: None,
+        under_replicated_partitions: health.map(|h| h.under_replicated_partitions),
+        leaderless_partitions: health.map(|h| h.leaderless_partitions),
+        metadata_error: None,
+    }
+}
+
 pub fn fetch_topics(profile: ClusterProfile) -> Result<Vec<TopicMetadata>> {
     let config = create_config(&profile);
-
-    // Create Consumer for Metadata
     let consumer: BaseConsumer = config.create()?;
-    let metadata = consumer.fetch_metadata(None, std::time::Duration::from_secs(10))?;
+    let metadata = consumer.fetch_metadata(None, Duration::from_secs(10))?;
 
-    // Create Admin Client for Configs
-    // AdminClient requires async, so we need a runtime
-    let rt = Runtime::new()?;
-    let admin_client: AdminClient<DefaultClientContext> = config.create()?;
-
-    let mut topics = Vec::new();
-    let mut resource_specs = Vec::new();
-    let mut topic_names = Vec::new();
-
-    // 1. Collect basic metadata
-    for topic_meta in metadata.topics() {
-        if topic_meta.error().is_none() {
-            topic_names.push(topic_meta.name().to_string());
-            resource_specs.push(ResourceSpecifier::Topic(topic_meta.name()));
-        }
-    }
-
-    // 2. Fetch Configs in bulk
-    let admin_options =
-        AdminOptions::new().operation_timeout(Some(std::time::Duration::from_secs(10)));
-
-    // We might have too many topics to fetch in one go, but let's try.
-    // If it fails, we might need to chunk. For now, assuming reasonable count.
-    let configs_result =
-        rt.block_on(admin_client.describe_configs(&resource_specs, &admin_options));
-
-    // Map configs by topic name for easy lookup
-    let mut config_map: std::collections::HashMap<String, (Option<String>, Option<String>)> =
-        std::collections::HashMap::new();
-
-    if let Ok(configs) = configs_result {
-        for config_resource in configs {
-            if let Ok(resource) = config_resource {
-                // Determine topic name from the resource (specifier)
-                let topic_name = match &resource.specifier {
-                    OwnedResourceSpecifier::Topic(name) => name.clone(),
-                    _ => continue, // Should not happen as we requested topics
-                };
-
-                let mut retention = None;
-                let mut cleanup = None;
-
-                for entry in resource.entries {
-                    if entry.name == "retention.ms" {
-                        retention = Some(entry.value.unwrap_or_default().to_string());
-                    } else if entry.name == "cleanup.policy" {
-                        cleanup = Some(entry.value.unwrap_or_default().to_string());
-                    }
-                }
-                config_map.insert(topic_name, (cleanup, retention));
-            }
-        }
-    }
-
-    // 3. Build final TopicMetadata
-    for topic_meta in metadata.topics() {
-        if topic_meta.error().is_none() {
-            let partitions = topic_meta.partitions();
-            let partition_count = partitions.len() as i32;
-            let replication_factor = if !partitions.is_empty() {
-                partitions[0].replicas().len() as i32
-            } else {
-                0
-            };
-
-            let (cleanup, retention) = config_map
-                .get(topic_meta.name())
-                .cloned()
-                .unwrap_or((None, None));
-
-            let health = summarize_topic_health(
-                &topic_meta
-                    .partitions()
-                    .iter()
-                    .map(partition_metadata)
-                    .collect::<Vec<_>>(),
-            );
-
-            topics.push(TopicMetadata {
-                name: topic_meta.name().to_string(),
-                partition_count,
-                replication_factor,
-                cleanup_policy: cleanup,
-                retention_ms: retention,
-                under_replicated_partitions: health.map(|h| h.under_replicated_partitions),
-                leaderless_partitions: health.map(|h| h.leaderless_partitions),
-            });
-        }
-    }
-
+    let mut topics: Vec<TopicMetadata> =
+        metadata.topics().iter().map(topic_metadata_from).collect();
     topics.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(topics)
+}
+
+pub fn fetch_topic_metadata(profile: ClusterProfile, topic: String) -> Result<TopicMetadata> {
+    let config = create_config(&profile);
+    let consumer: BaseConsumer = config.create()?;
+    let metadata = consumer.fetch_metadata(Some(&topic), Duration::from_secs(10))?;
+
+    if let Some(topic_meta) = metadata.topics().iter().find(|t| t.name() == topic) {
+        Ok(topic_metadata_from(topic_meta))
+    } else {
+        Ok(TopicMetadata {
+            name: topic.clone(),
+            partition_count: 0,
+            replication_factor: 0,
+            cleanup_policy: None,
+            retention_ms: None,
+            under_replicated_partitions: None,
+            leaderless_partitions: None,
+            metadata_error: Some(TopicMetadataError {
+                kind: TopicMetadataErrorKind::NotFound,
+                message: format!("Topic '{topic}' not found in cluster metadata"),
+            }),
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct RawConfigResource {
+    pub(crate) topic: String,
+    pub(crate) entries: Vec<TopicConfigEntry>,
+}
+
+pub(crate) fn classify_chunk_raw(
+    requested: &[&str],
+    result: std::result::Result<
+        Vec<std::result::Result<RawConfigResource, RDKafkaErrorCode>>,
+        KafkaError,
+    >,
+) -> Vec<TopicConfigResult> {
+    match result {
+        Err(KafkaError::AdminOp(code))
+            if matches!(
+                code,
+                RDKafkaErrorCode::TopicAuthorizationFailed
+                    | RDKafkaErrorCode::ClusterAuthorizationFailed
+            ) =>
+        {
+            let msg = code.to_string();
+            requested
+                .iter()
+                .map(|t| TopicConfigResult {
+                    topic: (*t).to_string(),
+                    outcome: TopicConfigOutcome::NotReadable(msg.clone()),
+                })
+                .collect()
+        }
+        Err(err) => {
+            let msg = err.to_string();
+            requested
+                .iter()
+                .map(|t| TopicConfigResult {
+                    topic: (*t).to_string(),
+                    outcome: TopicConfigOutcome::Failed(msg.clone()),
+                })
+                .collect()
+        }
+        Ok(resources) => {
+            let mut by_topic: HashMap<String, TopicConfigOutcome> =
+                HashMap::with_capacity(resources.len());
+            for res in resources {
+                match res {
+                    Ok(mut raw) => {
+                        for entry in &mut raw.entries {
+                            if entry.is_sensitive {
+                                entry.value = None;
+                            }
+                        }
+                        let outcome = if raw.entries.is_empty() {
+                            TopicConfigOutcome::NotReadable(
+                                "broker returned no configuration entries".to_string(),
+                            )
+                        } else {
+                            TopicConfigOutcome::Available(raw.entries)
+                        };
+                        by_topic.insert(raw.topic, outcome);
+                    }
+                    Err(_) => {}
+                }
+            }
+            requested
+                .iter()
+                .map(|t| {
+                    let outcome = by_topic.remove(*t).unwrap_or_else(|| {
+                        TopicConfigOutcome::Failed("no result for topic".to_string())
+                    });
+                    TopicConfigResult {
+                        topic: (*t).to_string(),
+                        outcome,
+                    }
+                })
+                .collect()
+        }
+    }
+}
+
+fn classify_chunk(
+    requested: &[&str],
+    result: std::result::Result<Vec<ConfigResourceResult>, KafkaError>,
+) -> Vec<TopicConfigResult> {
+    let mapped = result.map(|resources| {
+        resources
+            .into_iter()
+            .filter_map(|res| match res {
+                Ok(cfg) => {
+                    let topic = match cfg.specifier {
+                        OwnedResourceSpecifier::Topic(name) => name,
+                        _ => return None,
+                    };
+                    let entries = cfg
+                        .entries
+                        .into_iter()
+                        .map(|e| TopicConfigEntry {
+                            name: e.name,
+                            value: if e.is_sensitive { None } else { e.value },
+                            source: TopicConfigSource::from(e.source),
+                            is_default: e.is_default,
+                            is_sensitive: e.is_sensitive,
+                            is_read_only: e.is_read_only,
+                        })
+                        .collect();
+                    Some(Ok(RawConfigResource { topic, entries }))
+                }
+                Err(code) => Some(Err(code)),
+            })
+            .collect()
+    });
+    classify_chunk_raw(requested, mapped)
+}
+
+pub fn describe_topic_configs(
+    profile: ClusterProfile,
+    topics: Vec<String>,
+) -> Result<Vec<TopicConfigResult>> {
+    let mut seen = HashSet::with_capacity(topics.len());
+    let mut unique = Vec::with_capacity(topics.len());
+    for t in topics {
+        if seen.insert(t.clone()) {
+            unique.push(t);
+        }
+    }
+    if unique.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let config = create_config(&profile);
+    let rt = Runtime::new()?;
+    let admin_client: AdminClient<DefaultClientContext> = config.create()?;
+    let admin_options = AdminOptions::new()
+        .operation_timeout(Some(Duration::from_secs(10)))
+        .request_timeout(Some(Duration::from_secs(15)));
+
+    let mut out = Vec::with_capacity(unique.len());
+    for chunk in unique.chunks(CONFIG_CHUNK_SIZE) {
+        let requested: Vec<&str> = chunk.iter().map(|s| s.as_str()).collect();
+        let specs: Vec<ResourceSpecifier<'_>> = requested
+            .iter()
+            .map(|t| ResourceSpecifier::Topic(t))
+            .collect();
+        let res = rt.block_on(admin_client.describe_configs(&specs, &admin_options));
+        out.extend(classify_chunk(&requested, res));
+    }
+
+    Ok(out)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TopicConfigs {
+    pub topic: String,
+    pub result: std::result::Result<Vec<CoreTopicConfigEntry>, TopicConfigUnavailable>,
+}
+
+/// Maps an rdkafka `ConfigSource` into `kafkalyzer_core::topic_config::TopicConfigSource`.
+pub fn map_config_source(src: ConfigSource) -> CoreTopicConfigSource {
+    match src {
+        ConfigSource::DynamicTopic => CoreTopicConfigSource::DynamicTopic,
+        ConfigSource::DynamicBroker => CoreTopicConfigSource::DynamicBroker,
+        ConfigSource::DynamicDefaultBroker => CoreTopicConfigSource::DynamicDefaultBroker,
+        ConfigSource::StaticBroker => CoreTopicConfigSource::StaticBroker,
+        ConfigSource::Default => CoreTopicConfigSource::Default,
+        ConfigSource::Unknown => CoreTopicConfigSource::Unknown,
+    }
+}
+
+/// Maps an rdkafka `ConfigEntry` into `CoreTopicConfigEntry`, redacting sensitive
+/// values at the earliest point and dropping `is_read_only`.
+pub fn map_config_entry(entry: RdkafkaConfigEntry) -> CoreTopicConfigEntry {
+    CoreTopicConfigEntry {
+        name: entry.name,
+        value: if entry.is_sensitive {
+            None
+        } else {
+            entry.value
+        },
+        source: map_config_source(entry.source),
+        is_default: entry.is_default,
+        is_sensitive: entry.is_sensitive,
+    }
+}
+
+/// Classifies a per-resource `RDKafkaErrorCode` from `describe_configs` into
+/// `TopicConfigUnavailable`.
+pub fn classify_config_error(code: RDKafkaErrorCode) -> TopicConfigUnavailable {
+    match code {
+        RDKafkaErrorCode::TopicAuthorizationFailed
+        | RDKafkaErrorCode::ClusterAuthorizationFailed => TopicConfigUnavailable::NotAuthorized,
+        RDKafkaErrorCode::UnknownTopicOrPartition | RDKafkaErrorCode::UnknownTopic => {
+            TopicConfigUnavailable::TopicNotFound
+        }
+        other => TopicConfigUnavailable::Failed(other.to_string()),
+    }
+}
+
+pub(crate) fn assemble_detailed_config_chunk(
+    requested: &[&str],
+    result: std::result::Result<
+        Vec<std::result::Result<(String, Vec<CoreTopicConfigEntry>), RDKafkaErrorCode>>,
+        String,
+    >,
+) -> Vec<TopicConfigs> {
+    match result {
+        Err(msg) => requested
+            .iter()
+            .map(|t| TopicConfigs {
+                topic: (*t).to_string(),
+                result: Err(TopicConfigUnavailable::Failed(msg.clone())),
+            })
+            .collect(),
+        Ok(resources) => {
+            let mut by_topic: HashMap<
+                String,
+                std::result::Result<Vec<CoreTopicConfigEntry>, TopicConfigUnavailable>,
+            > = HashMap::with_capacity(resources.len());
+
+            // Note: rdkafka 0.36 does not attach a topic name to `Err(RDKafkaErrorCode)`
+            // in `ConfigResourceResult`; for single-topic requests we can attribute it
+            // directly, and for multi-topic requests a single error is recorded if
+            // the topic is missing.
+            let mut single_err: Option<TopicConfigUnavailable> = None;
+            for res in resources {
+                match res {
+                    Ok((topic, mut entries)) => {
+                        if entries.is_empty() {
+                            by_topic.insert(topic, Err(TopicConfigUnavailable::TopicNotFound));
+                        } else {
+                            entries.sort_by(|a, b| a.name.cmp(&b.name));
+                            by_topic.insert(topic, Ok(entries));
+                        }
+                    }
+                    Err(code) => {
+                        single_err = Some(classify_config_error(code));
+                    }
+                }
+            }
+
+            requested
+                .iter()
+                .map(|t| {
+                    let res = by_topic.remove(*t).unwrap_or_else(|| {
+                        if requested.len() == 1 {
+                            if let Some(err) = single_err.clone() {
+                                return Err(err);
+                            }
+                        }
+                        Err(TopicConfigUnavailable::Failed(
+                            "no result for topic".to_string(),
+                        ))
+                    });
+                    if let Err(ref err) = res {
+                        let kind = match err {
+                            TopicConfigUnavailable::NotAuthorized => "not_authorized",
+                            TopicConfigUnavailable::TopicNotFound => "topic_not_found",
+                            TopicConfigUnavailable::Failed(_) => "failed",
+                        };
+                        log::warn!(
+                            "describe_topic_configs_detailed: topic={} status={}",
+                            t,
+                            kind
+                        );
+                    }
+                    TopicConfigs {
+                        topic: (*t).to_string(),
+                        result: res,
+                    }
+                })
+                .collect()
+        }
+    }
+}
+
+/// Reads full topic configurations in chunks of up to 100 topics on the shared
+/// Tokio runtime with a 10 s request/operation timeout.
+pub fn describe_topic_configs_detailed(
+    profile: &ClusterProfile,
+    topics: &[String],
+) -> Vec<TopicConfigs> {
+    if topics.is_empty() {
+        return Vec::new();
+    }
+
+    let config = create_config(profile);
+    let admin_client: AdminClient<DefaultClientContext> = match config.create() {
+        Ok(client) => client,
+        Err(err) => {
+            let msg = err.to_string();
+            return topics
+                .iter()
+                .map(|t| {
+                    log::warn!("describe_topic_configs_detailed: topic={} status=failed", t);
+                    TopicConfigs {
+                        topic: t.clone(),
+                        result: Err(TopicConfigUnavailable::Failed(msg.clone())),
+                    }
+                })
+                .collect();
+        }
+    };
+
+    let admin_options = AdminOptions::new()
+        .operation_timeout(Some(Duration::from_secs(10)))
+        .request_timeout(Some(Duration::from_secs(10)));
+    let rt = crate::kafka_consumer::shared_runtime();
+
+    let mut out = Vec::with_capacity(topics.len());
+    for chunk in topics.chunks(CONFIG_CHUNK_SIZE) {
+        let requested: Vec<&str> = chunk.iter().map(|s| s.as_str()).collect();
+        let specs: Vec<ResourceSpecifier<'_>> = requested
+            .iter()
+            .map(|t| ResourceSpecifier::Topic(t))
+            .collect();
+        let res = rt.block_on(admin_client.describe_configs(&specs, &admin_options));
+        let mapped = res
+            .map(|resources| {
+                resources
+                    .into_iter()
+                    .filter_map(|r| match r {
+                        Ok(cfg) => match cfg.specifier {
+                            OwnedResourceSpecifier::Topic(name) => Some(Ok((
+                                name,
+                                cfg.entries.into_iter().map(map_config_entry).collect(),
+                            ))),
+                            _ => None,
+                        },
+                        Err(code) => Some(Err(code)),
+                    })
+                    .collect()
+            })
+            .map_err(|e| e.to_string());
+        out.extend(assemble_detailed_config_chunk(&requested, mapped));
+    }
+    out
 }
 
 pub fn fetch_topic_partitions(
@@ -1200,5 +1804,558 @@ mod tests {
             classified,
             TlsFailureClassification::CertificateRejected(_)
         ));
+    }
+
+    #[test]
+    #[ignore = "Spike 1.1: requires local docker compose kafka on localhost:9094 with 1000 spike-t-* topics"]
+    fn spike_describe_configs_and_single_topic_metadata() {
+        use std::time::Instant;
+
+        let profile = ClusterProfile {
+            name: "spike".to_string(),
+            bootstrap_servers: "localhost:9094".to_string(),
+            security_protocol: Some("PLAINTEXT".to_string()),
+            ..Default::default()
+        };
+
+        let rt = Runtime::new().unwrap();
+        let config = create_config(&profile);
+        let admin: AdminClient<DefaultClientContext> = config.create().unwrap();
+        let missing_name = "does-not-exist-spike-11-9f8e7d6c";
+
+        // (a) describe_configs for [existing, missing]
+        let existing_name = "spike-t-0000";
+        let res_pair = rt.block_on(async {
+            let specs = [
+                ResourceSpecifier::Topic(existing_name),
+                ResourceSpecifier::Topic(missing_name),
+            ];
+            let opts = AdminOptions::new()
+                .operation_timeout(Some(Duration::from_secs(10)))
+                .request_timeout(Some(Duration::from_secs(15)));
+            admin.describe_configs(&specs, &opts).await
+        });
+        match &res_pair {
+            Ok(results) => {
+                for r in results {
+                    match r {
+                        Ok(cfg) => println!(
+                            "SPIKE_A: Ok resource={:?} entries_len={}",
+                            cfg.specifier,
+                            cfg.entries.len()
+                        ),
+                        Err(e) => println!("SPIKE_A: per-item Err={e:?}"),
+                    }
+                }
+            }
+            Err(e) => println!("SPIKE_A: outer Err={e:?}"),
+        }
+
+        // (b) measure describe_configs for 100 and 500 topics
+        let topics_500: Vec<String> = (0..500).map(|i| format!("spike-t-{i:04}")).collect();
+        for count in [100usize, 500usize] {
+            let start = Instant::now();
+            let res = rt.block_on(async {
+                let specs: Vec<ResourceSpecifier<'_>> = topics_500[..count]
+                    .iter()
+                    .map(|t| ResourceSpecifier::Topic(t.as_str()))
+                    .collect();
+                let opts = AdminOptions::new()
+                    .operation_timeout(Some(Duration::from_secs(10)))
+                    .request_timeout(Some(Duration::from_secs(15)));
+                admin.describe_configs(&specs, &opts).await
+            });
+            let elapsed = start.elapsed();
+            let ok_count = res.as_ref().map(|v| v.len()).unwrap_or(0);
+            println!(
+                "SPIKE_B: count={count} elapsed_ms={} ok={} len={ok_count}",
+                elapsed.as_millis(),
+                res.is_ok()
+            );
+        }
+
+        // (c) fetch_metadata(Some(missing_name))
+        let consumer: BaseConsumer = create_config(&profile).create().unwrap();
+        let md = consumer
+            .fetch_metadata(Some(missing_name), Duration::from_secs(10))
+            .unwrap();
+        for t in md.topics() {
+            println!(
+                "SPIKE_C: topic={} error={:?} partitions={}",
+                t.name(),
+                t.error(),
+                t.partitions().len()
+            );
+        }
+    }
+
+    #[test]
+    fn classify_topic_error_maps_auth_not_found_and_other() {
+        let auth =
+            classify_topic_error(RDKafkaRespErr::RD_KAFKA_RESP_ERR_TOPIC_AUTHORIZATION_FAILED);
+        assert_eq!(auth.kind, TopicMetadataErrorKind::NotAuthorized);
+
+        let not_found =
+            classify_topic_error(RDKafkaRespErr::RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART);
+        assert_eq!(not_found.kind, TopicMetadataErrorKind::NotFound);
+
+        let other = classify_topic_error(RDKafkaRespErr::RD_KAFKA_RESP_ERR_LEADER_NOT_AVAILABLE);
+        assert_eq!(other.kind, TopicMetadataErrorKind::Other);
+        assert_eq!(
+            other.message,
+            RDKafkaErrorCode::LeaderNotAvailable.to_string()
+        );
+    }
+
+    #[test]
+    fn classify_chunk_handles_errors_empty_missing_sensitive_and_order() {
+        let req = ["b-topic", "a-topic"];
+
+        // Request-level authorization errors -> NotReadable for every topic
+        for code in [
+            RDKafkaErrorCode::TopicAuthorizationFailed,
+            RDKafkaErrorCode::ClusterAuthorizationFailed,
+        ] {
+            let res = classify_chunk_raw(&req, Err(KafkaError::AdminOp(code)));
+            assert_eq!(res.len(), 2);
+            assert_eq!(res[0].topic, "b-topic");
+            assert_eq!(res[1].topic, "a-topic");
+            assert!(matches!(res[0].outcome, TopicConfigOutcome::NotReadable(_)));
+            assert!(matches!(res[1].outcome, TopicConfigOutcome::NotReadable(_)));
+        }
+
+        // OperationTimedOut -> Failed
+        let timed_out = classify_chunk_raw(
+            &req,
+            Err(KafkaError::AdminOp(RDKafkaErrorCode::OperationTimedOut)),
+        );
+        assert!(matches!(
+            timed_out[0].outcome,
+            TopicConfigOutcome::Failed(_)
+        ));
+        assert!(matches!(
+            timed_out[1].outcome,
+            TopicConfigOutcome::Failed(_)
+        ));
+
+        // Empty entries -> NotReadable; missing topic -> Failed; sensitive -> value == None; input order preserved
+        let raw = Ok(vec![
+            Ok(RawConfigResource {
+                topic: "a-topic".to_string(),
+                entries: vec![],
+            }),
+            Ok(RawConfigResource {
+                topic: "b-topic".to_string(),
+                entries: vec![
+                    TopicConfigEntry {
+                        name: "cleanup.policy".to_string(),
+                        value: Some("delete".to_string()),
+                        source: TopicConfigSource::DynamicTopic,
+                        is_default: false,
+                        is_sensitive: false,
+                        is_read_only: false,
+                    },
+                    TopicConfigEntry {
+                        name: "secret.key".to_string(),
+                        value: Some("supersecret".to_string()),
+                        source: TopicConfigSource::StaticBroker,
+                        is_default: false,
+                        is_sensitive: true,
+                        is_read_only: true,
+                    },
+                ],
+            }),
+        ]);
+        let res = classify_chunk_raw(&["b-topic", "a-topic", "missing-topic"], raw);
+        assert_eq!(res[0].topic, "b-topic");
+        match &res[0].outcome {
+            TopicConfigOutcome::Available(entries) => {
+                assert_eq!(entries.len(), 2);
+                assert_eq!(entries[0].value.as_deref(), Some("delete"));
+                assert_eq!(entries[1].value, None);
+            }
+            other => panic!("expected Available, got {other:?}"),
+        }
+        assert_eq!(res[1].topic, "a-topic");
+        assert!(matches!(res[1].outcome, TopicConfigOutcome::NotReadable(_)));
+        assert_eq!(res[2].topic, "missing-topic");
+        assert!(matches!(res[2].outcome, TopicConfigOutcome::Failed(_)));
+    }
+
+    #[test]
+    #[ignore = "Requires local docker compose kafka on localhost:9094 with spike-t-0000"]
+    fn integration_fetch_topic_metadata_existing_and_missing() {
+        let profile = ClusterProfile {
+            name: "local".to_string(),
+            bootstrap_servers: "localhost:9094".to_string(),
+            security_protocol: Some("PLAINTEXT".to_string()),
+            ..Default::default()
+        };
+
+        let existing = fetch_topic_metadata(profile.clone(), "spike-t-000".to_string()).unwrap();
+        assert!(existing.partition_count > 0);
+        assert_eq!(existing.metadata_error, None);
+
+        let missing_name = "does-not-exist-meta-test-9999";
+        let missing = fetch_topic_metadata(profile.clone(), missing_name.to_string()).unwrap();
+        assert_eq!(
+            missing.metadata_error.as_ref().map(|e| e.kind),
+            Some(TopicMetadataErrorKind::NotFound)
+        );
+
+        let topics = fetch_topics(profile).unwrap();
+        assert!(!topics.iter().any(|t| t.name == missing_name));
+    }
+
+    #[test]
+    #[ignore = "Requires local docker compose kafka on localhost:9094 with spike-t-0000"]
+    fn integration_describe_topic_configs_returns_cleanup_policy() {
+        let profile = ClusterProfile {
+            name: "local".to_string(),
+            bootstrap_servers: "localhost:9094".to_string(),
+            security_protocol: Some("PLAINTEXT".to_string()),
+            ..Default::default()
+        };
+        let res = describe_topic_configs(profile, vec!["spike-t-000".to_string()]).unwrap();
+        assert_eq!(res.len(), 1);
+        match &res[0].outcome {
+            TopicConfigOutcome::Available(entries) => {
+                assert!(entries.iter().any(|e| e.name == "cleanup.policy"));
+            }
+            other => panic!("expected Available, got {other:?}"),
+        }
+    }
+
+    #[test]
+    #[ignore = "Spike 1.1 (partition-offset-distribution): requires local kafka on localhost:9094 with spike-offset-dist-60p"]
+    fn spike_parallel_fetch_watermarks() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::Mutex;
+        use std::time::Instant;
+
+        let profile = ClusterProfile {
+            name: "spike-offsets".to_string(),
+            bootstrap_servers: "localhost:9094".to_string(),
+            security_protocol: Some("PLAINTEXT".to_string()),
+            ..Default::default()
+        };
+        let mut config = create_config(&profile);
+        config.set("enable.auto.commit", "false");
+        let consumer: BaseConsumer = config.create().unwrap();
+
+        let topic = "spike-offset-dist-60p";
+        let meta = consumer
+            .fetch_metadata(Some(topic), Duration::from_secs(10))
+            .unwrap();
+        let t = meta.topics().iter().find(|t| t.name() == topic).unwrap();
+        let partitions: Vec<i32> = t.partitions().iter().map(|p| p.id()).collect();
+        assert_eq!(partitions.len(), 60);
+
+        let seq_start = Instant::now();
+        let mut seq_results = Vec::with_capacity(partitions.len());
+        for &p in &partitions {
+            seq_results.push((
+                p,
+                consumer
+                    .fetch_watermarks(topic, p, Duration::from_secs(5))
+                    .unwrap(),
+            ));
+        }
+        let seq_ms = seq_start.elapsed().as_millis();
+
+        let par_start = Instant::now();
+        let next_idx = AtomicUsize::new(0);
+        let par_results: Mutex<Vec<(i32, (i64, i64))>> =
+            Mutex::new(Vec::with_capacity(partitions.len()));
+        std::thread::scope(|s| {
+            for _ in 0..8 {
+                s.spawn(|| loop {
+                    let idx = next_idx.fetch_add(1, Ordering::Relaxed);
+                    if idx >= partitions.len() {
+                        break;
+                    }
+                    let p = partitions[idx];
+                    let wm = consumer
+                        .fetch_watermarks(topic, p, Duration::from_secs(5))
+                        .unwrap();
+                    par_results.lock().unwrap().push((p, wm));
+                });
+            }
+        });
+        let par_ms = par_start.elapsed().as_millis();
+        let mut par_vec = par_results.into_inner().unwrap();
+        par_vec.sort_by_key(|(p, _)| *p);
+        seq_results.sort_by_key(|(p, _)| *p);
+        assert_eq!(seq_results, par_vec);
+        println!(
+            "SPIKE_WATERMARKS: partitions={} seq_ms={seq_ms} par_ms={par_ms}",
+            partitions.len()
+        );
+    }
+
+    #[test]
+    fn classify_watermark_error_distinguishes_auth_from_other_errors() {
+        assert!(matches!(
+            classify_watermark_error(&KafkaError::MetadataFetch(
+                RDKafkaErrorCode::TopicAuthorizationFailed
+            )),
+            WatermarkRead::NotReadable(_)
+        ));
+        assert!(matches!(
+            classify_watermark_error(&KafkaError::MetadataFetch(
+                RDKafkaErrorCode::ClusterAuthorizationFailed
+            )),
+            WatermarkRead::NotReadable(_)
+        ));
+        assert!(matches!(
+            classify_watermark_error(&KafkaError::MetadataFetch(
+                RDKafkaErrorCode::LeaderNotAvailable
+            )),
+            WatermarkRead::Failed(_)
+        ));
+    }
+
+    #[test]
+    fn read_partitions_with_deadline_marks_unclaimed_timed_out_and_bounds_workers() {
+        use std::sync::atomic::AtomicUsize;
+
+        let active = AtomicUsize::new(0);
+        let peak = AtomicUsize::new(0);
+
+        // 12 partitions with max_workers=8, each sleeping 40ms with a 50ms deadline:
+        // only the first batch of <=8 workers can complete before the deadline expires,
+        // leaving the rest TimedOut.
+        let partitions: Vec<i32> = (0..12).rev().collect();
+        let results = read_partitions_with_deadline(
+            &partitions,
+            OFFSET_READ_MAX_WORKERS,
+            Duration::from_millis(50),
+            Duration::from_millis(50),
+            |p, _| {
+                let cur = active.fetch_add(1, Ordering::SeqCst) + 1;
+                peak.fetch_max(cur, Ordering::SeqCst);
+                std::thread::sleep(Duration::from_millis(70));
+                active.fetch_sub(1, Ordering::SeqCst);
+                WatermarkRead::Known {
+                    low: 0,
+                    high: p as i64,
+                }
+            },
+        );
+
+        assert_eq!(results.len(), 12);
+        // Sorted by partition id 0..12
+        for (i, r) in results.iter().enumerate() {
+            assert_eq!(r.partition, i as i32);
+        }
+        assert!(peak.load(Ordering::SeqCst) <= OFFSET_READ_MAX_WORKERS);
+        assert!(
+            results
+                .iter()
+                .any(|r| matches!(r.read, WatermarkRead::TimedOut)),
+            "expected at least one TimedOut partition"
+        );
+
+        // Fewer partitions than max_workers -> peak <= P
+        let active2 = AtomicUsize::new(0);
+        let peak2 = AtomicUsize::new(0);
+        let small = read_partitions_with_deadline(
+            &[0, 1, 2],
+            OFFSET_READ_MAX_WORKERS,
+            Duration::from_secs(1),
+            Duration::from_secs(1),
+            |p, _| {
+                let cur = active2.fetch_add(1, Ordering::SeqCst) + 1;
+                peak2.fetch_max(cur, Ordering::SeqCst);
+                std::thread::sleep(Duration::from_millis(10));
+                active2.fetch_sub(1, Ordering::SeqCst);
+                WatermarkRead::Known {
+                    low: 0,
+                    high: p as i64,
+                }
+            },
+        );
+        assert_eq!(small.len(), 3);
+        assert!(peak2.load(Ordering::SeqCst) <= 3);
+    }
+
+    #[test]
+    fn map_cluster_overview_sorts_brokers_and_maps_negative_controller_to_none() {
+        let overview = map_cluster_overview(
+            vec![
+                BrokerEndpoint {
+                    id: 3,
+                    host: "b3".to_string(),
+                    port: 9092,
+                },
+                BrokerEndpoint {
+                    id: 1,
+                    host: "b1".to_string(),
+                    port: 9092,
+                },
+                BrokerEndpoint {
+                    id: 2,
+                    host: "b2".to_string(),
+                    port: 9092,
+                },
+            ],
+            Some("cluster-xyz".to_string()),
+            -1,
+        );
+        assert_eq!(
+            overview.brokers.iter().map(|b| b.id).collect::<Vec<_>>(),
+            vec![1, 2, 3]
+        );
+        assert_eq!(overview.cluster_id.as_deref(), Some("cluster-xyz"));
+        assert_eq!(overview.controller_id, None);
+
+        let with_ctrl = map_cluster_overview(vec![], Some(String::new()), 2);
+        assert_eq!(with_ctrl.cluster_id, None);
+        assert_eq!(with_ctrl.controller_id, Some(2));
+    }
+
+    #[test]
+    fn map_config_entry_redacts_sensitive_and_maps_all_sources() {
+        let sensitive = map_config_entry(RdkafkaConfigEntry {
+            name: "ssl.keystore.password".to_string(),
+            value: Some("super-secret".to_string()),
+            source: ConfigSource::DynamicTopic,
+            is_read_only: true,
+            is_default: false,
+            is_sensitive: true,
+        });
+        assert_eq!(sensitive.value, None);
+        assert!(sensitive.is_sensitive);
+        assert_eq!(sensitive.source, CoreTopicConfigSource::DynamicTopic);
+
+        let pairs = [
+            (
+                ConfigSource::DynamicTopic,
+                CoreTopicConfigSource::DynamicTopic,
+            ),
+            (
+                ConfigSource::DynamicBroker,
+                CoreTopicConfigSource::DynamicBroker,
+            ),
+            (
+                ConfigSource::DynamicDefaultBroker,
+                CoreTopicConfigSource::DynamicDefaultBroker,
+            ),
+            (
+                ConfigSource::StaticBroker,
+                CoreTopicConfigSource::StaticBroker,
+            ),
+            (ConfigSource::Default, CoreTopicConfigSource::Default),
+            (ConfigSource::Unknown, CoreTopicConfigSource::Unknown),
+        ];
+        for (src, expected) in pairs {
+            assert_eq!(map_config_source(src), expected);
+        }
+    }
+
+    #[test]
+    fn classify_config_error_maps_auth_missing_and_other() {
+        assert_eq!(
+            classify_config_error(RDKafkaErrorCode::TopicAuthorizationFailed),
+            TopicConfigUnavailable::NotAuthorized
+        );
+        assert_eq!(
+            classify_config_error(RDKafkaErrorCode::ClusterAuthorizationFailed),
+            TopicConfigUnavailable::NotAuthorized
+        );
+        assert_eq!(
+            classify_config_error(RDKafkaErrorCode::UnknownTopicOrPartition),
+            TopicConfigUnavailable::TopicNotFound
+        );
+        assert_eq!(
+            classify_config_error(RDKafkaErrorCode::UnknownTopic),
+            TopicConfigUnavailable::TopicNotFound
+        );
+        assert_eq!(
+            classify_config_error(RDKafkaErrorCode::RequestTimedOut),
+            TopicConfigUnavailable::Failed(RDKafkaErrorCode::RequestTimedOut.to_string())
+        );
+    }
+
+    #[test]
+    fn assemble_detailed_config_chunk_preserves_order_sorts_entries_and_fans_out_request_errors() {
+        let fanout =
+            assemble_detailed_config_chunk(&["b", "a"], Err("transport timeout".to_string()));
+        assert_eq!(fanout.len(), 2);
+        assert_eq!(fanout[0].topic, "b");
+        assert_eq!(
+            fanout[0].result,
+            Err(TopicConfigUnavailable::Failed(
+                "transport timeout".to_string()
+            ))
+        );
+        assert_eq!(fanout[1].topic, "a");
+
+        let ok = assemble_detailed_config_chunk(
+            &["topic-b", "missing-topic", "topic-a"],
+            Ok(vec![
+                Ok((
+                    "topic-a".to_string(),
+                    vec![
+                        CoreTopicConfigEntry {
+                            name: "z.key".to_string(),
+                            value: Some("2".to_string()),
+                            source: CoreTopicConfigSource::Default,
+                            is_default: true,
+                            is_sensitive: false,
+                        },
+                        CoreTopicConfigEntry {
+                            name: "a.key".to_string(),
+                            value: Some("1".to_string()),
+                            source: CoreTopicConfigSource::DynamicTopic,
+                            is_default: false,
+                            is_sensitive: false,
+                        },
+                    ],
+                )),
+                Ok(("topic-b".to_string(), vec![])),
+            ]),
+        );
+        assert_eq!(ok.len(), 3);
+        assert_eq!(ok[0].topic, "topic-b");
+        assert_eq!(ok[0].result, Err(TopicConfigUnavailable::TopicNotFound));
+        assert_eq!(ok[1].topic, "missing-topic");
+        assert_eq!(
+            ok[1].result,
+            Err(TopicConfigUnavailable::Failed(
+                "no result for topic".to_string()
+            ))
+        );
+        assert_eq!(ok[2].topic, "topic-a");
+        let entries = ok[2].result.as_ref().unwrap();
+        assert_eq!(
+            entries.iter().map(|e| e.name.as_str()).collect::<Vec<_>>(),
+            vec!["a.key", "z.key"]
+        );
+    }
+
+    #[test]
+    #[ignore = "Requires local docker compose kafka on localhost:9094 with spike-t-000"]
+    fn integration_describe_topic_configs_detailed_existing_and_missing() {
+        let profile = ClusterProfile {
+            name: "local".to_string(),
+            bootstrap_servers: "localhost:9094".to_string(),
+            security_protocol: Some("PLAINTEXT".to_string()),
+            ..Default::default()
+        };
+        let res = describe_topic_configs_detailed(
+            &profile,
+            &[
+                "spike-t-000".to_string(),
+                "non-existent-510-xyz".to_string(),
+            ],
+        );
+        assert_eq!(res.len(), 2);
+        let entries = res[0]
+            .result
+            .as_ref()
+            .expect("existing topic should succeed");
+        assert!(entries.iter().any(|e| e.name == "cleanup.policy"));
+        assert_eq!(res[1].result, Err(TopicConfigUnavailable::TopicNotFound));
     }
 }

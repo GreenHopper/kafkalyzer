@@ -89,6 +89,7 @@ _ScriptStep _$ScriptStepFromJson(Map<String, dynamic> json) => _ScriptStep(
           .toList() ??
       const [],
   filterTemplate: json['filterTemplate'] as String?,
+  filterExpression: json['filterExpression'] as String?,
   filterType:
       $enumDecodeNullable(_$FilterTypeEnumMap, json['filterType']) ??
       FilterType.contains,
@@ -129,6 +130,7 @@ Map<String, dynamic> _$ScriptStepToJson(
   'clusterName': instance.clusterName,
   'topicNames': instance.topicNames,
   'filterTemplate': instance.filterTemplate,
+  'filterExpression': instance.filterExpression,
   'filterType': _$FilterTypeEnumMap[instance.filterType]!,
   'scope': _$SearchScopeEnumMap[instance.scope]!,
   'startStrategy': _$MultiSearchStartStrategyEnumMap[instance.startStrategy]!,

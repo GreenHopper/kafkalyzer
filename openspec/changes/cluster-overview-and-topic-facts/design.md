@@ -68,6 +68,16 @@ topics; (b) cluster id and controller are non-null right after it; (c) a user wi
 brokers. If (a) fails, fall back to `fetch_metadata(None)` and ignore its topics (correct but costs a full topic list on
 big clusters — record in the spike note).
 
+**Spike 1.1 results (local KRaft broker `sift_kafka` on `localhost:9094`):**
+- `rd_kafka_metadata(rk, 0, NULL, &md, 10000)` returned `broker_cnt=1`, `topic_cnt=1026` (all topics, not 0).
+- `rd_kafka_clusterid(rk, 0)` returned `Some("MkU3OEVBNTcwNTJENDM2Qg")` and `rd_kafka_controllerid(rk, 0)` returned `1` (non-null/valid on KRaft).
+- Because `all_topics=0, only_rkt=NULL` still returned the full topic list in librdkafka 2.3.0, D1 switches to `BaseConsumer::fetch_metadata(None, 10s)` (ignoring its topics) while reading `rd_kafka_clusterid(rk, 0)` (freed via `rd_kafka_mem_free`) and `rd_kafka_controllerid(rk, 0)`.
+
+**Spike 1.2 results (transactional `spike-tx-12` & compacted `spike-compact-12` on `localhost:9094`):**
+- Head phase: `pause()` immediately stopped further deliveries (`post_pause_msgs=0`) after the first record at `low=0`.
+- Tail phase: reusing the paused `BaseConsumer` required `unassign()` + `assign(tail_tpl)` + `resume(tail_tpl)` (or a fresh `BaseConsumer`) so paused partitions deliver again.
+- With a 16-offset tail window (`tail_start=0`), `spike-tx-12` (`high=12`) delivered `last_offset=Some(10)` (skipping the commit marker at 11) and `got_eof=true`; `spike-compact-12` (`high=8`) delivered `last_offset=Some(7)` and `got_eof=true`.
+
 Alternatives: reuse the topic-list read (`fetch_topics`) and return brokers with it — rejected: 5.33 owns that result
 type and is changing it; coupling the overview to it would serialize both changes. `DescribeCluster` admin API — gives
 rack and authorized operations but needs broker ≥ 2.8 and the raw event-queue plumbing of

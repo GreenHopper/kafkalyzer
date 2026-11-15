@@ -31,6 +31,9 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
   Duration chunkDelay = const Duration(milliseconds: 10);
 
   @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
   Future<api.TopicPartitionDetails> fetchTopicPartitions({
     required ClusterProfile profile,
     required String topic,
@@ -39,6 +42,19 @@ class FakeKafkaMetadataService implements KafkaMetadataService {
     partitions: const [],
     brokers: const [],
   );
+
+  @override
+  Future<api.TopicMetadata> fetchTopicMetadata({
+    required ClusterProfile profile,
+    required String topic,
+  }) async =>
+      api.TopicMetadata(name: topic, partitionCount: 0, replicationFactor: 0);
+
+  @override
+  Future<List<api.TopicConfigResult>> describeTopicConfigs({
+    required ClusterProfile profile,
+    required List<String> topics,
+  }) async => const [];
 
   @override
   Future<List<ConsumerGroupLag>> fetchConsumerLags({

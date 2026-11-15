@@ -1,17 +1,28 @@
 use anyhow::Result;
 use chrono::{DateTime, Timelike};
-use kafkalyzer_core::duplicate_fingerprint::{compute_message_fingerprint, MessageFingerprint};
+use kafkalyzer_core::analysis_limits::{
+    AnalysisLimit, AnalysisLimitKind, MAX_DUPLICATE_SAMPLES, MAX_FIELD_DEPTH,
+    MAX_LISTED_DUPLICATES, MAX_LISTED_KEYS, MAX_LISTED_VALUES, MAX_PREVIEW_CHARS,
+    MAX_REPORTED_FIELDS, MAX_SIZE_SAMPLE, MAX_TRACKED_FIELDS, MAX_TRACKED_KEYS,
+    MAX_VALUES_PER_FIELD, MAX_VALUE_CHARS, TIMELINE_PAST_DAYS,
+};
+use kafkalyzer_core::analysis_scope::{
+    plan_scan, AnalysisScope, AnalysisScopeEstimate, ScanPlan, TimeBound, TimeBounds,
+};
+use kafkalyzer_core::duplicate_fingerprint::{
+    compute_message_fingerprint, BoundedFingerprintSet, FingerprintOutcome, MessageFingerprint,
+};
 use kafkalyzer_core::json_path::{build_canonical_path, render_for_statistics, FieldPath};
 use kafkalyzer_core::kafka_types::{
-    ClusterProfile, DuplicateAnalysisResult, DuplicateDetectionScope, FieldOccurrence,
-    FieldValueFilter, FieldValueOccurrence, HourBucket, HourlyCount, KeyOccurrence,
-    PartitionAnalysis, TopDuplicateOccurrence, TopicAnalysisOptions, TopicAnalysisProgress,
-    TopicAnalysisReport, TypeOccurrence, ValueFilterResult,
+    AnalysisScopeSummary, ClusterProfile, DuplicateAnalysisResult, DuplicateDetectionScope,
+    FieldOccurrence, FieldValueFilter, FieldValueOccurrence, HourBucket, HourlyCount,
+    KeyOccurrence, PartitionAnalysis, TopDuplicateOccurrence, TopicAnalysisOptions,
+    TopicAnalysisProgress, TopicAnalysisReport, TypeOccurrence, ValueFilterResult,
 };
+use kafkalyzer_core::offset_distribution::WatermarkRead;
 use kafkalyzer_core::size_stats::SizeSample;
-use rdkafka::admin::{AdminClient, AdminOptions, ResourceSpecifier};
-use rdkafka::client::DefaultClientContext;
 use rdkafka::consumer::{BaseConsumer, Consumer};
+use rdkafka::error::KafkaError;
 use rdkafka::topic_partition_list::{Offset, TopicPartitionList};
 use rdkafka::Message as KafkaMessageTrait;
 use serde_json::Value;
@@ -20,10 +31,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use crate::kafka_consumer::{
-    create_sr_settings, decode_message_component, decode_message_to_value, setup_schema_registry,
-    StreamSink,
-};
+use crate::kafka_consumer::{create_sr_settings, setup_schema_registry, StreamSink};
 use crate::kafka_utils::create_config;
 
 #[derive(Clone, Debug)]
@@ -55,6 +63,7 @@ pub struct DuplicateSample {
 pub struct AnalyzerAccumulator {
     pub topic: String,
     pub is_compacted: bool,
+    pub cleanup_policy_unknown: bool,
     pub total_messages: i64,
     pub total_bytes: i64,
     pub min_message_size: i64,
@@ -77,12 +86,19 @@ pub struct AnalyzerAccumulator {
     pub hourly_timeline: HashMap<i64, i64>,
     pub scan_reference_time_ms: Option<i64>,
     pub timeline_outside_count: i64,
-    pub sampled_partitions: HashSet<i32>,
+    pub started_after_low_partitions: HashSet<i32>,
+    pub ended_before_high_partitions: HashSet<i32>,
+    pub time_window: Option<(Option<i64>, Option<i64>)>,
+    pub excluded_by_time_range: i64,
+    pub scan_scope_summary: Option<AnalysisScopeSummary>,
     pub filter_accumulator: Option<ValueFilterAccumulator>,
     pub duplicate_scope: DuplicateDetectionScope,
-    pub seen_fingerprints: HashSet<MessageFingerprint>,
+    pub fingerprint_set: Arc<BoundedFingerprintSet>,
     pub duplicate_samples: HashMap<MessageFingerprint, DuplicateSample>,
-    pub recent_previews: HashMap<MessageFingerprint, (Option<String>, String, i32, i64, i64)>,
+    pub duplicate_samples_capped: bool,
+    pub field_cap_reached: bool,
+    pub depth_limit_reached: bool,
+    pub preview_truncated: bool,
 }
 
 #[derive(Clone)]
@@ -92,18 +108,22 @@ pub struct PartitionStatsAccumulator {
     pub earliest_offset: i64,
     pub latest_offset: i64,
     pub earliest_timestamp_ms: Option<i64>,
+    pub latest_timestamp_ms: Option<i64>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn record_object_fields(
     field_counts: &mut HashMap<String, i64>,
     field_value_counts: &mut HashMap<String, HashMap<String, i64>>,
     field_value_truncated: &mut HashMap<String, HashMap<String, bool>>,
     capped_value_fields: &mut HashSet<String>,
+    field_cap_reached: &mut bool,
+    depth_limit_reached: &mut bool,
     map: &serde_json::Map<String, Value>,
     segments: &mut Vec<String>,
     depth: usize,
 ) {
-    if depth > 5 {
+    if depth > MAX_FIELD_DEPTH {
         return;
     }
 
@@ -111,19 +131,21 @@ fn record_object_fields(
         segments.push(k.clone());
         let field_path = build_canonical_path(segments);
 
-        // Record field occurrence (bounded up to 500 fields)
-        if field_counts.len() < 500 || field_counts.contains_key(&field_path) {
+        // Record field occurrence (bounded up to MAX_TRACKED_FIELDS)
+        if field_counts.len() < MAX_TRACKED_FIELDS || field_counts.contains_key(&field_path) {
             *field_counts.entry(field_path.clone()).or_insert(0) += 1;
+        } else {
+            *field_cap_reached = true;
         }
 
         // Check scalar value for top_values tracking
         let (val_str, truncated) = match v {
             Value::String(s) => {
                 let char_count = s.chars().count();
-                if char_count <= 80 {
+                if char_count <= MAX_VALUE_CHARS {
                     (Some(s.clone()), false)
                 } else {
-                    let prefix: String = s.chars().take(77).collect();
+                    let prefix: String = s.chars().take(MAX_VALUE_CHARS - 3).collect();
                     (Some(format!("{}...", prefix)), true)
                 }
             }
@@ -135,7 +157,7 @@ fn record_object_fields(
 
         if let Some(v_str) = val_str {
             let val_map = field_value_counts.entry(field_path.clone()).or_default();
-            if val_map.len() < 200 || val_map.contains_key(&v_str) {
+            if val_map.len() < MAX_VALUES_PER_FIELD || val_map.contains_key(&v_str) {
                 *val_map.entry(v_str.clone()).or_insert(0) += 1;
                 if truncated {
                     field_value_truncated
@@ -148,18 +170,22 @@ fn record_object_fields(
             }
         }
 
-        // Recurse into child object if depth < 5
+        // Recurse into child object if depth < MAX_FIELD_DEPTH
         if let Value::Object(child_map) = v {
-            if depth < 5 {
+            if depth < MAX_FIELD_DEPTH {
                 record_object_fields(
                     field_counts,
                     field_value_counts,
                     field_value_truncated,
                     capped_value_fields,
+                    field_cap_reached,
+                    depth_limit_reached,
                     child_map,
                     segments,
                     depth + 1,
                 );
+            } else {
+                *depth_limit_reached = true;
             }
         }
         // Note: Arrays are NOT descended.
@@ -168,12 +194,12 @@ fn record_object_fields(
     }
 }
 
-fn truncate_preview(s: &str, max_chars: usize) -> String {
+fn truncate_preview(s: &str, max_chars: usize) -> (String, bool) {
     if s.chars().count() <= max_chars {
-        s.to_string()
+        (s.to_string(), false)
     } else {
         let truncated: String = s.chars().take(max_chars).collect();
-        format!("{}...", truncated)
+        (format!("{}...", truncated), true)
     }
 }
 
@@ -181,15 +207,15 @@ fn extract_duplicate_preview(
     parsed_payload: Option<&Value>,
     payload_bytes: Option<&[u8]>,
     max_chars: usize,
-) -> String {
+) -> (String, bool) {
     if let Some(val) = parsed_payload {
         if let Ok(s) = serde_json::to_string(val) {
             return truncate_preview(&s, max_chars);
         }
     }
     match payload_bytes {
-        None => "[Tombstone]".to_string(),
-        Some(b) if b.is_empty() => "[Empty]".to_string(),
+        None => ("[Tombstone]".to_string(), false),
+        Some(b) if b.is_empty() => ("[Empty]".to_string(), false),
         Some(b) => {
             if let Ok(json_val) = serde_json::from_slice::<Value>(b) {
                 if let Ok(s) = serde_json::to_string(&json_val) {
@@ -198,7 +224,7 @@ fn extract_duplicate_preview(
             }
             match std::str::from_utf8(b) {
                 Ok(s) => truncate_preview(s, max_chars),
-                Err(_) => format!("[Binary 0x{}]", hex_preview(b)),
+                Err(_) => (format!("[Binary 0x{}]", hex_preview(b)), false),
             }
         }
     }
@@ -217,6 +243,33 @@ impl AnalyzerAccumulator {
         filter: Option<FieldValueFilter>,
         duplicate_scope: Option<DuplicateDetectionScope>,
     ) -> Self {
+        Self::with_scope_and_fingerprints(
+            topic,
+            is_compacted,
+            scan_reference_time_ms,
+            sampled_partitions,
+            HashSet::new(),
+            None,
+            None,
+            filter,
+            duplicate_scope,
+            Arc::new(BoundedFingerprintSet::new()),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_scope_and_fingerprints(
+        topic: String,
+        is_compacted: bool,
+        scan_reference_time_ms: Option<i64>,
+        started_after_low_partitions: HashSet<i32>,
+        ended_before_high_partitions: HashSet<i32>,
+        time_window: Option<(Option<i64>, Option<i64>)>,
+        scan_scope_summary: Option<AnalysisScopeSummary>,
+        filter: Option<FieldValueFilter>,
+        duplicate_scope: Option<DuplicateDetectionScope>,
+        fingerprint_set: Arc<BoundedFingerprintSet>,
+    ) -> Self {
         let filter_accumulator = filter.map(|f| ValueFilterAccumulator {
             field_path: f.field_path,
             value: f.value,
@@ -229,6 +282,7 @@ impl AnalyzerAccumulator {
         Self {
             topic,
             is_compacted,
+            cleanup_policy_unknown: false,
             total_messages: 0,
             total_bytes: 0,
             min_message_size: i64::MAX,
@@ -249,12 +303,19 @@ impl AnalyzerAccumulator {
             hourly_timeline: HashMap::new(),
             scan_reference_time_ms,
             timeline_outside_count: 0,
-            sampled_partitions,
+            started_after_low_partitions,
+            ended_before_high_partitions,
+            time_window,
+            excluded_by_time_range: 0,
+            scan_scope_summary,
             filter_accumulator,
             duplicate_scope,
-            seen_fingerprints: HashSet::new(),
+            fingerprint_set,
             duplicate_samples: HashMap::new(),
-            recent_previews: HashMap::new(),
+            duplicate_samples_capped: false,
+            field_cap_reached: false,
+            depth_limit_reached: false,
+            preview_truncated: false,
         }
     }
 
@@ -282,9 +343,6 @@ impl AnalyzerAccumulator {
             self.scan_reference_time_ms = other.scan_reference_time_ms;
         }
 
-        // Sampled partitions
-        self.sampled_partitions.extend(&other.sampled_partitions);
-
         for (p, p_stat) in &other.partition_stats {
             let entry = self
                 .partition_stats
@@ -295,12 +353,14 @@ impl AnalyzerAccumulator {
                     earliest_offset: p_stat.earliest_offset,
                     latest_offset: p_stat.latest_offset,
                     earliest_timestamp_ms: p_stat.earliest_timestamp_ms,
+                    latest_timestamp_ms: p_stat.latest_timestamp_ms,
                 });
             if p_stat.message_count > 0 {
                 if entry.message_count == 0 {
                     entry.earliest_offset = p_stat.earliest_offset;
                     entry.latest_offset = p_stat.latest_offset;
                     entry.earliest_timestamp_ms = p_stat.earliest_timestamp_ms;
+                    entry.latest_timestamp_ms = p_stat.latest_timestamp_ms;
                 } else {
                     entry.earliest_offset = entry.earliest_offset.min(p_stat.earliest_offset);
                     entry.latest_offset = entry.latest_offset.max(p_stat.latest_offset);
@@ -310,6 +370,12 @@ impl AnalyzerAccumulator {
                             Some(prev) => Some(prev.min(other_ts)),
                         };
                     }
+                    if let Some(other_ts) = p_stat.latest_timestamp_ms {
+                        entry.latest_timestamp_ms = match entry.latest_timestamp_ms {
+                            None => Some(other_ts),
+                            Some(prev) => Some(prev.max(other_ts)),
+                        };
+                    }
                 }
             }
             entry.message_count += p_stat.message_count;
@@ -317,13 +383,21 @@ impl AnalyzerAccumulator {
         }
 
         for (k, count) in &other.key_counts {
-            if self.key_counts.len() < 10000 || self.key_counts.contains_key(k) {
+            if self.key_counts.len() < MAX_TRACKED_KEYS || self.key_counts.contains_key(k) {
                 *self.key_counts.entry(k.clone()).or_insert(0) += count;
             } else {
                 self.key_cardinality_capped = true;
             }
         }
         self.key_cardinality_capped |= other.key_cardinality_capped;
+        self.field_cap_reached |= other.field_cap_reached;
+        self.depth_limit_reached |= other.depth_limit_reached;
+        self.preview_truncated |= other.preview_truncated;
+        self.excluded_by_time_range += other.excluded_by_time_range;
+        self.started_after_low_partitions
+            .extend(other.started_after_low_partitions.iter().copied());
+        self.ended_before_high_partitions
+            .extend(other.ended_before_high_partitions.iter().copied());
         self.size_sample.merge(other.size_sample.clone());
 
         for (ct, count) in &other.content_type_counts {
@@ -369,69 +443,17 @@ impl AnalyzerAccumulator {
             }
         }
 
-        // Duplicate detection merge
-        for fp in &other.seen_fingerprints {
-            if !self.seen_fingerprints.insert(*fp) {
-                let other_cnt = other
-                    .duplicate_samples
-                    .get(fp)
-                    .map(|s| s.count)
-                    .unwrap_or(1);
-                if let Some(sample) = self.duplicate_samples.get_mut(fp) {
-                    sample.count += other_cnt;
-                } else if self.duplicate_samples.len() < 1000 {
-                    let (k, preview, p, o, ts) = if let Some(s) = other.duplicate_samples.get(fp) {
-                        (
-                            s.key.clone(),
-                            s.payload_preview.clone(),
-                            s.sample_partition,
-                            s.sample_offset,
-                            s.sample_timestamp_ms,
-                        )
-                    } else if let Some(recent) = other.recent_previews.get(fp) {
-                        (
-                            recent.0.clone(),
-                            recent.1.clone(),
-                            recent.2,
-                            recent.3,
-                            recent.4,
-                        )
-                    } else if let Some(recent) = self.recent_previews.get(fp) {
-                        (
-                            recent.0.clone(),
-                            recent.1.clone(),
-                            recent.2,
-                            recent.3,
-                            recent.4,
-                        )
-                    } else {
-                        (None, "[Duplicate payload]".to_string(), 0, 0, 0)
-                    };
-                    self.duplicate_samples.insert(
-                        *fp,
-                        DuplicateSample {
-                            key: k,
-                            payload_preview: preview,
-                            count: 1 + other_cnt,
-                            sample_partition: p,
-                            sample_offset: o,
-                            sample_timestamp_ms: ts,
-                        },
-                    );
-                }
-            } else if let Some(other_sample) = other.duplicate_samples.get(fp) {
-                if self.duplicate_samples.len() < 1000 {
-                    self.duplicate_samples.insert(*fp, other_sample.clone());
-                }
+        // Duplicate detection merge (shared BoundedFingerprintSet; samples store extra occurrences)
+        for (fp, other_sample) in &other.duplicate_samples {
+            if let Some(sample) = self.duplicate_samples.get_mut(fp) {
+                sample.count += other_sample.count;
+            } else if self.duplicate_samples.len() < MAX_DUPLICATE_SAMPLES {
+                self.duplicate_samples.insert(*fp, other_sample.clone());
+            } else {
+                self.duplicate_samples_capped = true;
             }
         }
-        for (fp, recent) in &other.recent_previews {
-            if self.recent_previews.len() < 1000 {
-                self.recent_previews
-                    .entry(*fp)
-                    .or_insert_with(|| recent.clone());
-            }
-        }
+        self.duplicate_samples_capped |= other.duplicate_samples_capped;
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -472,6 +494,44 @@ impl AnalyzerAccumulator {
         is_sr_encoded: bool,
         compiled_filter: Option<&CompiledValueFilter>,
     ) {
+        self.record_message_with_filter_and_local(
+            partition,
+            offset,
+            timestamp_ms,
+            key_bytes,
+            payload_bytes,
+            decoded_key,
+            parsed_payload,
+            is_sr_encoded,
+            compiled_filter,
+            None,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn record_message_with_filter_and_local(
+        &mut self,
+        partition: i32,
+        offset: i64,
+        timestamp_ms: i64,
+        key_bytes: Option<&[u8]>,
+        payload_bytes: Option<&[u8]>,
+        decoded_key: Option<&str>,
+        parsed_payload: Option<&Value>,
+        is_sr_encoded: bool,
+        compiled_filter: Option<&CompiledValueFilter>,
+        value_local_schema: Option<&kafkalyzer_core::kafka_types::LocalSchemaUse>,
+    ) {
+        if let Some((win_start, win_end)) = self.time_window {
+            let out_of_window = timestamp_ms <= 0
+                || win_start.is_some_and(|s| timestamp_ms < s)
+                || win_end.is_some_and(|e| timestamp_ms >= e);
+            if out_of_window {
+                self.excluded_by_time_range += 1;
+                return;
+            }
+        }
+
         self.total_messages += 1;
 
         let key_len = key_bytes.map(|k| k.len() as i64).unwrap_or(0);
@@ -497,6 +557,7 @@ impl AnalyzerAccumulator {
                 earliest_offset: offset,
                 latest_offset: offset,
                 earliest_timestamp_ms: None,
+                latest_timestamp_ms: None,
             });
         p_stat.message_count += 1;
         p_stat.byte_size += msg_size;
@@ -510,6 +571,10 @@ impl AnalyzerAccumulator {
             p_stat.earliest_timestamp_ms = match p_stat.earliest_timestamp_ms {
                 None => Some(timestamp_ms),
                 Some(prev) => Some(prev.min(timestamp_ms)),
+            };
+            p_stat.latest_timestamp_ms = match p_stat.latest_timestamp_ms {
+                None => Some(timestamp_ms),
+                Some(prev) => Some(prev.max(timestamp_ms)),
             };
         }
 
@@ -573,8 +638,8 @@ impl AnalyzerAccumulator {
                 self.null_keys_count += 1;
             }
             Some(ref k) => {
-                // Bounded tracking up to 10,000 unique keys
-                if self.key_counts.len() < 10000 || self.key_counts.contains_key(k) {
+                // Bounded tracking up to MAX_TRACKED_KEYS unique keys
+                if self.key_counts.len() < MAX_TRACKED_KEYS || self.key_counts.contains_key(k) {
                     *self.key_counts.entry(k.clone()).or_insert(0) += 1;
                 } else {
                     self.key_cardinality_capped = true;
@@ -582,44 +647,34 @@ impl AnalyzerAccumulator {
             }
         }
 
-        // Duplicate detection
+        // Duplicate detection (shared BoundedFingerprintSet; samples count extra occurrences)
         let fp = compute_message_fingerprint(self.duplicate_scope, key_bytes, payload_bytes);
-        if !self.seen_fingerprints.insert(fp) {
-            if let Some(sample) = self.duplicate_samples.get_mut(&fp) {
-                sample.count += 1;
-            } else if self.duplicate_samples.len() < 1000 {
-                let (prev_key, prev_payload, p, o, ts) = if let Some(recent) =
-                    self.recent_previews.get(&fp)
-                {
-                    (
-                        recent.0.clone(),
-                        recent.1.clone(),
-                        recent.2,
-                        recent.3,
-                        recent.4,
-                    )
+        match self.fingerprint_set.insert(fp) {
+            FingerprintOutcome::New | FingerprintOutcome::Untracked => {}
+            FingerprintOutcome::Seen => {
+                if let Some(sample) = self.duplicate_samples.get_mut(&fp) {
+                    sample.count += 1;
+                } else if self.duplicate_samples.len() < MAX_DUPLICATE_SAMPLES {
+                    let (preview, truncated) =
+                        extract_duplicate_preview(parsed_payload, payload_bytes, MAX_PREVIEW_CHARS);
+                    if truncated {
+                        self.preview_truncated = true;
+                    }
+                    self.duplicate_samples.insert(
+                        fp,
+                        DuplicateSample {
+                            key: key_str.clone(),
+                            payload_preview: preview,
+                            count: 1,
+                            sample_partition: partition,
+                            sample_offset: offset,
+                            sample_timestamp_ms: timestamp_ms,
+                        },
+                    );
                 } else {
-                    let preview = extract_duplicate_preview(parsed_payload, payload_bytes, 4000);
-                    (key_str.clone(), preview, partition, offset, timestamp_ms)
-                };
-                self.duplicate_samples.insert(
-                    fp,
-                    DuplicateSample {
-                        key: prev_key,
-                        payload_preview: prev_payload,
-                        count: 2,
-                        sample_partition: p,
-                        sample_offset: o,
-                        sample_timestamp_ms: ts,
-                    },
-                );
+                    self.duplicate_samples_capped = true;
+                }
             }
-        } else if self.recent_previews.len() < 1000 {
-            let preview = extract_duplicate_preview(parsed_payload, payload_bytes, 4000);
-            self.recent_previews.insert(
-                fp,
-                (key_str.clone(), preview, partition, offset, timestamp_ms),
-            );
         }
 
         // Tombstone check
@@ -633,9 +688,13 @@ impl AnalyzerAccumulator {
             return;
         }
 
-        // Try parsed payload or parse JSON from raw payload
+        let local_failed = value_local_schema.is_some_and(|u| u.error.is_some());
+
+        // Try parsed payload or parse JSON from raw payload (unless local decode failed)
         let fallback_json;
-        let json_ref = if let Some(val) = parsed_payload {
+        let json_ref = if local_failed {
+            None
+        } else if let Some(val) = parsed_payload {
             Some(val)
         } else if let Some(payload) = payload_bytes {
             if let Ok(json_val) = serde_json::from_slice::<Value>(payload) {
@@ -648,8 +707,17 @@ impl AnalyzerAccumulator {
             None
         };
 
-        if let Some(json_val) = json_ref {
-            let type_label = if is_sr_encoded {
+        if local_failed {
+            *self
+                .content_type_counts
+                .entry("Local schema decode failed".to_string())
+                .or_insert(0) += 1;
+        } else if let Some(json_val) = json_ref {
+            let local_label;
+            let type_label = if let Some(local_use) = value_local_schema {
+                local_label = format!("{} (local schema)", local_use.format.display_kind());
+                local_label.as_str()
+            } else if is_sr_encoded {
                 "Avro / Schema Registry"
             } else {
                 "JSON"
@@ -666,6 +734,8 @@ impl AnalyzerAccumulator {
                     &mut self.field_value_counts,
                     &mut self.field_value_truncated,
                     &mut self.capped_value_fields,
+                    &mut self.field_cap_reached,
+                    &mut self.depth_limit_reached,
                     map,
                     &mut segments,
                     1,
@@ -786,10 +856,10 @@ impl AnalyzerAccumulator {
         hourly_timeline.sort_by_key(|b| b.epoch_hour);
 
         // Coverage start (complete_from_ms)
-        let complete_from_ms = if self.sampled_partitions.is_empty() {
+        let part_complete_from = if self.started_after_low_partitions.is_empty() {
             None
         } else {
-            self.sampled_partitions
+            self.started_after_low_partitions
                 .iter()
                 .filter_map(|p| {
                     self.partition_stats
@@ -798,6 +868,39 @@ impl AnalyzerAccumulator {
                         .and_then(|s| s.earliest_timestamp_ms)
                 })
                 .max()
+        };
+        let complete_from_ms = match (
+            part_complete_from,
+            self.time_window.and_then(|(start, _)| start),
+        ) {
+            (Some(a), Some(b)) => Some(a.max(b)),
+            (Some(a), None) => Some(a),
+            (None, Some(b)) => Some(b),
+            (None, None) => None,
+        };
+
+        // Coverage end (complete_until_ms)
+        let part_complete_until = if self.ended_before_high_partitions.is_empty() {
+            None
+        } else {
+            self.ended_before_high_partitions
+                .iter()
+                .filter_map(|p| {
+                    self.partition_stats
+                        .get(p)
+                        .filter(|s| s.message_count > 0)
+                        .and_then(|s| s.latest_timestamp_ms)
+                })
+                .min()
+        };
+        let complete_until_ms = match (
+            part_complete_until,
+            self.time_window.and_then(|(_, end)| end),
+        ) {
+            (Some(a), Some(b)) => Some(a.min(b)),
+            (Some(a), None) => Some(a),
+            (None, Some(b)) => Some(b),
+            (None, None) => None,
         };
 
         // Top 20 Keys
@@ -928,12 +1031,10 @@ impl AnalyzerAccumulator {
         });
 
         // Duplicate analysis result
-        let unique_msgs = self.seen_fingerprints.len() as i64;
-        let duplicate_msgs = if total_msgs >= unique_msgs {
-            total_msgs - unique_msgs
-        } else {
-            0
-        };
+        let tracked = self.fingerprint_set.tracked();
+        let untracked = self.fingerprint_set.untracked();
+        let unique_msgs = (tracked + untracked).min(total_msgs);
+        let duplicate_msgs = (total_msgs - unique_msgs).max(0);
         let duplicate_rate = if total_msgs > 0 {
             (duplicate_msgs as f64 / total_msgs as f64) * 100.0
         } else {
@@ -946,17 +1047,18 @@ impl AnalyzerAccumulator {
 
         let top_duplicates: Vec<TopDuplicateOccurrence> = sorted_duplicates
             .into_iter()
-            .take(20)
+            .take(MAX_LISTED_DUPLICATES)
             .map(|s| {
+                let occurrences = s.count + 1;
                 let percentage = if total_msgs > 0 {
-                    (s.count as f64 / total_msgs as f64) * 100.0
+                    (occurrences as f64 / total_msgs as f64) * 100.0
                 } else {
                     0.0
                 };
                 TopDuplicateOccurrence {
                     key: s.key.clone(),
                     payload_preview: s.payload_preview.clone(),
-                    count: s.count,
+                    count: occurrences,
                     percentage,
                     sample_partition: s.sample_partition,
                     sample_offset: s.sample_offset,
@@ -965,6 +1067,7 @@ impl AnalyzerAccumulator {
             })
             .collect();
 
+        let fp_limit = self.fingerprint_set.limit();
         let duplicate_analysis_result = Some(DuplicateAnalysisResult {
             scope: self.duplicate_scope,
             total_messages: total_msgs,
@@ -972,7 +1075,100 @@ impl AnalyzerAccumulator {
             duplicate_messages: duplicate_msgs,
             duplicate_rate,
             top_duplicates,
+            estimated: untracked > 0,
+            untracked_messages: untracked,
+            fingerprint_limit: Some(fp_limit),
+            samples_capped: self.duplicate_samples_capped,
         });
+
+        let analysis_limits = vec![
+            AnalysisLimit {
+                kind: AnalysisLimitKind::TrackedFields,
+                limit: MAX_TRACKED_FIELDS as i64,
+                reached: self.field_cap_reached,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::ListedFields,
+                limit: MAX_REPORTED_FIELDS as i64,
+                reached: self.field_counts.len() > MAX_REPORTED_FIELDS,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::ValuesPerField,
+                limit: MAX_VALUES_PER_FIELD as i64,
+                reached: !self.capped_value_fields.is_empty(),
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::ListedValuesPerField,
+                limit: MAX_LISTED_VALUES as i64,
+                reached: self
+                    .field_value_counts
+                    .values()
+                    .any(|m| m.len() > MAX_LISTED_VALUES),
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::FieldDepth,
+                limit: MAX_FIELD_DEPTH as i64,
+                reached: self.depth_limit_reached,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::ValueDisplayChars,
+                limit: MAX_VALUE_CHARS as i64,
+                reached: self
+                    .field_value_truncated
+                    .values()
+                    .any(|m| m.values().any(|&t| t)),
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::TrackedKeys,
+                limit: MAX_TRACKED_KEYS as i64,
+                reached: self.key_cardinality_capped,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::ListedKeys,
+                limit: MAX_LISTED_KEYS as i64,
+                reached: self.key_counts.len() > MAX_LISTED_KEYS,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::SizePercentileSample,
+                limit: MAX_SIZE_SAMPLE as i64,
+                reached: self.size_sample.estimated(),
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::TrackedFingerprints,
+                limit: fp_limit,
+                reached: untracked > 0,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::DuplicateSamples,
+                limit: MAX_DUPLICATE_SAMPLES as i64,
+                reached: self.duplicate_samples_capped,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::ListedDuplicates,
+                limit: MAX_LISTED_DUPLICATES as i64,
+                reached: self.duplicate_samples.len() > MAX_LISTED_DUPLICATES,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::PreviewChars,
+                limit: MAX_PREVIEW_CHARS as i64,
+                reached: self.preview_truncated,
+            },
+            AnalysisLimit {
+                kind: AnalysisLimitKind::TimelineWindowDays,
+                limit: TIMELINE_PAST_DAYS,
+                reached: self.timeline_outside_count > 0,
+            },
+        ];
+
+        let scan_scope = self
+            .scan_scope_summary
+            .as_ref()
+            .map(|s| AnalysisScopeSummary {
+                scope: s.scope.clone(),
+                ranges: s.ranges.clone(),
+                unreadable: s.unreadable.clone(),
+                excluded_by_time_range: self.excluded_by_time_range,
+            });
 
         TopicAnalysisReport {
             topic: self.topic.clone(),
@@ -983,6 +1179,7 @@ impl AnalyzerAccumulator {
             avg_message_size: avg_size,
             tombstones_count: self.tombstones_count,
             is_compacted: self.is_compacted,
+            cleanup_policy_unknown: self.cleanup_policy_unknown,
             null_keys_count: self.null_keys_count,
             partition_stats,
             hourly_distribution,
@@ -1000,6 +1197,10 @@ impl AnalyzerAccumulator {
             timeline_outside_count: self.timeline_outside_count,
             value_filter_result,
             duplicate_analysis_result,
+            scan_scope,
+            analysis_limits: Some(analysis_limits),
+            tracked_field_count: Some(self.field_counts.len() as i64),
+            complete_until_ms,
         }
     }
 }
@@ -1038,6 +1239,173 @@ fn hex_preview(bytes: &[u8]) -> String {
         .join("")
 }
 
+fn map_offset_for_time_element(offset: Offset, err: Result<(), KafkaError>) -> TimeBound {
+    if let Err(code) = err {
+        return TimeBound::Failed(code.to_string());
+    }
+    match offset {
+        Offset::Offset(o) => TimeBound::Offset(o),
+        Offset::End => TimeBound::AfterEnd,
+        other => {
+            if other.to_raw() == Some(-1) {
+                TimeBound::AfterEnd
+            } else {
+                TimeBound::Failed(format!("unexpected offset {:?}", other))
+            }
+        }
+    }
+}
+
+struct ResolvedScanPlan {
+    plan: ScanPlan,
+    started_after_low: HashSet<i32>,
+    ended_before_high: HashSet<i32>,
+}
+
+fn resolve_scan_plan(
+    profile: &ClusterProfile,
+    consumer: Option<&BaseConsumer>,
+    topic: &str,
+    scope: &AnalysisScope,
+) -> Result<ResolvedScanPlan> {
+    scope.validate().map_err(|e| anyhow::anyhow!(e))?;
+
+    let watermarks = crate::kafka_metadata::fetch_partition_offsets(profile, topic)?;
+
+    if let Some(requested) = &scope.partitions {
+        let available: HashSet<i32> = watermarks
+            .partitions
+            .iter()
+            .map(|pw| pw.partition)
+            .collect();
+        for &p in requested {
+            if !available.contains(&p) {
+                anyhow::bail!("Partition {} does not exist in topic '{}'", p, topic);
+            }
+        }
+    }
+
+    let selected_filter: Option<HashSet<i32>> = scope
+        .partitions
+        .as_ref()
+        .map(|p| p.iter().copied().collect());
+
+    let mut known_partitions: Vec<i32> = Vec::new();
+    let mut watermark_map: HashMap<i32, (i64, i64)> = HashMap::new();
+    for pw in &watermarks.partitions {
+        if let WatermarkRead::Known { low, high } = pw.read {
+            watermark_map.insert(pw.partition, (low, high));
+            if selected_filter
+                .as_ref()
+                .is_none_or(|set| set.contains(&pw.partition))
+            {
+                known_partitions.push(pw.partition);
+            }
+        }
+    }
+
+    let mut time_bounds: HashMap<i32, TimeBounds> = HashMap::new();
+    let has_time_bound = scope.start_timestamp_ms.is_some() || scope.end_timestamp_ms.is_some();
+
+    if has_time_bound && !known_partitions.is_empty() {
+        let consumer = consumer.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Kafka consumer required to resolve time range for '{}'",
+                topic
+            )
+        })?;
+        let oft_timeout = Duration::from_secs(10);
+
+        if let Some(start_ts) = scope.start_timestamp_ms {
+            let mut tpl = TopicPartitionList::new();
+            for &p in &known_partitions {
+                tpl.add_partition_offset(topic, p, Offset::from_raw(start_ts))?;
+            }
+            let resolved = consumer.offsets_for_times(tpl, oft_timeout).map_err(|e| {
+                anyhow::anyhow!(
+                    "Failed to resolve start time range for topic '{}': {}",
+                    topic,
+                    e
+                )
+            })?;
+            for elem in resolved.elements() {
+                let bound = map_offset_for_time_element(elem.offset(), elem.error());
+                time_bounds.entry(elem.partition()).or_default().start = Some(bound);
+            }
+        }
+
+        if let Some(end_ts) = scope.end_timestamp_ms {
+            let mut tpl = TopicPartitionList::new();
+            for &p in &known_partitions {
+                tpl.add_partition_offset(topic, p, Offset::from_raw(end_ts))?;
+            }
+            let resolved = consumer.offsets_for_times(tpl, oft_timeout).map_err(|e| {
+                anyhow::anyhow!(
+                    "Failed to resolve end time range for topic '{}': {}",
+                    topic,
+                    e
+                )
+            })?;
+            for elem in resolved.elements() {
+                let bound = map_offset_for_time_element(elem.offset(), elem.error());
+                time_bounds.entry(elem.partition()).or_default().end = Some(bound);
+            }
+        }
+    }
+
+    let plan = plan_scan(&watermarks.partitions, &time_bounds, scope);
+
+    let mut started_after_low = HashSet::new();
+    let mut ended_before_high = HashSet::new();
+    for r in &plan.ranges {
+        if let Some(&(low, high)) = watermark_map.get(&r.partition) {
+            if r.start > low {
+                started_after_low.insert(r.partition);
+            }
+            if r.end < high {
+                ended_before_high.insert(r.partition);
+            }
+        }
+    }
+
+    Ok(ResolvedScanPlan {
+        plan,
+        started_after_low,
+        ended_before_high,
+    })
+}
+
+pub fn estimate_analysis_scope(
+    profile: ClusterProfile,
+    topic: String,
+    scope: AnalysisScope,
+) -> Result<AnalysisScopeEstimate> {
+    scope.validate().map_err(|e| anyhow::anyhow!(e))?;
+
+    let needs_consumer = scope.start_timestamp_ms.is_some() || scope.end_timestamp_ms.is_some();
+    let consumer = if needs_consumer {
+        let mut config = create_config(&profile);
+        config.set("enable.auto.commit", "false");
+        config.set("enable.auto.offset.store", "false");
+        Some(config.create::<BaseConsumer>()?)
+    } else {
+        None
+    };
+
+    let resolved = resolve_scan_plan(&profile, consumer.as_ref(), &topic, &scope)?;
+    let plan = resolved.plan;
+    Ok(AnalysisScopeEstimate {
+        planned_total: if plan.complete {
+            Some(plan.planned_total)
+        } else {
+            None
+        },
+        known_total: plan.planned_total,
+        complete: plan.complete,
+        unreadable: plan.unreadable,
+    })
+}
+
 pub fn analyze_topic_content(
     profile: ClusterProfile,
     topic: String,
@@ -1049,6 +1417,22 @@ pub fn analyze_topic_content(
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_millis() as i64)
         .unwrap_or(0);
+
+    let effective_scope = options.effective_scope();
+    if let Err(err_msg) = effective_scope.validate() {
+        let progress = TopicAnalysisProgress {
+            scanned_messages: 0,
+            total_messages_to_scan: 0,
+            progress: 1.0,
+            messages_per_second: 0.0,
+            current_partition: -1,
+            is_complete: true,
+            error_message: Some(err_msg),
+            partial_report: None,
+        };
+        sink.add(progress).ok();
+        return Ok(());
+    }
 
     let compiled_filter = if let Some(ref filter) = options.value_filter {
         match FieldPath::parse(&filter.field_path) {
@@ -1087,6 +1471,9 @@ pub fn analyze_topic_content(
     } else {
         (None, false, false)
     };
+    let loaded_local = std::sync::Arc::new(crate::local_schema_loader::load_topic_local_schemas(
+        options.local_schemas.as_ref(),
+    ));
 
     // 2. Setup Consumer with unique group.id and earliest reset
     let mut config = create_config(&profile);
@@ -1113,107 +1500,121 @@ pub fn analyze_topic_content(
 
     let consumer: BaseConsumer = config.create()?;
 
-    // 3. Fetch topic metadata & cleanup policy
-    let timeout = Duration::from_secs(10);
-    let metadata = consumer.fetch_metadata(Some(&topic), timeout)?;
-
-    let mut is_compacted = false;
-    let admin_config = create_config(&profile);
-    if let Ok(admin_client) = admin_config.create::<AdminClient<DefaultClientContext>>() {
-        let resource = ResourceSpecifier::Topic(&topic);
-        let admin_options = AdminOptions::new().operation_timeout(Some(Duration::from_secs(3)));
-        if let Ok(configs) =
-            tokio_runtime.block_on(admin_client.describe_configs(&[resource], &admin_options))
-        {
-            for config_res in configs.into_iter().flatten() {
-                for entry in config_res.entries {
-                    if entry.name == "cleanup.policy" {
-                        if let Some(val) = entry.value {
-                            if val.contains("compact") {
-                                is_compacted = true;
-                            }
-                        }
-                    }
-                }
+    // 3. Fetch cleanup policy & resolve scan plan before assign
+    let (is_compacted, cleanup_policy_unknown) =
+        match crate::kafka_metadata::describe_topic_configs(profile.clone(), vec![topic.clone()]) {
+            Ok(results) => results
+                .into_iter()
+                .next()
+                .map(|r| resolve_cleanup_policy(&topic, &r.outcome))
+                .unwrap_or_else(|| {
+                    log::warn!("cleanup.policy for topic '{topic}' unavailable: empty result");
+                    (false, true)
+                }),
+            Err(err) => {
+                log::warn!("cleanup.policy lookup failed for topic '{topic}': {err}");
+                (false, true)
             }
+        };
+
+    let resolved_plan = match resolve_scan_plan(&profile, Some(&consumer), &topic, &effective_scope)
+    {
+        Ok(p) => p,
+        Err(err) => {
+            let progress = TopicAnalysisProgress {
+                scanned_messages: 0,
+                total_messages_to_scan: 0,
+                progress: 1.0,
+                messages_per_second: 0.0,
+                current_partition: -1,
+                is_complete: true,
+                error_message: Some(err.to_string()),
+                partial_report: None,
+            };
+            sink.add(progress).ok();
+            return Ok(());
         }
+    };
+
+    let plan = resolved_plan.plan;
+    if plan.ranges.is_empty() && !plan.unreadable.is_empty() {
+        let details: Vec<String> = plan
+            .unreadable
+            .iter()
+            .map(|u| format!("partition {}: {}", u.partition, u.reason))
+            .collect();
+        let progress = TopicAnalysisProgress {
+            scanned_messages: 0,
+            total_messages_to_scan: 0,
+            progress: 1.0,
+            messages_per_second: 0.0,
+            current_partition: -1,
+            is_complete: true,
+            error_message: Some(format!("No partition readable ({})", details.join("; "))),
+            partial_report: None,
+        };
+        sink.add(progress).ok();
+        return Ok(());
     }
 
-    // 4. Setup topic partition list and resolve watermark bounds
     let mut tpl = TopicPartitionList::new();
-    let topic_meta = metadata
-        .topics()
-        .iter()
-        .find(|t| t.name() == topic)
-        .ok_or_else(|| anyhow::anyhow!("Topic '{}' not found in cluster metadata", topic))?;
-
-    let mut end_offsets: HashMap<i32, i64> = HashMap::new();
-    let mut start_offsets: HashMap<i32, i64> = HashMap::new();
-    let mut completed_partitions = std::collections::HashSet::new();
-    let mut sampled_partitions = std::collections::HashSet::new();
-    let mut total_messages_to_scan: i64 = 0;
-
-    let part_count = topic_meta.partitions().len() as i64;
-    for partition in topic_meta.partitions() {
-        let p_id = partition.id();
-        let (low, high) = consumer
-            .fetch_watermarks(&topic, p_id, Duration::from_secs(5))
-            .unwrap_or((0, 0));
-
-        let available = (high - low).max(0);
-        let mut start_off = low;
-        let end_off = high;
-
-        if let Some(max_msgs) = options.max_messages {
-            let target_per_partition = (max_msgs / part_count.max(1)).max(1);
-            if options.sample_from_latest && available > target_per_partition {
-                start_off = (high - target_per_partition).max(low);
-            }
+    let total_messages_to_scan: i64 = plan.planned_total;
+    for r in &plan.ranges {
+        if r.start < r.end {
+            tpl.add_partition_offset(&topic, r.partition, Offset::Offset(r.start))?;
         }
-
-        if start_off > low {
-            sampled_partitions.insert(p_id);
-        }
-
-        let to_scan_p = (end_off - start_off).max(0);
-        total_messages_to_scan += to_scan_p;
-
-        start_offsets.insert(p_id, start_off);
-        end_offsets.insert(p_id, end_off);
-
-        if start_off >= end_off {
-            completed_partitions.insert(p_id);
-        }
-
-        tpl.add_partition_offset(&topic, p_id, Offset::Offset(start_off))?;
     }
 
-    let mut accumulator = AnalyzerAccumulator::with_options(
+    let time_window = if effective_scope.start_timestamp_ms.is_some()
+        || effective_scope.end_timestamp_ms.is_some()
+    {
+        Some((
+            effective_scope.start_timestamp_ms,
+            effective_scope.end_timestamp_ms,
+        ))
+    } else {
+        None
+    };
+
+    let scan_scope_summary = Some(AnalysisScopeSummary {
+        scope: effective_scope.clone(),
+        ranges: plan.ranges.clone(),
+        unreadable: plan.unreadable.clone(),
+        excluded_by_time_range: 0,
+    });
+
+    let shared_fingerprints = Arc::new(BoundedFingerprintSet::new());
+
+    let mut accumulator = AnalyzerAccumulator::with_scope_and_fingerprints(
         topic.clone(),
         is_compacted,
         Some(scan_reference_time_ms),
-        sampled_partitions.clone(),
+        resolved_plan.started_after_low.clone(),
+        resolved_plan.ended_before_high.clone(),
+        time_window,
+        scan_scope_summary.clone(),
         options.value_filter.clone(),
         options.duplicate_scope,
+        Arc::clone(&shared_fingerprints),
     );
+    accumulator.cleanup_policy_unknown = cleanup_policy_unknown;
 
-    // Pre-populate partition stats so all partitions are visible in the report from the beginning
-    for partition in topic_meta.partitions() {
-        let p_id = partition.id();
-        let start_off = start_offsets.get(&p_id).copied().unwrap_or(0);
+    // Pre-populate partition stats for planned partitions only
+    for r in &plan.ranges {
         accumulator.partition_stats.insert(
-            p_id,
+            r.partition,
             PartitionStatsAccumulator {
                 message_count: 0,
                 byte_size: 0,
-                earliest_offset: start_off,
-                latest_offset: start_off,
+                earliest_offset: r.start,
+                latest_offset: r.start,
                 earliest_timestamp_ms: None,
+                latest_timestamp_ms: None,
             },
         );
     }
 
-    if total_messages_to_scan == 0 || completed_partitions.len() >= topic_meta.partitions().len() {
+    if total_messages_to_scan == 0 || tpl.count() == 0 {
         let report = accumulator.to_report(0);
         let progress = TopicAnalysisProgress {
             scanned_messages: 0,
@@ -1229,19 +1630,16 @@ pub fn analyze_topic_content(
         return Ok(());
     }
 
-    // Assign partitions
+    // Assign planned partitions
     let consumer = Arc::new(consumer);
     consumer.assign(&tpl)?;
 
-    // Split partition queues so partitions can be read concurrently in parallel
+    // Split partition queues so planned partitions can be read concurrently in parallel
     let mut active_partition_queues = Vec::new();
-    for partition in topic_meta.partitions() {
-        let p_id = partition.id();
-        let start_off = start_offsets.get(&p_id).copied().unwrap_or(0);
-        let end_off = end_offsets.get(&p_id).copied().unwrap_or(0);
-        if start_off < end_off {
-            if let Some(queue) = consumer.split_partition_queue(&topic, p_id) {
-                active_partition_queues.push((p_id, queue, start_off, end_off));
+    for r in &plan.ranges {
+        if r.start < r.end {
+            if let Some(queue) = consumer.split_partition_queue(&topic, r.partition) {
+                active_partition_queues.push((r.partition, queue, r.start, r.end));
             }
         }
     }
@@ -1280,28 +1678,40 @@ pub fn analyze_topic_content(
 
     let worker_accumulators: Vec<Arc<std::sync::Mutex<AnalyzerAccumulator>>> = (0..num_workers)
         .map(|_| {
-            Arc::new(std::sync::Mutex::new(AnalyzerAccumulator::with_options(
+            let mut acc = AnalyzerAccumulator::with_scope_and_fingerprints(
                 topic.clone(),
                 is_compacted,
                 Some(scan_reference_time_ms),
-                sampled_partitions.clone(),
+                resolved_plan.started_after_low.clone(),
+                resolved_plan.ended_before_high.clone(),
+                time_window,
+                scan_scope_summary.clone(),
                 options.value_filter.clone(),
                 options.duplicate_scope,
-            )))
+                Arc::clone(&shared_fingerprints),
+            );
+            acc.cleanup_policy_unknown = cleanup_policy_unknown;
+            Arc::new(std::sync::Mutex::new(acc))
         })
         .collect();
 
     let active_workers = Arc::new(std::sync::atomic::AtomicUsize::new(num_workers));
     let scan_start = Instant::now();
-    let mut main_acc = AnalyzerAccumulator::with_options(
+    let mut main_acc = AnalyzerAccumulator::with_scope_and_fingerprints(
         topic.clone(),
         is_compacted,
         Some(scan_reference_time_ms),
-        sampled_partitions,
+        resolved_plan.started_after_low,
+        resolved_plan.ended_before_high,
+        time_window,
+        scan_scope_summary,
         options.value_filter,
         options.duplicate_scope,
+        Arc::clone(&shared_fingerprints),
     );
+    main_acc.cleanup_policy_unknown = cleanup_policy_unknown;
 
+    let end_offsets: HashMap<i32, i64> = plan.ranges.iter().map(|r| (r.partition, r.end)).collect();
     let compiled_filter_ref = compiled_filter.as_ref();
 
     std::thread::scope(|s| {
@@ -1314,11 +1724,11 @@ pub fn analyze_topic_content(
             let topic = &topic;
             let worker_consumer = consumer.clone();
             let compiled_filter = compiled_filter_ref;
+            let loaded_local = Arc::clone(&loaded_local);
 
             s.spawn(move || {
                 let mut local_acc = w_acc_arc.lock().unwrap().clone();
                 let mut last_sync = Instant::now();
-                let mut last_sync_msgs: i64 = 0;
 
                 if tasks.len() == 1 {
                     let (p_id, queue, start_off, end_off) = &tasks[0];
@@ -1345,41 +1755,18 @@ pub fn analyze_topic_content(
                                 let key = msg.key();
                                 let payload = msg.payload();
 
-                                let is_sr_encoded =
-                                    payload.is_some_and(|b| b.len() >= 5 && b[0] == 0);
-
-                                let parsed_payload = if value_is_avro || is_sr_encoded {
-                                    decode_message_to_value(
-                                        tokio_runtime,
-                                        decoders,
-                                        payload,
-                                        value_is_avro || is_sr_encoded,
-                                    )
-                                } else {
-                                    None
-                                };
-
-                                let decoded_key = if key_is_avro {
-                                    decode_message_component(
-                                        tokio_runtime,
-                                        decoders,
-                                        key,
-                                        key_is_avro,
-                                        "",
-                                    )
-                                } else {
-                                    None
-                                };
-
-                                local_acc.record_message_with_filter(
+                                decode_and_record_for_analysis(
+                                    &mut local_acc,
                                     *p_id,
                                     off,
                                     ts_ms,
                                     key,
                                     payload,
-                                    decoded_key.as_deref(),
-                                    parsed_payload.as_ref(),
-                                    is_sr_encoded,
+                                    tokio_runtime,
+                                    decoders,
+                                    key_is_avro,
+                                    value_is_avro,
+                                    &loaded_local,
                                     compiled_filter,
                                 );
 
@@ -1387,14 +1774,11 @@ pub fn analyze_topic_content(
                                     break;
                                 }
 
-                                if last_sync.elapsed() >= Duration::from_millis(100)
-                                    || (local_acc.total_messages - last_sync_msgs >= 2000)
-                                {
+                                if last_sync.elapsed() >= Duration::from_millis(250) {
                                     if let Ok(mut shared) = w_acc_arc.lock() {
                                         *shared = local_acc.clone();
                                     }
                                     last_sync = Instant::now();
-                                    last_sync_msgs = local_acc.total_messages;
                                 }
                             }
                             Some(Err(rdkafka::error::KafkaError::PartitionEOF(_))) => {
@@ -1453,41 +1837,18 @@ pub fn analyze_topic_content(
                                         let key = msg.key();
                                         let payload = msg.payload();
 
-                                        let is_sr_encoded =
-                                            payload.is_some_and(|b| b.len() >= 5 && b[0] == 0);
-
-                                        let parsed_payload = if value_is_avro || is_sr_encoded {
-                                            decode_message_to_value(
-                                                tokio_runtime,
-                                                decoders,
-                                                payload,
-                                                value_is_avro || is_sr_encoded,
-                                            )
-                                        } else {
-                                            None
-                                        };
-
-                                        let decoded_key = if key_is_avro {
-                                            decode_message_component(
-                                                tokio_runtime,
-                                                decoders,
-                                                key,
-                                                key_is_avro,
-                                                "",
-                                            )
-                                        } else {
-                                            None
-                                        };
-
-                                        local_acc.record_message_with_filter(
+                                        decode_and_record_for_analysis(
+                                            &mut local_acc,
                                             *p_id,
                                             off,
                                             ts_ms,
                                             key,
                                             payload,
-                                            decoded_key.as_deref(),
-                                            parsed_payload.as_ref(),
-                                            is_sr_encoded,
+                                            tokio_runtime,
+                                            decoders,
+                                            key_is_avro,
+                                            value_is_avro,
+                                            &loaded_local,
                                             compiled_filter,
                                         );
 
@@ -1522,14 +1883,11 @@ pub fn analyze_topic_content(
                             },
                         );
 
-                        if last_sync.elapsed() >= Duration::from_millis(100)
-                            || (local_acc.total_messages - last_sync_msgs >= 2000)
-                        {
+                        if last_sync.elapsed() >= Duration::from_millis(250) {
                             if let Ok(mut shared) = w_acc_arc.lock() {
                                 *shared = local_acc.clone();
                             }
                             last_sync = Instant::now();
-                            last_sync_msgs = local_acc.total_messages;
                         }
 
                         if !any_polled {
@@ -1556,31 +1914,18 @@ pub fn analyze_topic_content(
                     let ts_ms = msg.timestamp().to_millis().unwrap_or(0);
                     let key = msg.key();
                     let payload = msg.payload();
-                    let is_sr_encoded = payload.is_some_and(|b| b.len() >= 5 && b[0] == 0);
-                    let parsed_payload = if value_is_avro || is_sr_encoded {
-                        decode_message_to_value(
-                            tokio_runtime,
-                            &decoders,
-                            payload,
-                            value_is_avro || is_sr_encoded,
-                        )
-                    } else {
-                        None
-                    };
-                    let decoded_key = if key_is_avro {
-                        decode_message_component(tokio_runtime, &decoders, key, key_is_avro, "")
-                    } else {
-                        None
-                    };
-                    main_acc.record_message_with_filter(
+                    decode_and_record_for_analysis(
+                        &mut main_acc,
                         p,
                         off,
                         ts_ms,
                         key,
                         payload,
-                        decoded_key.as_deref(),
-                        parsed_payload.as_ref(),
-                        is_sr_encoded,
+                        tokio_runtime,
+                        &decoders,
+                        key_is_avro,
+                        value_is_avro,
+                        &loaded_local,
                         compiled_filter_ref,
                     );
                 }
@@ -1675,10 +2020,94 @@ pub fn analyze_topic_content_legacy(
             sample_from_latest,
             value_filter: None,
             duplicate_scope: None,
+            scope: None,
+            local_schemas: None,
         },
         sink,
         cancel_flag,
     )
+}
+
+pub(crate) fn resolve_cleanup_policy(
+    topic: &str,
+    outcome: &crate::kafka_metadata::TopicConfigOutcome,
+) -> (bool, bool) {
+    match outcome {
+        crate::kafka_metadata::TopicConfigOutcome::Available(entries) => {
+            if let Some(entry) = entries.iter().find(|e| e.name == "cleanup.policy") {
+                if let Some(val) = &entry.value {
+                    return (val.contains("compact"), false);
+                }
+            }
+            log::warn!("cleanup.policy for topic '{topic}' missing from available config entries");
+            (false, true)
+        }
+        crate::kafka_metadata::TopicConfigOutcome::NotReadable(reason)
+        | crate::kafka_metadata::TopicConfigOutcome::Failed(reason) => {
+            log::warn!("cleanup.policy for topic '{topic}' unavailable: {reason}");
+            (false, true)
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn decode_and_record_for_analysis<'a>(
+    acc: &mut AnalyzerAccumulator,
+    partition: i32,
+    offset: i64,
+    timestamp_ms: i64,
+    key: Option<&[u8]>,
+    payload: Option<&[u8]>,
+    tokio_runtime: &tokio::runtime::Runtime,
+    decoders: &Option<crate::kafka_consumer::SrDecoders<'a>>,
+    key_is_avro: bool,
+    value_is_avro: bool,
+    loaded_local: &crate::local_schema_loader::LoadedTopicLocalSchemas,
+    compiled_filter: Option<&CompiledValueFilter>,
+) {
+    let is_sr_encoded = payload.is_some_and(|b| b.len() >= 5 && b[0] == 0);
+    let val_side = if value_is_avro || is_sr_encoded || loaded_local.value.is_some() {
+        Some(crate::kafka_consumer::decode_side(
+            tokio_runtime,
+            decoders,
+            payload,
+            value_is_avro || is_sr_encoded,
+            "",
+            loaded_local.value.as_ref(),
+        ))
+    } else {
+        None
+    };
+    let parsed_payload = val_side.as_ref().and_then(|s| s.component.json.as_ref());
+    let value_local_schema = val_side.as_ref().and_then(|s| s.local_schema.as_ref());
+
+    let decoded_key = if key_is_avro || loaded_local.key.is_some() {
+        crate::kafka_consumer::decode_side(
+            tokio_runtime,
+            decoders,
+            key,
+            key_is_avro,
+            "",
+            loaded_local.key.as_ref(),
+        )
+        .component
+        .text
+    } else {
+        None
+    };
+
+    acc.record_message_with_filter_and_local(
+        partition,
+        offset,
+        timestamp_ms,
+        key,
+        payload,
+        decoded_key.as_deref(),
+        parsed_payload,
+        is_sr_encoded,
+        compiled_filter,
+        value_local_schema,
+    );
 }
 
 #[cfg(test)]
@@ -2436,21 +2865,30 @@ mod tests {
 
     #[test]
     fn test_duplicate_detection_cross_accumulator_merge() {
-        let mut acc1 = AnalyzerAccumulator::with_options(
+        let shared = Arc::new(BoundedFingerprintSet::new());
+        let mut acc1 = AnalyzerAccumulator::with_scope_and_fingerprints(
             "dup-test".into(),
             false,
             Some(100_000),
             HashSet::new(),
+            HashSet::new(),
+            None,
+            None,
             None,
             Some(DuplicateDetectionScope::PayloadOnly),
+            Arc::clone(&shared),
         );
-        let mut acc2 = AnalyzerAccumulator::with_options(
+        let mut acc2 = AnalyzerAccumulator::with_scope_and_fingerprints(
             "dup-test".into(),
             false,
             Some(100_000),
             HashSet::new(),
+            HashSet::new(),
+            None,
+            None,
             None,
             Some(DuplicateDetectionScope::PayloadOnly),
+            Arc::clone(&shared),
         );
 
         // Worker 1 receives payload X
@@ -2584,5 +3022,313 @@ mod tests {
             .find(|d| d.key.is_none())
             .expect("Binary duplicate found");
         assert_eq!(bin_dup.payload_preview, "[Binary 0xfffefdfc]");
+    }
+
+    #[test]
+    fn resolve_cleanup_policy_marks_not_readable_as_unknown_and_compact_delete_as_compacted() {
+        use crate::kafka_metadata::{TopicConfigEntry, TopicConfigOutcome, TopicConfigSource};
+
+        let not_readable = TopicConfigOutcome::NotReadable("denied".to_string());
+        let (is_compacted, unknown) = resolve_cleanup_policy("orders", &not_readable);
+        assert!(!is_compacted);
+        assert!(unknown);
+
+        let compacted = TopicConfigOutcome::Available(vec![TopicConfigEntry {
+            name: "cleanup.policy".to_string(),
+            value: Some("compact,delete".to_string()),
+            source: TopicConfigSource::DynamicTopic,
+            is_default: false,
+            is_sensitive: false,
+            is_read_only: false,
+        }]);
+        let (is_compacted, unknown) = resolve_cleanup_policy("orders", &compacted);
+        assert!(is_compacted);
+        assert!(!unknown);
+    }
+
+    #[test]
+    fn map_offset_for_time_element_handles_offset_end_raw_and_error() {
+        assert_eq!(
+            map_offset_for_time_element(Offset::Offset(42), Ok(())),
+            TimeBound::Offset(42)
+        );
+        assert_eq!(
+            map_offset_for_time_element(Offset::End, Ok(())),
+            TimeBound::AfterEnd
+        );
+        assert_eq!(
+            map_offset_for_time_element(Offset::from_raw(-1), Ok(())),
+            TimeBound::AfterEnd
+        );
+        assert!(matches!(
+            map_offset_for_time_element(
+                Offset::Invalid,
+                Err(KafkaError::MetadataFetch(
+                    rdkafka::error::RDKafkaErrorCode::UnknownTopicOrPartition
+                ))
+            ),
+            TimeBound::Failed(_)
+        ));
+    }
+
+    #[test]
+    fn time_window_excludes_outside_and_invalid_timestamps_and_tracks_coverage_end() {
+        let mut acc = AnalyzerAccumulator::with_scope_and_fingerprints(
+            "t".into(),
+            false,
+            Some(10_000),
+            HashSet::new(),
+            [0].into_iter().collect(),
+            Some((Some(2_000), Some(5_000))),
+            Some(AnalysisScopeSummary {
+                scope: AnalysisScope {
+                    start_timestamp_ms: Some(2_000),
+                    end_timestamp_ms: Some(5_000),
+                    ..Default::default()
+                },
+                ranges: vec![],
+                unreadable: vec![],
+                excluded_by_time_range: 0,
+            }),
+            None,
+            None,
+            Arc::new(BoundedFingerprintSet::new()),
+        );
+        acc.record_message(0, 0, 1_999, None, Some(b"{\"a\":1}"), None, None, false);
+        acc.record_message(0, 1, 0, None, Some(b"{\"a\":2}"), None, None, false);
+        acc.record_message(0, 2, -5, None, Some(b"{\"a\":3}"), None, None, false);
+        acc.record_message(0, 3, 5_000, None, Some(b"{\"a\":4}"), None, None, false);
+        acc.record_message(0, 4, 3_000, None, Some(b"{\"a\":5}"), None, None, false);
+        acc.record_message(0, 5, 4_000, None, Some(b"{\"a\":6}"), None, None, false);
+
+        let report = acc.to_report(5);
+        assert_eq!(report.total_messages, 2);
+        assert_eq!(report.complete_from_ms, Some(2_000));
+        assert_eq!(report.complete_until_ms, Some(4_000));
+        assert_eq!(report.scan_scope.unwrap().excluded_by_time_range, 4);
+    }
+
+    #[test]
+    fn bounded_duplicate_tracking_exact_and_overflow_and_sample_cap() {
+        // 10,000 messages with 8,500 unique (500 duplicated 3 extra times = 1,500 dups) -> 15.0%
+        let mut acc = AnalyzerAccumulator::new("dup-10k".into(), false);
+        for i in 0..8_500 {
+            let p = format!("payload-{i}");
+            acc.record_message(0, i, 1000, None, Some(p.as_bytes()), None, None, false);
+        }
+        for round in 0..3 {
+            for i in 0..500 {
+                let p = format!("payload-{i}");
+                acc.record_message(
+                    0,
+                    8_500 + round * 500 + i,
+                    1000,
+                    None,
+                    Some(p.as_bytes()),
+                    None,
+                    None,
+                    false,
+                );
+            }
+        }
+        let rep = acc.to_report(10);
+        let dup = rep.duplicate_analysis_result.unwrap();
+        assert_eq!(dup.total_messages, 10_000);
+        assert_eq!(dup.unique_messages, 8_500);
+        assert_eq!(dup.duplicate_messages, 1_500);
+        assert!((dup.duplicate_rate - 15.0).abs() < 1e-6);
+        assert!(!dup.estimated);
+        assert_eq!(dup.untracked_messages, 0);
+        assert!(!dup.samples_capped);
+
+        // Small-cap set overflow -> estimated = true, untracked > 0, duplicates >= 0
+        let small_set = Arc::new(BoundedFingerprintSet::with_per_shard_cap(2));
+        let mut acc_small = AnalyzerAccumulator::with_scope_and_fingerprints(
+            "dup-small".into(),
+            false,
+            None,
+            HashSet::new(),
+            HashSet::new(),
+            None,
+            None,
+            None,
+            None,
+            small_set,
+        );
+        for i in 0..200 {
+            let p = format!("unique-{i}");
+            acc_small.record_message(0, i, 1000, None, Some(p.as_bytes()), None, None, false);
+        }
+        let rep_small = acc_small.to_report(5);
+        let dup_small = rep_small.duplicate_analysis_result.unwrap();
+        assert!(dup_small.estimated);
+        assert!(dup_small.untracked_messages > 0);
+        assert!(dup_small.duplicate_messages >= 0);
+
+        // Sample table overflow -> samples_capped = true
+        let mut acc_samples = AnalyzerAccumulator::new("dup-samples".into(), false);
+        for i in 0..1_005 {
+            let p = format!("dup-{i}");
+            acc_samples.record_message(0, i * 2, 1000, None, Some(p.as_bytes()), None, None, false);
+            acc_samples.record_message(
+                0,
+                i * 2 + 1,
+                1000,
+                None,
+                Some(p.as_bytes()),
+                None,
+                None,
+                false,
+            );
+        }
+        let rep_samples = acc_samples.to_report(5);
+        assert!(
+            rep_samples
+                .duplicate_analysis_result
+                .unwrap()
+                .samples_capped
+        );
+    }
+
+    #[test]
+    fn analysis_limits_track_fields_depth_and_emit_all_kinds_once() {
+        let mut acc = AnalyzerAccumulator::new("limits".into(), false);
+        // 501 distinct fields -> field cap reached, tracked_field_count = 500
+        let mut obj = serde_json::Map::new();
+        for i in 0..501 {
+            obj.insert(format!("f{i}"), Value::from(i));
+        }
+        let val_501 = Value::Object(obj);
+        acc.record_message(0, 0, 1000, None, Some(b"{}"), None, Some(&val_501), false);
+        let rep = acc.to_report(5);
+        assert_eq!(rep.tracked_field_count, Some(500));
+        let limits = rep.analysis_limits.unwrap();
+        assert_eq!(limits.len(), 14);
+        let kinds: HashSet<AnalysisLimitKind> = limits.iter().map(|l| l.kind).collect();
+        assert_eq!(kinds.len(), 14);
+        assert!(
+            limits
+                .iter()
+                .find(|l| l.kind == AnalysisLimitKind::TrackedFields)
+                .unwrap()
+                .reached
+        );
+
+        // 5-level payload -> depth limit NOT reached
+        let mut acc5 = AnalyzerAccumulator::new("depth5".into(), false);
+        let v5 = serde_json::json!({"a": {"b": {"c": {"d": {"e": 1}}}}});
+        acc5.record_message(0, 0, 1000, None, Some(b"{}"), None, Some(&v5), false);
+        assert!(
+            !acc5
+                .to_report(5)
+                .analysis_limits
+                .unwrap()
+                .iter()
+                .find(|l| l.kind == AnalysisLimitKind::FieldDepth)
+                .unwrap()
+                .reached
+        );
+
+        // 6-level payload -> depth limit reached
+        let mut acc6 = AnalyzerAccumulator::new("depth6".into(), false);
+        let v6 = serde_json::json!({"a": {"b": {"c": {"d": {"e": {"f": 1}}}}}});
+        acc6.record_message(0, 0, 1000, None, Some(b"{}"), None, Some(&v6), false);
+        assert!(
+            acc6.to_report(5)
+                .analysis_limits
+                .unwrap()
+                .iter()
+                .find(|l| l.kind == AnalysisLimitKind::FieldDepth)
+                .unwrap()
+                .reached
+        );
+    }
+
+    #[test]
+    fn accumulator_records_local_avro_fields_and_decode_failures() {
+        use crate::local_schema_loader::{LoadedTopicLocalSchemas, SideLocalSchema};
+        use kafkalyzer_core::local_schema::{load_local_schema, Framing, LocalSchemaFormat};
+
+        let avro_schema =
+            r#"{"type":"record","name":"Order","fields":[{"name":"status","type":"string"}]}"#;
+        let schema = apache_avro::Schema::parse_str(avro_schema).unwrap();
+        let datum = apache_avro::to_avro_datum(
+            &schema,
+            apache_avro::types::Value::Record(vec![(
+                "status".to_string(),
+                apache_avro::types::Value::String("PAID".to_string()),
+            )]),
+        )
+        .unwrap();
+
+        let loaded = std::sync::Arc::new(
+            load_local_schema(
+                "orders.avsc",
+                avro_schema.as_bytes(),
+                LocalSchemaFormat::Avro,
+                None,
+                Framing::Auto,
+            )
+            .unwrap(),
+        );
+        let local = LoadedTopicLocalSchemas {
+            key: None,
+            value: Some(SideLocalSchema::Loaded {
+                schema: loaded,
+                mode: kafkalyzer_core::kafka_types::LocalSchemaMode::Fallback,
+            }),
+        };
+
+        let mut acc = AnalyzerAccumulator::new("orders".to_string(), false);
+        let rt = crate::kafka_consumer::shared_runtime();
+        decode_and_record_for_analysis(
+            &mut acc,
+            0,
+            0,
+            1000,
+            None,
+            Some(&datum),
+            rt,
+            &None,
+            false,
+            false,
+            &local,
+            None,
+        );
+        decode_and_record_for_analysis(
+            &mut acc,
+            0,
+            1,
+            1001,
+            None,
+            Some(&[0xff, 0x00, 0xfe]),
+            rt,
+            &None,
+            false,
+            false,
+            &local,
+            None,
+        );
+
+        let report = acc.to_report(5);
+        let avro_local = report
+            .content_type_distribution
+            .iter()
+            .find(|t| t.type_name == "Avro (local schema)")
+            .unwrap();
+        assert_eq!(avro_local.count, 1);
+        let failed_local = report
+            .content_type_distribution
+            .iter()
+            .find(|t| t.type_name == "Local schema decode failed")
+            .unwrap();
+        assert_eq!(failed_local.count, 1);
+        let status_field = report
+            .field_frequencies
+            .iter()
+            .find(|f| f.field_name == "status")
+            .unwrap();
+        assert_eq!(status_field.count, 1);
+        assert_eq!(status_field.top_values[0].value, "PAID");
     }
 }

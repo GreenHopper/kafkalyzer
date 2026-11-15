@@ -1501,6 +1501,121 @@ void main() {
           expect(prefs.getInt('default_result_limit'), 0);
         },
       );
+
+      test(
+        'partitionSkewThresholdSetting clamps out-of-range stored 0 to 50 and resets to 50',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            SettingsService.partitionSkewThresholdSetting.key: 0,
+          });
+          final prefs = await SharedPreferences.getInstance();
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.partitionSkewThresholdSetting,
+            ),
+            50,
+          );
+          expect(
+            SettingsService.parseInt(
+              '0',
+              SettingsService.partitionSkewThresholdSetting,
+            ),
+            isNull,
+          );
+          expect(
+            SettingsService.parseInt(
+              '150',
+              SettingsService.partitionSkewThresholdSetting,
+            ),
+            isNull,
+          );
+          expect(
+            SettingsService.parseInt(
+              '75',
+              SettingsService.partitionSkewThresholdSetting,
+            ),
+            75,
+          );
+
+          await settingsService.writeInt(
+            SettingsService.partitionSkewThresholdSetting,
+            80,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.partitionSkewThresholdSetting,
+            ),
+            80,
+          );
+
+          await settingsService.resetGeneralSettings();
+          expect(
+            prefs.getInt(SettingsService.partitionSkewThresholdSetting.key),
+            50,
+          );
+        },
+      );
+
+      test(
+        'analysisConfirmThresholdSetting and analysisHistoryPerTopicSetting defaults, bounds and reset',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            SettingsService.analysisConfirmThresholdSetting.key: 500,
+            SettingsService.analysisHistoryPerTopicSetting.key: 200,
+          });
+          final prefs = await SharedPreferences.getInstance();
+
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.analysisConfirmThresholdSetting,
+            ),
+            1000000,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.analysisHistoryPerTopicSetting,
+            ),
+            10,
+          );
+
+          await settingsService.writeInt(
+            SettingsService.analysisConfirmThresholdSetting,
+            250000,
+          );
+          await settingsService.writeInt(
+            SettingsService.analysisHistoryPerTopicSetting,
+            0,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.analysisConfirmThresholdSetting,
+            ),
+            250000,
+          );
+          expect(
+            SettingsService.readInt(
+              prefs,
+              SettingsService.analysisHistoryPerTopicSetting,
+            ),
+            0,
+          );
+
+          await settingsService.resetGeneralSettings();
+          expect(
+            prefs.getInt(SettingsService.analysisConfirmThresholdSetting.key),
+            1000000,
+          );
+          expect(
+            prefs.getInt(SettingsService.analysisHistoryPerTopicSetting.key),
+            10,
+          );
+        },
+      );
     });
   });
 }

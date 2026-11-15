@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
@@ -6,6 +8,7 @@ import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.da
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
 
 class FakeExportService extends TopicAnalysisExportService {
   String? exportResult;
@@ -45,6 +48,7 @@ TopicAnalysisReportFile _sampleFile() => TopicAnalysisReportFile(
     avgMessageSize: 20.48,
     tombstonesCount: 3,
     isCompacted: true,
+    cleanupPolicyUnknown: false,
     nullKeysCount: 12,
     partitionStats: const [],
     hourlyDistribution: const [],
@@ -259,10 +263,14 @@ void main() {
       const topic = 'payments';
 
       // Start initial scan
-      await controller.startAnalysis(profile, topic, maxMessages: 5000);
+      const scoped = AnalysisScope(
+        messageLimit: 5000,
+        limitFrom: ScopeLimitFrom.newest,
+      );
+      await controller.startAnalysis(profile, topic, scope: scoped);
       expect(controller.lastProfile, equals(profile));
       expect(controller.lastTopic, equals(topic));
-      expect(controller.maxMessages, 5000);
+      expect(controller.scope.messageLimit, 5000);
 
       // Now rescan with a filter
       const filter = FieldValueFilter(fieldPath: 'currency', value: 'EUR');
@@ -271,9 +279,138 @@ void main() {
       expect(controller.valueFilter, equals(filter));
       expect(controller.lastProfile, equals(profile));
       expect(controller.lastTopic, equals(topic));
-      expect(controller.maxMessages, 5000);
+      expect(controller.scope.messageLimit, 5000);
       await controller.stopAnalysis();
     });
+
+    test(
+      'passes scope to stream factory and saves completed live scan once',
+      () async {
+        TopicAnalysisOptions? capturedOptions;
+        final streamCtrl = StreamController<TopicAnalysisProgress>();
+        final savedReports = <TopicAnalysisReport>[];
+        final fakeHistory = _FakeHistoryService(
+          onSave: (cluster, report, maxPerTopic) async {
+            savedReports.add(report);
+          },
+        );
+        final ctrl = TopicAnalysisController(
+          historyService: fakeHistory,
+          historyMaxPerTopicReader: () async => 5,
+          streamFactory:
+              ({required profile, required topic, required options}) {
+                capturedOptions = options;
+                return streamCtrl.stream;
+              },
+        );
+
+        const profile = ClusterProfile(
+          name: 'prod',
+          bootstrapServers: 'kafka:9092',
+          tlsVerification: TlsVerification.enabled,
+        );
+        const customScope = AnalysisScope(
+          messageLimit: 2500,
+          limitFrom: ScopeLimitFrom.oldest,
+        );
+        await ctrl.startAnalysis(profile, 'orders', scope: customScope);
+        expect(capturedOptions?.scope, customScope);
+
+        final report = _sampleReport('orders');
+        streamCtrl.add(
+          TopicAnalysisProgress(
+            scannedMessages: 100,
+            totalMessagesToScan: 100,
+            progress: 1.0,
+            messagesPerSecond: 1000,
+            currentPartition: 0,
+            isComplete: true,
+            partialReport: report,
+          ),
+        );
+        // Duplicate completion event should not save twice.
+        streamCtrl.add(
+          TopicAnalysisProgress(
+            scannedMessages: 100,
+            totalMessagesToScan: 100,
+            progress: 1.0,
+            messagesPerSecond: 1000,
+            currentPartition: 0,
+            isComplete: true,
+            partialReport: report,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(savedReports.length, 1);
+
+        // Failed scan should not save.
+        final failCtrl = StreamController<TopicAnalysisProgress>();
+        final ctrlFail = TopicAnalysisController(
+          historyService: fakeHistory,
+          historyMaxPerTopicReader: () async => 5,
+          streamFactory:
+              ({required profile, required topic, required options}) =>
+                  failCtrl.stream,
+        );
+        await ctrlFail.startAnalysis(profile, 'orders');
+        failCtrl.add(
+          TopicAnalysisProgress(
+            scannedMessages: 10,
+            totalMessagesToScan: 100,
+            progress: 0.1,
+            messagesPerSecond: 100,
+            currentPartition: 0,
+            isComplete: true,
+            errorMessage: 'broker error',
+            partialReport: report,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(savedReports.length, 1);
+
+        await streamCtrl.close();
+        await failCtrl.close();
+        ctrl.dispose();
+        ctrlFail.dispose();
+      },
+    );
+
+    test(
+      'estimateScope tracks isEstimating and records result or error',
+      () async {
+        final ctrl = TopicAnalysisController(
+          scopeEstimator:
+              ({required profile, required topic, required scope}) async =>
+                  const AnalysisScopeEstimate(
+                    plannedTotal: 42000,
+                    knownTotal: 42000,
+                    complete: true,
+                    unreadable: [],
+                  ),
+        );
+        const profile = ClusterProfile(
+          name: 'prod',
+          bootstrapServers: 'kafka:9092',
+          tlsVerification: TlsVerification.enabled,
+        );
+        final estimate = await ctrl.estimateScope(profile, 'orders');
+        expect(estimate?.plannedTotal, 42000);
+        expect(ctrl.isEstimating, isFalse);
+        expect(ctrl.estimateError, isNull);
+
+        final errCtrl = TopicAnalysisController(
+          scopeEstimator:
+              ({required profile, required topic, required scope}) async =>
+                  throw Exception('timeout'),
+        );
+        final failed = await errCtrl.estimateScope(profile, 'orders');
+        expect(failed, isNull);
+        expect(errCtrl.isEstimating, isFalse);
+        expect(errCtrl.estimateError, contains('timeout'));
+        ctrl.dispose();
+        errCtrl.dispose();
+      },
+    );
 
     test('defaults to payloadOnly duplicate scope and allows toggling', () {
       expect(
@@ -291,4 +428,50 @@ void main() {
       expect(notifyCount, 1);
     });
   });
+}
+
+TopicAnalysisReport _sampleReport(String topic) => TopicAnalysisReport(
+  topic: topic,
+  totalMessages: 100,
+  totalBytes: 1000,
+  minMessageSize: 10,
+  maxMessageSize: 10,
+  avgMessageSize: 10.0,
+  tombstonesCount: 0,
+  isCompacted: false,
+  cleanupPolicyUnknown: false,
+  nullKeysCount: 0,
+  partitionStats: const [],
+  hourlyDistribution: const [],
+  topKeys: const [],
+  contentTypeDistribution: const [],
+  fieldFrequencies: const [],
+  scanDurationMs: 10,
+  sizePercentilesEstimated: false,
+  estimatedDistinctKeys: 0,
+  keyCardinalityCapped: false,
+  hourlyTimeline: const [],
+  timelineOutsideCount: 0,
+);
+
+class _FakeHistoryService extends TopicAnalysisHistoryService {
+  final Future<void> Function(
+    String clusterName,
+    TopicAnalysisReport report,
+    int maxPerTopic,
+  )
+  onSave;
+
+  _FakeHistoryService({required this.onSave});
+
+  @override
+  Future<HistorySaveResult> save({
+    required String clusterName,
+    required TopicAnalysisReport report,
+    required int maxPerTopic,
+    DateTime? now,
+  }) async {
+    await onSave(clusterName, report, maxPerTopic);
+    return const HistorySaveResult(savedPath: '/tmp/fake.json');
+  }
 }

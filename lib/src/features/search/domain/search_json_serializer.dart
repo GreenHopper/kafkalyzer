@@ -11,6 +11,9 @@ class SearchJsonSerializer {
       "filterTerms": target.filterTerms,
       "filterType": target.filterType.name,
       "searchScope": target.scope.name,
+      if (target.filterExpression != null &&
+          target.filterExpression!.isNotEmpty)
+        "filterExpression": target.filterExpression,
       "startOffset": target.startOffset,
       "startTimestamp": target.startTimestamp,
       "startPartition": target.startPartition,
@@ -36,6 +39,8 @@ class SearchJsonSerializer {
           .toList(),
       "keySchema": messageSchemaToMap(message.keySchema),
       "valueSchema": messageSchemaToMap(message.valueSchema),
+      "keyLocalSchema": localSchemaUseToMap(message.keyLocalSchema),
+      "valueLocalSchema": localSchemaUseToMap(message.valueLocalSchema),
     };
   }
 
@@ -67,6 +72,8 @@ class SearchJsonSerializer {
       headers: headers,
       keySchema: messageSchemaFromMap(json['keySchema']),
       valueSchema: messageSchemaFromMap(json['valueSchema']),
+      keyLocalSchema: localSchemaUseFromMap(json['keyLocalSchema']),
+      valueLocalSchema: localSchemaUseFromMap(json['valueLocalSchema']),
     );
   }
 }

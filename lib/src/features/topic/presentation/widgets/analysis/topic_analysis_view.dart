@@ -1,25 +1,28 @@
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
 import 'package:kafkalyzer/src/features/topic/domain/production_timeline.dart';
 import 'package:kafkalyzer/src/features/topic/models/duplicate_navigation_target.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/analysis_scope_dialog.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/daily_production_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/duplicate_analysis_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/hourly_production_chart.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/key_and_field_distribution_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/partition_balance_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/recent_production_chart.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/report_scope_and_limits_cards.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_report_comparison_view.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_summary_cards.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/value_filter_widgets.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_table.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/settings_service.dart';
+import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:material_ui/material_ui.dart';
-
-enum ScanScopeOption { full, sample10k, sample50k, sample100k }
 
 class TopicAnalysisView extends StatefulWidget {
   final TopicMetadata topic;
@@ -27,6 +30,7 @@ class TopicAnalysisView extends StatefulWidget {
   final TopicAnalysisController controller;
   final void Function(DuplicateNavigationTarget target)? onNavigateToTarget;
   final void Function(int partition, int offset)? onNavigateToMessage;
+  final Future<int> Function()? confirmThresholdProvider;
 
   const TopicAnalysisView({
     super.key,
@@ -35,6 +39,7 @@ class TopicAnalysisView extends StatefulWidget {
     required this.controller,
     this.onNavigateToTarget,
     this.onNavigateToMessage,
+    this.confirmThresholdProvider,
   });
 
   @override
@@ -42,7 +47,6 @@ class TopicAnalysisView extends StatefulWidget {
 }
 
 class _TopicAnalysisViewState extends State<TopicAnalysisView> {
-  ScanScopeOption _selectedScope = ScanScopeOption.full;
   bool _importing = false;
   bool _exporting = false;
 
@@ -68,6 +72,21 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
     return ListenableBuilder(
       listenable: widget.controller,
       builder: (context, _) {
+        final historyErr = widget.controller.historySaveError;
+        if (historyErr != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            widget.controller.clearHistorySaveError();
+            ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              SnackBar(
+                content: Text(
+                  l10n?.historySaveErrorBanner(historyErr) ??
+                      'Could not save report to local history: $historyErr',
+                ),
+              ),
+            );
+          });
+        }
         final isAnalyzing = widget.controller.isAnalyzing;
         final report = widget.controller.report;
         final errorKind = widget.controller.errorKind;
@@ -93,6 +112,10 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                   children: [
                     if (report != null) ...[
                       TopicAnalysisSummaryCards(report: report),
+                      const SizedBox(height: 12),
+                      ReportScopeCard(scanScope: report.scanScope),
+                      const SizedBox(height: 12),
+                      AnalysisLimitsCard(limits: report.analysisLimits),
                       if (report.valueFilterResult != null) ...[
                         const SizedBox(height: 16),
                         ValueFilterMatchCard(
@@ -118,13 +141,60 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
                       const SizedBox(height: 16),
                       _buildPartitionHealthSection(context, colorScheme, l10n),
                       const SizedBox(height: 16),
+                      if (report.contentTypeDistribution.any(
+                        (t) =>
+                            t.typeName.contains('(local schema)') ||
+                            t.typeName == 'Local schema decode failed',
+                      )) ...[
+                        Container(
+                          key: const Key('analysis_local_schema_notice'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: colorScheme.secondaryContainer.withValues(
+                              alpha: 0.5,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.description_outlined,
+                                size: 16,
+                                color: colorScheme.onSecondaryContainer,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  l10n?.localSchemaAnalysisNotice ??
+                                      'Some messages in this analysis were decoded using a local schema.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSecondaryContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       KeyAndFieldDistributionView(
                         topKeys: report.topKeys,
                         contentTypes: report.contentTypeDistribution,
                         fieldFrequencies: report.fieldFrequencies,
                         totalMessages: report.totalMessages,
+                        trackedFieldCount: report.trackedFieldCount?.toInt(),
+                        trackedFieldsLimitReached:
+                            report.analysisLimits?.any(
+                              (l) =>
+                                  l.kind == AnalysisLimitKind.trackedFields &&
+                                  l.reached,
+                            ) ??
+                            false,
                         onRescanWithFilter: (filter) =>
-                            widget.controller.rescanWithFilter(filter),
+                            _startScan(valueFilter: filter),
                         isImported: widget.controller.isImported,
                       ),
                       const SizedBox(height: 16),
@@ -169,53 +239,18 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
           spacing: 12,
           runSpacing: 8,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${l10n?.scanScope ?? 'Scan Scope'}:',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<ScanScopeOption>(
-                  value: _selectedScope,
-                  onChanged: isAnalyzing
-                      ? null
-                      : (val) {
-                          if (val != null) {
-                            setState(() => _selectedScope = val);
-                          }
-                        },
-                  items: [
-                    DropdownMenuItem(
-                      value: ScanScopeOption.full,
-                      child: Text(
-                        l10n?.fullTopicScan ?? 'Full Scan (All Messages)',
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: ScanScopeOption.sample10k,
-                      child: Text(
-                        l10n?.sampleLast10k ?? 'Sample Last 10,000 Messages',
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: ScanScopeOption.sample50k,
-                      child: Text(
-                        l10n?.sampleLast50k ?? 'Sample Last 50,000 Messages',
-                      ),
-                    ),
-                    DropdownMenuItem(
-                      value: ScanScopeOption.sample100k,
-                      child: Text(
-                        l10n?.sampleLast100k ?? 'Sample Last 100,000 Messages',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            OutlinedButton.icon(
+              key: const Key('analysis_scope_button'),
+              icon: const Icon(Icons.tune, size: 18),
+              label: Text(
+                l10n?.scopeSummaryButtonLabel(
+                      formatAnalysisScopeSummary(widget.controller.scope, l10n),
+                    ) ??
+                    'Scope: ${formatAnalysisScopeSummary(widget.controller.scope, l10n)}',
+              ),
+              onPressed: isAnalyzing || widget.controller.isEstimating
+                  ? null
+                  : () => _openScopeDialog(context),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -284,9 +319,22 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
               )
             else
               FilledButton.icon(
-                onPressed: _busy ? null : _startScan,
-                icon: const Icon(Icons.analytics_outlined),
-                label: Text(l10n?.startAnalysis ?? 'Start Analysis'),
+                key: const Key('analysis_start_button'),
+                onPressed: _busy || widget.controller.isEstimating
+                    ? null
+                    : () => _startScan(),
+                icon: widget.controller.isEstimating
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.analytics_outlined),
+                label: Text(
+                  widget.controller.isEstimating
+                      ? (l10n?.scopeEstimating ?? 'Estimating…')
+                      : (l10n?.startAnalysis ?? 'Start Analysis'),
+                ),
               ),
           ],
         ),
@@ -294,31 +342,153 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
     );
   }
 
-  void _startScan() {
-    int? maxMsgs;
-    switch (_selectedScope) {
-      case ScanScopeOption.full:
-        maxMsgs = null;
-        break;
-      case ScanScopeOption.sample10k:
-        maxMsgs = 10000;
-        break;
-      case ScanScopeOption.sample50k:
-        maxMsgs = 50000;
-        break;
-      case ScanScopeOption.sample100k:
-        maxMsgs = 100000;
-        break;
+  Future<void> _openScopeDialog(BuildContext context) async {
+    final newScope = await AnalysisScopeDialog.show(
+      context,
+      initialScope: widget.controller.scope,
+      partitionCount: widget.topic.partitionCount,
+    );
+    if (newScope != null) {
+      widget.controller.setScope(newScope);
+    }
+  }
+
+  Future<int> _readConfirmThreshold() async {
+    if (widget.confirmThresholdProvider != null) {
+      return widget.confirmThresholdProvider!();
+    }
+    final prefs = await SharedPreferences.getInstance();
+    return SettingsService.readInt(
+      prefs,
+      SettingsService.analysisConfirmThresholdSetting,
+    );
+  }
+
+  Future<void> _startScan({FieldValueFilter? valueFilter}) async {
+    final effectiveFilter = valueFilter ?? widget.controller.valueFilter;
+    final scope = widget.controller.scope;
+    final threshold = await _readConfirmThreshold();
+
+    final limit = scope.messageLimit?.toInt();
+    final canSkipEstimate =
+        limit != null &&
+        limit <= threshold &&
+        scope.startTimestampMs == null &&
+        scope.endTimestampMs == null;
+
+    if (!canSkipEstimate) {
+      final estimate = await widget.controller.estimateScope(
+        widget.profile,
+        widget.topic.name,
+        scope: scope,
+      );
+      if (!mounted) return;
+
+      final planned = estimate?.plannedTotal?.toInt();
+      final known = estimate?.knownTotal.toInt() ?? 0;
+      final isWithinThreshold =
+          estimate != null &&
+          estimate.complete &&
+          (planned ?? known) <= threshold;
+
+      if (!isWithinThreshold) {
+        final confirmed = await _showLargeScanConfirmDialog(estimate);
+        if (!confirmed || !mounted) return;
+      }
     }
 
-    widget.controller.startAnalysis(
+    if (valueFilter != null) {
+      widget.controller.setValueFilter(valueFilter);
+    }
+    await widget.controller.startAnalysis(
       widget.profile,
       widget.topic.name,
-      maxMessages: maxMsgs,
-      sampleFromLatest: true,
-      valueFilter: widget.controller.valueFilter,
+      scope: scope,
+      valueFilter: effectiveFilter,
       duplicateScope: widget.controller.duplicateScope,
     );
+  }
+
+  Future<bool> _showLargeScanConfirmDialog(
+    AnalysisScopeEstimate? estimate,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final numFmt = NumberFormat.decimalPattern();
+    final isCompacted =
+        widget.topic.cleanupPolicy?.toLowerCase().contains('compact') ?? false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n?.scopeConfirmTitle ?? 'Start large analysis?'),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (estimate == null)
+                Text(
+                  l10n?.scopeConfirmSizeUnknown(
+                        widget.controller.estimateError ?? 'unknown',
+                      ) ??
+                      'Scan size unknown (${widget.controller.estimateError ?? 'unknown'}). Start anyway?',
+                )
+              else if (estimate.complete && estimate.plannedTotal != null)
+                Text(
+                  l10n?.scopeConfirmPlannedCount(
+                        numFmt.format(estimate.plannedTotal!.toInt()),
+                      ) ??
+                      'Estimated scan size: ${numFmt.format(estimate.plannedTotal!.toInt())} offsets.',
+                )
+              else
+                Text(
+                  l10n?.scopeConfirmAtLeastCount(
+                        numFmt.format(
+                          (estimate.plannedTotal ?? estimate.knownTotal)
+                              .toInt(),
+                        ),
+                      ) ??
+                      'Estimated scan size: at least ${numFmt.format((estimate.plannedTotal ?? estimate.knownTotal).toInt())} offsets.',
+                ),
+              if (estimate != null && estimate.unreadable.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  l10n?.scopeConfirmUnreadableHeader ??
+                      'Unreadable partitions:',
+                  style: Theme.of(ctx).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 4),
+                for (final u in estimate.unreadable)
+                  Text(
+                    l10n?.scopeConfirmUnreadableItem(u.partition, u.reason) ??
+                        'Partition ${u.partition}: ${u.reason}',
+                  ),
+              ],
+              if (isCompacted) ...[
+                const SizedBox(height: 12),
+                Text(
+                  l10n?.scopeConfirmCompactedHint ??
+                      'This is a compacted topic; the actual message count may be lower than the offset range.',
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n?.cancel ?? 'Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n?.scopeConfirmStartButton ?? 'Start Scan'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
   }
 
   Widget _buildImportedChip(BuildContext context, AppLocalizations? l10n) {
@@ -339,16 +509,25 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
   }
 
   Widget _buildImportButton(BuildContext context, AppLocalizations? l10n) {
-    return FilledButton.tonalIcon(
-      onPressed: _busy ? null : _onImport,
-      icon: _importing
-          ? const SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.file_open_outlined),
-      label: Text(l10n?.importAnalysisReport ?? 'Import Analysis Report'),
+    return _HistoryMenuButton(
+      listHistory: () =>
+          widget.controller.listHistory(widget.profile.name, widget.topic.name),
+      onSelectEntry: (entry) {
+        widget.controller.openSavedReport(entry);
+      },
+      onFromFile: _onImport,
+      builder: (context, openMenu) => FilledButton.tonalIcon(
+        key: const Key('analysis_import_button'),
+        onPressed: _busy ? null : openMenu,
+        icon: _importing
+            ? const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.file_open_outlined),
+        label: Text(l10n?.importAnalysisReport ?? 'Import Analysis Report'),
+      ),
     );
   }
 
@@ -417,11 +596,23 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
 
   Widget _buildCompareButton(BuildContext context, AppLocalizations? l10n) {
     final canCompare = widget.controller.report != null && !_busy;
-    return OutlinedButton.icon(
-      key: const Key('analysis_compare_button'),
-      onPressed: canCompare ? _onCompare : null,
-      icon: const Icon(Icons.compare_arrows_outlined),
-      label: Text(l10n?.comparisonAction ?? 'Compare'),
+    return _HistoryMenuButton(
+      listHistory: () =>
+          widget.controller.listHistory(widget.profile.name, widget.topic.name),
+      onSelectEntry: (entry) {
+        widget.controller.setComparisonBase(
+          entry.report,
+          clusterName: entry.clusterName,
+          exportedAt: entry.exportedAt,
+        );
+      },
+      onFromFile: _onCompare,
+      builder: (context, openMenu) => OutlinedButton.icon(
+        key: const Key('analysis_compare_button'),
+        onPressed: canCompare ? openMenu : null,
+        icon: const Icon(Icons.compare_arrows_outlined),
+        label: Text(l10n?.comparisonAction ?? 'Compare'),
+      ),
     );
   }
 
@@ -733,6 +924,134 @@ class _TopicAnalysisViewState extends State<TopicAnalysisView> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _HistoryMenuButton extends StatefulWidget {
+  final Future<HistoryListing> Function() listHistory;
+  final ValueChanged<TopicAnalysisHistoryEntry> onSelectEntry;
+  final VoidCallback onFromFile;
+  final Widget Function(BuildContext context, VoidCallback openMenu) builder;
+
+  const _HistoryMenuButton({
+    required this.listHistory,
+    required this.onSelectEntry,
+    required this.onFromFile,
+    required this.builder,
+  });
+
+  @override
+  State<_HistoryMenuButton> createState() => _HistoryMenuButtonState();
+}
+
+class _HistoryMenuButtonState extends State<_HistoryMenuButton> {
+  final MenuController _menuController = MenuController();
+  HistoryListing? _listing;
+  String? _loadError;
+
+  Future<void> _open() async {
+    if (_menuController.isOpen) {
+      _menuController.close();
+      return;
+    }
+    try {
+      final listing = await widget.listHistory();
+      if (!mounted) return;
+      setState(() {
+        _listing = listing;
+        _loadError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _listing = null;
+        _loadError = e.toString();
+      });
+    }
+    if (!mounted) return;
+    _menuController.open();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final numFmt = NumberFormat.decimalPattern();
+    final timeFmt = DateFormat('yyyy-MM-dd HH:mm');
+    final listing = _listing;
+    final loadError = _loadError;
+
+    return MenuAnchor(
+      controller: _menuController,
+      menuChildren: [
+        if (loadError != null)
+          MenuItemButton(
+            onPressed: null,
+            child: Text(
+              l10n?.historyMenuLoadError(loadError) ??
+                  'Could not load history: $loadError',
+            ),
+          )
+        else if (listing == null || listing.entries.isEmpty)
+          MenuItemButton(
+            onPressed: null,
+            child: Text(
+              l10n?.historyMenuEmpty ?? 'No saved reports for this topic',
+            ),
+          )
+        else
+          for (final entry in listing.entries)
+            MenuItemButton(
+              onPressed: () => widget.onSelectEntry(entry),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    timeFmt.format(
+                      (entry.report.scanReferenceTimeMs != null
+                              ? DateTime.fromMillisecondsSinceEpoch(
+                                  entry.report.scanReferenceTimeMs!.toInt(),
+                                )
+                              : entry.exportedAt)
+                          .toLocal(),
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    l10n?.historyEntrySubtitle(
+                          entry.report.scanScope != null
+                              ? formatAnalysisScopeSummary(
+                                  entry.report.scanScope!.scope,
+                                  l10n,
+                                )
+                              : (l10n.comparisonScopeNotRecorded),
+                          numFmt.format(entry.report.totalMessages.toInt()),
+                        ) ??
+                        '${numFmt.format(entry.report.totalMessages.toInt())} messages',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+        if (listing != null && listing.unreadableCount > 0)
+          MenuItemButton(
+            onPressed: null,
+            child: Text(
+              l10n?.historyMenuUnreadable(listing.unreadableCount) ??
+                  '${listing.unreadableCount} unreadable file(s) skipped',
+            ),
+          ),
+        const Divider(height: 1),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.folder_open_outlined, size: 18),
+          onPressed: widget.onFromFile,
+          child: Text(l10n?.historyMenuFromFile ?? 'From file…'),
+        ),
+      ],
+      builder: (context, controller, child) => widget.builder(context, _open),
     );
   }
 }

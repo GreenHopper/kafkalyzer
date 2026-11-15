@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/topic/utils/dlq_topic_detector.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
@@ -16,8 +17,12 @@ class TopicListItem extends StatefulWidget {
   final Widget? trailing;
   final ClusterProfile? clusterProfile;
   final String? highlightQuery;
+  final RegExp? highlightPattern;
   final List<String>? associatedFailureTopics;
   final ValueChanged<String>? onSelectFailureTopic;
+  final bool isFavourite;
+  final VoidCallback? onToggleFavourite;
+  final bool isMissingFavourite;
 
   const TopicListItem({
     super.key,
@@ -29,8 +34,12 @@ class TopicListItem extends StatefulWidget {
     this.trailing,
     this.clusterProfile,
     this.highlightQuery,
+    this.highlightPattern,
     this.associatedFailureTopics,
     this.onSelectFailureTopic,
+    this.isFavourite = false,
+    this.onToggleFavourite,
+    this.isMissingFavourite = false,
   });
 
   @override
@@ -60,34 +69,59 @@ class _TopicListItemState extends State<TopicListItem> {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Tooltip(
-        message: _buildTooltipMessage(context),
-        waitDuration: const Duration(milliseconds: 350),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              dense: true,
-              visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 0,
+      child:
+          getIt.isRegistered<TopicController>() && widget.clusterProfile != null
+          ? ListenableBuilder(
+              listenable: getIt<TopicController>(),
+              builder: (context, child) => Tooltip(
+                message: _buildTooltipMessage(context),
+                waitDuration: const Duration(milliseconds: 350),
+                child: child,
               ),
-              title: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onDoubleTap: widget.onDoubleTap,
-                child: _buildTitle(context),
-              ),
-              onTap: widget.onTap,
-              trailing: _buildTrailing(context),
+              child: _buildCardContent(context),
+            )
+          : Tooltip(
+              message: _buildTooltipMessage(context),
+              waitDuration: const Duration(milliseconds: 350),
+              child: _buildCardContent(context),
             ),
-            if (_isExpanded &&
-                widget.associatedFailureTopics != null &&
-                widget.associatedFailureTopics!.isNotEmpty)
-              _buildChildFailureTopics(context),
-          ],
+    );
+  }
+
+  Widget _buildCardContent(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          dense: true,
+          visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 0,
+          ),
+          title: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onDoubleTap: widget.onDoubleTap,
+            child: _buildTitle(context),
+          ),
+          subtitle: widget.isMissingFavourite
+              ? Text(
+                  l10n?.topicListNotInList ?? 'not in topic list',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                )
+              : null,
+          onTap: widget.onTap,
+          trailing: _buildTrailing(context),
         ),
-      ),
+        if (_isExpanded &&
+            widget.associatedFailureTopics != null &&
+            widget.associatedFailureTopics!.isNotEmpty)
+          _buildChildFailureTopics(context),
+      ],
     );
   }
 
@@ -99,7 +133,9 @@ class _TopicListItemState extends State<TopicListItem> {
 
     final prefixStyle =
         theme.textTheme.bodyMedium?.copyWith(
-          color: isSelected
+          color: widget.isMissingFavourite
+              ? colorScheme.outline
+              : isSelected
               ? colorScheme.onSecondaryContainer
               : colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.normal,
@@ -109,7 +145,9 @@ class _TopicListItemState extends State<TopicListItem> {
     final leafStyle =
         theme.textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.bold,
-          color: isSelected
+          color: widget.isMissingFavourite
+              ? colorScheme.outline
+              : isSelected
               ? colorScheme.onSecondaryContainer
               : colorScheme.onSurface,
         ) ??
@@ -148,6 +186,7 @@ class _TopicListItemState extends State<TopicListItem> {
                 highlightStyle: highlightStyle,
                 ellipsisStyle: ellipsisStyle,
                 highlightQuery: widget.highlightQuery,
+                highlightPattern: widget.highlightPattern,
               );
 
               return Text.rich(
@@ -207,6 +246,17 @@ class _TopicListItemState extends State<TopicListItem> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final List<Widget> children = [];
+
+    if (!widget.topic.metadataKnown && !widget.isMissingFavourite) {
+      children.add(
+        Icon(
+          Icons.warning_amber_rounded,
+          key: const Key('topic_metadata_error_icon'),
+          size: 16,
+          color: theme.colorScheme.error,
+        ),
+      );
+    }
 
     final underReplicated = widget.topic.underReplicatedPartitions ?? 0;
     final leaderless = widget.topic.leaderlessPartitions ?? 0;
@@ -288,6 +338,25 @@ class _TopicListItemState extends State<TopicListItem> {
       );
     }
 
+    if (widget.onToggleFavourite != null) {
+      children.add(
+        IconButton(
+          key: Key('topic_favourite_button_${widget.topic.name}'),
+          icon: Icon(
+            widget.isFavourite ? Icons.star : Icons.star_border,
+            size: 16,
+            color: widget.isFavourite ? theme.colorScheme.primary : null,
+          ),
+          tooltip: widget.isFavourite
+              ? (l10n?.topicListRemoveFavouriteTooltip ??
+                    'Remove from favourites')
+              : (l10n?.topicListAddFavouriteTooltip ?? 'Add to favourites'),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+          onPressed: widget.onToggleFavourite,
+        ),
+      );
+    }
     if (widget.isSelected) {
       children.add(const Icon(Icons.check, size: 16));
     }
@@ -389,63 +458,118 @@ class _TopicListItemState extends State<TopicListItem> {
   String _buildTooltipMessage(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final topic = widget.topic;
-    final hasExtendedConfig =
-        topic.cleanupPolicy != null || topic.retentionMs != null;
-    final isAvro =
-        widget.clusterProfile != null &&
-        hasSchema(
-          getIt<SchemaController>(),
-          widget.clusterProfile!,
-          topic.name,
-        );
+    if (l10n == null) return topic.name;
 
-    String meta;
-    if (l10n != null) {
-      if (hasExtendedConfig) {
-        meta = l10n.topicTooltip(
-          topic.partitionCount,
-          topic.replicationFactor,
-          topic.retentionMs != null
-              ? formatRetention(topic.retentionMs!)
-              : "N/A",
-          topic.cleanupPolicy != null
-              ? splitPolicy(topic.cleanupPolicy!)
-              : "N/A",
-        );
-      } else {
-        meta = l10n.topicTooltipSimple(
-          topic.partitionCount,
-          topic.replicationFactor,
-        );
-      }
-      if (isAvro) {
-        meta += l10n.schemaTooltipSuffix("Avro");
-      }
-      if ((topic.underReplicatedPartitions ?? 0) +
-              (topic.leaderlessPartitions ?? 0) >
-          0) {
-        meta +=
-            "\n${l10n.topicHealthWarning(topic.underReplicatedPartitions ?? 0, topic.leaderlessPartitions ?? 0)}";
-      }
-    } else {
-      if (hasExtendedConfig) {
-        final retention = topic.retentionMs != null
-            ? formatRetention(topic.retentionMs!)
-            : "N/A";
-        final cleanup = topic.cleanupPolicy != null
-            ? splitPolicy(topic.cleanupPolicy!)
-            : "N/A";
-        meta =
-            "Partitions: ${topic.partitionCount} • RF: ${topic.replicationFactor} • Retention: $retention • Cleanup: $cleanup";
-      } else {
-        meta =
-            "Partitions: ${topic.partitionCount} • RF: ${topic.replicationFactor}";
-      }
-      if (isAvro) {
-        meta += " • Schema: Avro";
-      }
+    if (widget.isMissingFavourite) {
+      return '${topic.name}\n${l10n.topicListNotInList}';
     }
 
-    return "${topic.name}\n$meta";
+    if (!topic.metadataKnown) {
+      final err = topic.metadataError!;
+      final reason = switch (err.kind) {
+        TopicMetadataErrorKind.notFound => l10n.topicMetadataNotFound,
+        TopicMetadataErrorKind.notAuthorized => l10n.topicConfigNotReadable,
+        TopicMetadataErrorKind.other => l10n.topicConfigLoadFailed,
+      };
+      return '${topic.name}\n$reason';
+    }
+
+    final schemaLabel =
+        widget.clusterProfile != null && getIt.isRegistered<SchemaController>()
+        ? resolveTopicSchemaLabel(
+            l10n,
+            getIt<SchemaController>(),
+            widget.clusterProfile!,
+            topic.name,
+          )
+        : null;
+
+    final TopicConfigView? configView =
+        widget.clusterProfile != null && getIt.isRegistered<TopicController>()
+        ? getIt<TopicController>().configFor(widget.clusterProfile!, topic.name)
+        : null;
+
+    String meta;
+    if (configView != null) {
+      switch (configView.state) {
+        case TopicConfigViewState.loading:
+          if (topic.cleanupPolicy != null || topic.retentionMs != null) {
+            final retention = topic.retentionMs != null
+                ? formatRetentionDuration(topic.retentionMs!, l10n)
+                : l10n.topicMetadataUnknown;
+            final cleanup = topic.cleanupPolicy != null
+                ? splitPolicy(topic.cleanupPolicy!)
+                : l10n.topicMetadataUnknown;
+            meta = l10n.topicTooltip(
+              topic.partitionCount,
+              topic.replicationFactor,
+              retention,
+              cleanup,
+            );
+          } else {
+            meta = l10n.topicTooltip(
+              topic.partitionCount,
+              topic.replicationFactor,
+              l10n.topicConfigLoading,
+              l10n.topicConfigLoading,
+            );
+          }
+        case TopicConfigViewState.available:
+          final retention = configView.retentionMs != null
+              ? formatRetentionDuration(configView.retentionMs!, l10n)
+              : l10n.topicMetadataUnknown;
+          final cleanup = configView.cleanupPolicy != null
+              ? splitPolicy(configView.cleanupPolicy!)
+              : l10n.topicMetadataUnknown;
+          meta = l10n.topicTooltip(
+            topic.partitionCount,
+            topic.replicationFactor,
+            retention,
+            cleanup,
+          );
+        case TopicConfigViewState.notReadable:
+          meta = l10n.topicTooltip(
+            topic.partitionCount,
+            topic.replicationFactor,
+            l10n.topicConfigNotReadable,
+            l10n.topicConfigNotReadable,
+          );
+        case TopicConfigViewState.failed:
+          meta = l10n.topicTooltip(
+            topic.partitionCount,
+            topic.replicationFactor,
+            l10n.topicConfigLoadFailed,
+            l10n.topicConfigLoadFailed,
+          );
+      }
+    } else if (topic.cleanupPolicy != null || topic.retentionMs != null) {
+      meta = l10n.topicTooltip(
+        topic.partitionCount,
+        topic.replicationFactor,
+        topic.retentionMs != null
+            ? formatRetentionDuration(topic.retentionMs!, l10n)
+            : l10n.topicMetadataUnknown,
+        topic.cleanupPolicy != null
+            ? splitPolicy(topic.cleanupPolicy!)
+            : l10n.topicMetadataUnknown,
+      );
+    } else {
+      meta = l10n.topicTooltipSimple(
+        topic.partitionCount,
+        topic.replicationFactor,
+      );
+    }
+
+    if (schemaLabel != null) {
+      meta += l10n.schemaTooltipSuffix(schemaLabel);
+    }
+    if ((topic.underReplicatedPartitions ?? 0) +
+            (topic.leaderlessPartitions ?? 0) >
+        0) {
+      meta +=
+          '\n${l10n.topicHealthWarning(topic.underReplicatedPartitions ?? 0, topic.leaderlessPartitions ?? 0)}';
+    }
+
+    return '${topic.name}\n$meta';
   }
 }

@@ -7,11 +7,11 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
+import 'package:kafkalyzer/src/rust/api/json_diff.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_widget.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:json_diff/json_diff.dart';
 import 'package:logger/logger.dart';
 
 class FieldOccurrence {
@@ -239,90 +239,10 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
     );
   }
 
-  String _generateMarkdown(
+  Future<String> _generateMarkdown(
     String fieldName,
     List<FieldOccurrence> occurrences,
-  ) {
-    final sb = StringBuffer();
-    sb.writeln('# Schema Field: $fieldName\n');
-
-    if (occurrences.isEmpty) {
-      sb.writeln('_No occurrences found._');
-      return sb.toString();
-    }
-
-    // Sort matching exactly as in UI
-    final sortedOccurrences = List<FieldOccurrence>.from(occurrences)
-      ..sort((a, b) {
-        int topicComp = a.topic.compareTo(b.topic);
-        if (topicComp != 0) return topicComp;
-        return a.fullPath.compareTo(b.fullPath);
-      });
-
-    final baseline = sortedOccurrences.first;
-
-    sb.writeln('## Baseline');
-    sb.writeln('- **Topic:** `${baseline.topic}`');
-    sb.writeln('- **Full Path:** `${baseline.fullPath}`');
-    sb.writeln('\n```json');
-    sb.writeln(const JsonEncoder.withIndent('  ').convert(baseline.schemaDef));
-    sb.writeln('```\n');
-
-    if (sortedOccurrences.length > 1) {
-      sb.writeln('## Comparisons\n');
-      for (int i = 1; i < sortedOccurrences.length; i++) {
-        final occ = sortedOccurrences[i];
-
-        // Calculate diff
-        final differ = JsonDiffer.fromJson(baseline.schemaDef, occ.schemaDef);
-        final diffNode = differ.diff();
-
-        sb.writeln('### Compared Occurrence $i (vs Baseline)');
-        sb.writeln('- **Topic:** `${occ.topic}`');
-        sb.writeln('- **Full Path:** `${occ.fullPath}`\n');
-
-        final diffOutput = _diffNodeToMarkdown(diffNode);
-        if (diffOutput.isNotEmpty) {
-          sb.writeln('#### Differences');
-          sb.writeln(diffOutput);
-        } else {
-          sb.writeln('_No structural differences from baseline._\n');
-        }
-
-        sb.writeln('#### Full JSON Schema');
-        sb.writeln('```json');
-        sb.writeln(const JsonEncoder.withIndent('  ').convert(occ.schemaDef));
-        sb.writeln('```\n');
-      }
-    }
-
-    return sb.toString();
-  }
-
-  String _diffNodeToMarkdown(DiffNode node, [String path = '']) {
-    final sb = StringBuffer();
-    final pfx = path.isEmpty ? "" : "$path.";
-
-    node.added.forEach((key, value) {
-      sb.writeln('- 🟢 **Added** `$pfx$key`: `$value`');
-    });
-
-    node.removed.forEach((key, value) {
-      sb.writeln('- 🔴 **Removed** `$pfx$key`: `$value`');
-    });
-
-    node.changed.forEach((key, values) {
-      final oldVal = values.isNotEmpty ? values[0] : null;
-      final newVal = values.length > 1 ? values[1] : null;
-      sb.writeln('- 🟡 **Changed** `$pfx$key`: `$oldVal`  ➔  `$newVal`');
-    });
-
-    node.node.forEach((key, childNode) {
-      sb.write(_diffNodeToMarkdown(childNode, "$pfx$key"));
-    });
-
-    return sb.toString();
-  }
+  ) => generateMarkdownForSchemaField(fieldName, occurrences);
 
   Widget _buildFieldCard(
     BuildContext context,
@@ -354,7 +274,7 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
               icon: const Icon(Icons.copy, size: 20),
               tooltip: l10n?.copyMarkdown ?? "Copy Markdown",
               onPressed: () async {
-                final md = _generateMarkdown(fieldName, occurrences);
+                final md = await _generateMarkdown(fieldName, occurrences);
                 await Clipboard.setData(ClipboardData(text: md));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -372,9 +292,12 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
               icon: const Icon(Icons.download, size: 20),
               tooltip: l10n?.downloadMarkdown ?? "Download Markdown",
               onPressed: () async {
-                final md = _generateMarkdown(fieldName, occurrences);
+                final saveTitle = AppLocalizations.of(
+                  context,
+                )!.saveSchemaMarkdown;
+                final md = await _generateMarkdown(fieldName, occurrences);
                 final outputFile = await FilePicker.saveFile(
-                  dialogTitle: AppLocalizations.of(context)!.saveSchemaMarkdown,
+                  dialogTitle: saveTitle,
                   fileName: 'schema_$fieldName.md',
                   type: FileType.custom,
                   allowedExtensions: ['md'],
@@ -458,46 +381,129 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
           style: const TextStyle(fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
-        ...List.generate(sortedOccurrences.length, (i) {
-          final occ = sortedOccurrences[i];
+        if (sortedOccurrences.isNotEmpty) ...[
+          _buildBaselineOccurrence(context, sortedOccurrences.first, l10n),
+          if (sortedOccurrences.length > 1)
+            FieldSchemaComparisonsWidget(
+              baseline: sortedOccurrences.first,
+              comparisons: sortedOccurrences.sublist(1),
+            ),
+        ],
+      ],
+    );
+  }
 
-          if (i == 0) {
-            // First occurrence: baseline
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n?.baselineTopic(occ.topic) ??
-                        "Baseline Topic: ${occ.topic}",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    l10n?.pathLabel(occ.fullPath) ?? "Path: ${occ.fullPath}",
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8.0),
-                    color: Colors.grey.withValues(alpha: 0.1),
-                    width: double.infinity,
-                    child: SelectableText(
-                      const JsonEncoder.withIndent('  ').convert(occ.schemaDef),
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            // Compare with baseline
-            final baselineDef = sortedOccurrences.first.schemaDef;
-            final differ = JsonDiffer.fromJson(baselineDef, occ.schemaDef);
-            final diffNode = differ.diff();
+  Widget _buildBaselineOccurrence(
+    BuildContext context,
+    FieldOccurrence occ,
+    AppLocalizations? l10n,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n?.baselineTopic(occ.topic) ?? "Baseline Topic: ${occ.topic}",
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            l10n?.pathLabel(occ.fullPath) ?? "Path: ${occ.fullPath}",
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            color: Colors.grey.withValues(alpha: 0.1),
+            width: double.infinity,
+            child: SelectableText(
+              const JsonEncoder.withIndent('  ').convert(occ.schemaDef),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+@visibleForTesting
+class FieldSchemaComparisonsWidget extends StatefulWidget {
+  final FieldOccurrence baseline;
+  final List<FieldOccurrence> comparisons;
+
+  const FieldSchemaComparisonsWidget({
+    super.key,
+    required this.baseline,
+    required this.comparisons,
+  });
+
+  @override
+  State<FieldSchemaComparisonsWidget> createState() =>
+      _FieldSchemaComparisonsWidgetState();
+}
+
+class _FieldSchemaComparisonsWidgetState
+    extends State<FieldSchemaComparisonsWidget> {
+  late Future<List<JsonDiffResult>> _diffFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _diffFuture = _loadDiffs();
+  }
+
+  @override
+  void didUpdateWidget(covariant FieldSchemaComparisonsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.baseline != widget.baseline ||
+        oldWidget.comparisons != widget.comparisons) {
+      _diffFuture = _loadDiffs();
+    }
+  }
+
+  Future<List<JsonDiffResult>> _loadDiffs() async {
+    final baselineJson = jsonEncode(widget.baseline.schemaDef);
+    final requests = widget.comparisons
+        .map(
+          (occ) => JsonDiffRequest(
+            oldJson: baselineJson,
+            newJson: jsonEncode(occ.schemaDef),
+            ignorePaths: const [],
+          ),
+        )
+        .toList();
+    return await diffJsonBatch(requests: requests);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return FutureBuilder<List<JsonDiffResult>>(
+      future: _diffFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2.0)),
+          );
+        }
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              l10n?.errorComputingDiff ?? 'Error computing diff',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          );
+        }
+        final results = snapshot.data ?? const [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.generate(widget.comparisons.length, (i) {
+            final occ = widget.comparisons[i];
+            final result = i < results.length ? results[i] : null;
+            final entries = result?.entries ?? const <JsonDiffEntry>[];
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
@@ -514,17 +520,14 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
                     style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   const SizedBox(height: 8),
-                  if (diffNode.added.isNotEmpty ||
-                      diffNode.removed.isNotEmpty ||
-                      diffNode.changed.isNotEmpty ||
-                      diffNode.node.isNotEmpty)
+                  if (entries.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.all(8.0),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: JsonDiffWidget(diffNode: diffNode),
+                      child: JsonDiffWidget(entries: entries),
                     )
                   else
                     Padding(
@@ -541,9 +544,95 @@ class _ScriptSchemasViewState extends State<ScriptSchemasView> {
                 ],
               ),
             );
-          }
-        }),
-      ],
+          }),
+        );
+      },
     );
   }
+}
+
+@visibleForTesting
+Future<String> generateMarkdownForSchemaField(
+  String fieldName,
+  List<FieldOccurrence> occurrences,
+) async {
+  final sb = StringBuffer();
+  sb.writeln('# Schema Field: $fieldName\n');
+
+  if (occurrences.isEmpty) {
+    sb.writeln('_No occurrences found._');
+    return sb.toString();
+  }
+
+  final sortedOccurrences = List<FieldOccurrence>.from(occurrences)
+    ..sort((a, b) {
+      final topicComp = a.topic.compareTo(b.topic);
+      if (topicComp != 0) return topicComp;
+      return a.fullPath.compareTo(b.fullPath);
+    });
+
+  final baseline = sortedOccurrences.first;
+
+  sb.writeln('## Baseline');
+  sb.writeln('- **Topic:** `${baseline.topic}`');
+  sb.writeln('- **Full Path:** `${baseline.fullPath}`');
+  sb.writeln('\n```json');
+  sb.writeln(const JsonEncoder.withIndent('  ').convert(baseline.schemaDef));
+  sb.writeln('```\n');
+
+  if (sortedOccurrences.length > 1) {
+    final baselineJson = jsonEncode(baseline.schemaDef);
+    final requests = [
+      for (int i = 1; i < sortedOccurrences.length; i++)
+        JsonDiffRequest(
+          oldJson: baselineJson,
+          newJson: jsonEncode(sortedOccurrences[i].schemaDef),
+          ignorePaths: const [],
+        ),
+    ];
+    final results = await diffJsonBatch(requests: requests);
+
+    sb.writeln('## Comparisons\n');
+    for (int i = 1; i < sortedOccurrences.length; i++) {
+      final occ = sortedOccurrences[i];
+      final result = results[i - 1];
+
+      sb.writeln('### Compared Occurrence $i (vs Baseline)');
+      sb.writeln('- **Topic:** `${occ.topic}`');
+      sb.writeln('- **Full Path:** `${occ.fullPath}`\n');
+
+      final diffOutput = diffEntriesToMarkdown(result.entries);
+      if (diffOutput.isNotEmpty) {
+        sb.writeln('#### Differences');
+        sb.writeln(diffOutput);
+      } else {
+        sb.writeln('_No structural differences from baseline._\n');
+      }
+
+      sb.writeln('#### Full JSON Schema');
+      sb.writeln('```json');
+      sb.writeln(const JsonEncoder.withIndent('  ').convert(occ.schemaDef));
+      sb.writeln('```\n');
+    }
+  }
+
+  return sb.toString();
+}
+
+@visibleForTesting
+String diffEntriesToMarkdown(List<JsonDiffEntry> entries) {
+  final sb = StringBuffer();
+  for (final entry in entries) {
+    switch (entry.kind) {
+      case JsonDiffKind.added:
+        sb.writeln('- 🟢 **Added** `${entry.path}`: `${entry.newValue}`');
+      case JsonDiffKind.removed:
+        sb.writeln('- 🔴 **Removed** `${entry.path}`: `${entry.oldValue}`');
+      case JsonDiffKind.changed:
+        sb.writeln(
+          '- 🟡 **Changed** `${entry.path}`: `${entry.oldValue}`  ➔  `${entry.newValue}`',
+        );
+    }
+  }
+  return sb.toString();
 }

@@ -1,6 +1,7 @@
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -51,11 +52,28 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       when(mockController.getSchemas(any)).thenReturn(['test-topic-key']);
-      when(mockController.fetchSchemaContent(any, any)).thenAnswer((_) async {
+      when(
+        mockController.fetchSubjectSchemaView(any, 'test-topic-key'),
+      ).thenAnswer((_) async {
         await Future.delayed(
           const Duration(milliseconds: 100),
         ); // Delay to force async
-        return '{}';
+        return const api.SubjectSchemaViewDto(
+          schema: api.SubjectSchemaDto(
+            subject: 'test-topic-key',
+            version: 1,
+            id: 1,
+            schemaType: api.SchemaKindDto.avro,
+            schema: '{}',
+            references: [],
+          ),
+          fields: api.SchemaFieldModelDto(
+            kind: api.SchemaKindDto.avro,
+            messages: [],
+            fields: [],
+            truncated: false,
+          ),
+        );
       });
 
       await tester.pumpWidget(
@@ -93,7 +111,7 @@ void main() {
       );
       await awaitIsolates(tester);
 
-      expect(find.text("No Avro schema found for this topic."), findsOneWidget);
+      expect(find.text("No schema found for this topic."), findsOneWidget);
     });
 
     testWidgets('loads and displays key and value schemas', (tester) async {
@@ -105,11 +123,45 @@ void main() {
         mockController.getSchemas(any),
       ).thenReturn(['test-topic-key', 'test-topic-value']);
       when(
-        mockController.fetchSchemaContent(any, 'test-topic-key'),
-      ).thenAnswer((_) async => '{"type": "string"}');
+        mockController.fetchSubjectSchemaView(any, 'test-topic-key'),
+      ).thenAnswer(
+        (_) async => const api.SubjectSchemaViewDto(
+          schema: api.SubjectSchemaDto(
+            subject: 'test-topic-key',
+            version: 1,
+            id: 1,
+            schemaType: api.SchemaKindDto.avro,
+            schema: '{"type": "string"}',
+            references: [],
+          ),
+          fields: api.SchemaFieldModelDto(
+            kind: api.SchemaKindDto.avro,
+            messages: [],
+            fields: [],
+            truncated: false,
+          ),
+        ),
+      );
       when(
-        mockController.fetchSchemaContent(any, 'test-topic-value'),
-      ).thenAnswer((_) async => '{"type": "record", "name": "User"}');
+        mockController.fetchSubjectSchemaView(any, 'test-topic-value'),
+      ).thenAnswer(
+        (_) async => const api.SubjectSchemaViewDto(
+          schema: api.SubjectSchemaDto(
+            subject: 'test-topic-value',
+            version: 1,
+            id: 2,
+            schemaType: api.SchemaKindDto.avro,
+            schema: '{"type": "record", "name": "User", "fields": []}',
+            references: [],
+          ),
+          fields: api.SchemaFieldModelDto(
+            kind: api.SchemaKindDto.avro,
+            messages: [],
+            fields: [],
+            truncated: false,
+          ),
+        ),
+      );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -122,8 +174,8 @@ void main() {
       );
       await awaitIsolates(tester);
 
-      expect(find.text("Key Schema"), findsOneWidget);
-      expect(find.text("Value Schema"), findsOneWidget);
+      expect(find.text("Key Schema"), findsWidgets);
+      expect(find.text("Value Schema"), findsWidgets);
       expect(find.byType(JsonOrStringViewer), findsNWidgets(2));
     });
 
@@ -134,7 +186,7 @@ void main() {
 
       when(mockController.getSchemas(any)).thenReturn(['test-topic-key']);
       when(
-        mockController.fetchSchemaContent(any, 'test-topic-key'),
+        mockController.fetchSubjectSchemaView(any, 'test-topic-key'),
       ).thenThrow(Exception('Fetch failed'));
 
       await tester.pumpWidget(
@@ -204,7 +256,7 @@ void main() {
 
       expect(find.text('Schema-Viewer'), findsOneWidget);
       expect(
-        find.text('Kein Avro-Schema für dieses Topic gefunden.'),
+        find.text('Kein Schema für dieses Topic gefunden.'),
         findsOneWidget,
       );
       expect(find.text('Topic: test-topic'), findsOneWidget);
@@ -219,7 +271,7 @@ void main() {
 
       when(mockController.getSchemas(any)).thenReturn(['test-topic-key']);
       when(
-        mockController.fetchSchemaContent(any, 'test-topic-key'),
+        mockController.fetchSubjectSchemaView(any, 'test-topic-key'),
       ).thenThrow(Exception('Fetch failed'));
 
       await tester.pumpWidget(
@@ -244,10 +296,224 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'opens by subject, navigates to existing associated topic, and disables missing topic',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(
+          mockController.fetchSchemaVersions(any, 'orders-value'),
+        ).thenAnswer((_) async => [1]);
+        when(
+          mockController.fetchSubjectSchemaView(
+            any,
+            'orders-value',
+            version: 1,
+          ),
+        ).thenAnswer(
+          (_) async => const api.SubjectSchemaViewDto(
+            schema: api.SubjectSchemaDto(
+              subject: 'orders-value',
+              version: 1,
+              id: 10,
+              schemaType: api.SchemaKindDto.protobuf,
+              schema: 'syntax = "proto3"; message Order {}',
+              references: [],
+            ),
+            fields: api.SchemaFieldModelDto(
+              kind: api.SchemaKindDto.protobuf,
+              messages: ['Order'],
+              fields: [],
+              truncated: false,
+            ),
+          ),
+        );
+        when(
+          mockController.getAssociatedTopics('orders-value', ['orders']),
+        ).thenAnswer((_) async => ['orders', 'missing-topic']);
+
+        final navigated = <String>[];
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (_) => SchemaViewerDialog(
+                        profile: testProfile,
+                        initialSubject: 'orders-value',
+                        controller: mockController,
+                        availableTopics: const ['orders'],
+                        onNavigateToTopic: navigated.add,
+                      ),
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open'));
+        await awaitIsolates(tester);
+
+        expect(find.text('Schema: orders-value'), findsOneWidget);
+        expect(find.text('missing-topic (not on cluster)'), findsOneWidget);
+        expect(
+          find.byKey(const Key('associated_topic_missing_missing-topic')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('associated_topic_open_orders')));
+        await tester.pumpAndSettle();
+
+        expect(navigated, ['orders']);
+        expect(find.byType(SchemaViewerDialog), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'association failure shows retry and back button works after reference',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(
+          mockController.fetchSchemaVersions(any, 'orders-value'),
+        ).thenAnswer((_) async => [1]);
+        when(
+          mockController.fetchSubjectSchemaView(
+            any,
+            'orders-value',
+            version: 1,
+          ),
+        ).thenAnswer(
+          (_) async => const api.SubjectSchemaViewDto(
+            schema: api.SubjectSchemaDto(
+              subject: 'orders-value',
+              version: 1,
+              id: 1,
+              schemaType: api.SchemaKindDto.protobuf,
+              schema: 'syntax = "proto3"; message Order {}',
+              references: [
+                api.SchemaReferenceDto(
+                  name: 'common.proto',
+                  subject: 'common-proto',
+                  version: 2,
+                ),
+              ],
+            ),
+            fields: api.SchemaFieldModelDto(
+              kind: api.SchemaKindDto.protobuf,
+              messages: ['Order'],
+              fields: [],
+              truncated: false,
+            ),
+          ),
+        );
+        when(
+          mockController.fetchSchemaVersions(any, 'common-proto'),
+        ).thenAnswer((_) async => [2]);
+        when(
+          mockController.fetchSubjectSchemaView(
+            any,
+            'common-proto',
+            version: 2,
+          ),
+        ).thenAnswer(
+          (_) async => const api.SubjectSchemaViewDto(
+            schema: api.SubjectSchemaDto(
+              subject: 'common-proto',
+              version: 2,
+              id: 2,
+              schemaType: api.SchemaKindDto.protobuf,
+              schema: 'syntax = "proto3"; message Common {}',
+              references: [],
+            ),
+            fields: api.SchemaFieldModelDto(
+              kind: api.SchemaKindDto.protobuf,
+              messages: ['Common'],
+              fields: [],
+              truncated: false,
+            ),
+          ),
+        );
+
+        var assocCalls = 0;
+        when(mockController.getAssociatedTopics(any, any)).thenAnswer((
+          inv,
+        ) async {
+          assocCalls++;
+          if (assocCalls == 1) {
+            throw Exception('assoc boom');
+          }
+          return const ['orders'];
+        });
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SchemaViewerDialog(
+              profile: testProfile,
+              initialSubject: 'orders-value',
+              controller: mockController,
+              availableTopics: const ['orders'],
+            ),
+          ),
+        );
+        await awaitIsolates(tester);
+
+        expect(find.textContaining('assoc boom'), findsOneWidget);
+        await tester.tap(
+          find.byKey(const Key('schema_viewer_retry_associations')),
+        );
+        await awaitIsolates(tester);
+        expect(find.text('orders'), findsOneWidget);
+
+        // Follow reference -> Back button appears -> tap Back
+        await tester.tap(find.text('common.proto (common-proto v2)'));
+        await awaitIsolates(tester);
+        expect(find.text('Schema: common-proto'), findsOneWidget);
+        expect(
+          find.byKey(const Key('schema_viewer_back_button')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('schema_viewer_back_button')));
+        await awaitIsolates(tester);
+        expect(find.text('Schema: orders-value'), findsOneWidget);
+      },
+    );
   });
 }
 
 class _TestMockSchemaController extends MockSchemaController {
   @override
   String? errorFor(ClusterProfile? cluster) => null;
+
+  @override
+  Object? errorObjectFor(ClusterProfile? cluster) => null;
+
+  @override
+  Future<String?> fetchSubjectCompatibility(
+    ClusterProfile? cluster,
+    String? subject, {
+    bool? force = false,
+  }) async => null;
+
+  @override
+  Future<String> fetchGlobalCompatibility(
+    ClusterProfile? cluster, {
+    bool? force = false,
+  }) async => 'BACKWARD';
 }

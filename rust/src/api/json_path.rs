@@ -20,6 +20,14 @@ pub fn resolve_json_path_batch(payloads: Vec<String>, paths: Vec<String>) -> Vec
     kafkalyzer_core::json_path::resolve_batch(&payloads, &paths)
 }
 
+#[flutter_rust_bridge::frb(sync)]
+pub fn collect_field_paths(payload: String, limit: u32) -> Vec<String> {
+    let Ok(val) = serde_json::from_str::<serde_json::Value>(&payload) else {
+        return Vec::new();
+    };
+    kafkalyzer_core::json_path::collect_paths(&val, limit as usize)
+}
+
 /// Filter terms that the regex engine used by a scan cannot compile.
 ///
 /// Returned in input order; an empty list means every term is usable.

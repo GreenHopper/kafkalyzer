@@ -127,7 +127,53 @@ mod tests {
             timeline_outside_count: 0,
             value_filter_result: None,
             duplicate_analysis_result: None,
+            cleanup_policy_unknown: false,
+            scan_scope: None,
+            analysis_limits: None,
+            tracked_field_count: None,
+            complete_until_ms: None,
         }
+    }
+
+    #[test]
+    fn report_with_scope_and_limits_round_trips_through_domain() {
+        use crate::api::kafka_types::{
+            AnalysisLimit, AnalysisLimitKind, AnalysisScope, AnalysisScopeSummary,
+            PlannedPartitionRange, ScopeLimitFrom, UnreadablePartition,
+        };
+        let mut r = report(100);
+        r.scan_scope = Some(AnalysisScopeSummary {
+            scope: AnalysisScope {
+                partitions: Some(vec![0, 3]),
+                start_timestamp_ms: Some(1_000),
+                end_timestamp_ms: Some(2_000),
+                message_limit: Some(500),
+                limit_from: ScopeLimitFrom::Oldest,
+            },
+            ranges: vec![PlannedPartitionRange {
+                partition: 0,
+                start: 10,
+                end: 110,
+            }],
+            unreadable: vec![UnreadablePartition {
+                partition: 3,
+                reason: "ACL denied".to_string(),
+            }],
+            excluded_by_time_range: 12,
+        });
+        r.analysis_limits = Some(vec![AnalysisLimit {
+            kind: AnalysisLimitKind::TrackedFields,
+            limit: 500,
+            reached: true,
+        }]);
+        r.tracked_field_count = Some(500);
+        r.complete_until_ms = Some(1_900);
+
+        let back = TopicAnalysisReport::from(r.to_domain());
+        assert_eq!(back.scan_scope, r.scan_scope);
+        assert_eq!(back.analysis_limits, r.analysis_limits);
+        assert_eq!(back.tracked_field_count, Some(500));
+        assert_eq!(back.complete_until_ms, Some(1_900));
     }
 
     #[test]
@@ -137,6 +183,7 @@ mod tests {
         assert!(!imported.size_percentiles_estimated);
         assert_eq!(imported.estimated_distinct_keys, 0);
         assert!(!imported.key_cardinality_capped);
+        assert!(!imported.cleanup_policy_unknown);
     }
 
     #[test]

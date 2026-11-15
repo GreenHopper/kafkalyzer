@@ -99,7 +99,21 @@ class ProductionTimeline {
 
   int? get scanReferenceTimeMs => report.scanReferenceTimeMs;
   int? get completeFromMs => report.completeFromMs;
+  int? get completeUntilMs => report.completeUntilMs;
+  List<int>? get partitionSubset => report.scanScope?.scope.partitions;
   int get timelineOutsideCount => report.timelineOutsideCount;
+
+  bool _isHourCovered(int hourStartMs) {
+    if (report.completeFromMs != null && hourStartMs < report.completeFromMs!) {
+      return false;
+    }
+    if (report.completeUntilMs != null &&
+        hourStartMs >= report.completeUntilMs!) {
+      return false;
+    }
+    return true;
+  }
+
   ValueFilterResult? get valueFilterResult => report.valueFilterResult;
   bool get isFiltered => valueFilterResult != null;
 
@@ -115,14 +129,23 @@ class ProductionTimeline {
     return null;
   }
 
-  /// Whether the specified recent window reaches back before complete coverage.
+  /// Whether the specified recent window reaches back before complete coverage
+  /// or ends after `completeUntilMs`.
   bool isWindowPartiallyCovered(int windowHours) {
     final ref = report.scanReferenceTimeMs;
-    final complete = report.completeFromMs;
-    if (ref == null || complete == null) return false;
+    if (ref == null) return false;
     final refHour = (ref / 3600000).floor();
     final windowStartMs = (refHour - windowHours + 1) * 3600000;
-    return windowStartMs < complete;
+    final windowEndMs = refHour * 3600000;
+    if (report.completeFromMs != null &&
+        windowStartMs < report.completeFromMs!) {
+      return true;
+    }
+    if (report.completeUntilMs != null &&
+        windowEndMs >= report.completeUntilMs!) {
+      return true;
+    }
+    return false;
   }
 
   /// How many hours in the specified recent window are covered by the scan.
@@ -147,9 +170,7 @@ class ProductionTimeline {
       final count = _hourlyMap[h] ?? 0;
       final matchCount = _matchedHourlyMap?[h] ?? (isFiltered ? 0 : null);
       final isCurrentHour = (h == refHour);
-      final isCovered =
-          report.completeFromMs == null ||
-          hourStartMs >= report.completeFromMs!;
+      final isCovered = _isHourCovered(hourStartMs);
       final baseline = _calculateBaseline(h);
 
       final isUnusual =
@@ -196,7 +217,9 @@ class ProductionTimeline {
       }
     }
 
-    if (dayCounts.isEmpty && report.completeFromMs == null) {
+    if (dayCounts.isEmpty &&
+        report.completeFromMs == null &&
+        report.completeUntilMs == null) {
       return const [];
     }
 
@@ -229,9 +252,12 @@ class ProductionTimeline {
     while (!current.isBefore(minDate)) {
       final count = dayCounts[current] ?? 0;
       final matchCount = isFiltered ? (matchedDayCounts[current] ?? 0) : null;
+      final nextDay = _addDays(current, 1);
       final isPartiallyCovered =
-          report.completeFromMs != null &&
-          current.millisecondsSinceEpoch < report.completeFromMs!;
+          (report.completeFromMs != null &&
+              current.millisecondsSinceEpoch < report.completeFromMs!) ||
+          (report.completeUntilMs != null &&
+              nextDay.millisecondsSinceEpoch > report.completeUntilMs!);
 
       result.add(
         DailyPoint(
@@ -271,9 +297,7 @@ class ProductionTimeline {
             candDt.year == targetDate.year &&
             candDt.month == targetDate.month &&
             candDt.day == targetDate.day) {
-          final isCandCovered =
-              report.completeFromMs == null ||
-              candHourStartMs >= report.completeFromMs!;
+          final isCandCovered = _isHourCovered(candHourStartMs);
 
           if (isCandCovered) {
             coveredDays++;
@@ -300,5 +324,12 @@ class ProductionTimeline {
       return DateTime.utc(dt.year, dt.month, dt.day - days);
     }
     return DateTime(dt.year, dt.month, dt.day - days);
+  }
+
+  static DateTime _addDays(DateTime dt, int days) {
+    if (dt.isUtc) {
+      return DateTime.utc(dt.year, dt.month, dt.day + days);
+    }
+    return DateTime(dt.year, dt.month, dt.day + days);
   }
 }

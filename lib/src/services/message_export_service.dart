@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
@@ -36,6 +37,65 @@ MessageSchema? messageSchemaFromMap(dynamic raw) {
     schemaId: schemaId,
     subject: subject is String ? subject : null,
     version: version is int ? version : null,
+  );
+}
+
+/// Converts a [LocalSchemaUseDto] to a JSON-serializable map, or `null` when absent.
+Map<String, dynamic>? localSchemaUseToMap(LocalSchemaUseDto? use) {
+  if (use == null) return null;
+  return {
+    'fileName': use.fileName,
+    'format': use.format.name,
+    'messageType': use.messageType,
+    'framing': use.framing.name,
+    'wireSchemaId': use.wireSchemaId,
+    'error': use.error == null
+        ? null
+        : {'kind': use.error!.kind.name, 'detail': use.error!.detail},
+  };
+}
+
+/// Parses a [LocalSchemaUseDto] from a JSON map, returning `null` for missing or
+/// malformed values (for backwards compatibility with older exports).
+LocalSchemaUseDto? localSchemaUseFromMap(dynamic raw) {
+  if (raw is! Map) return null;
+  final fileName = raw['fileName'];
+  final formatRaw = raw['format'];
+  if (fileName is! String || formatRaw is! String) return null;
+  final format = LocalSchemaFormatDto.values
+      .where((e) => e.name == formatRaw)
+      .firstOrNull;
+  if (format == null) return null;
+  final framingRaw = raw['framing'];
+  final framing = framingRaw is String
+      ? (FramingDto.values.where((e) => e.name == framingRaw).firstOrNull ??
+            FramingDto.auto)
+      : FramingDto.auto;
+  LocalSchemaErrorDto? error;
+  final rawError = raw['error'];
+  if (rawError is Map) {
+    final kindRaw = rawError['kind'];
+    final detail = rawError['detail'];
+    if (kindRaw is String && detail is String) {
+      final kind = LocalDecodeErrorKindDto.values
+          .where((e) => e.name == kindRaw)
+          .firstOrNull;
+      if (kind != null) {
+        error = LocalSchemaErrorDto(kind: kind, detail: detail);
+      }
+    }
+  }
+  return LocalSchemaUseDto(
+    fileName: fileName,
+    format: format,
+    messageType: raw['messageType'] is String
+        ? raw['messageType'] as String
+        : null,
+    framing: framing,
+    wireSchemaId: raw['wireSchemaId'] is int
+        ? raw['wireSchemaId'] as int
+        : null,
+    error: error,
   );
 }
 
@@ -449,6 +509,8 @@ class MessageExportService {
           .toList(),
       'keySchema': messageSchemaToMap(msg.keySchema),
       'valueSchema': messageSchemaToMap(msg.valueSchema),
+      'keyLocalSchema': localSchemaUseToMap(msg.keyLocalSchema),
+      'valueLocalSchema': localSchemaUseToMap(msg.valueLocalSchema),
     };
   }
 

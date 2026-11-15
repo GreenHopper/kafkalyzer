@@ -98,7 +98,8 @@ kafka-acls.sh --bootstrap-server <bootstrap:9092> \
 ### 🔍 Multi-Search
 
 - Powerful search functionality across multiple topics simultaneously with configurable stream start/end conditions.
-- **Regex Support**: Filter messages based on complex patterns in keys, values, or headers.
+- **Regex & Structured Filter Expressions**: Filter keys and values with substring, exact, or regex matching, or combine typed conditions on payloads, keys, headers, and metadata (`AND`/`OR`/`NOT`), e.g.:
+  `(header.eventType = "OrderCreated" OR value.status = "FAILED") AND NOT partition = 0`
 - **Fast Trace**: Hash-based partition verification for targeted key lookup.
 
 ### 📜 Scripting & Automated Outputs
@@ -175,6 +176,25 @@ On Windows, when no custom truststore is configured in the cluster profile, `lib
 
 - **Release Builds**: The automated build scripts bundle `cacert.pem` automatically.
 - **Debug/Local Runs**: Place `cacert.pem` next to the executable if connecting to public-CA TLS brokers without an explicit truststore.
+
+## 🧩 Local Schema Decoding (Offline)
+
+kafkalyzer can decode Kafka message keys and values using local schema files without requiring a Schema Registry connection (or alongside one).
+
+- **Supported Formats**:
+  - **Avro (`.avsc`)**: Supports Confluent 5-byte wire-prefixed payloads, raw Avro binary payloads, or automatic detection (`Auto`).
+  - **Protobuf Source (`.proto`)**: Single-file `proto3` definitions. When multiple top-level messages exist, select the target message type in the assignment dialog.
+  - **Protobuf Descriptor Set (`.desc`, `.pb`, `.binpb`)**: Compiled `FileDescriptorSet` binaries — required for `proto2` schemas or `.proto` files with external imports. Compile with:
+
+    ```bash
+    protoc --include_imports --descriptor_set_out=schema.desc path/to/schema.proto
+    ```
+
+  - **JSON Schema (`.json`)**: Validates UTF-8 JSON payloads against a local JSON Schema file.
+- **Precedence**:
+  - **Fallback** (default): Uses Schema Registry when available and falls back to the local schema when no registry is configured or no schema is registered for the subject.
+  - **Always**: Always decodes with the assigned local schema and skips Schema Registry lookups.
+- **Machine-Local Paths**: Local schema assignments reference file paths on the current machine; headless/script runs share those persisted assignments on the same host.
 
 ## 📄 License
 

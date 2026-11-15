@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
+import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
 import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
@@ -730,6 +731,27 @@ void main() {
         expect(lines[0], 'Timestamp,Step,Topic,Partition,Offset,Key,Payload');
         expect(lines[1], '1000,Filter Orders,orders,0,1,k1,p1');
         expect(lines[2], '2000,Global,orders,0,2,k2,p2');
+      },
+    );
+
+    test(
+      'localSchemaUseToMap and localSchemaUseFromMap round-trip and handle missing keys',
+      () {
+        const use = LocalSchemaUseDto(
+          fileName: 'orders.avsc',
+          format: LocalSchemaFormatDto.avro,
+          messageType: 'acme.Order',
+          framing: FramingDto.prefixed,
+          wireSchemaId: 42,
+          error: LocalSchemaErrorDto(
+            kind: LocalDecodeErrorKindDto.trailingBytes,
+            detail: '2 unread bytes',
+          ),
+        );
+        final map = localSchemaUseToMap(use);
+        expect(localSchemaUseFromMap(map), equals(use));
+        expect(localSchemaUseFromMap(null), isNull);
+        expect(localSchemaUseFromMap({'wrong': 1}), isNull);
       },
     );
   });

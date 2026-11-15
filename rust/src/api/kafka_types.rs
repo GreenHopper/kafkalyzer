@@ -442,6 +442,273 @@ impl TopDuplicateOccurrence {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub enum ScopeLimitFrom {
+    #[default]
+    Newest,
+    Oldest,
+}
+
+impl From<kafkalyzer_core::analysis_scope::ScopeLimitFrom> for ScopeLimitFrom {
+    fn from(v: kafkalyzer_core::analysis_scope::ScopeLimitFrom) -> Self {
+        match v {
+            kafkalyzer_core::analysis_scope::ScopeLimitFrom::Newest => Self::Newest,
+            kafkalyzer_core::analysis_scope::ScopeLimitFrom::Oldest => Self::Oldest,
+        }
+    }
+}
+
+impl ScopeLimitFrom {
+    pub(crate) fn to_domain(self) -> kafkalyzer_core::analysis_scope::ScopeLimitFrom {
+        match self {
+            Self::Newest => kafkalyzer_core::analysis_scope::ScopeLimitFrom::Newest,
+            Self::Oldest => kafkalyzer_core::analysis_scope::ScopeLimitFrom::Oldest,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct AnalysisScope {
+    #[serde(default)]
+    pub partitions: Option<Vec<i32>>,
+    #[serde(default)]
+    pub start_timestamp_ms: Option<i64>,
+    #[serde(default)]
+    pub end_timestamp_ms: Option<i64>,
+    #[serde(default)]
+    pub message_limit: Option<i64>,
+    #[serde(default)]
+    pub limit_from: ScopeLimitFrom,
+}
+
+impl From<kafkalyzer_core::analysis_scope::AnalysisScope> for AnalysisScope {
+    fn from(s: kafkalyzer_core::analysis_scope::AnalysisScope) -> Self {
+        Self {
+            partitions: s.partitions,
+            start_timestamp_ms: s.start_timestamp_ms,
+            end_timestamp_ms: s.end_timestamp_ms,
+            message_limit: s.message_limit,
+            limit_from: ScopeLimitFrom::from(s.limit_from),
+        }
+    }
+}
+
+impl AnalysisScope {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::analysis_scope::AnalysisScope {
+        kafkalyzer_core::analysis_scope::AnalysisScope {
+            partitions: self.partitions.clone(),
+            start_timestamp_ms: self.start_timestamp_ms,
+            end_timestamp_ms: self.end_timestamp_ms,
+            message_limit: self.message_limit,
+            limit_from: self.limit_from.to_domain(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PlannedPartitionRange {
+    pub partition: i32,
+    pub start: i64,
+    pub end: i64,
+}
+
+impl From<kafkalyzer_core::analysis_scope::PlannedRange> for PlannedPartitionRange {
+    fn from(r: kafkalyzer_core::analysis_scope::PlannedRange) -> Self {
+        Self {
+            partition: r.partition,
+            start: r.start,
+            end: r.end,
+        }
+    }
+}
+
+impl PlannedPartitionRange {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::analysis_scope::PlannedRange {
+        kafkalyzer_core::analysis_scope::PlannedRange {
+            partition: self.partition,
+            start: self.start,
+            end: self.end,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UnreadablePartition {
+    pub partition: i32,
+    pub reason: String,
+}
+
+impl From<kafkalyzer_core::analysis_scope::UnreadablePartition> for UnreadablePartition {
+    fn from(u: kafkalyzer_core::analysis_scope::UnreadablePartition) -> Self {
+        Self {
+            partition: u.partition,
+            reason: u.reason,
+        }
+    }
+}
+
+impl UnreadablePartition {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::analysis_scope::UnreadablePartition {
+        kafkalyzer_core::analysis_scope::UnreadablePartition {
+            partition: self.partition,
+            reason: self.reason.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnalysisScopeEstimate {
+    pub planned_total: Option<i64>,
+    pub known_total: i64,
+    pub complete: bool,
+    pub unreadable: Vec<UnreadablePartition>,
+}
+
+impl From<kafkalyzer_core::analysis_scope::AnalysisScopeEstimate> for AnalysisScopeEstimate {
+    fn from(e: kafkalyzer_core::analysis_scope::AnalysisScopeEstimate) -> Self {
+        Self {
+            planned_total: e.planned_total,
+            known_total: e.known_total,
+            complete: e.complete,
+            unreadable: e
+                .unreadable
+                .into_iter()
+                .map(UnreadablePartition::from)
+                .collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnalysisScopeSummary {
+    pub scope: AnalysisScope,
+    #[serde(default)]
+    pub ranges: Vec<PlannedPartitionRange>,
+    #[serde(default)]
+    pub unreadable: Vec<UnreadablePartition>,
+    #[serde(default)]
+    pub excluded_by_time_range: i64,
+}
+
+impl From<kafkalyzer_core::kafka_types::AnalysisScopeSummary> for AnalysisScopeSummary {
+    fn from(s: kafkalyzer_core::kafka_types::AnalysisScopeSummary) -> Self {
+        Self {
+            scope: AnalysisScope::from(s.scope),
+            ranges: s
+                .ranges
+                .into_iter()
+                .map(PlannedPartitionRange::from)
+                .collect(),
+            unreadable: s
+                .unreadable
+                .into_iter()
+                .map(UnreadablePartition::from)
+                .collect(),
+            excluded_by_time_range: s.excluded_by_time_range,
+        }
+    }
+}
+
+impl AnalysisScopeSummary {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::AnalysisScopeSummary {
+        kafkalyzer_core::kafka_types::AnalysisScopeSummary {
+            scope: self.scope.to_domain(),
+            ranges: self.ranges.iter().map(|r| r.to_domain()).collect(),
+            unreadable: self.unreadable.iter().map(|u| u.to_domain()).collect(),
+            excluded_by_time_range: self.excluded_by_time_range,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AnalysisLimitKind {
+    TrackedFields,
+    ListedFields,
+    ValuesPerField,
+    ListedValuesPerField,
+    FieldDepth,
+    ValueDisplayChars,
+    TrackedKeys,
+    ListedKeys,
+    SizePercentileSample,
+    TrackedFingerprints,
+    DuplicateSamples,
+    ListedDuplicates,
+    PreviewChars,
+    TimelineWindowDays,
+}
+
+impl From<kafkalyzer_core::analysis_limits::AnalysisLimitKind> for AnalysisLimitKind {
+    fn from(k: kafkalyzer_core::analysis_limits::AnalysisLimitKind) -> Self {
+        use kafkalyzer_core::analysis_limits::AnalysisLimitKind as D;
+        match k {
+            D::TrackedFields => Self::TrackedFields,
+            D::ListedFields => Self::ListedFields,
+            D::ValuesPerField => Self::ValuesPerField,
+            D::ListedValuesPerField => Self::ListedValuesPerField,
+            D::FieldDepth => Self::FieldDepth,
+            D::ValueDisplayChars => Self::ValueDisplayChars,
+            D::TrackedKeys => Self::TrackedKeys,
+            D::ListedKeys => Self::ListedKeys,
+            D::SizePercentileSample => Self::SizePercentileSample,
+            D::TrackedFingerprints => Self::TrackedFingerprints,
+            D::DuplicateSamples => Self::DuplicateSamples,
+            D::ListedDuplicates => Self::ListedDuplicates,
+            D::PreviewChars => Self::PreviewChars,
+            D::TimelineWindowDays => Self::TimelineWindowDays,
+        }
+    }
+}
+
+impl AnalysisLimitKind {
+    pub(crate) fn to_domain(self) -> kafkalyzer_core::analysis_limits::AnalysisLimitKind {
+        use kafkalyzer_core::analysis_limits::AnalysisLimitKind as D;
+        match self {
+            Self::TrackedFields => D::TrackedFields,
+            Self::ListedFields => D::ListedFields,
+            Self::ValuesPerField => D::ValuesPerField,
+            Self::ListedValuesPerField => D::ListedValuesPerField,
+            Self::FieldDepth => D::FieldDepth,
+            Self::ValueDisplayChars => D::ValueDisplayChars,
+            Self::TrackedKeys => D::TrackedKeys,
+            Self::ListedKeys => D::ListedKeys,
+            Self::SizePercentileSample => D::SizePercentileSample,
+            Self::TrackedFingerprints => D::TrackedFingerprints,
+            Self::DuplicateSamples => D::DuplicateSamples,
+            Self::ListedDuplicates => D::ListedDuplicates,
+            Self::PreviewChars => D::PreviewChars,
+            Self::TimelineWindowDays => D::TimelineWindowDays,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AnalysisLimit {
+    pub kind: AnalysisLimitKind,
+    pub limit: i64,
+    pub reached: bool,
+}
+
+impl From<kafkalyzer_core::analysis_limits::AnalysisLimit> for AnalysisLimit {
+    fn from(l: kafkalyzer_core::analysis_limits::AnalysisLimit) -> Self {
+        Self {
+            kind: AnalysisLimitKind::from(l.kind),
+            limit: l.limit,
+            reached: l.reached,
+        }
+    }
+}
+
+impl AnalysisLimit {
+    pub(crate) fn to_domain(&self) -> kafkalyzer_core::analysis_limits::AnalysisLimit {
+        kafkalyzer_core::analysis_limits::AnalysisLimit {
+            kind: self.kind.to_domain(),
+            limit: self.limit,
+            reached: self.reached,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DuplicateAnalysisResult {
     pub scope: DuplicateDetectionScope,
@@ -450,6 +717,14 @@ pub struct DuplicateAnalysisResult {
     pub duplicate_messages: i64,
     pub duplicate_rate: f64,
     pub top_duplicates: Vec<TopDuplicateOccurrence>,
+    #[serde(default)]
+    pub estimated: bool,
+    #[serde(default)]
+    pub untracked_messages: i64,
+    #[serde(default)]
+    pub fingerprint_limit: Option<i64>,
+    #[serde(default)]
+    pub samples_capped: bool,
 }
 
 impl From<kafkalyzer_core::kafka_types::DuplicateAnalysisResult> for DuplicateAnalysisResult {
@@ -465,6 +740,10 @@ impl From<kafkalyzer_core::kafka_types::DuplicateAnalysisResult> for DuplicateAn
                 .into_iter()
                 .map(TopDuplicateOccurrence::from)
                 .collect(),
+            estimated: r.estimated,
+            untracked_messages: r.untracked_messages,
+            fingerprint_limit: r.fingerprint_limit,
+            samples_capped: r.samples_capped,
         }
     }
 }
@@ -478,6 +757,10 @@ impl DuplicateAnalysisResult {
             duplicate_messages: self.duplicate_messages,
             duplicate_rate: self.duplicate_rate,
             top_duplicates: self.top_duplicates.iter().map(|d| d.to_domain()).collect(),
+            estimated: self.estimated,
+            untracked_messages: self.untracked_messages,
+            fingerprint_limit: self.fingerprint_limit,
+            samples_capped: self.samples_capped,
         }
     }
 }
@@ -489,6 +772,10 @@ pub struct TopicAnalysisOptions {
     pub value_filter: Option<FieldValueFilter>,
     #[serde(default)]
     pub duplicate_scope: Option<DuplicateDetectionScope>,
+    #[serde(default)]
+    pub scope: Option<AnalysisScope>,
+    #[serde(default)]
+    pub local_schemas: Option<crate::api::local_schema::TopicLocalSchemasDto>,
 }
 
 impl TopicAnalysisOptions {
@@ -498,6 +785,8 @@ impl TopicAnalysisOptions {
             sample_from_latest: self.sample_from_latest,
             value_filter: self.value_filter.as_ref().map(|f| f.to_domain()),
             duplicate_scope: self.duplicate_scope.map(|s| s.to_domain()),
+            scope: self.scope.as_ref().map(|s| s.to_domain()),
+            local_schemas: self.local_schemas.as_ref().map(|ls| ls.to_domain()),
         }
     }
 }
@@ -627,6 +916,16 @@ pub struct TopicAnalysisReport {
     pub value_filter_result: Option<ValueFilterResult>,
     #[serde(default)]
     pub duplicate_analysis_result: Option<DuplicateAnalysisResult>,
+    #[serde(default)]
+    pub cleanup_policy_unknown: bool,
+    #[serde(default)]
+    pub scan_scope: Option<AnalysisScopeSummary>,
+    #[serde(default)]
+    pub analysis_limits: Option<Vec<AnalysisLimit>>,
+    #[serde(default)]
+    pub tracked_field_count: Option<i64>,
+    #[serde(default)]
+    pub complete_until_ms: Option<i64>,
 }
 
 /// Message-size percentiles at the bridge boundary.
@@ -747,6 +1046,14 @@ impl TopicAnalysisReport {
                 .duplicate_analysis_result
                 .as_ref()
                 .map(|d| d.to_domain()),
+            cleanup_policy_unknown: self.cleanup_policy_unknown,
+            scan_scope: self.scan_scope.as_ref().map(|s| s.to_domain()),
+            analysis_limits: self
+                .analysis_limits
+                .as_ref()
+                .map(|ls| ls.iter().map(|l| l.to_domain()).collect()),
+            tracked_field_count: self.tracked_field_count,
+            complete_until_ms: self.complete_until_ms,
         }
     }
 }
@@ -801,6 +1108,13 @@ impl From<kafkalyzer_core::kafka_types::TopicAnalysisReport> for TopicAnalysisRe
             duplicate_analysis_result: r
                 .duplicate_analysis_result
                 .map(DuplicateAnalysisResult::from),
+            cleanup_policy_unknown: r.cleanup_policy_unknown,
+            scan_scope: r.scan_scope.map(AnalysisScopeSummary::from),
+            analysis_limits: r
+                .analysis_limits
+                .map(|ls| ls.into_iter().map(AnalysisLimit::from).collect()),
+            tracked_field_count: r.tracked_field_count,
+            complete_until_ms: r.complete_until_ms,
         }
     }
 }

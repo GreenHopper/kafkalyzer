@@ -1,8 +1,29 @@
-use crate::api::kafka_types::{ClusterProfile, TopicAnalysisOptions, TopicAnalysisProgress};
+use crate::api::kafka_types::{
+    AnalysisScope, AnalysisScopeEstimate, ClusterProfile, TopicAnalysisOptions,
+    TopicAnalysisProgress,
+};
 use crate::frb_generated::StreamSink;
 use anyhow::Result;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+
+pub async fn estimate_analysis_scope(
+    profile: ClusterProfile,
+    topic: String,
+    scope: AnalysisScope,
+) -> Result<AnalysisScopeEstimate> {
+    let domain_profile = profile.to_domain();
+    let domain_scope = scope.to_domain();
+    let estimate = tokio::task::spawn_blocking(move || {
+        kafkalyzer_kafka::kafka_analyzer::estimate_analysis_scope(
+            domain_profile,
+            topic,
+            domain_scope,
+        )
+    })
+    .await??;
+    Ok(AnalysisScopeEstimate::from(estimate))
+}
 
 pub async fn analyze_topic_content(
     profile: ClusterProfile,
@@ -19,6 +40,8 @@ pub async fn analyze_topic_content(
             sample_from_latest,
             value_filter: None,
             duplicate_scope: None,
+            scope: None,
+            local_schemas: None,
         },
         sink,
     )

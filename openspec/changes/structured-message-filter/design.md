@@ -150,9 +150,7 @@ Alternative: textual substitution in Dart before parsing — rejected, values co
 - `#[frb(sync)] format_filter_expression(expression: FilterNode) -> String`.
 - `collect_field_paths(payloads: Vec<String>, max_paths: u32) -> Vec<String>` (async, one call per suggestion refresh,
   sample capped at the last 200 loaded messages in Dart).
-- `FilterNode` is a recursive enum. Spike S1 confirms flutter_rust_bridge v2 codegen for `Vec<FilterNode>`/`Box`.
-  Fallback if it fails: `FilterNode` as a flat node list with child indices (`Vec<FilterNodeDto { kind, children:
-  Vec<u32>, condition: Option<…> }>`), converted in Dart. JSON strings over the bridge are not used.
+- `FilterNode` flat-node fallback active (Spike S1 result): `flutter_rust_bridge_codegen` rejected the recursive data enum with `InvalidDep: Please update version of freezed in your dev_dependencies. (version >=1.0.0)` (due to `freezed: 4.0.0-dev.3` in `pubspec.yaml`). D7 therefore uses the flat-node representation (`Vec<FilterNodeDto { kind: FilterNodeKind, children: Vec<u32>, condition: Option<FilterConditionDto> }>`), converted to/from the Dart AST. JSON strings over the bridge are not used.
 
 ### D8 Persistence
 
@@ -189,8 +187,7 @@ Alternative: textual substitution in Dart before parsing — rejected, values co
   print/re-parse; Spike S2 measures key-only, metadata-only and value-path expressions against the legacy Contains
   filter over 100k synthetic messages (1 KB and 50 KB JSON). Target: ≥ 50k msg/s evaluation for a value-path condition
   on 1 KB payloads in release mode on the dev machine, and key-only expressions not slower than legacy Contains with
-  scope Key. Numbers go into this file; if the target is missed, optimise before UI work (e.g. avoid `Value`
-  allocation via `serde_json::from_slice` on borrowed data).
+  scope Key. **Measured (real `filter_expr` evaluator, 2.6):** 1 KB (100k msgs): `filter_expr` = 3,218,531 msg/s (0.031s) vs `legacy_pretty_contains` = 1,179,150 msg/s (0.085s) — exceeds 50k msg/s target; 50 KB (100k msgs): `filter_expr` = 158,253 msg/s (0.632s) vs `legacy_pretty_contains` = 33,972 msg/s (2.944s).
 - [Schema field paths may not resolve in decoded JSON (e.g. Avro unions rendered differently)] → suggestions are hints;
   free input stays; 5.35 aligns schema paths.
 - [Downgrade: an older app version ignores `filterExpression` and would run a broader search] → documented in the

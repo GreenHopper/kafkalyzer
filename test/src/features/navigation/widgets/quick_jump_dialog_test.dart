@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/navigation/widgets/quick_jump_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:material_ui/material_ui.dart';
@@ -216,5 +218,58 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Kein Cluster ausgewählt'), findsOneWidget);
     });
+
+    testWidgets('opens a topic hidden by internal filter via openTopicByName', (
+      tester,
+    ) async {
+      await getIt.reset();
+      final fakeActive = _FakeQuickJumpActiveController(clusterA);
+      getIt.registerSingleton<ActiveConnectionController>(fakeActive);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: QuickJumpDialog(
+              availableClusters: const [clusterA],
+              currentCluster: clusterA,
+              initialInput:
+                  'kafkalyzer://open?cluster=prod-kafka&topic=__consumer_offsets',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('quick_jump_submit_button')));
+      await tester.pumpAndSettle();
+
+      expect(fakeActive.openedNames, equals(['__consumer_offsets']));
+    });
   });
+}
+
+class _FakeQuickJumpActiveController extends ChangeNotifier
+    implements ActiveConnectionController {
+  final ClusterProfile profile;
+  final List<String> openedNames = [];
+
+  _FakeQuickJumpActiveController(this.profile);
+
+  @override
+  ClusterProfile? get activeProfile => profile;
+
+  @override
+  Future<OpenTopicRecord?> openTopicByName(
+    ClusterProfile targetProfile,
+    String name, {
+    bool forceNew = false,
+  }) async {
+    openedNames.add(name);
+    return null;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

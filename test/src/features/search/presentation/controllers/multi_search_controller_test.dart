@@ -52,6 +52,8 @@ void main() {
             filterField,
             required filterType,
             required searchScope,
+            filterExpression,
+            filterVariables,
             fastTraceKey,
             startOffset,
             startTimestamp,
@@ -61,6 +63,7 @@ void main() {
             endTimestamp,
             required runForever,
             startFromTail,
+            localSchemas,
           }) => streamController.stream,
       bufferLimitProvider: () => configuredLimit,
     );

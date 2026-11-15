@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:material_ui/material_ui.dart';
@@ -6,9 +7,12 @@ import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
+import 'package:kafkalyzer/src/features/topic/domain/topic_list_query.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/navigation/widgets/quick_jump_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
+import 'package:kafkalyzer/src/features/schema/presentation/widgets/subject_browser_list.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
@@ -42,8 +46,11 @@ class ExplorerView extends WatchingStatefulWidget {
   State<ExplorerView> createState() => _ExplorerViewState();
 }
 
+enum _SidebarBrowseMode { topics, subjects }
+
 class _ExplorerViewState extends State<ExplorerView> {
   late TextEditingController _filterController;
+  _SidebarBrowseMode _browseMode = _SidebarBrowseMode.topics;
   final TextEditingController _clusterFilterController =
       TextEditingController();
   String _clusterFilterQuery = '';
@@ -296,21 +303,94 @@ class _ExplorerViewState extends State<ExplorerView> {
             ),
             if (activeController.activeProfile != null) ...[
               const Divider(height: 1),
-              _buildSidebarTopicsControls(
-                context,
-                l10n,
-                activeController,
-                topicController,
-                schemaController,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                child: Semantics(
+                  label: l10n.explorerModeSwitcherSemantics,
+                  child: SegmentedButton<_SidebarBrowseMode>(
+                    key: const Key('explorer_browse_mode_switcher'),
+                    showSelectedIcon: false,
+                    segments: [
+                      ButtonSegment<_SidebarBrowseMode>(
+                        value: _SidebarBrowseMode.topics,
+                        label: Text(l10n.explorerModeTopics),
+                        icon: const Icon(Icons.topic_outlined, size: 16),
+                      ),
+                      ButtonSegment<_SidebarBrowseMode>(
+                        value: _SidebarBrowseMode.subjects,
+                        label: Text(l10n.explorerModeSubjects),
+                        icon: const Icon(Icons.schema_outlined, size: 16),
+                      ),
+                    ],
+                    selected: {_browseMode},
+                    onSelectionChanged: (selection) {
+                      setState(() {
+                        _browseMode = selection.first;
+                      });
+                    },
+                  ),
+                ),
               ),
-              _buildSidebarTopicFilter(context, l10n, activeController),
-              _buildSidebarTopicList(
-                context,
-                activeController,
-                topicController,
-              ),
+              if (_browseMode == _SidebarBrowseMode.topics) ...[
+                _buildSidebarTopicsControls(
+                  context,
+                  l10n,
+                  activeController,
+                  topicController,
+                  schemaController,
+                ),
+                _buildSidebarTopicFilter(context, l10n, activeController),
+                _buildSidebarTopicList(
+                  context,
+                  activeController,
+                  topicController,
+                ),
+              ] else
+                SubjectBrowserList(
+                  profile: activeController.activeProfile!,
+                  schemaController: schemaController,
+                  topicNames:
+                      topicController
+                          .getTopics(activeController.activeProfile!)
+                          ?.map((t) => t.name)
+                          .toList() ??
+                      const [],
+                  onSelectSubject: (subject) {
+                    final activeProfile = activeController.activeProfile!;
+                    showDialog<void>(
+                      context: context,
+                      builder: (ctx) => SchemaViewerDialog(
+                        profile: activeProfile,
+                        initialSubject: subject,
+                        controller: schemaController,
+                        onNavigateToTopic: (topicName) {
+                          openTopicByNameWithFeedback(
+                            controller: activeController,
+                            profile: activeProfile,
+                            topicName: topicName,
+                            messenger: ScaffoldMessenger.maybeOf(context),
+                            l10n: l10n,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  onOpenClusterSettings: () {
+                    final activeProfile = activeController.activeProfile!;
+                    showDialog<void>(
+                      context: context,
+                      builder: (ctx) => ClusterConfigDialog(
+                        cluster: activeProfile,
+                        existingNames: clusterController.clusters
+                            .map((c) => c.name)
+                            .toList(),
+                      ),
+                    );
+                  },
+                ),
             ],
-            if (activeController.activeProfile != null &&
+            if (_browseMode == _SidebarBrowseMode.topics &&
+                activeController.activeProfile != null &&
                 schemaController.errorFor(activeController.activeProfile!) !=
                     null)
               ErrorBanner(
@@ -567,49 +647,99 @@ class _ExplorerViewState extends State<ExplorerView> {
     TopicController topicController,
     SchemaController schemaController,
   ) {
+    final activeProfile = activeController.activeProfile!;
+    final view = activeController.topicListView;
+    final totalCount = topicController.getTopics(activeProfile)?.length ?? 0;
+    final fetchedAt = topicController.fetchedAt(activeProfile);
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              "${l10n.topics} (${activeController.topics.length}/${topicController.getTopics(activeController.activeProfile!)?.length ?? 0})",
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${l10n.topics} (${view.visibleTopics.length}/$totalCount)",
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    if (fetchedAt != null)
+                      _TopicListAgeLabel(fetchedAt: fetchedAt),
+                  ],
+                ),
               ),
-            ),
-          ),
-          IconButton(
-            key: const Key('explorer_quick_jump_button'),
-            icon: const Icon(Icons.bolt, size: 16),
-            tooltip: l10n.quickJumpTitle,
-            padding: EdgeInsets.zero,
-            onPressed: () => _showQuickJumpDialog(context),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.refresh, size: 16),
-            tooltip: l10n.refreshTooltip,
-            padding: EdgeInsets.zero,
-            onPressed:
-                activeController.isConnecting ||
-                    topicController.isLoading(
-                      activeController.activeProfile!,
-                    ) ||
-                    schemaController.isLoading(activeController.activeProfile!)
-                ? null
-                : () {
-                    topicController.fetchTopics(
-                      activeController.activeProfile!,
-                      force: true,
-                    );
-                    schemaController.fetchSchemas(
-                      activeController.activeProfile!,
-                      force: true,
-                    );
-                  },
+              PopupMenuButton<TopicSortOrder>(
+                key: const Key('topic_sort_menu_button'),
+                tooltip: l10n.topicListSortTooltip,
+                icon: const Icon(Icons.sort, size: 16),
+                padding: EdgeInsets.zero,
+                initialValue: activeController.topicSortOrder,
+                onSelected: activeController.setTopicSortOrder,
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: TopicSortOrder.name,
+                    child: Text(l10n.topicListSortName),
+                  ),
+                  PopupMenuItem(
+                    value: TopicSortOrder.partitions,
+                    child: Text(l10n.topicListSortPartitions),
+                  ),
+                  PopupMenuItem(
+                    value: TopicSortOrder.health,
+                    child: Text(l10n.topicListSortHealth),
+                  ),
+                ],
+              ),
+              IconButton(
+                key: const Key('topic_group_by_prefix_button'),
+                icon: Icon(
+                  activeController.groupTopicsByPrefix
+                      ? Icons.account_tree
+                      : Icons.account_tree_outlined,
+                  size: 16,
+                  color: activeController.groupTopicsByPrefix
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                tooltip: l10n.topicListGroupByPrefixTooltip,
+                padding: EdgeInsets.zero,
+                onPressed: activeController.toggleGroupByPrefix,
+              ),
+              IconButton(
+                key: const Key('explorer_quick_jump_button'),
+                icon: const Icon(Icons.bolt, size: 16),
+                tooltip: l10n.quickJumpTitle,
+                padding: EdgeInsets.zero,
+                onPressed: () => _showQuickJumpDialog(context),
+              ),
+              IconButton(
+                key: const Key('explorer_refresh_topics_button'),
+                icon: const Icon(Icons.refresh, size: 16),
+                tooltip: l10n.refreshTooltip,
+                padding: EdgeInsets.zero,
+                onPressed:
+                    activeController.isConnecting ||
+                        topicController.isLoading(activeProfile)
+                    ? null
+                    : () {
+                        topicController.fetchTopics(activeProfile, force: true);
+                        if (!schemaController.isLoading(activeProfile)) {
+                          schemaController.fetchSchemas(
+                            activeProfile,
+                            force: true,
+                          );
+                        }
+                      },
+              ),
+            ],
           ),
         ],
       ),
@@ -621,6 +751,22 @@ class _ExplorerViewState extends State<ExplorerView> {
     AppLocalizations l10n,
     ActiveConnectionController activeController,
   ) {
+    final view = activeController.topicListView;
+    if (_filterController.text != activeController.topicFilter) {
+      _filterController.value = TextEditingValue(
+        text: activeController.topicFilter,
+        selection: TextSelection.collapsed(
+          offset: activeController.topicFilter.length,
+        ),
+      );
+    }
+
+    final modeLabel = switch (activeController.topicFilterMode) {
+      TopicFilterMode.substring => l10n.topicListFilterModeSubstring,
+      TopicFilterMode.glob => l10n.topicListFilterModeGlob,
+      TopicFilterMode.regex => l10n.topicListFilterModeRegex,
+    };
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -644,14 +790,90 @@ class _ExplorerViewState extends State<ExplorerView> {
                     activeController.toggleShowStreamTopics(val),
                 visualDensity: VisualDensity.compact,
               ),
+              if (view.totalHidden > 0)
+                Tooltip(
+                  message: l10n.topicListHiddenTooltip(
+                    view.hiddenByInternal,
+                    view.hiddenByStream,
+                    view.hiddenByText,
+                  ),
+                  child: ActionChip(
+                    key: const Key('topic_hidden_count_chip'),
+                    avatar: const Icon(Icons.visibility_off_outlined, size: 14),
+                    label: Text(
+                      '${l10n.topicListHiddenCount(view.totalHidden)} · ${l10n.topicListShowAll}',
+                    ),
+                    onPressed: () {
+                      _filterController.clear();
+                      activeController.showAllTopics();
+                    },
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              if (activeController.unhealthyTopicsOnly)
+                InputChip(
+                  key: const Key('topic_unhealthy_only_chip'),
+                  avatar: Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  label: Text(
+                    l10n.topicListUnhealthyOnlyChip(
+                      activeController.topics.length,
+                    ),
+                  ),
+                  onDeleted: activeController.clearUnhealthyTopicsOnly,
+                  visualDensity: VisualDensity.compact,
+                ),
             ],
           ),
           const SizedBox(height: 8),
           TextField(
+            key: const Key('topic_filter_text_field'),
             controller: _filterController,
             decoration: InputDecoration(
               hintText: l10n.filterTopics,
-              prefixIcon: const Icon(Icons.search, size: 20),
+              errorText: view.patternError != null
+                  ? l10n.topicListInvalidPattern
+                  : null,
+              prefixIcon: PopupMenuButton<TopicFilterMode>(
+                key: const Key('topic_filter_mode_button'),
+                tooltip: l10n.topicListFilterModeTooltip,
+                initialValue: activeController.topicFilterMode,
+                onSelected: activeController.setTopicFilterMode,
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: TopicFilterMode.substring,
+                    child: Text(l10n.topicListFilterModeSubstring),
+                  ),
+                  PopupMenuItem(
+                    value: TopicFilterMode.glob,
+                    child: Text(l10n.topicListFilterModeGlob),
+                  ),
+                  PopupMenuItem(
+                    value: TopicFilterMode.regex,
+                    child: Text(l10n.topicListFilterModeRegex),
+                  ),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.search, size: 18),
+                      const SizedBox(width: 4),
+                      Text(
+                        modeLabel,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               suffixIcon: _filterController.text.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 16),
@@ -691,14 +913,18 @@ class _ExplorerViewState extends State<ExplorerView> {
     TopicController topicController,
   ) {
     final activeProfile = activeController.activeProfile!;
-    if (activeController.isConnecting ||
-        topicController.isLoading(activeProfile)) {
+    final hasCached = topicController.hasCachedTopics(activeProfile);
+    final isLoading =
+        activeController.isConnecting ||
+        topicController.isLoading(activeProfile);
+
+    if (isLoading && !hasCached) {
       return const Expanded(child: Center(child: CircularProgressIndicator()));
     }
 
     final topicError = topicController.errorFor(activeProfile);
     final l10n = AppLocalizations.of(context)!;
-    if (topicError != null && activeController.topics.isEmpty) {
+    if (topicError != null && !hasCached) {
       return Expanded(
         child: Center(
           child: Padding(
@@ -714,54 +940,229 @@ class _ExplorerViewState extends State<ExplorerView> {
       );
     }
 
-    final allTopicNames = activeController.topics.map((t) => t.name).toList();
-    final failureGroups = DlqTopicDetector.groupFailureTopicsByBase(
-      allTopicNames,
-    );
+    final view = activeController.topicListView;
+    final rows = view.rows;
+    final failureGroups = view.failureGroups;
+    final theme = Theme.of(context);
 
     return Expanded(
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        itemCount: activeController.topics.length,
-        itemBuilder: (context, index) {
-          final topic = activeController.topics[index];
-          final isSelected = activeController.openTopics.any(
-            (t) =>
-                t.topic.name == topic.name &&
-                t.profile.name == activeController.activeProfile?.name,
-          );
-          return TopicListItem(
-            topic: topic,
-            isSelected: isSelected,
-            highlightQuery: activeController.topicFilter,
-            associatedFailureTopics: failureGroups[topic.name],
-            onSelectFailureTopic: (childTopicName) {
-              final match = activeController.topics
-                  .where((t) => t.name == childTopicName)
-                  .firstOrNull;
-              if (match != null) {
-                activeController.setActiveTopic(
-                  match,
-                  activeController.activeProfile,
-                );
-              }
-            },
-            onTap: () => activeController.setActiveTopic(
-              topic,
-              activeController.activeProfile,
+      child: Column(
+        children: [
+          if (isLoading && hasCached)
+            const LinearProgressIndicator(
+              key: Key('topic_list_refresh_progress'),
+              minHeight: 2,
             ),
-            onDoubleTap: () => activeController.streamTopicWithDefaults(
-              topic,
-              activeController.activeProfile,
+          if (topicError != null && hasCached)
+            Container(
+              key: const Key('topic_list_refresh_error_notice'),
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 16,
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.topicListRefreshFailedNotice(topicError),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        topicController.fetchTopics(activeProfile, force: true),
+                    child: Text(l10n.retry),
+                  ),
+                ],
+              ),
             ),
-            onOpenInNewTab: () => activeController.openTopic(
-              topic: topic,
-              profile: activeController.activeProfile,
-              forceNew: true,
+          if (activeController.topicPreferencesUnreadable ||
+              activeController.topicPreferencesWriteBlocked)
+            Container(
+              key: const Key('topic_list_prefs_notice'),
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      activeController.topicPreferencesWriteBlocked
+                          ? l10n.topicListPrefsWriteBlockedNotice
+                          : l10n.topicListPrefsUnreadableNotice,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 14),
+                    tooltip: l10n.close,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    onPressed: activeController.dismissTopicPreferencesNotice,
+                  ),
+                ],
+              ),
             ),
-            clusterProfile: activeController.activeProfile,
-          );
-        },
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              itemCount: rows.length,
+              itemBuilder: (context, index) {
+                final row = rows[index];
+                switch (row) {
+                  case FavouritesHeaderRow():
+                    return Padding(
+                      key: const Key('topic_favourites_section_header'),
+                      padding: const EdgeInsets.fromLTRB(10, 6, 10, 2),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.star,
+                            size: 14,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${l10n.topicListFavouritesSection} (${row.count})',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  case TopicGroupHeaderRow():
+                    return InkWell(
+                      key: Key('topic_group_header_${row.prefix}'),
+                      onTap: () =>
+                          activeController.toggleGroupCollapsed(row.prefix),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                        child: Row(
+                          children: [
+                            Icon(
+                              row.isCollapsed
+                                  ? Icons.chevron_right
+                                  : Icons.expand_more,
+                              size: 16,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                row.prefix,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '(${row.count})',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.outline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  case TopicItemRow():
+                    final topic =
+                        row.topic ??
+                        TopicMetadata(
+                          name: row.name,
+                          partitionCount: -1,
+                          replicationFactor: -1,
+                        );
+                    final isSelected = activeController.openTopics.any(
+                      (t) =>
+                          t.topic.name == row.name &&
+                          t.profile.name == activeProfile.name,
+                    );
+                    return TopicListItem(
+                      topic: topic,
+                      isSelected: isSelected,
+                      highlightQuery: activeController.topicFilter,
+                      highlightPattern: view.highlightPattern,
+                      isFavourite: row.isFavourite,
+                      isMissingFavourite: row.isMissingFavourite,
+                      onToggleFavourite: () =>
+                          activeController.toggleFavourite(row.name),
+                      associatedFailureTopics: row.isMissingFavourite
+                          ? null
+                          : failureGroups[row.name],
+                      onSelectFailureTopic: (childTopicName) {
+                        openTopicByNameWithFeedback(
+                          controller: activeController,
+                          profile: activeProfile,
+                          topicName: childTopicName,
+                          messenger: ScaffoldMessenger.maybeOf(context),
+                          l10n: l10n,
+                        );
+                      },
+                      onTap: row.isMissingFavourite
+                          ? () => openTopicByNameWithFeedback(
+                              controller: activeController,
+                              profile: activeProfile,
+                              topicName: row.name,
+                              messenger: ScaffoldMessenger.maybeOf(context),
+                              l10n: l10n,
+                            )
+                          : () => activeController.setActiveTopic(
+                              topic,
+                              activeProfile,
+                            ),
+                      onDoubleTap: row.isMissingFavourite
+                          ? null
+                          : () => activeController.streamTopicWithDefaults(
+                              topic,
+                              activeProfile,
+                            ),
+                      onOpenInNewTab: row.isMissingFavourite
+                          ? null
+                          : () => activeController.openTopic(
+                              topic: topic,
+                              profile: activeProfile,
+                              forceNew: true,
+                            ),
+                      clusterProfile: activeProfile,
+                    );
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -836,65 +1237,45 @@ class _ExplorerViewState extends State<ExplorerView> {
               .firstWhere((c) => c?.name == clusterName, orElse: () => null);
           if (targetCluster == null) return;
 
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          final l10n = AppLocalizations.of(context);
           if (activeController.activeProfile?.name != clusterName) {
             await activeController.connect(targetCluster);
             schemaController.fetchSchemas(targetCluster);
           }
 
-          final allTopics = topicController.getTopics(targetCluster);
-          final metadata = allTopics?.cast<TopicMetadata?>().firstWhere(
-            (t) => t?.name == topicName,
-            orElse: () => null,
+          if (!mounted) return;
+          await openTopicByNameWithFeedback(
+            controller: activeController,
+            profile: targetCluster,
+            topicName: topicName,
+            messenger: messenger,
+            l10n: l10n,
           );
-
-          if (metadata != null) {
-            activeController.openTopic(topic: metadata, profile: targetCluster);
-          } else {
-            activeController.openTopic(
-              topic: TopicMetadata(
-                name: topicName,
-                partitionCount: 0,
-                replicationFactor: 1,
-                cleanupPolicy: 'delete',
-                retentionMs: '0',
-              ),
-              profile: targetCluster,
-            );
-          }
         },
       );
     }
 
     if (activeController.openTopics.isEmpty) {
       final activeProfile = activeController.activeProfile!;
-      final allTopics = topicController.getTopics(activeProfile) ?? [];
+      final allTopics = topicController.getTopics(activeProfile);
       final isLoading =
           activeController.isConnecting ||
           topicController.isLoading(activeProfile);
 
       return ClusterOverviewView(
         profile: activeProfile,
-        topicCount: allTopics.length,
+        topics: allTopics,
         isLoading: isLoading,
+        onShowUnhealthyTopics: activeController.showUnhealthyTopicsOnly,
         onSelectTopic: (topicName) {
-          final metadata = allTopics.cast<TopicMetadata?>().firstWhere(
-            (t) => t?.name == topicName,
-            orElse: () => null,
+          openTopicByNameWithFeedback(
+            controller: activeController,
+            profile: activeProfile,
+            topicName: topicName,
+            messenger: ScaffoldMessenger.maybeOf(context),
+            l10n: AppLocalizations.of(context),
           );
-          if (metadata != null) {
-            activeController.openTopic(topic: metadata, profile: activeProfile);
-          } else {
-            activeController.openTopic(
-              topic: TopicMetadata(
-                name: topicName,
-                partitionCount: 0,
-                replicationFactor: 1,
-                cleanupPolicy: 'delete',
-                retentionMs: '0',
-              ),
-              profile: activeProfile,
-            );
-          }
         },
       );
     }
@@ -1277,6 +1658,52 @@ class _ExplorerViewState extends State<ExplorerView> {
             profile: record.profile,
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _TopicListAgeLabel extends StatefulWidget {
+  final DateTime fetchedAt;
+
+  const _TopicListAgeLabel({required this.fetchedAt});
+
+  @override
+  State<_TopicListAgeLabel> createState() => _TopicListAgeLabelState();
+}
+
+class _TopicListAgeLabelState extends State<_TopicListAgeLabel> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final diff = DateTime.now().difference(widget.fetchedAt);
+    final label = diff.inMinutes < 1
+        ? l10n.topicListUpdatedJustNow
+        : diff.inMinutes < 60
+        ? l10n.topicListUpdatedMinutesAgo(diff.inMinutes)
+        : l10n.topicListUpdatedHoursAgo(diff.inHours);
+
+    return Text(
+      label,
+      key: const Key('topic_list_age_label'),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: Theme.of(context).colorScheme.outline,
       ),
     );
   }

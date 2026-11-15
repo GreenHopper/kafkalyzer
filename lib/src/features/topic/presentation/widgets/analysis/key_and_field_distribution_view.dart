@@ -9,6 +9,8 @@ class KeyAndFieldDistributionView extends StatelessWidget {
   final List<TypeOccurrence> contentTypes;
   final List<FieldOccurrence> fieldFrequencies;
   final int? totalMessages;
+  final int? trackedFieldCount;
+  final bool trackedFieldsLimitReached;
   final ValueChanged<FieldValueFilter>? onRescanWithFilter;
   final bool isImported;
 
@@ -18,6 +20,8 @@ class KeyAndFieldDistributionView extends StatelessWidget {
     required this.contentTypes,
     required this.fieldFrequencies,
     this.totalMessages,
+    this.trackedFieldCount,
+    this.trackedFieldsLimitReached = false,
     this.onRescanWithFilter,
     this.isImported = false,
   });
@@ -49,6 +53,46 @@ class KeyAndFieldDistributionView extends StatelessWidget {
               _ContentTypesCard(contentTypes: contentTypes),
             ],
             const SizedBox(height: 16),
+            if (trackedFieldCount != null || trackedFieldsLimitReached) ...[
+              Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  final numFmt = NumberFormat.decimalPattern();
+                  final parts = <String>[
+                    if (trackedFieldCount != null)
+                      l10n?.fieldTrackedCountSummary(
+                            numFmt.format(fieldFrequencies.length),
+                            numFmt.format(trackedFieldCount!),
+                          ) ??
+                          '${numFmt.format(fieldFrequencies.length)} of ${numFmt.format(trackedFieldCount!)} fields',
+                    if (trackedFieldsLimitReached)
+                      l10n?.fieldFurtherNotTracked ??
+                          'Further fields not tracked',
+                  ];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          trackedFieldsLimitReached
+                              ? Icons.warning_amber_rounded
+                              : Icons.info_outline,
+                          size: 16,
+                          color: trackedFieldsLimitReached
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          parts.join(' · '),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
             FieldValueExplorer(
               fieldFrequencies: fieldFrequencies,
               totalMessages: totalMessages,

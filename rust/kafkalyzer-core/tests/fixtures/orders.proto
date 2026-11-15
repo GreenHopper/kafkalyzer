@@ -1,0 +1,21 @@
+syntax = "proto3";
+package acme.orders;
+
+import "common.proto";
+
+message Order {
+  message Line {
+    string sku = 1;
+    acme.common.Money price = 2;
+  }
+
+  string id = 1;
+  acme.common.Money total = 2;
+  map<string, int64> attrs = 3;
+  oneof extra {
+    string note = 4;
+    int32 priority = 5;
+  }
+  repeated Line lines = 6;
+  acme.common.CurrencyCode currency = 7;
+}

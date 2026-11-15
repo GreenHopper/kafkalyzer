@@ -389,8 +389,8 @@ pub(crate) async fn probe_schema_registry(
         req = req.basic_auth(user, profile.schema_registry_password.as_deref());
     }
 
-    match req.send().await {
-        // allow_read_only_exception: Schema Registry GET
+    let send_res = req.send().await; // allow_read_only_exception: Schema Registry GET
+    match send_res {
         Ok(resp) => {
             let status = resp.status();
             if status.is_success() {

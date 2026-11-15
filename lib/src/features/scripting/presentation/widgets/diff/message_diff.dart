@@ -1,107 +1,101 @@
-import 'dart:convert';
-import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:diff_match_patch/diff_match_patch.dart';
-import 'package:json_diff/json_diff.dart';
 import 'package:flutter/foundation.dart';
+import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_batcher.dart';
+import 'package:kafkalyzer/src/rust/api/json_diff.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 
 class MessageDiff {
+  static const int guiMaxEntries = 2000;
+  static const int _textDiffIsolateThreshold = 30000;
+
   final KafkaMessage? older;
   final KafkaMessage newer;
   final bool isJson;
-  final DiffNode? jsonDiffToPrevious;
+  final JsonDiffResult? jsonDiffResult;
   final List<Diff> textDiffToPrevious;
+
+  List<JsonDiffEntry> get entries => jsonDiffResult?.entries ?? const [];
+  int get hiddenCount => jsonDiffResult?.hidden ?? 0;
+  int get totalCount => jsonDiffResult?.total ?? 0;
+  bool get isTruncated => jsonDiffResult?.truncated ?? false;
 
   MessageDiff._({
     required this.older,
     required this.newer,
     required this.isJson,
-    required this.jsonDiffToPrevious,
+    required this.jsonDiffResult,
     required this.textDiffToPrevious,
   });
 
-  /// Computes the diff. Uses an isolate only for large payloads to prevent
-  /// both UI thread blocking *and* isolate-spawn overhead flooding during rapid scrolling.
   static Future<MessageDiff> computeDiff(
     KafkaMessage? older,
-    KafkaMessage newer,
-  ) async {
+    KafkaMessage newer, {
+    List<String> ignorePaths = const [],
+    JsonDiffBatcher? batcher,
+    int? maxEntries = guiMaxEntries,
+  }) async {
     final payloadOlder = older?.payload;
     final payloadNewer = newer.payload;
 
-    final combinedLength =
-        (payloadOlder?.length ?? 0) + (payloadNewer?.length ?? 0);
+    final oldJson = (payloadOlder == null || payloadOlder.isEmpty)
+        ? '{}'
+        : payloadOlder;
+    final newJson = (payloadNewer == null || payloadNewer.isEmpty)
+        ? '{}'
+        : payloadNewer;
 
-    // Spawning an isolate takes a few milliseconds of UI thread time. Doing this
-    // concurrently for 20-50 list items during a heavy scroll completely locks the app.
-    // For smaller payloads (< 30KB), synchronous calculation is typically faster than the isolate spawn.
-    if (combinedLength < 30000) {
-      return _computeIsolate(
-        _DiffArgs(payloadOlder, payloadNewer, older, newer),
+    final resolvedBatcher =
+        batcher ??
+        (getIt.isRegistered<JsonDiffBatcher>()
+            ? getIt<JsonDiffBatcher>()
+            : JsonDiffBatcher());
+
+    final result = await resolvedBatcher.enqueue(
+      JsonDiffRequest(
+        oldJson: oldJson,
+        newJson: newJson,
+        ignorePaths: ignorePaths,
+      ),
+      maxEntries: maxEntries,
+    );
+
+    if (result.invalidSide == null) {
+      return MessageDiff._(
+        older: older,
+        newer: newer,
+        isJson: true,
+        jsonDiffResult: result,
+        textDiffToPrevious: const [],
       );
     }
 
-    return compute(
-      _computeIsolate,
-      _DiffArgs(payloadOlder, payloadNewer, older, newer),
-    );
-  }
+    final oldText = payloadOlder ?? '';
+    final newText = payloadNewer ?? '';
+    final combinedLength = oldText.length + newText.length;
 
-  static MessageDiff _computeIsolate(_DiffArgs args) {
-    bool isJsonOlder = true;
-    bool isJsonNewer = true;
-    Object? oldJson;
-    Object? newJson;
-
-    // Decode older
-    if (args.payloadOlder != null && args.payloadOlder!.isNotEmpty) {
-      try {
-        oldJson = jsonDecode(args.payloadOlder!);
-      } catch (_) {
-        isJsonOlder = false;
-      }
-    } else {
-      oldJson = {};
-    }
-
-    // Decode newer
-    if (args.payloadNewer != null && args.payloadNewer!.isNotEmpty) {
-      try {
-        newJson = jsonDecode(args.payloadNewer!);
-      } catch (_) {
-        isJsonNewer = false;
-      }
-    } else {
-      newJson = {};
-    }
-
-    final isJson = isJsonOlder && isJsonNewer;
-    DiffNode? jsonDiff;
-    List<Diff> textDiff = [];
-
-    if (isJson) {
-      var differ = JsonDiffer.fromJson(oldJson ?? {}, newJson ?? {});
-      jsonDiff = differ.diff();
-    } else {
-      String oldText = args.payloadOlder ?? "";
-      String newText = args.payloadNewer ?? "";
-      DiffMatchPatch dmp = DiffMatchPatch();
-      textDiff = dmp.diff(oldText, newText);
-    }
+    final textDiff = combinedLength < _textDiffIsolateThreshold
+        ? _computeTextDiff(_TextDiffArgs(oldText, newText))
+        : await compute(_computeTextDiff, _TextDiffArgs(oldText, newText));
 
     return MessageDiff._(
-      older: args.older,
-      newer: args.newer,
-      isJson: isJson,
-      jsonDiffToPrevious: jsonDiff,
+      older: older,
+      newer: newer,
+      isJson: false,
+      jsonDiffResult: null,
       textDiffToPrevious: textDiff,
     );
   }
+
+  static List<Diff> _computeTextDiff(_TextDiffArgs args) {
+    final dmp = DiffMatchPatch();
+    return dmp.diff(args.oldText, args.newText);
+  }
 }
 
-class _DiffArgs {
-  final String? payloadOlder;
-  final String? payloadNewer;
-  final KafkaMessage? older;
-  final KafkaMessage newer;
-  _DiffArgs(this.payloadOlder, this.payloadNewer, this.older, this.newer);
+class _TextDiffArgs {
+  final String oldText;
+  final String newText;
+
+  _TextDiffArgs(this.oldText, this.newText);
 }

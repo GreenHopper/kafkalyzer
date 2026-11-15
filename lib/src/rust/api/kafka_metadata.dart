@@ -7,7 +7,8 @@ import '../frb_generated.dart';
 import 'kafka_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `from_domain`, `validate_skew_threshold`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`, `from`
 
 Future<TlsProbeResult> probeTlsVerification({
   required ClusterProfile profile,
@@ -24,6 +25,22 @@ Future<List<TopicMetadata>> fetchTopics({required ClusterProfile profile}) =>
     KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchTopics(
       profile: profile,
     );
+
+Future<TopicMetadata> fetchTopicMetadata({
+  required ClusterProfile profile,
+  required String topic,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchTopicMetadata(
+  profile: profile,
+  topic: topic,
+);
+
+Future<List<TopicConfigResult>> describeTopicConfigs({
+  required ClusterProfile profile,
+  required List<String> topics,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataDescribeTopicConfigs(
+  profile: profile,
+  topics: topics,
+);
 
 Future<TopicPartitionDetails> fetchTopicPartitions({
   required ClusterProfile profile,
@@ -62,6 +79,30 @@ Future<List<ConsumerGroupLag>> fetchConsumerGroupLags({
       groupIds: groupIds,
     );
 
+Future<PartitionOffsetDistribution> fetchPartitionOffsets({
+  required ClusterProfile profile,
+  required String topic,
+  int? skewThresholdPercent,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchPartitionOffsets(
+  profile: profile,
+  topic: topic,
+  skewThresholdPercent: skewThresholdPercent,
+);
+
+Future<ClusterOverview> fetchClusterOverview({
+  required ClusterProfile profile,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchClusterOverview(
+  profile: profile,
+);
+
+Future<TopicTimeRange> fetchTopicTimeRange({
+  required ClusterProfile profile,
+  required String topic,
+}) => KafkalyzerRustLib.instance.api.crateApiKafkaMetadataFetchTopicTimeRange(
+  profile: profile,
+  topic: topic,
+);
+
 class BrokerEndpoint {
   final int id;
   final String host;
@@ -85,6 +126,136 @@ class BrokerEndpoint {
           host == other.host &&
           port == other.port;
 }
+
+class ClusterOverview {
+  final List<BrokerEndpoint> brokers;
+  final String? clusterId;
+  final int? controllerId;
+
+  const ClusterOverview({
+    required this.brokers,
+    this.clusterId,
+    this.controllerId,
+  });
+
+  @override
+  int get hashCode =>
+      brokers.hashCode ^ clusterId.hashCode ^ controllerId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ClusterOverview &&
+          runtimeType == other.runtimeType &&
+          brokers == other.brokers &&
+          clusterId == other.clusterId &&
+          controllerId == other.controllerId;
+}
+
+enum OffsetSkewStatus {
+  notRequested,
+  singlePartition,
+  incomplete,
+  empty,
+  balanced,
+  skewed,
+}
+
+class PartitionOffsetDistribution {
+  final String topic;
+  final PlatformInt64 readAtMs;
+  final List<PartitionOffsetRow> partitions;
+  final PlatformInt64? totalSpan;
+  final PlatformInt64 knownSpan;
+  final bool complete;
+  final OffsetSkewStatus skewStatus;
+  final int? skewThresholdPercent;
+
+  const PartitionOffsetDistribution({
+    required this.topic,
+    required this.readAtMs,
+    required this.partitions,
+    this.totalSpan,
+    required this.knownSpan,
+    required this.complete,
+    required this.skewStatus,
+    this.skewThresholdPercent,
+  });
+
+  @override
+  int get hashCode =>
+      topic.hashCode ^
+      readAtMs.hashCode ^
+      partitions.hashCode ^
+      totalSpan.hashCode ^
+      knownSpan.hashCode ^
+      complete.hashCode ^
+      skewStatus.hashCode ^
+      skewThresholdPercent.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PartitionOffsetDistribution &&
+          runtimeType == other.runtimeType &&
+          topic == other.topic &&
+          readAtMs == other.readAtMs &&
+          partitions == other.partitions &&
+          totalSpan == other.totalSpan &&
+          knownSpan == other.knownSpan &&
+          complete == other.complete &&
+          skewStatus == other.skewStatus &&
+          skewThresholdPercent == other.skewThresholdPercent;
+}
+
+class PartitionOffsetRow {
+  final int partition;
+  final PartitionOffsetState state;
+  final String? error;
+  final PlatformInt64? low;
+  final PlatformInt64? high;
+  final PlatformInt64? span;
+  final double? sharePercent;
+  final bool skewed;
+
+  const PartitionOffsetRow({
+    required this.partition,
+    required this.state,
+    this.error,
+    this.low,
+    this.high,
+    this.span,
+    this.sharePercent,
+    required this.skewed,
+  });
+
+  @override
+  int get hashCode =>
+      partition.hashCode ^
+      state.hashCode ^
+      error.hashCode ^
+      low.hashCode ^
+      high.hashCode ^
+      span.hashCode ^
+      sharePercent.hashCode ^
+      skewed.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PartitionOffsetRow &&
+          runtimeType == other.runtimeType &&
+          partition == other.partition &&
+          state == other.state &&
+          error == other.error &&
+          low == other.low &&
+          high == other.high &&
+          span == other.span &&
+          sharePercent == other.sharePercent &&
+          skewed == other.skewed;
+}
+
+enum PartitionOffsetState { known, notReadable, failed, timedOut }
 
 /// One partition of one topic, with the health flags already decided in Rust so
 /// the Dart side never has to re-implement the classification.
@@ -127,6 +298,108 @@ class PartitionRow {
           leaderless == other.leaderless;
 }
 
+class PartitionTimeProbe {
+  final int partition;
+  final PartitionTimeProbeOutcome oldest;
+  final PartitionTimeProbeOutcome newest;
+
+  const PartitionTimeProbe({
+    required this.partition,
+    required this.oldest,
+    required this.newest,
+  });
+
+  @override
+  int get hashCode => partition.hashCode ^ oldest.hashCode ^ newest.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PartitionTimeProbe &&
+          runtimeType == other.runtimeType &&
+          partition == other.partition &&
+          oldest == other.oldest &&
+          newest == other.newest;
+}
+
+class PartitionTimeProbeOutcome {
+  final ProbeOutcomeKind kind;
+  final PlatformInt64? offset;
+  final PlatformInt64? timestampMs;
+  final TimeRangeTimestampKind? timestampType;
+  final String? reason;
+
+  const PartitionTimeProbeOutcome({
+    required this.kind,
+    this.offset,
+    this.timestampMs,
+    this.timestampType,
+    this.reason,
+  });
+
+  @override
+  int get hashCode =>
+      kind.hashCode ^
+      offset.hashCode ^
+      timestampMs.hashCode ^
+      timestampType.hashCode ^
+      reason.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PartitionTimeProbeOutcome &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          offset == other.offset &&
+          timestampMs == other.timestampMs &&
+          timestampType == other.timestampType &&
+          reason == other.reason;
+}
+
+class PartitionTimestamp {
+  final int partition;
+  final PlatformInt64 offset;
+  final PlatformInt64 timestampMs;
+  final TimeRangeTimestampKind timestampType;
+
+  const PartitionTimestamp({
+    required this.partition,
+    required this.offset,
+    required this.timestampMs,
+    required this.timestampType,
+  });
+
+  @override
+  int get hashCode =>
+      partition.hashCode ^
+      offset.hashCode ^
+      timestampMs.hashCode ^
+      timestampType.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PartitionTimestamp &&
+          runtimeType == other.runtimeType &&
+          partition == other.partition &&
+          offset == other.offset &&
+          timestampMs == other.timestampMs &&
+          timestampType == other.timestampType;
+}
+
+enum ProbeOutcomeKind {
+  found,
+  empty,
+  notFoundInWindow,
+  noTimestamp,
+  timedOut,
+  unreadable,
+  failed,
+}
+
+enum TimeRangeTimestampKind { createTime, logAppendTime }
+
 enum TlsProbeOutcome { noTls, verified, certificateRejected, inconclusive }
 
 class TlsProbeResult {
@@ -147,6 +420,84 @@ class TlsProbeResult {
           message == other.message;
 }
 
+class TopicConfigEntry {
+  final String name;
+  final String? value;
+  final TopicConfigSource source;
+  final bool isDefault;
+  final bool isSensitive;
+  final bool isReadOnly;
+
+  const TopicConfigEntry({
+    required this.name,
+    this.value,
+    required this.source,
+    required this.isDefault,
+    required this.isSensitive,
+    required this.isReadOnly,
+  });
+
+  @override
+  int get hashCode =>
+      name.hashCode ^
+      value.hashCode ^
+      source.hashCode ^
+      isDefault.hashCode ^
+      isSensitive.hashCode ^
+      isReadOnly.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicConfigEntry &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          value == other.value &&
+          source == other.source &&
+          isDefault == other.isDefault &&
+          isSensitive == other.isSensitive &&
+          isReadOnly == other.isReadOnly;
+}
+
+class TopicConfigResult {
+  final String topic;
+  final TopicConfigStatus status;
+  final String? message;
+  final List<TopicConfigEntry> entries;
+
+  const TopicConfigResult({
+    required this.topic,
+    required this.status,
+    this.message,
+    required this.entries,
+  });
+
+  @override
+  int get hashCode =>
+      topic.hashCode ^ status.hashCode ^ message.hashCode ^ entries.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicConfigResult &&
+          runtimeType == other.runtimeType &&
+          topic == other.topic &&
+          status == other.status &&
+          message == other.message &&
+          entries == other.entries;
+}
+
+enum TopicConfigSource {
+  unknown,
+  dynamicTopic,
+  dynamicBroker,
+  dynamicDefaultBroker,
+  staticBroker,
+  default_,
+}
+
+enum TopicConfigStatus { available, notReadable, failed }
+
 class TopicMetadata {
   final String name;
   final int partitionCount;
@@ -157,6 +508,7 @@ class TopicMetadata {
   /// `None` when the broker gave no usable partition list for this topic.
   final int? underReplicatedPartitions;
   final int? leaderlessPartitions;
+  final TopicMetadataError? metadataError;
 
   const TopicMetadata({
     required this.name,
@@ -166,6 +518,7 @@ class TopicMetadata {
     this.retentionMs,
     this.underReplicatedPartitions,
     this.leaderlessPartitions,
+    this.metadataError,
   });
 
   @override
@@ -176,7 +529,8 @@ class TopicMetadata {
       cleanupPolicy.hashCode ^
       retentionMs.hashCode ^
       underReplicatedPartitions.hashCode ^
-      leaderlessPartitions.hashCode;
+      leaderlessPartitions.hashCode ^
+      metadataError.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -189,8 +543,29 @@ class TopicMetadata {
           cleanupPolicy == other.cleanupPolicy &&
           retentionMs == other.retentionMs &&
           underReplicatedPartitions == other.underReplicatedPartitions &&
-          leaderlessPartitions == other.leaderlessPartitions;
+          leaderlessPartitions == other.leaderlessPartitions &&
+          metadataError == other.metadataError;
 }
+
+class TopicMetadataError {
+  final TopicMetadataErrorKind kind;
+  final String message;
+
+  const TopicMetadataError({required this.kind, required this.message});
+
+  @override
+  int get hashCode => kind.hashCode ^ message.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicMetadataError &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          message == other.message;
+}
+
+enum TopicMetadataErrorKind { notAuthorized, notFound, other }
 
 class TopicPartitionDetails {
   final String topic;
@@ -214,4 +589,51 @@ class TopicPartitionDetails {
           topic == other.topic &&
           partitions == other.partitions &&
           brokers == other.brokers;
+}
+
+class TopicTimeRange {
+  final PartitionTimestamp? oldest;
+  final PartitionTimestamp? newest;
+  final int partitionsTotal;
+  final int partitionsEmpty;
+  final int oldestKnown;
+  final int newestKnown;
+  final bool allEmpty;
+  final List<PartitionTimeProbe> probes;
+
+  const TopicTimeRange({
+    this.oldest,
+    this.newest,
+    required this.partitionsTotal,
+    required this.partitionsEmpty,
+    required this.oldestKnown,
+    required this.newestKnown,
+    required this.allEmpty,
+    required this.probes,
+  });
+
+  @override
+  int get hashCode =>
+      oldest.hashCode ^
+      newest.hashCode ^
+      partitionsTotal.hashCode ^
+      partitionsEmpty.hashCode ^
+      oldestKnown.hashCode ^
+      newestKnown.hashCode ^
+      allEmpty.hashCode ^
+      probes.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TopicTimeRange &&
+          runtimeType == other.runtimeType &&
+          oldest == other.oldest &&
+          newest == other.newest &&
+          partitionsTotal == other.partitionsTotal &&
+          partitionsEmpty == other.partitionsEmpty &&
+          oldestKnown == other.oldestKnown &&
+          newestKnown == other.newestKnown &&
+          allEmpty == other.allEmpty &&
+          probes == other.probes;
 }

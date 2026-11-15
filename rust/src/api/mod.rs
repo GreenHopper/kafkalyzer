@@ -1,16 +1,20 @@
 pub mod avro_utils;
 pub mod connection_diagnostics;
 pub mod diagnostics;
+pub mod filter_expr;
+pub mod json_diff;
 pub mod json_path;
 pub mod kafka_analyzer;
 pub mod kafka_consumer;
 pub mod kafka_metadata;
 pub mod kafka_types;
 pub mod kafka_utils;
+pub mod local_schema;
 pub mod profile_crypto;
 pub mod profile_tools;
 pub mod report_compare;
 pub mod schema_registry;
+pub mod topic_config;
 
 pub fn init_app() {
     flutter_rust_bridge::setup_default_user_utils();

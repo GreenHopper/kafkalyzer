@@ -3,12 +3,14 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
+import 'package:kafkalyzer/src/features/topic/domain/topic_list_query.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
+import 'package:kafkalyzer/src/services/topic_list_preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
@@ -41,6 +43,24 @@ class MockLogger extends Logger {
 class MockKafkaMetadataService extends KafkaMetadataService {
   bool shouldValidate = true;
   Future<bool> Function({required ClusterProfile profile})? onValidate;
+  Future<TopicMetadata> Function(ClusterProfile, String)? onFetchTopicMetadata;
+
+  @override
+  Future<TopicMetadata> fetchTopicMetadata({
+    required ClusterProfile profile,
+    required String topic,
+  }) async {
+    if (onFetchTopicMetadata != null) {
+      return onFetchTopicMetadata!(profile, topic);
+    }
+    return TopicMetadata(name: topic, partitionCount: 1, replicationFactor: 1);
+  }
+
+  @override
+  Future<List<TopicConfigResult>> describeTopicConfigs({
+    required ClusterProfile profile,
+    required List<String> topics,
+  }) async => const [];
 
   @override
   Future<bool> validateConnection({required ClusterProfile profile}) async {
@@ -730,6 +750,112 @@ void main() {
 
           sessionA = await sessionRestoreService.getSession('Cluster A');
           expect(sessionA?.openTopicNames, ['orders']);
+        },
+      );
+    });
+
+    group('Topic list preferences, memoisation and openTopicByName (5.33)', () {
+      test('preferences are saved and restored per cluster', () async {
+        SharedPreferences.setMockInitialValues({});
+        getIt.registerSingleton<TopicListPreferencesService>(
+          TopicListPreferencesService(),
+        );
+
+        const clusterA = ClusterProfile(
+          name: 'Cluster A',
+          bootstrapServers: 'a:9092',
+          tlsVerification: TlsVerification.enabled,
+        );
+        const clusterB = ClusterProfile(
+          name: 'Cluster B',
+          bootstrapServers: 'b:9092',
+          tlsVerification: TlsVerification.enabled,
+        );
+
+        await controller.connect(clusterA);
+        controller.toggleShowInternalTopics(true);
+        controller.setTopicFilterMode(TopicFilterMode.regex);
+        await Future<void>.delayed(Duration.zero);
+
+        await controller.connect(clusterB);
+        expect(controller.showInternalTopics, isFalse);
+        expect(controller.topicFilterMode, TopicFilterMode.substring);
+
+        await controller.connect(clusterA);
+        expect(controller.showInternalTopics, isTrue);
+        expect(controller.topicFilterMode, TopicFilterMode.regex);
+      });
+
+      test(
+        'memoised topicListView does not recompute on 10 000 reads and increments by 1 on text change',
+        () async {
+          const cluster = ClusterProfile(
+            name: 'Memo Cluster',
+            bootstrapServers: 'a:9092',
+            tlsVerification: TlsVerification.enabled,
+          );
+          await controller.connect(cluster);
+          controller.viewComputations = 0;
+
+          for (var i = 0; i < 10000; i++) {
+            controller.topicListView;
+            controller.topics;
+          }
+          expect(controller.viewComputations, 1);
+
+          controller.updateTopicFilter('orders');
+          controller.topicListView;
+          expect(controller.viewComputations, 2);
+        },
+      );
+
+      test(
+        'openTopicByName handles listed, resolved-not-authorized and failing topics',
+        () async {
+          const cluster = ClusterProfile(
+            name: 'Open Cluster',
+            bootstrapServers: 'a:9092',
+            tlsVerification: TlsVerification.enabled,
+          );
+          await controller.connect(cluster);
+
+          // 1. Listed topic
+          final listed = await controller.openTopicByName(
+            cluster,
+            'test-topic',
+          );
+          expect(listed?.topic.name, 'test-topic');
+
+          // 2. Resolved not-authorized topic
+          mockMetadataService.onFetchTopicMetadata = (_, name) async =>
+              TopicMetadata(
+                name: name,
+                partitionCount: 0,
+                replicationFactor: 0,
+                metadataError: const TopicMetadataError(
+                  kind: TopicMetadataErrorKind.notAuthorized,
+                  message: 'Topic authorization failed',
+                ),
+              );
+          final notAuth = await controller.openTopicByName(
+            cluster,
+            'secret-topic',
+          );
+          expect(notAuth?.topic.name, 'secret-topic');
+          expect(
+            notAuth?.topic.metadataError?.kind,
+            TopicMetadataErrorKind.notAuthorized,
+          );
+
+          // 3. Failing topic rethrows and opens no tab
+          final tabsBefore = controller.openTopics.length;
+          mockMetadataService.onFetchTopicMetadata = (_, _) async =>
+              throw Exception('broker unreachable');
+          await expectLater(
+            controller.openTopicByName(cluster, 'broken-topic'),
+            throwsException,
+          );
+          expect(controller.openTopics.length, tabsBefore);
         },
       );
     });

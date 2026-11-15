@@ -10,6 +10,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
+import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
 import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
@@ -22,6 +23,8 @@ class SearchTarget {
   final String? filterField;
   final FilterType filterType;
   final SearchScope scope;
+  final String? filterExpression;
+  final Map<String, List<String>>? filterVariables;
   final MultiSearchStartStrategy startStrategy;
   final int? startOffset;
   final int? startTimestamp;
@@ -42,6 +45,8 @@ class SearchTarget {
     this.filterField,
     this.filterType = FilterType.contains,
     this.scope = SearchScope.both,
+    this.filterExpression,
+    this.filterVariables,
     this.startStrategy = MultiSearchStartStrategy.latest,
     this.startOffset,
     this.startTimestamp,
@@ -67,6 +72,8 @@ class SearchTarget {
           filterField == other.filterField &&
           filterType == other.filterType &&
           scope == other.scope &&
+          filterExpression == other.filterExpression &&
+          _filterVariablesEquals(filterVariables, other.filterVariables) &&
           startStrategy == other.startStrategy &&
           startOffset == other.startOffset &&
           startTimestamp == other.startTimestamp &&
@@ -88,6 +95,8 @@ class SearchTarget {
       filterField.hashCode ^
       filterType.hashCode ^
       scope.hashCode ^
+      filterExpression.hashCode ^
+      _filterVariablesHash(filterVariables) ^
       startStrategy.hashCode ^
       startOffset.hashCode ^
       startTimestamp.hashCode ^
@@ -99,6 +108,27 @@ class SearchTarget {
       maxResults.hashCode ^
       stepId.hashCode ^
       searchJobId.hashCode;
+
+  static bool _filterVariablesEquals(
+    Map<String, List<String>>? a,
+    Map<String, List<String>>? b,
+  ) {
+    if (identical(a, b)) return true;
+    if (a == null || b == null || a.length != b.length) return false;
+    for (final entry in a.entries) {
+      if (!b.containsKey(entry.key)) return false;
+      if (!listEquals(entry.value, b[entry.key])) return false;
+    }
+    return true;
+  }
+
+  static int _filterVariablesHash(Map<String, List<String>>? vars) {
+    if (vars == null || vars.isEmpty) return 0;
+    final keys = vars.keys.toList()..sort();
+    return Object.hashAll(
+      keys.map((k) => Object.hash(k, Object.hashAll(vars[k]!))),
+    );
+  }
 }
 
 enum MultiSearchStartStrategy {
@@ -140,6 +170,7 @@ class MultiSearchController extends ChangeNotifier {
   final Logger _logger = getIt<Logger>();
   final MessageConsumeStreamFactory _consumeStreamFactory;
   final int Function() _bufferLimitProvider;
+  final LocalSchemaAssignmentService? _localSchemaService;
 
   String? _outputDirectory;
   String? get outputDirectory => _outputDirectory;
@@ -147,8 +178,14 @@ class MultiSearchController extends ChangeNotifier {
   MultiSearchController({
     MessageConsumeStreamFactory? consumeStreamFactory,
     int Function()? bufferLimitProvider,
+    LocalSchemaAssignmentService? localSchemaService,
   }) : _consumeStreamFactory = consumeStreamFactory ?? consumeWithFilter,
-       _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit {
+       _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit,
+       _localSchemaService =
+           localSchemaService ??
+           (getIt.isRegistered<LocalSchemaAssignmentService>()
+               ? getIt<LocalSchemaAssignmentService>()
+               : null) {
     loadDirectory();
   }
 
@@ -267,7 +304,7 @@ class MultiSearchController extends ChangeNotifier {
 
   final Map<SearchTarget, IOSink> _fileSinks = {};
 
-  void _startSubscription(SearchTarget target) {
+  Future<void> _startSubscription(SearchTarget target) async {
     try {
       _stopSubscription(target);
       _results[target] = MessageRingBuffer(_resolveBufferLimit());
@@ -318,6 +355,12 @@ class MultiSearchController extends ChangeNotifier {
         );
       }
 
+      final localSchemas = _localSchemaService != null
+          ? await _localSchemaService.scanOptionsFor(
+              target.profile.name,
+              target.topic.name,
+            )
+          : null;
       final stream = _consumeStreamFactory(
         profile: target.profile,
         topic: target.topic.name,
@@ -325,6 +368,8 @@ class MultiSearchController extends ChangeNotifier {
         filterField: target.filterField,
         filterType: target.filterType,
         searchScope: target.scope,
+        filterExpression: target.filterExpression,
+        filterVariables: target.filterVariables,
         startOffset: target.startOffset,
         startTimestamp: target.startTimestamp,
         startPartition: target.startPartition,
@@ -336,6 +381,7 @@ class MultiSearchController extends ChangeNotifier {
         maxResults: target.maxResults,
         runForever: target.endStrategy == MultiSearchEndStrategy.live,
         startFromTail: target.startStrategy == MultiSearchStartStrategy.latest,
+        localSchemas: localSchemas,
       );
 
       final subscription = stream.listen(

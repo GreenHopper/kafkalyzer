@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
@@ -125,8 +126,16 @@ class MessageMetadataCard extends StatelessWidget {
   Widget? _buildCompactSchemaIndicator(BuildContext context) {
     final keySchema = message.keySchema;
     final valueSchema = message.valueSchema;
-    if (keySchema == null && valueSchema == null) return null;
+    final keyLocal = message.keyLocalSchema;
+    final valueLocal = message.valueLocalSchema;
+    if (keySchema == null &&
+        valueSchema == null &&
+        keyLocal == null &&
+        valueLocal == null) {
+      return null;
+    }
 
+    final l10n = AppLocalizations.of(context);
     final parts = <Widget>[];
 
     String formatSchema(MessageSchema s) {
@@ -136,7 +145,24 @@ class MessageMetadataCard extends StatelessWidget {
       return '#${s.schemaId}';
     }
 
-    if (keySchema != null) {
+    if (keyLocal != null) {
+      final hasErr = keyLocal.error != null;
+      final label = hasErr
+          ? (l10n?.localSchemaCardBadgeKeyError ?? 'K: local !')
+          : (l10n?.localSchemaCardBadgeKey ?? 'K: local');
+      parts.add(
+        Text(
+          label,
+          key: const Key('metadata_card_local_schema_key'),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: hasErr
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.right,
+        ),
+      );
+    } else if (keySchema != null) {
       parts.add(
         Text(
           'K: ${formatSchema(keySchema)}',
@@ -149,10 +175,27 @@ class MessageMetadataCard extends StatelessWidget {
       );
     }
 
-    if (valueSchema != null) {
+    if (valueLocal != null) {
+      final hasErr = valueLocal.error != null;
+      final label = hasErr
+          ? (l10n?.localSchemaCardBadgeValueError ?? 'V: local !')
+          : (l10n?.localSchemaCardBadgeValue ?? 'V: local');
       parts.add(
         Text(
-          keySchema != null
+          label,
+          key: const Key('metadata_card_local_schema_value'),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: hasErr
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.right,
+        ),
+      );
+    } else if (valueSchema != null) {
+      parts.add(
+        Text(
+          (keySchema != null || keyLocal != null)
               ? 'V: ${formatSchema(valueSchema)}'
               : formatSchema(valueSchema),
           key: const Key('metadata_card_schema_value'),

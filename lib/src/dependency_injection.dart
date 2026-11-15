@@ -4,8 +4,10 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_transition_controller.dart';
 import 'package:kafkalyzer/src/features/consumer/application/consumer_group_directory.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/controllers/cluster_overview_controller.dart';
 import 'package:kafkalyzer/src/features/navigation/main_navigation_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
+import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_batcher.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
@@ -16,17 +18,22 @@ import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/connection_diagnostics_service.dart';
+import 'package:kafkalyzer/src/services/diff_ignore_list_service.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:kafkalyzer/src/services/topic_config_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
 import 'package:kafkalyzer/src/services/file_opener_service.dart';
+import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';
 import 'package:kafkalyzer/src/services/window_state_service.dart';
 import 'package:kafkalyzer/src/services/saved_searches_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
+import 'package:kafkalyzer/src/services/topic_list_preferences_service.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/secure_storage_service.dart';
 import 'package:kafkalyzer/src/services/time_display_settings.dart';
@@ -48,6 +55,7 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
   getIt.registerLazySingleton<KafkaMetadataService>(
     () => KafkaMetadataService(),
   );
+  getIt.registerLazySingleton<TopicConfigService>(() => TopicConfigService());
   getIt.registerLazySingleton<ConnectionDiagnosticsService>(
     () => ConnectionDiagnosticsService(),
   );
@@ -67,6 +75,9 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
     () => MultiSearchController(),
   );
   getIt.registerLazySingleton<TopicController>(() => TopicController());
+  getIt.registerLazySingleton<ClusterOverviewController>(
+    () => ClusterOverviewController(),
+  );
   getIt.registerFactory<TopicAnalysisController>(
     () => TopicAnalysisController(),
   );
@@ -94,6 +105,9 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
   getIt.registerLazySingleton<TopicAnalysisExportService>(
     () => TopicAnalysisExportService(),
   );
+  getIt.registerLazySingleton<TopicAnalysisHistoryService>(
+    () => TopicAnalysisHistoryService(logger: getIt<Logger>()),
+  );
   getIt.registerLazySingleton<FileOpenerService>(() => FileOpenerService());
   getIt.registerLazySingleton<RecentTopicsService>(() => RecentTopicsService());
   getIt.registerLazySingleton<SavedSearchesService>(
@@ -102,5 +116,15 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
   getIt.registerLazySingleton<SessionRestoreService>(
     () => SessionRestoreService(),
   );
+  getIt.registerLazySingleton<TopicListPreferencesService>(
+    () => TopicListPreferencesService(),
+  );
   getIt.registerLazySingleton<TimeDisplaySettings>(() => TimeDisplaySettings());
+  getIt.registerLazySingleton<JsonDiffBatcher>(() => JsonDiffBatcher());
+  getIt.registerLazySingleton<DiffIgnoreListService>(
+    () => DiffIgnoreListService(),
+  );
+  getIt.registerLazySingleton<LocalSchemaAssignmentService>(
+    () => LocalSchemaAssignmentService(),
+  );
 }

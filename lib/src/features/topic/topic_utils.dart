@@ -1,7 +1,50 @@
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_summary_cards.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/features/schema/utils/schema_type_labels.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:material_ui/material_ui.dart';
+
+extension TopicMetadataFacts on TopicMetadata {
+  bool get metadataKnown => metadataError == null;
+}
+
+Future<void> openTopicByNameWithFeedback({
+  required ActiveConnectionController controller,
+  required ClusterProfile profile,
+  required String topicName,
+  ScaffoldMessengerState? messenger,
+  AppLocalizations? l10n,
+  bool forceNew = false,
+}) async {
+  try {
+    await controller.openTopicByName(profile, topicName, forceNew: forceNew);
+  } catch (e) {
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text(
+          l10n?.topicOpenFailedNotice(topicName, e.toString()) ??
+              'Could not open topic "$topicName": $e',
+        ),
+        action: SnackBarAction(
+          label: l10n?.retry ?? 'Retry',
+          onPressed: () {
+            openTopicByNameWithFeedback(
+              controller: controller,
+              profile: profile,
+              topicName: topicName,
+              messenger: messenger,
+              l10n: l10n,
+              forceNew: forceNew,
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
 bool hasSchema(
   SchemaController controller,
@@ -12,6 +55,39 @@ bool hasSchema(
   if (schemas == null) return false;
   return schemas.contains("$topicName-key") ||
       schemas.contains("$topicName-value");
+}
+
+/// Returns the localized schema badge label for [topicName] on [cluster],
+/// or `null` when no schema exists for the topic and the subject list loaded.
+String? resolveTopicSchemaLabel(
+  AppLocalizations? l10n,
+  SchemaController? controller,
+  ClusterProfile cluster,
+  String topicName,
+) {
+  if (controller == null) return null;
+  final subjectListFailed =
+      controller.errorFor(cluster) != null &&
+      controller.getSchemas(cluster) == null;
+  if (subjectListFailed) {
+    return l10n?.schemaTypeUnknown ?? 'Schema (unknown)';
+  }
+  final schemas = controller.getSchemas(cluster);
+  if (schemas == null) return null;
+  final hasKey = schemas.contains('$topicName-key');
+  final hasValue = schemas.contains('$topicName-value');
+  if (!hasKey && !hasValue) return null;
+
+  return topicSchemaBadgeLabel(
+    l10n,
+    keyState: hasKey
+        ? controller.schemaTypeFor(cluster, '$topicName-key')
+        : null,
+    valueState: hasValue
+        ? controller.schemaTypeFor(cluster, '$topicName-value')
+        : null,
+    subjectListFailed: false,
+  );
 }
 
 (String prefix, String leaf) parseTopicNameSegments(String topicName) {
@@ -100,6 +176,7 @@ List<TextSpan> buildTopicNameSpans({
   required TextStyle highlightStyle,
   required TextStyle ellipsisStyle,
   String? highlightQuery,
+  RegExp? highlightPattern,
 }) {
   if (topicName.isEmpty) return const [];
 
@@ -108,15 +185,23 @@ List<TextSpan> buildTopicNameSpans({
   final lastDotIndex = topicName.lastIndexOf('.');
 
   final matches = <(int start, int end)>[];
-  final query = highlightQuery?.trim().toLowerCase();
-  if (query != null && query.isNotEmpty) {
-    final lowerName = topicName.toLowerCase();
-    int searchStart = 0;
-    while (searchStart < lowerName.length) {
-      final idx = lowerName.indexOf(query, searchStart);
-      if (idx == -1) break;
-      matches.add((idx, idx + query.length));
-      searchStart = idx + query.length.clamp(1, lowerName.length);
+  if (highlightPattern != null) {
+    for (final m in highlightPattern.allMatches(topicName)) {
+      if (m.end > m.start) {
+        matches.add((m.start, m.end));
+      }
+    }
+  } else {
+    final query = highlightQuery?.trim().toLowerCase();
+    if (query != null && query.isNotEmpty) {
+      final lowerName = topicName.toLowerCase();
+      int searchStart = 0;
+      while (searchStart < lowerName.length) {
+        final idx = lowerName.indexOf(query, searchStart);
+        if (idx == -1) break;
+        matches.add((idx, idx + query.length));
+        searchStart = idx + query.length.clamp(1, lowerName.length);
+      }
     }
   }
 
@@ -187,6 +272,7 @@ List<TextSpan> fitTopicNameToWidth({
   required TextStyle highlightStyle,
   required TextStyle ellipsisStyle,
   String? highlightQuery,
+  RegExp? highlightPattern,
 }) {
   if (topicName.isEmpty) return const [];
   if (maxWidth <= 0 || !maxWidth.isFinite) {
@@ -197,6 +283,7 @@ List<TextSpan> fitTopicNameToWidth({
       highlightStyle: highlightStyle,
       ellipsisStyle: ellipsisStyle,
       highlightQuery: highlightQuery,
+      highlightPattern: highlightPattern,
     );
   }
 
@@ -207,6 +294,7 @@ List<TextSpan> fitTopicNameToWidth({
     highlightStyle: highlightStyle,
     ellipsisStyle: ellipsisStyle,
     highlightQuery: highlightQuery,
+    highlightPattern: highlightPattern,
   );
 
   final painter = TextPainter(
@@ -241,6 +329,7 @@ List<TextSpan> fitTopicNameToWidth({
       highlightStyle: highlightStyle,
       ellipsisStyle: ellipsisStyle,
       highlightQuery: highlightQuery,
+      highlightPattern: highlightPattern,
     );
 
     painter.text = TextSpan(children: candidateSpans);
@@ -264,6 +353,7 @@ List<TextSpan> fitTopicNameToWidth({
     highlightStyle: highlightStyle,
     ellipsisStyle: ellipsisStyle,
     highlightQuery: highlightQuery,
+    highlightPattern: highlightPattern,
   );
 }
 
@@ -272,18 +362,35 @@ String splitPolicy(String policy) {
   return policy;
 }
 
-String formatRetention(String ms) {
-  try {
-    final val = int.parse(ms);
-    if (val == -1) return "Infinite";
-    final hours = val / 3600000;
-    if (hours >= 24) {
-      return "${(hours / 24).toStringAsFixed(1)} days";
-    }
-    return "${hours.toStringAsFixed(1)} hrs";
-  } catch (_) {
-    return ms;
-  }
+String formatRetentionDuration(String raw, AppLocalizations l10n) {
+  final val = int.tryParse(raw.trim());
+  if (val == null) return raw;
+  if (val == -1) return l10n.retentionUnlimited;
+  if (val < 0) return raw;
+  if (val == 0) return l10n.durationMinutes(0);
+  if (val < 60000) return l10n.durationSeconds(val ~/ 1000);
+
+  final totalMinutes = val ~/ 60000;
+  final days = totalMinutes ~/ (24 * 60);
+  final hours = (totalMinutes % (24 * 60)) ~/ 60;
+  final minutes = totalMinutes % 60;
+
+  final parts = <String>[
+    if (days > 0) l10n.durationDays(days),
+    if (hours > 0) l10n.durationHours(hours),
+    if (minutes > 0) l10n.durationMinutes(minutes),
+  ];
+  return parts.take(2).join(' ');
+}
+
+String formatRetentionBytes(String raw, AppLocalizations l10n) {
+  final val = int.tryParse(raw.trim());
+  if (val == null) return raw;
+  if (val == -1) return l10n.retentionUnlimited;
+  if (val < 0) return raw;
+  return l10n.retentionBytesPerPartition(
+    TopicAnalysisSummaryCards.formatBytes(val),
+  );
 }
 
 Future<void> confirmCloseTab(

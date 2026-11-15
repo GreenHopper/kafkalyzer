@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -11,6 +13,7 @@ TopicAnalysisReport _populatedReport() => TopicAnalysisReport(
   avgMessageSize: 20.48,
   tombstonesCount: 3,
   isCompacted: true,
+  cleanupPolicyUnknown: false,
   nullKeysCount: 12,
   partitionStats: [
     const PartitionAnalysis(
@@ -117,7 +120,40 @@ TopicAnalysisReport _populatedReport() => TopicAnalysisReport(
         sampleTimestampMs: 1793370600000,
       ),
     ],
+    estimated: true,
+    untrackedMessages: 12,
+    fingerprintLimit: 1835008,
+    samplesCapped: true,
   ),
+  scanScope: AnalysisScopeSummary(
+    scope: AnalysisScope(
+      partitions: Int32List.fromList([0, 1]),
+      startTimestampMs: 1793367000000,
+      endTimestampMs: 1793370600000,
+      messageLimit: 1000,
+      limitFrom: ScopeLimitFrom.newest,
+    ),
+    ranges: const [
+      PlannedPartitionRange(partition: 0, start: 0, end: 500),
+      PlannedPartitionRange(partition: 1, start: 0, end: 500),
+    ],
+    unreadable: const [UnreadablePartition(partition: 2, reason: 'timed out')],
+    excludedByTimeRange: 42,
+  ),
+  analysisLimits: const [
+    AnalysisLimit(
+      kind: AnalysisLimitKind.trackedFields,
+      limit: 500,
+      reached: false,
+    ),
+    AnalysisLimit(
+      kind: AnalysisLimitKind.trackedFingerprints,
+      limit: 1835008,
+      reached: true,
+    ),
+  ],
+  trackedFieldCount: 120,
+  completeUntilMs: 1793370599000,
 );
 
 TopicAnalysisReport _emptyReport() => TopicAnalysisReport(
@@ -129,6 +165,7 @@ TopicAnalysisReport _emptyReport() => TopicAnalysisReport(
   avgMessageSize: 0.0,
   tombstonesCount: 0,
   isCompacted: false,
+  cleanupPolicyUnknown: false,
   nullKeysCount: 0,
   partitionStats: const [],
   hourlyDistribution: const [],
@@ -168,7 +205,7 @@ void main() {
         // identity, not by value.
         expect(decoded.toMap(), file.toMap());
         expect(decoded.clusterName, 'prod-eu-1');
-        expect(decoded.version, 3);
+        expect(decoded.version, 4);
         expect(
           decoded.exportedAt.toUtc(),
           DateTime.utc(2026, 8, 19, 12, 34, 56, 789),
@@ -198,7 +235,7 @@ void main() {
       final map = file.toMap();
 
       expect(map['kafkalyzer'], 'topic-analysis-report');
-      expect(map['version'], 3);
+      expect(map['version'], 4);
       expect(map['report']['total_messages'], 1000);
       expect(map['report']['avg_message_size'], 20.48);
       expect(map['report']['is_compacted'], true);
@@ -296,17 +333,17 @@ void main() {
       expect(file.report.duplicateAnalysisResult, isNull);
     });
 
-    test('rejects version 4 as unsupported', () {
-      const v4Json = '''{
+    test('rejects version 5 as unsupported', () {
+      const v5Json = '''{
         "kafkalyzer": "topic-analysis-report",
-        "version": 4,
+        "version": 5,
         "report": {
-          "topic": "v4-topic"
+          "topic": "v5-topic"
         }
       }''';
 
       expect(
-        () => TopicAnalysisReportFile.fromJson(v4Json),
+        () => TopicAnalysisReportFile.fromJson(v5Json),
         throwsA(
           isA<TopicAnalysisImportError>()
               .having(
@@ -314,9 +351,27 @@ void main() {
                 'kind',
                 TopicAnalysisImportErrorKind.unsupportedVersion,
               )
-              .having((e) => e.foundVersion, 'foundVersion', 4),
+              .having((e) => e.foundVersion, 'foundVersion', 5),
         ),
       );
+    });
+
+    test('skips unknown analysis_limits kinds during import', () {
+      final file = TopicAnalysisReportFile(
+        exportedAt: DateTime.utc(2026, 1, 1),
+        report: _populatedReport(),
+      );
+      final map = file.toMap();
+      final limits = (map['report']['analysis_limits'] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
+      limits.add(<String, dynamic>{
+        'kind': 'futureLimitKind',
+        'limit': 999,
+        'reached': true,
+      });
+
+      final decoded = TopicAnalysisReportFile.fromMap(map);
+      expect(decoded.report.analysisLimits?.length, 2);
     });
 
     test('rejects a file without the expected identifier', () {
@@ -397,5 +452,58 @@ void main() {
         ),
       );
     });
+
+    test(
+      'loads legacy report without cleanup_policy_unknown as false and round-trips true',
+      () {
+        final base = _emptyReport();
+        final legacyFile = TopicAnalysisReportFile(
+          exportedAt: DateTime.utc(2026, 1, 1),
+          report: base,
+        );
+        final map = legacyFile.toMap();
+        (map['report'] as Map<String, dynamic>).remove(
+          'cleanup_policy_unknown',
+        );
+        final decodedLegacy = TopicAnalysisReportFile.fromMap(map);
+        expect(decodedLegacy.report.cleanupPolicyUnknown, isFalse);
+
+        final unknownFile = TopicAnalysisReportFile(
+          exportedAt: DateTime.utc(2026, 1, 1),
+          report: TopicAnalysisReport(
+            topic: base.topic,
+            totalMessages: base.totalMessages,
+            totalBytes: base.totalBytes,
+            minMessageSize: base.minMessageSize,
+            maxMessageSize: base.maxMessageSize,
+            avgMessageSize: base.avgMessageSize,
+            tombstonesCount: base.tombstonesCount,
+            isCompacted: false,
+            cleanupPolicyUnknown: true,
+            nullKeysCount: base.nullKeysCount,
+            partitionStats: base.partitionStats,
+            hourlyDistribution: base.hourlyDistribution,
+            topKeys: base.topKeys,
+            contentTypeDistribution: base.contentTypeDistribution,
+            fieldFrequencies: base.fieldFrequencies,
+            scanDurationMs: base.scanDurationMs,
+            messageSizePercentiles: base.messageSizePercentiles,
+            sizePercentilesEstimated: base.sizePercentilesEstimated,
+            estimatedDistinctKeys: base.estimatedDistinctKeys,
+            keyCardinalityCapped: base.keyCardinalityCapped,
+            hourlyTimeline: base.hourlyTimeline,
+            scanReferenceTimeMs: base.scanReferenceTimeMs,
+            completeFromMs: base.completeFromMs,
+            timelineOutsideCount: base.timelineOutsideCount,
+            valueFilterResult: base.valueFilterResult,
+            duplicateAnalysisResult: base.duplicateAnalysisResult,
+          ),
+        );
+        final decodedUnknown = TopicAnalysisReportFile.fromJson(
+          unknownFile.toJson(),
+        );
+        expect(decodedUnknown.report.cleanupPolicyUnknown, isTrue);
+      },
+    );
   });
 }
