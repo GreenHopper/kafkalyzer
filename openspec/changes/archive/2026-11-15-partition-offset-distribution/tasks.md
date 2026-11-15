@@ -81,6 +81,6 @@
   --workspace` — all pass.
 - [x] 7.2 `dart format lib test`, `flutter analyze` (no issues), `flutter test` (all pass).
 - [x] 7.3 `scripts/check_read_only.sh` passes unchanged (no new exception).
-- [ ] 7.4 Manual check against the local docker broker: open a topic's partition health dialog, see offsets, shares,
+- [x] 7.4 Manual check against the local docker broker: open a topic's partition health dialog, see offsets, shares,
   read time and the skew badge for a deliberately skewed topic; confirm the topic list refresh issues no ListOffsets
   (librdkafka `debug=protocol` log or broker request metrics).
