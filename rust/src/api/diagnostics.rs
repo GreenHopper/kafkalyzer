@@ -85,6 +85,12 @@ pub fn init_rust_logging(
     max_level: RustLogLevel,
     log_file_path: String,
 ) {
+    // Backtrace capture segfaults on Linux: libflutter_linux_gtk.so exports its
+    // own _Unwind_GetIP, which clashes with libgcc's _Unwind_Backtrace. Must
+    // run before velopack_flutter's FRB init, which sets RUST_BACKTRACE=1
+    // process-wide unless the variable already exists.
+    std::env::set_var("RUST_BACKTRACE", "0");
+    std::env::set_var("RUST_LIB_BACKTRACE", "0");
     LOGGER.set_sink(sink);
     LOGGER_INSTALLED.get_or_init(|| {
         let _ = log::set_logger(&LOGGER);

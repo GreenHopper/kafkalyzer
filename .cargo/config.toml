@@ -1,0 +1,6 @@
+# Repo root on purpose: cargokit runs cargo from build/, which still finds this.
+[env]
+# OpenSSL 4 (Ubuntu 26.10) removed the ENGINE API, but bundled librdkafka 2.3.0
+# still calls it. The stubs from openssl/engine.h keep the .so loadable.
+# shortcut: drop this once rdkafka-sys is >= 4.10 (honours OPENSSL_NO_ENGINE).
+CFLAGS = "-DOPENSSL_ENGINE_STUBS"

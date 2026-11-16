@@ -228,7 +228,7 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
     if let Some(password) = &profile.ssl_keystore_password { ... }
     We removed it from top level and put it inside the ELSE (non-P12) block.
     */
-    log::debug!(
+    log::trace!(
         "Creating Kafka config: protocol={:?}, truststore={:?}",
         profile.security_protocol,
         profile.ssl_truststore_location
@@ -241,7 +241,7 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
     };
 
     if let Some(location) = truststore_loc {
-        log::debug!("User provided truststore: {}", location);
+        log::trace!("User provided truststore: {}", location);
         // Check if it's a P12 file
         if location.to_lowercase().ends_with(".p12") || location.to_lowercase().ends_with(".pfx") {
             let password = profile.ssl_truststore_password.as_deref().unwrap_or("");
@@ -336,7 +336,7 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
         config.set(k, v);
     }
 
-    log::debug!("Kafka config created.");
+    log::trace!("Kafka config created.");
 
     config
 }
