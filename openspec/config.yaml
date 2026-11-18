@@ -290,3 +290,4 @@ rules:
     - >-
       End with a verification task: cargo fmt, cargo clippy, cargo test, flutter
       analyze, flutter test and scripts/check_read_only.sh.
+skillsScope: project

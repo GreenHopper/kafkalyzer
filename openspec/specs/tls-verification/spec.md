@@ -32,6 +32,11 @@ broker hostname matches the certificate, unless verification is explicitly disab
 - **THEN** the system SHALL NOT fall back to an unverified connection
 - **AND** a failing connection SHALL report an error instead of an empty result
 
+#### Scenario: Truststore contains only an intermediate CA
+- **WHEN** the configured truststore (PEM or PKCS#12) contains an intermediate CA that signed the broker certificate but is not a self-signed root
+- **THEN** the system SHALL treat that certificate as a trust anchor (Java truststore semantics)
+- **AND** the connection SHALL succeed with verification active when the broker certificate chains to that intermediate and the hostname matches
+
 ### Requirement: Explicit Per-Profile Opt-Out Only
 
 Disabling certificate and hostname verification SHALL only be possible through an explicit option stored on an

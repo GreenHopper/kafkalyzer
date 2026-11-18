@@ -18,21 +18,26 @@ hex = "0.4"
 apache-avro = "0.17.0"
 protofish = "0.5.3"
 kafkalyzer-core = { path = "../kafkalyzer-core" }
+foreign-types = "0.3"
+libc = "0.2"
 
 # --- WINDOWS KONFIGURATION (vcpkg) ---
 [target.'cfg(windows)'.dependencies]
 rdkafka = { version = "0.36.2", features = ["ssl", "sasl", "cmake-build"] }
 openssl = { version = "0.10", features = [] }
+openssl-sys = "0.9"
 rdkafka-sys = { version = "=4.7.0", features = ["ssl"] }
 
 # --- LINUX KONFIGURATION ---
 [target.'cfg(target_os = "linux")'.dependencies]
 rdkafka = { version = "0.36.2", features = ["ssl", "sasl", "gssapi"] }
 openssl = { version = "0.10", features = [] }
+openssl-sys = "0.9"
 rdkafka-sys = { version = "=4.7.0", features = ["ssl", "sasl"] }
 
 # --- MACOS KONFIGURATION ---
 [target.'cfg(target_os = "macos")'.dependencies]
 rdkafka = { version = "0.36.2", features = ["ssl-vendored", "gssapi-vendored", "cmake-build"] }
 openssl = { version = "0.10", features = ["vendored"] }
+openssl-sys = "0.9"
 sasl2-sys = { version = "0.1", features = ["vendored"] }
