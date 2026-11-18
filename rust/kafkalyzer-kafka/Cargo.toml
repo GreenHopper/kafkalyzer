@@ -41,3 +41,4 @@ rdkafka = { version = "0.36.2", features = ["ssl-vendored", "gssapi-vendored", "
 openssl = { version = "0.10", features = ["vendored"] }
 openssl-sys = "0.9"
 sasl2-sys = { version = "0.1", features = ["vendored"] }
+rdkafka-sys = { version = "=4.7.0", features = ["ssl-vendored", "gssapi-vendored", "cmake-build"] }
