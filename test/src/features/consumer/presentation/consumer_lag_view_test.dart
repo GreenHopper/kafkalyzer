@@ -244,7 +244,8 @@ void main() {
     );
   });
 
-  Widget createWidgetUnderTest({Locale? locale}) {
+  Widget createWidgetUnderTest({Locale? locale, DateTime Function()? clock}) {
+    final effectiveClock = clock ?? () => DateTime(2026, 1, 1, 12, 0, 0);
     return MaterialApp(
       locale: locale,
       localizationsDelegates: const [
@@ -252,7 +253,7 @@ void main() {
         ...GlobalMaterialLocalizations.delegates,
       ],
       supportedLocales: const [Locale('en'), Locale('de')],
-      home: const ConsumerLagView(),
+      home: ConsumerLagView(clock: effectiveClock),
     );
   }
 

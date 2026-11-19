@@ -139,6 +139,11 @@ class TopicListView {
 bool isInternalTopicName(String name) => name.startsWith('_');
 
 bool isStreamTopicName(String name) {
+  final len = name.length;
+  if (len < 10) return false;
+  final last = name.codeUnitAt(len - 1);
+  // Must end with 'g'/'G' (-changelog) or 'n'/'N' (-repartition).
+  if (last != 103 && last != 71 && last != 110 && last != 78) return false;
   final lower = name.toLowerCase();
   return lower.endsWith('-changelog') || lower.endsWith('-repartition');
 }

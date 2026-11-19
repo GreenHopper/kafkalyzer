@@ -35,6 +35,7 @@ jobs:
     name: Run tests (Linux)
     needs: [read-only-gate]
     runs-on: ubuntu-latest # Keine if-Bedingung mehr: Tests sollen IMMER laufen (bei PRs, bei main-Pushes und vor Releases)
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

@@ -175,11 +175,40 @@ class DlqTopicDetector {
 
   /// Returns true if [topicName] matches DLQ naming patterns.
   static bool isDlqTopic(String topicName) {
+    final len = topicName.length;
+    if (len < 4) return false;
+    final last = topicName.codeUnitAt(len - 1);
+    // Must end with 'q'/'Q' (dlq), 't'/'T' (dlt), or 'r'/'R' (deadletter/error).
+    if (last != 113 &&
+        last != 81 &&
+        last != 116 &&
+        last != 84 &&
+        last != 114 &&
+        last != 82) {
+      return false;
+    }
     return _dlqSuffixRegex.hasMatch(topicName);
   }
 
   /// Returns true if [topicName] matches retry naming patterns.
   static bool isRetryTopic(String topicName) {
+    final len = topicName.length;
+    if (len < 6) return false;
+    var i = len - 1;
+    final last = topicName.codeUnitAt(i);
+    if (last >= 48 && last <= 57) {
+      while (i >= 0) {
+        final c = topicName.codeUnitAt(i);
+        if (c < 48 || c > 57) break;
+        i--;
+      }
+      if (i < 6) return false;
+      final sep = topicName.codeUnitAt(i);
+      if (sep != 45 && sep != 95 && sep != 46) return false;
+      i--;
+    }
+    final y = topicName.codeUnitAt(i);
+    if (y != 121 && y != 89) return false;
     return _retryPatternRegex.hasMatch(topicName);
   }
 

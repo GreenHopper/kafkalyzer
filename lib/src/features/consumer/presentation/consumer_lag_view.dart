@@ -38,7 +38,9 @@ enum ConsumerGroupSortType {
 }
 
 class ConsumerLagView extends WatchingStatefulWidget {
-  const ConsumerLagView({super.key});
+  final DateTime Function() clock;
+
+  const ConsumerLagView({super.key, this.clock = DateTime.now});
 
   @override
   State<ConsumerLagView> createState() => _ConsumerLagViewState();
@@ -92,7 +94,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   int _revealNonce = 0;
 
   void _appendLagReading(String groupId, Map<String, int> readings, int total) {
-    final now = DateTime.now();
+    final now = widget.clock();
     final groupHistory = _groupLagHistory.putIfAbsent(groupId, () => []);
     groupHistory.add(total);
     if (groupHistory.length > _lagHistoryLength) groupHistory.removeAt(0);

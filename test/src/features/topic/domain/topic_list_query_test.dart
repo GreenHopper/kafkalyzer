@@ -222,8 +222,11 @@ void main() {
         groupByPrefix: true,
       );
 
+      // Warm up JIT before measuring.
+      expect(buildTopicListView(all, query).visibleTopics, isNotEmpty);
+
       var bestUs = 1 << 60;
-      for (var run = 0; run < 3; run++) {
+      for (var run = 0; run < 5; run++) {
         final sw = Stopwatch()..start();
         final view = buildTopicListView(all, query);
         sw.stop();
