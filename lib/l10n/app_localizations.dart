@@ -8647,6 +8647,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Payload is not valid UTF-8 JSON: {detail}'**
   String localDecodeErrorNotJson(String detail);
+
+  /// No description provided for @fetchFilterPlaceholderBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter while fetching (key & value)...'**
+  String get fetchFilterPlaceholderBoth;
+
+  /// No description provided for @fetchFilterPlaceholderKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter while fetching (key only)...'**
+  String get fetchFilterPlaceholderKey;
+
+  /// No description provided for @fetchFilterPlaceholderValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter while fetching (value only)...'**
+  String get fetchFilterPlaceholderValue;
+
+  /// No description provided for @fetchFilterTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters messages while reading from the topic (limits which messages are fetched).'**
+  String get fetchFilterTooltip;
+
+  /// No description provided for @fetchFilterScopeTypeSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{scope} · {type}'**
+  String fetchFilterScopeTypeSummary(String scope, String type);
+
+  /// No description provided for @fetchFilterMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Change fetch filter scope and match type'**
+  String get fetchFilterMenuTooltip;
+
+  /// No description provided for @moreFiltersButton.
+  ///
+  /// In en, this message translates to:
+  /// **'More filters'**
+  String get moreFiltersButton;
+
+  /// No description provided for @moreFiltersButtonWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'More filters ({count})'**
+  String moreFiltersButtonWithCount(int count);
+
+  /// No description provided for @moreFiltersOpenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more fetch filters'**
+  String get moreFiltersOpenTooltip;
+
+  /// No description provided for @moreFiltersCloseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide more fetch filters'**
+  String get moreFiltersCloseTooltip;
+
+  /// No description provided for @timePresetsMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Relative time presets'**
+  String get timePresetsMenuTooltip;
+
+  /// No description provided for @timeRangeEndBeforeStartError.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must not be before start time.'**
+  String get timeRangeEndBeforeStartError;
+
+  /// No description provided for @timeRangeInvalidTimestampError.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid timestamp format.'**
+  String get timeRangeInvalidTimestampError;
+
+  /// No description provided for @topicFactsMoreCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more topic facts'**
+  String topicFactsMoreCount(int count);
 }
 
 class _AppLocalizationsDelegate

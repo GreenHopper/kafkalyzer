@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_widget.dart';
 import 'package:kafkalyzer/src/rust/api/json_diff.dart';
+import 'package:kafkalyzer/src/ui/text_preview_utils.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 import 'package:material_ui/material_ui.dart';
 
 Widget _wrapWithApp(Widget child) {
@@ -100,4 +102,89 @@ void main() {
     expect(find.text('No differences found.'), findsOneWidget);
     expect(find.byType(Icon), findsNothing);
   });
+
+  testWidgets(
+    'changed, added, and removed rows use theme colors with WCAG AA contrast in dark mode and scale with textScaler',
+    (tester) async {
+      const entries = [
+        JsonDiffEntry(
+          path: 'status',
+          segments: ['status'],
+          kind: JsonDiffKind.changed,
+          oldValue: '"PENDING"',
+          newValue: '"ACTIVE"',
+        ),
+        JsonDiffEntry(
+          path: 'addedField',
+          segments: ['addedField'],
+          kind: JsonDiffKind.added,
+          newValue: '"yes"',
+        ),
+        JsonDiffEntry(
+          path: 'removedField',
+          segments: ['removedField'],
+          kind: JsonDiffKind.removed,
+          oldValue: '"no"',
+        ),
+      ];
+
+      final darkTheme = ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+          brightness: Brightness.dark,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: darkTheme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: Scaffold(
+            body: MediaQuery(
+              data: const MediaQueryData(textScaler: TextScaler.linear(1.15)),
+              child: const SingleChildScrollView(
+                child: JsonDiffWidget(entries: entries),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final surfaceBg =
+          darkTheme.cardTheme.color ??
+          darkTheme.colorScheme.surfaceContainerLow;
+      final changedRichText = tester
+          .widgetList<RichText>(find.byType(RichText))
+          .firstWhere((r) => r.text.toPlainText().contains('ACTIVE'));
+
+      expect(changedRichText.textScaler, const TextScaler.linear(1.15));
+      final rootSpan = changedRichText.text as TextSpan;
+      expect(rootSpan.style?.fontFamily, AppFonts.robotoMono().fontFamily);
+
+      final childSpans = rootSpan.children!.cast<TextSpan>();
+      final oldSpan = childSpans[0];
+      final arrowSpan = childSpans[1];
+      final newSpan = childSpans[2];
+
+      expect(oldSpan.text, 'PENDING');
+      expect(oldSpan.style?.decoration, TextDecoration.lineThrough);
+      expect(
+        TextPreviewUtils.contrastRatio(oldSpan.style!.color!, surfaceBg),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        TextPreviewUtils.contrastRatio(arrowSpan.style!.color!, surfaceBg),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(newSpan.text, 'ACTIVE');
+      expect(newSpan.style?.color, darkTheme.colorScheme.onSurface);
+      expect(
+        TextPreviewUtils.contrastRatio(newSpan.style!.color!, surfaceBg),
+        greaterThanOrEqualTo(4.5),
+      );
+    },
+  );
 }

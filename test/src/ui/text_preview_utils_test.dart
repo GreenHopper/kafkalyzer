@@ -23,5 +23,33 @@ void main() {
       final result = TextPreviewUtils.getPayloadPreview(input);
       expect(result, 'hello world test multiple spaces');
     });
+
+    test(
+      'getPayloadPreview formats JSON with space after : and , outside strings',
+      () {
+        const input =
+            '{"address":{"city":"Paris","zip":"75001"},"count":3,"empty":null}';
+        final result = TextPreviewUtils.getPayloadPreview(input);
+        expect(
+          result,
+          '{"address": {"city": "Paris", "zip": "75001"}, "count": 3}',
+        );
+      },
+    );
+
+    test(
+      'getPayloadPreview preserves colons and commas inside JSON string literals',
+      () {
+        const input = '{"pattern":"a,b:c","escaped":"x\\"y:z,w"}';
+        final result = TextPreviewUtils.getPayloadPreview(input);
+        expect(result, '{"pattern": "a,b:c", "escaped": "x\\"y:z,w"}');
+      },
+    );
+
+    test('getPayloadPreview does not insert spaces for invalid JSON', () {
+      const input = '{not_valid_json:1,foo:bar}';
+      final result = TextPreviewUtils.getPayloadPreview(input);
+      expect(result, '{not_valid_json:1,foo:bar}');
+    });
   });
 }

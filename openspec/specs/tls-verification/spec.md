@@ -46,7 +46,7 @@ verification for all profiles or for a profile that has not opted out.
 #### Scenario: Opted-out profile connects to a self-signed broker
 - **WHEN** a profile has verification explicitly disabled and the broker presents a self-signed certificate
 - **THEN** the connection SHALL succeed
-- **AND** the profile SHALL be flagged as insecure wherever it is shown
+- **AND** the profile SHALL be flagged as insecure wherever the profile itself is listed, selected or edited
 
 #### Scenario: Other profiles are unaffected
 - **WHEN** one profile has verification disabled and the user connects with a different TLS profile
@@ -74,18 +74,32 @@ verification is not explicitly disabled for that profile, and SHALL skip both ch
 - **WHEN** the Schema Registry host cannot be reached
 - **THEN** the system SHALL report the registry as unreachable and SHALL show schema information as unknown, not as absent
 
-### Requirement: Insecure Marker on Explorer Tabs
+### Requirement: Insecure Marker at Connection Level
 
-Every open Explorer tab that belongs to a profile with verification disabled SHALL display an "insecure" marker made
-of an icon and a localized text label with a tooltip, so the state is not conveyed by colour alone.
+A profile with verification disabled SHALL show an "insecure" marker made of an icon and a localized text label with a
+tooltip on its Explorer sidebar cluster entry, in every cluster selection dropdown and, when present, in the Explorer
+header banner of the active cluster. Topic tabs SHALL NOT show the marker.
 
-#### Scenario: Tab of an insecure profile
-- **WHEN** the user opens a topic tab while connected with a profile whose verification is disabled
-- **THEN** the tab SHALL show the insecure marker next to the profile name
+#### Scenario: Active insecure profile in the sidebar
+- **WHEN** the user is connected with a profile whose verification is disabled
+- **THEN** the sidebar cluster entry of that profile SHALL show the insecure marker with icon, label and tooltip
 
-#### Scenario: Tab of a verified profile
-- **WHEN** the user opens a topic tab while connected with a profile whose verification is enabled or still undecided
-- **THEN** the tab SHALL NOT show the insecure marker
+#### Scenario: Topic tabs stay clean
+- **WHEN** the user opens three topic tabs of a profile whose verification is disabled
+- **THEN** none of the tabs SHALL show the insecure marker
+- **AND** the sidebar cluster entry SHALL still show it
+
+#### Scenario: Insecure profile in a cluster dropdown
+- **WHEN** the user opens a cluster selection dropdown that lists a profile whose verification is disabled
+- **THEN** that entry SHALL show the insecure marker next to its name
+
+#### Scenario: Verified profile
+- **WHEN** a profile has verification enabled or its transition is still undecided
+- **THEN** no insecure marker SHALL be shown for it anywhere
+
+#### Scenario: Narrow sidebar
+- **WHEN** the sidebar is too narrow to show the marker label next to the cluster name
+- **THEN** the marker SHALL keep its icon, tooltip and semantic label, and the cluster name SHALL be shortened before the marker is dropped
 
 ### Requirement: One-Time Verification Transition at Upgrade
 

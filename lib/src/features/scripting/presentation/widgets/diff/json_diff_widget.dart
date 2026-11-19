@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/diff_tree_builder.dart';
 import 'package:kafkalyzer/src/rust/api/json_diff.dart';
+import 'package:kafkalyzer/src/ui/text_preview_utils.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 import 'package:material_ui/material_ui.dart';
 
 class JsonDiffWidget extends StatefulWidget {
@@ -41,6 +43,7 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (_nodes.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,9 +52,9 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
             padding: const EdgeInsets.all(8.0),
             child: Text(
               AppLocalizations.of(context)!.noDifferencesFound,
-              style: const TextStyle(
+              style: TextStyle(
                 fontStyle: FontStyle.italic,
-                color: Colors.grey,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -151,28 +154,56 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
     }
   }
 
+  Color _addedColor(ColorScheme colorScheme, Color surfaceBg) {
+    return TextPreviewUtils.ensureContrast(
+      colorScheme.primary,
+      surfaceBg,
+      colorScheme.onSurface,
+    );
+  }
+
+  Color _removedColor(ColorScheme colorScheme, Color surfaceBg) {
+    return TextPreviewUtils.ensureContrast(
+      colorScheme.error,
+      surfaceBg,
+      colorScheme.onSurface,
+    );
+  }
+
+  Color _changedIconColor(ColorScheme colorScheme, Color surfaceBg) {
+    return TextPreviewUtils.ensureContrast(
+      colorScheme.tertiary,
+      surfaceBg,
+      colorScheme.onSurface,
+    );
+  }
+
   Widget _buildStructuralNode(DiffViewNode node) {
     const double indentSize = 16.0;
-    Color? keyColor;
-    Color? iconColor;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final surfaceBg = theme.cardTheme.color ?? colorScheme.surfaceContainerLow;
+    final baseFontSize = theme.textTheme.bodyMedium?.fontSize ?? 13.0;
+    Color keyColor;
+    Color iconColor;
     IconData icon;
-    TextStyle? textStyle;
+    TextDecoration? decoration;
 
     switch (node.type) {
       case NodeType.add:
-        keyColor = Colors.green;
-        iconColor = Colors.green;
+        keyColor = _addedColor(colorScheme, surfaceBg);
+        iconColor = keyColor;
         icon = Icons.add;
         break;
       case NodeType.remove:
-        keyColor = Colors.red;
-        iconColor = Colors.red;
+        keyColor = _removedColor(colorScheme, surfaceBg);
+        iconColor = keyColor;
         icon = Icons.remove;
-        textStyle = const TextStyle(decoration: TextDecoration.lineThrough);
+        decoration = TextDecoration.lineThrough;
         break;
       default:
-        keyColor = null;
-        iconColor = Colors.grey;
+        keyColor = colorScheme.onSurface;
+        iconColor = colorScheme.onSurfaceVariant;
         icon = node.isExpanded ? Icons.folder_open : Icons.folder;
     }
 
@@ -201,11 +232,12 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
                   const SizedBox(width: 4),
                   Text(
                     node.key,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
+                    style: AppFonts.robotoMono(
+                      fontSize: baseFontSize,
+                      height: 1.4,
                       fontWeight: FontWeight.bold,
                       color: keyColor,
-                    ).merge(textStyle),
+                    ).copyWith(decoration: decoration),
                   ),
                 ],
               ),
@@ -219,17 +251,35 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
 
   Widget _buildAddedNode(DiffViewNode node) {
     const double indentSize = 16.0;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final surfaceBg = theme.cardTheme.color ?? colorScheme.surfaceContainerLow;
+    final baseFontSize = theme.textTheme.bodyMedium?.fontSize ?? 13.0;
+    final addedColor = _addedColor(colorScheme, surfaceBg);
+
     return _wrapWithContextMenu(
       node,
       Padding(
         padding: EdgeInsets.only(left: node.depth * indentSize),
         child: DefaultTextStyle(
-          style: const TextStyle(color: Colors.green, fontFamily: 'monospace'),
+          style: AppFonts.robotoMono(
+            fontSize: baseFontSize,
+            height: 1.4,
+            color: addedColor,
+          ),
           child: Row(
             children: [
-              const Icon(Icons.add, size: 12, color: Colors.green),
+              Icon(Icons.add, size: 12, color: addedColor),
               const SizedBox(width: 4),
-              Text("${node.key}: "),
+              Text(
+                "${node.key}: ",
+                style: AppFonts.robotoMono(
+                  fontSize: baseFontSize,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                  color: addedColor,
+                ),
+              ),
               Expanded(child: Text("${node.newValue}")),
             ],
           ),
@@ -240,19 +290,25 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
 
   Widget _buildRemovedNode(DiffViewNode node) {
     const double indentSize = 16.0;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final surfaceBg = theme.cardTheme.color ?? colorScheme.surfaceContainerLow;
+    final baseFontSize = theme.textTheme.bodyMedium?.fontSize ?? 13.0;
+    final removedColor = _removedColor(colorScheme, surfaceBg);
+
     return _wrapWithContextMenu(
       node,
       Padding(
         padding: EdgeInsets.only(left: node.depth * indentSize),
         child: DefaultTextStyle(
-          style: const TextStyle(
-            color: Colors.red,
-            decoration: TextDecoration.lineThrough,
-            fontFamily: 'monospace',
-          ),
+          style: AppFonts.robotoMono(
+            fontSize: baseFontSize,
+            height: 1.4,
+            color: removedColor,
+          ).copyWith(decoration: TextDecoration.lineThrough),
           child: Row(
             children: [
-              const Icon(Icons.remove, size: 12, color: Colors.red),
+              Icon(Icons.remove, size: 12, color: removedColor),
               const SizedBox(width: 4),
               Text("${node.key}: "),
               Expanded(child: Text("${node.oldValue}")),
@@ -265,6 +321,28 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
 
   Widget _buildChangedNode(DiffViewNode node) {
     const double indentSize = 16.0;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final surfaceBg = theme.cardTheme.color ?? colorScheme.surfaceContainerLow;
+    final baseFontSize = theme.textTheme.bodyMedium?.fontSize ?? 13.0;
+    final removedColor = _removedColor(colorScheme, surfaceBg);
+    final editIconColor = _changedIconColor(colorScheme, surfaceBg);
+    final arrowColor = TextPreviewUtils.ensureContrast(
+      colorScheme.onSurfaceVariant,
+      surfaceBg,
+      colorScheme.onSurface,
+    );
+    final newValueColor = TextPreviewUtils.ensureContrast(
+      colorScheme.onSurface,
+      surfaceBg,
+      colorScheme.onSurface,
+    );
+    final baseMono = AppFonts.robotoMono(
+      fontSize: baseFontSize,
+      height: 1.4,
+      color: newValueColor,
+    );
+
     return _wrapWithContextMenu(
       node,
       Padding(
@@ -272,37 +350,38 @@ class _JsonDiffWidgetState extends State<JsonDiffWidget> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.edit, size: 12, color: Colors.orange),
+            Padding(
+              padding: const EdgeInsets.only(top: 3.0),
+              child: Icon(Icons.edit, size: 12, color: editIconColor),
+            ),
             const SizedBox(width: 4),
             Text(
               "${node.key}: ",
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontWeight: FontWeight.bold,
-              ),
+              style: baseMono.copyWith(fontWeight: FontWeight.bold),
             ),
             Expanded(
               child: RichText(
+                textScaler: MediaQuery.textScalerOf(context),
                 text: TextSpan(
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    color: Colors.black87,
-                  ),
+                  style: baseMono,
                   children: [
                     TextSpan(
                       text: "${node.oldValue}",
-                      style: const TextStyle(
-                        color: Colors.red,
+                      style: baseMono.copyWith(
+                        color: removedColor,
                         decoration: TextDecoration.lineThrough,
                       ),
                     ),
-                    const TextSpan(
+                    TextSpan(
                       text: "  ➔  ",
-                      style: TextStyle(color: Colors.grey),
+                      style: baseMono.copyWith(color: arrowColor),
                     ),
                     TextSpan(
                       text: "${node.newValue}",
-                      style: const TextStyle(color: Colors.green),
+                      style: baseMono.copyWith(
+                        color: newValueColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),

@@ -101,16 +101,43 @@ void main() {
 
       expect(find.text('PROD'), findsOneWidget);
       expect(find.text('orders-prod'), findsOneWidget);
+      expect(find.text('Insecure TLS'), findsNothing);
     },
   );
 
   testWidgets(
-    'ClusterDropdown renders environment chips next to tagged profiles',
+    'EnvironmentBanner shows InsecureTlsBadge when tlsVerification is disabled',
+    (tester) async {
+      const taggedInsecure = ClusterProfile(
+        name: 'orders-prod',
+        bootstrapServers: 'b1:9093',
+        tlsVerification: TlsVerification.disabled,
+        environmentLabel: 'PROD',
+        environmentColor: 'red',
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: EnvironmentBanner(profile: taggedInsecure)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('PROD'), findsOneWidget);
+      expect(find.text('orders-prod'), findsOneWidget);
+      expect(find.text('Insecure TLS'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'ClusterDropdown renders environment chips next to tagged profiles and InsecureTlsBadge for insecure profiles',
     (tester) async {
       const prod = ClusterProfile(
         name: 'orders-prod',
         bootstrapServers: 'b1:9093',
-        tlsVerification: TlsVerification.enabled,
+        tlsVerification: TlsVerification.disabled,
         environmentLabel: 'PROD',
         environmentColor: 'red',
       );
@@ -145,6 +172,7 @@ void main() {
 
       expect(find.text('PROD'), findsWidgets);
       expect(find.text('DEV'), findsWidgets);
+      expect(find.text('Insecure TLS'), findsWidgets);
     },
   );
 

@@ -6,6 +6,8 @@ class TimestampPickerField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final bool showInlineChips;
+  final bool compactPresets;
+  final String? errorText;
   final bool enabled;
   final Widget? suffixIcon;
   final String? selectedLabel;
@@ -18,6 +20,8 @@ class TimestampPickerField extends StatefulWidget {
     this.enabled = true,
     this.suffixIcon,
     this.showInlineChips = false,
+    this.compactPresets = false,
+    this.errorText,
     this.selectedLabel,
     this.onLabelChanged,
   });
@@ -159,6 +163,57 @@ class _TimestampPickerFieldState extends State<TimestampPickerField> {
     );
   }
 
+  Widget _buildCompactPresetsMenu() {
+    final l10n = AppLocalizations.of(context);
+    final tooltip = l10n?.timePresetsMenuTooltip ?? "Relative time presets";
+
+    return MenuAnchor(
+      menuChildren: [
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.access_time, size: 16),
+          onPressed: widget.enabled
+              ? () {
+                  widget.controller.text = DateFormatUtils.formatDateTime(
+                    context,
+                    DateTime.now(),
+                  );
+                  widget.onLabelChanged?.call('now');
+                }
+              : null,
+          child: Text(l10n?.now ?? "Now"),
+        ),
+        const Divider(height: 8),
+        for (final preset in _inlinePresets)
+          MenuItemButton(
+            onPressed: widget.enabled
+                ? () {
+                    final duration = preset['duration'] as Duration;
+                    final label = preset['label'] as String;
+                    _applyDuration(duration);
+                    widget.onLabelChanged?.call(label);
+                  }
+                : null,
+            child: Text('-${preset['label']}'),
+          ),
+      ],
+      builder: (context, controller, child) {
+        return IconButton(
+          icon: const Icon(Icons.timer_outlined, size: 18),
+          tooltip: tooltip,
+          onPressed: widget.enabled
+              ? () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                }
+              : null,
+        );
+      },
+    );
+  }
+
   Widget _buildField() {
     return TextField(
       controller: widget.controller,
@@ -172,11 +227,13 @@ class _TimestampPickerFieldState extends State<TimestampPickerField> {
         labelText: widget.label,
         isDense: true,
         border: const OutlineInputBorder(),
-        helperText: _helperText,
+        helperText: widget.errorText == null ? _helperText : null,
+        errorText: widget.errorText,
         suffixIcon: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (widget.suffixIcon != null) widget.suffixIcon!,
+            if (widget.compactPresets) _buildCompactPresetsMenu(),
             IconButton(
               icon: const Icon(Icons.history),
               onPressed: widget.enabled ? _showQuickTimePicker : null,
@@ -229,7 +286,7 @@ class _TimestampPickerFieldState extends State<TimestampPickerField> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildField(),
-        if (widget.showInlineChips) ...[
+        if (widget.showInlineChips && !widget.compactPresets) ...[
           const SizedBox(height: 8),
           LayoutBuilder(
             builder: (context, constraints) {

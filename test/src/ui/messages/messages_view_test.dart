@@ -10,6 +10,7 @@ import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_timeline_view.dart';
 import 'package:kafkalyzer/src/ui/messages/views/messages_diff_view.dart';
+import 'package:kafkalyzer/src/services/diff_ignore_list_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/file_opener_service.dart';
 import 'package:logger/logger.dart';
@@ -1053,6 +1054,67 @@ void main() {
       expect(find.textContaining('2 of 4 matches'), findsOneWidget);
       expect(find.text('match-0', findRichText: true), findsNothing);
       expect(find.text('match-4', findRichText: true), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Diff mode renders Ignored fields control, multi-topic selector, and load warning in results toolbar with no extra header row in MessagesDiffView',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      SharedPreferences.setMockInitialValues({
+        DiffIgnoreListService.storageKey('topic-a'): ['ts', 'updatedAt'],
+        DiffIgnoreListService.storageKey('topic-b'): 'corrupted-not-a-list',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final ignoreService = DiffIgnoreListService(prefs: prefs);
+      getIt.registerSingleton<DiffIgnoreListService>(ignoreService);
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(messages: testMessages, onMessageTap: (_) {}),
+      );
+      await tester.pumpAndSettle();
+
+      // In Table mode: no Ignored fields control
+      expect(find.byKey(const Key('diff_ignored_fields_button')), findsNothing);
+
+      // Switch to Diff mode
+      await tester.tap(find.byIcon(Icons.difference));
+      await tester.pumpAndSettle();
+
+      // Ignored fields control and multi-topic selector are in the results toolbar
+      final ignoreBtn = find.byKey(const Key('diff_ignored_fields_button'));
+      final topicSelector = find.byKey(const Key('diff_ignore_topic_selector'));
+      expect(ignoreBtn, findsOneWidget);
+      expect(topicSelector, findsOneWidget);
+      expect(find.text('Ignored fields (0)'), findsOneWidget);
+      expect(
+        find.text('Could not read saved ignore list for topic-b.'),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(MessagesDiffView),
+          matching: find.byKey(const Key('diff_ignored_fields_button')),
+        ),
+        findsNothing,
+      );
+
+      // Switch topic selector to topic-a (which has 2 ignored fields)
+      await tester.tap(topicSelector);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('topic-a').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ignored fields (2)'), findsOneWidget);
+
+      // Switch to Timeline mode: Ignored fields control disappears
+      await tester.tap(find.byIcon(Icons.view_list));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('diff_ignored_fields_button')), findsNothing);
     },
   );
 }

@@ -1,8 +1,8 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:group_button/group_button.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/search/domain/filter_field_suggestions.dart';
 import 'package:kafkalyzer/src/features/search/domain/filter_terms.dart';
@@ -15,6 +15,7 @@ import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condit
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_utils.dart';
+import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/timestamp_picker_field.dart';
 
 /// Simplified topic search and consumption control bar.
@@ -94,6 +95,12 @@ class TopicSearchBar extends StatefulWidget {
 
 class _TopicSearchBarState extends State<TopicSearchBar> {
   bool _isAdvancedExpanded = false;
+  final OverlayPortalController _moreFiltersPortalController =
+      OverlayPortalController();
+  final LayerLink _moreFiltersLayerLink = LayerLink();
+  final FocusNode _popoverFocusNode = FocusNode(
+    debugLabel: 'MoreFiltersPopover',
+  );
 
   static const List<int> _presetLimits = [50, 200, 500, 1000];
 
@@ -110,6 +117,8 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
   void initState() {
     super.initState();
     widget.quickFilterController.addListener(_onQuickFilterChanged);
+    widget.startTimestampController.addListener(_onTimestampBoundChanged);
+    widget.endTimestampController.addListener(_onTimestampBoundChanged);
     _validatePatterns();
     _updatePartitionPreview();
   }
@@ -120,6 +129,16 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
     if (widget.quickFilterController != oldWidget.quickFilterController) {
       oldWidget.quickFilterController.removeListener(_onQuickFilterChanged);
       widget.quickFilterController.addListener(_onQuickFilterChanged);
+    }
+    if (widget.startTimestampController != oldWidget.startTimestampController) {
+      oldWidget.startTimestampController.removeListener(
+        _onTimestampBoundChanged,
+      );
+      widget.startTimestampController.addListener(_onTimestampBoundChanged);
+    }
+    if (widget.endTimestampController != oldWidget.endTimestampController) {
+      oldWidget.endTimestampController.removeListener(_onTimestampBoundChanged);
+      widget.endTimestampController.addListener(_onTimestampBoundChanged);
     }
     if (widget.filterType != oldWidget.filterType) {
       _validatePatterns();
@@ -134,9 +153,92 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
   @override
   void dispose() {
     widget.quickFilterController.removeListener(_onQuickFilterChanged);
+    widget.startTimestampController.removeListener(_onTimestampBoundChanged);
+    widget.endTimestampController.removeListener(_onTimestampBoundChanged);
     _validationDebounce?.cancel();
     _previewDebounce?.cancel();
+    _popoverFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onTimestampBoundChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  DateTime? _parseBoundTimestamp(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    final parsed = DateFormatUtils.parseDateTime(context, trimmed);
+    if (parsed != null) return parsed;
+    final epoch = int.tryParse(trimmed);
+    if (epoch != null) return DateTime.fromMillisecondsSinceEpoch(epoch);
+    return null;
+  }
+
+  ({String? startError, String? endError}) _validateTimeBounds(
+    AppLocalizations l10n,
+  ) {
+    final checkStart =
+        widget.scanMode == TopicScanMode.timeRange ||
+        (widget.scanMode == TopicScanMode.offsetEarliest &&
+            widget.startStrategy == MultiSearchStartStrategy.customTimestamp);
+    final checkEnd =
+        widget.scanMode == TopicScanMode.timeRange ||
+        (widget.scanMode == TopicScanMode.offsetEarliest &&
+            widget.endStrategy == MultiSearchEndStrategy.customTimestamp);
+
+    String? startErr;
+    String? endErr;
+    DateTime? startDt;
+    DateTime? endDt;
+
+    if (checkStart && widget.startTimestampController.text.trim().isNotEmpty) {
+      startDt = _parseBoundTimestamp(widget.startTimestampController.text);
+      if (startDt == null) {
+        startErr = l10n.timeRangeInvalidTimestampError;
+      }
+    }
+    if (checkEnd && widget.endTimestampController.text.trim().isNotEmpty) {
+      endDt = _parseBoundTimestamp(widget.endTimestampController.text);
+      if (endDt == null) {
+        endErr = l10n.timeRangeInvalidTimestampError;
+      }
+    }
+    if (startDt != null && endDt != null && endDt.isBefore(startDt)) {
+      endErr = l10n.timeRangeEndBeforeStartError;
+    }
+    return (startError: startErr, endError: endErr);
+  }
+
+  void _openMoreFiltersPopover() {
+    if (!_moreFiltersPortalController.isShowing) {
+      _moreFiltersPortalController.show();
+    }
+    setState(() => _isAdvancedExpanded = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _isAdvancedExpanded) {
+        _popoverFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _closeMoreFiltersPopover() {
+    if (_moreFiltersPortalController.isShowing) {
+      _moreFiltersPortalController.hide();
+    }
+    if (_isAdvancedExpanded && mounted) {
+      setState(() => _isAdvancedExpanded = false);
+    }
+  }
+
+  void _toggleMoreFiltersPopover() {
+    if (_isAdvancedExpanded) {
+      _closeMoreFiltersPopover();
+    } else {
+      _openMoreFiltersPopover();
+    }
   }
 
   void _onQuickFilterChanged() {
@@ -228,9 +330,15 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
   Future<void> _onStart() async {
     await _validatePatterns();
     if (!mounted || _invalidPattern != null) return;
+    final l10n = AppLocalizations.of(context)!;
+    final boundsErrors = _validateTimeBounds(l10n);
+    if (boundsErrors.startError != null || boundsErrors.endError != null) {
+      setState(() {});
+      return;
+    }
     final exprCtrl = widget.filterExpressionController;
     if (exprCtrl != null && !exprCtrl.validateNow()) {
-      setState(() => _isAdvancedExpanded = true);
+      _openMoreFiltersPopover();
       return;
     }
     widget.onStart();
@@ -318,21 +426,27 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
               const SizedBox(height: 10),
               _buildOffsetEarliestRow(context, colorScheme),
             ],
-            if (_isAdvancedExpanded)
-              _buildAdvancedPanel(context, l10n, colorScheme),
           ],
         ),
       ),
     );
   }
 
+  int _activePopoverFiltersCount() {
+    int count = 0;
+    if (widget.fieldController.text.isNotEmpty) count++;
+    if (widget.partitionController.text.isNotEmpty) count++;
+    if (widget.fastTraceEnabled) count++;
+    if (widget.filterExpressionController?.text.trim().isNotEmpty ?? false) {
+      count++;
+    }
+    return count;
+  }
+
   bool _hasActiveAdvancedFilters() {
-    return widget.fieldController.text.isNotEmpty ||
+    return _activePopoverFiltersCount() > 0 ||
         widget.filterType != FilterType.contains ||
-        widget.searchScope != SearchScope.both ||
-        widget.partitionController.text.isNotEmpty ||
-        widget.fastTraceEnabled ||
-        (widget.filterExpressionController?.text.trim().isNotEmpty ?? false);
+        widget.searchScope != SearchScope.both;
   }
 
   Widget _buildScanModeSelector(
@@ -459,6 +573,30 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
     );
   }
 
+  String _localizedScopeLabel(AppLocalizations l10n, SearchScope scope) {
+    return switch (scope) {
+      SearchScope.key => l10n.key,
+      SearchScope.value => l10n.value,
+      SearchScope.both => l10n.both,
+    };
+  }
+
+  String _localizedTypeLabel(AppLocalizations l10n, FilterType type) {
+    return switch (type) {
+      FilterType.contains => l10n.contains,
+      FilterType.regex => l10n.regex,
+      FilterType.exact => l10n.exact,
+    };
+  }
+
+  String _fetchFilterPlaceholder(AppLocalizations l10n, SearchScope scope) {
+    return switch (scope) {
+      SearchScope.key => l10n.fetchFilterPlaceholderKey,
+      SearchScope.value => l10n.fetchFilterPlaceholderValue,
+      SearchScope.both => l10n.fetchFilterPlaceholderBoth,
+    };
+  }
+
   Widget _buildQuickFilterField(
     AppLocalizations l10n,
     ColorScheme colorScheme,
@@ -474,12 +612,16 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          height: 38,
-          child: _buildQuickFilterInput(
-            l10n.quickFilterPlaceholder,
-            colorScheme,
-            borderColor,
+        Tooltip(
+          message: l10n.fetchFilterTooltip,
+          child: SizedBox(
+            height: 38,
+            child: _buildQuickFilterInput(
+              _fetchFilterPlaceholder(l10n, widget.searchScope),
+              l10n,
+              colorScheme,
+              borderColor,
+            ),
           ),
         ),
         if (errorText != null)
@@ -501,6 +643,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
 
   Widget _buildQuickFilterInput(
     String hintText,
+    AppLocalizations l10n,
     ColorScheme colorScheme,
     Color borderColor,
   ) {
@@ -519,17 +662,23 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
           color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
         ),
         prefixIcon: const Icon(Icons.search, size: 18),
-        suffixIcon: widget.quickFilterController.text.isNotEmpty
-            ? IconButton(
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.quickFilterController.text.isNotEmpty)
+              IconButton(
                 icon: const Icon(Icons.clear, size: 16),
-                tooltip: AppLocalizations.of(context)?.clear ?? 'Clear',
+                tooltip: l10n.clear,
                 splashRadius: 16,
                 onPressed: () {
                   widget.quickFilterController.clear();
                   setState(() {});
                 },
-              )
-            : null,
+              ),
+            _buildInlineScopeTypeMenu(l10n, colorScheme),
+            const SizedBox(width: 4),
+          ],
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
         filled: true,
         fillColor: colorScheme.surface,
@@ -544,59 +693,288 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
     );
   }
 
+  Widget _buildInlineScopeTypeMenu(
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    final hasInvalidRegex = _invalidPattern != null;
+    final summary = l10n.fetchFilterScopeTypeSummary(
+      _localizedScopeLabel(l10n, widget.searchScope),
+      _localizedTypeLabel(l10n, widget.filterType),
+    );
+    final isNonDefault =
+        widget.searchScope != SearchScope.both ||
+        widget.filterType != FilterType.contains;
+
+    return MenuAnchor(
+      menuChildren: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+          child: Text(
+            l10n.scope,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        for (final scope in SearchScope.values)
+          MenuItemButton(
+            leadingIcon: Icon(
+              widget.searchScope == scope
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              size: 16,
+              color: widget.searchScope == scope
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+            ),
+            onPressed: () {
+              widget.onSearchScopeChanged(scope);
+              if (widget.fastTraceEnabled && scope != SearchScope.key) {
+                widget.onFastTraceEnabledChanged(false);
+              }
+              setState(() {});
+            },
+            child: Text(_localizedScopeLabel(l10n, scope)),
+          ),
+        const Divider(height: 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+          child: Text(
+            l10n.type,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        for (final type in FilterType.values)
+          MenuItemButton(
+            leadingIcon: Icon(
+              widget.filterType == type
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              size: 16,
+              color: widget.filterType == type
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+            ),
+            onPressed: () {
+              widget.onFilterTypeChanged(type);
+              if (widget.fastTraceEnabled && type != FilterType.exact) {
+                widget.onFastTraceEnabledChanged(false);
+              }
+              setState(() {});
+            },
+            child: Text(_localizedTypeLabel(l10n, type)),
+          ),
+      ],
+      builder: (context, controller, child) {
+        return Semantics(
+          label: l10n.fetchFilterMenuTooltip,
+          button: true,
+          child: Tooltip(
+            message: l10n.fetchFilterMenuTooltip,
+            child: InkWell(
+              key: const Key('fetch_filter_scope_type_menu'),
+              borderRadius: BorderRadius.circular(6),
+              onTap: () {
+                if (controller.isOpen) {
+                  controller.close();
+                } else {
+                  controller.open();
+                }
+              },
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 26),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: hasInvalidRegex
+                      ? colorScheme.errorContainer
+                      : (isNonDefault
+                            ? colorScheme.primaryContainer.withValues(
+                                alpha: 0.5,
+                              )
+                            : colorScheme.surfaceContainerHigh),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasInvalidRegex) ...[
+                      Icon(
+                        Icons.error,
+                        key: const Key('fetch_filter_invalid_regex_icon'),
+                        size: 14,
+                        color: colorScheme.error,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Text(
+                      summary,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: isNonDefault
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        color: hasInvalidRegex
+                            ? colorScheme.onErrorContainer
+                            : (isNonDefault
+                                  ? colorScheme.onPrimaryContainer
+                                  : colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.arrow_drop_down,
+                      size: 16,
+                      color: hasInvalidRegex
+                          ? colorScheme.onErrorContainer
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildAdvancedToggleButton(
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
-    final hasActiveFilters = _hasActiveAdvancedFilters();
+    final activeCount = _activePopoverFiltersCount();
+    final hasActiveFilters = activeCount > 0;
     final tooltip = _isAdvancedExpanded
-        ? l10n.collapseAdvancedFilters
-        : l10n.expandAdvancedFilters;
+        ? l10n.moreFiltersCloseTooltip
+        : l10n.moreFiltersOpenTooltip;
+    final labelText = activeCount > 0
+        ? l10n.moreFiltersButtonWithCount(activeCount)
+        : l10n.moreFiltersButton;
 
-    return Tooltip(
-      message: tooltip,
-      child: OutlinedButton.icon(
-        style: OutlinedButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          side: BorderSide(
-            color: hasActiveFilters
-                ? colorScheme.primary
-                : colorScheme.outlineVariant.withValues(alpha: 0.8),
-          ),
-          backgroundColor: hasActiveFilters
-              ? colorScheme.primaryContainer.withValues(alpha: 0.2)
-              : colorScheme.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        onPressed: () =>
-            setState(() => _isAdvancedExpanded = !_isAdvancedExpanded),
-        icon: Icon(
-          Icons.tune,
-          size: 16,
-          color: hasActiveFilters ? colorScheme.primary : null,
-        ),
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.advancedFiltersToggle,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: hasActiveFilters
-                    ? FontWeight.bold
-                    : FontWeight.normal,
-                color: hasActiveFilters ? colorScheme.primary : null,
+    return CompositedTransformTarget(
+      link: _moreFiltersLayerLink,
+      child: OverlayPortal(
+        controller: _moreFiltersPortalController,
+        overlayChildBuilder: (overlayContext) =>
+            _buildMoreFiltersPopoverOverlay(context, l10n, colorScheme),
+        child: Tooltip(
+          message: tooltip,
+          child: OutlinedButton.icon(
+            key: const Key('more_filters_button'),
+            style: OutlinedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              side: BorderSide(
+                color: hasActiveFilters
+                    ? colorScheme.primary
+                    : colorScheme.outlineVariant.withValues(alpha: 0.8),
+              ),
+              backgroundColor: hasActiveFilters
+                  ? colorScheme.primaryContainer.withValues(alpha: 0.2)
+                  : colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
-            const SizedBox(width: 4),
-            Icon(
-              _isAdvancedExpanded ? Icons.expand_less : Icons.expand_more,
+            onPressed: _toggleMoreFiltersPopover,
+            icon: Icon(
+              Icons.tune,
               size: 16,
+              color: hasActiveFilters ? colorScheme.primary : null,
             ),
-          ],
+            label: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  labelText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: hasActiveFilters
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: hasActiveFilters ? colorScheme.primary : null,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _isAdvancedExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMoreFiltersPopoverOverlay(
+    BuildContext context,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    final mediaSize = MediaQuery.sizeOf(context);
+    final maxHeight = (mediaSize.height * 0.75).clamp(220.0, 640.0);
+    final maxWidth = (mediaSize.width - 32.0).clamp(320.0, 680.0);
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            key: const Key('more_filters_popover_barrier'),
+            behavior: HitTestBehavior.translucent,
+            onTap: _closeMoreFiltersPopover,
+            child: const SizedBox.expand(),
+          ),
+        ),
+        CompositedTransformFollower(
+          link: _moreFiltersLayerLink,
+          targetAnchor: Alignment.bottomRight,
+          followerAnchor: Alignment.topRight,
+          offset: const Offset(0, 6),
+          child: Focus(
+            focusNode: _popoverFocusNode,
+            onKeyEvent: (node, event) {
+              if (event is KeyDownEvent &&
+                  event.logicalKey == LogicalKeyboardKey.escape) {
+                _closeMoreFiltersPopover();
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(10),
+              color: colorScheme.surface,
+              child: Container(
+                key: const Key('more_filters_popover'),
+                width: maxWidth,
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.8),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(14),
+                  child: _buildMoreFiltersPopoverContent(
+                    context,
+                    l10n,
+                    colorScheme,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -615,6 +993,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
             l10n.chipField(widget.fieldController.text),
             style: const TextStyle(fontSize: 11),
           ),
+          onPressed: _openMoreFiltersPopover,
           deleteIcon: const Icon(Icons.clear, size: 14),
           onDeleted: () {
             widget.fieldController.clear();
@@ -689,7 +1068,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
                 ),
               ),
             ),
-            onPressed: () => setState(() => _isAdvancedExpanded = true),
+            onPressed: _openMoreFiltersPopover,
             deleteIcon: const Icon(Icons.clear, size: 14),
             onDeleted: () {
               widget.filterExpressionController!.setText('');
@@ -708,6 +1087,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
             l10n.chipPartition(widget.partitionController.text),
             style: const TextStyle(fontSize: 11),
           ),
+          onPressed: _openMoreFiltersPopover,
           deleteIcon: const Icon(Icons.clear, size: 14),
           onDeleted: () {
             widget.partitionController.clear();
@@ -725,6 +1105,7 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
         InputChip(
           visualDensity: VisualDensity.compact,
           label: Text(chipLabel, style: const TextStyle(fontSize: 11)),
+          onPressed: _openMoreFiltersPopover,
           deleteIcon: const Icon(Icons.clear, size: 14),
           onDeleted: () {
             widget.onFastTraceEnabledChanged(false);
@@ -742,8 +1123,24 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
   }
 
   Widget _buildTimeRangeRow(BuildContext context, ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context)!;
+    final errors = _validateTimeBounds(l10n);
+
+    final startField = TimestampPickerField(
+      controller: widget.startTimestampController,
+      label: l10n.startTime,
+      compactPresets: true,
+      errorText: errors.startError,
+    );
+    final endField = TimestampPickerField(
+      controller: widget.endTimestampController,
+      label: l10n.endTime,
+      compactPresets: true,
+      errorText: errors.endError,
+    );
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
@@ -751,24 +1148,25 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
           color: colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TimestampPickerField(
-              controller: widget.startTimestampController,
-              label: AppLocalizations.of(context)?.startTime ?? 'Start Time',
-              showInlineChips: true,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: TimestampPickerField(
-              controller: widget.endTimestampController,
-              label: AppLocalizations.of(context)?.endTime ?? 'End Time',
-              showInlineChips: true,
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide =
+              !constraints.maxWidth.isFinite || constraints.maxWidth >= 640;
+          if (isWide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: startField),
+                const SizedBox(width: 12),
+                Expanded(child: endField),
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [startField, const SizedBox(height: 8), endField],
+          );
+        },
       ),
     );
   }
@@ -777,8 +1175,23 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
     BuildContext context,
     ColorScheme colorScheme,
   ) {
+    final startConfig = StartConditionConfiguration(
+      startStrategy: widget.startStrategy,
+      onStartStrategyChanged: widget.onStartStrategyChanged,
+      startOffsetController: widget.startOffsetController,
+      startTimestampController: widget.startTimestampController,
+      compactPresets: true,
+    );
+    final endConfig = EndConditionConfiguration(
+      endStrategy: widget.endStrategy,
+      onEndStrategyChanged: widget.onEndStrategyChanged,
+      endOffsetController: widget.endOffsetController,
+      endTimestampController: widget.endTimestampController,
+      compactPresets: true,
+    );
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
@@ -786,118 +1199,97 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
           color: colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: StartConditionConfiguration(
-              startStrategy: widget.startStrategy,
-              onStartStrategyChanged: widget.onStartStrategyChanged,
-              startOffsetController: widget.startOffsetController,
-              startTimestampController: widget.startTimestampController,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: EndConditionConfiguration(
-              endStrategy: widget.endStrategy,
-              onEndStrategyChanged: widget.onEndStrategyChanged,
-              endOffsetController: widget.endOffsetController,
-              endTimestampController: widget.endTimestampController,
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide =
+              !constraints.maxWidth.isFinite || constraints.maxWidth >= 640;
+          if (isWide) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: startConfig),
+                const SizedBox(width: 12),
+                Expanded(child: endConfig),
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [startConfig, const SizedBox(height: 8), endConfig],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildAdvancedPanel(
+  Widget _buildMoreFiltersPopoverContent(
     BuildContext context,
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
-    return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 3, child: _buildFieldAutocomplete(context)),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: widget.partitionController,
-                  enabled: !widget.fastTraceEnabled,
-                  decoration: InputDecoration(
-                    labelText:
-                        AppLocalizations.of(context)?.partitionOptional ??
-                        'Partition (Opt.)',
-                    isDense: true,
-                  ),
-                  onChanged: (_) => setState(() {}),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 3, child: _buildFieldAutocomplete(context)),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: TextField(
+                controller: widget.partitionController,
+                enabled: !widget.fastTraceEnabled,
+                decoration: InputDecoration(
+                  labelText:
+                      AppLocalizations.of(context)?.partitionOptional ??
+                      'Partition (Opt.)',
+                  isDense: true,
                 ),
+                onChanged: (_) => setState(() {}),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 16,
-            runSpacing: 12,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _buildFilterTypeSelector(colorScheme),
-              _buildSearchScopeSelector(colorScheme),
-              Material(
-                type: MaterialType.transparency,
-                child: SizedBox(
-                  width: 200,
-                  child: SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(
-                      l10n.fastTrace,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    value: widget.fastTraceEnabled,
-                    onChanged: (val) {
-                      widget.onFastTraceEnabledChanged(val);
-                      if (val) {
-                        widget.onFilterTypeChanged(FilterType.exact);
-                        widget.onSearchScopeChanged(SearchScope.key);
-                      }
-                      setState(() {});
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (widget.fastTraceEnabled) ...[
-            const SizedBox(height: 8),
-            _buildFastTracePreview(context, l10n, colorScheme),
-          ],
-          if (widget.filterExpressionController != null) ...[
-            const SizedBox(height: 12),
-            FilterExpressionEditor(
-              controller: widget.filterExpressionController!,
-              suggestions: widget.filterSuggestions,
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        Material(
+          type: MaterialType.transparency,
+          child: SizedBox(
+            width: 220,
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(
+                l10n.fastTrace,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              value: widget.fastTraceEnabled,
+              onChanged: (val) {
+                widget.onFastTraceEnabledChanged(val);
+                if (val) {
+                  widget.onFilterTypeChanged(FilterType.exact);
+                  widget.onSearchScopeChanged(SearchScope.key);
+                }
+                setState(() {});
+              },
+            ),
+          ),
+        ),
+        if (widget.fastTraceEnabled) ...[
+          const SizedBox(height: 8),
+          _buildFastTracePreview(context, l10n, colorScheme),
         ],
-      ),
+        if (widget.filterExpressionController != null) ...[
+          const SizedBox(height: 12),
+          FilterExpressionEditor(
+            controller: widget.filterExpressionController!,
+            suggestions: widget.filterSuggestions,
+          ),
+        ],
+      ],
     );
   }
 
@@ -1014,98 +1406,6 @@ class _TopicSearchBarState extends State<TopicSearchBar> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildFilterTypeSelector(ColorScheme colorScheme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '${AppLocalizations.of(context)?.type ?? 'Type'}:',
-          style: Theme.of(
-            context,
-          ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(width: 8),
-        GroupButton(
-          isRadio: true,
-          onSelected: (val, i, selected) {
-            final newType = FilterType.values[i];
-            widget.onFilterTypeChanged(newType);
-            if (widget.fastTraceEnabled && newType != FilterType.exact) {
-              widget.onFastTraceEnabledChanged(false);
-            }
-            setState(() {});
-          },
-          buttons: const ["Contains", "Regex", "Exact"],
-          controller: GroupButtonController(
-            selectedIndex: widget.filterType.index,
-          ),
-          options: GroupButtonOptions(
-            borderRadius: BorderRadius.circular(8),
-            buttonHeight: 30,
-            textPadding: const EdgeInsets.symmetric(horizontal: 10),
-            selectedColor: colorScheme.primaryContainer,
-            selectedTextStyle: TextStyle(
-              color: colorScheme.onPrimaryContainer,
-              fontSize: 12,
-            ),
-            unselectedColor: colorScheme.surfaceContainerHigh,
-            unselectedTextStyle: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
-            mainGroupAlignment: MainGroupAlignment.start,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchScopeSelector(ColorScheme colorScheme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '${AppLocalizations.of(context)?.scope ?? 'Scope'}:',
-          style: Theme.of(
-            context,
-          ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(width: 8),
-        GroupButton(
-          isRadio: true,
-          onSelected: (val, i, selected) {
-            final newScope = SearchScope.values[i];
-            widget.onSearchScopeChanged(newScope);
-            if (widget.fastTraceEnabled && newScope != SearchScope.key) {
-              widget.onFastTraceEnabledChanged(false);
-            }
-            setState(() {});
-          },
-          buttons: const ["Key", "Value", "Both"],
-          controller: GroupButtonController(
-            selectedIndex: widget.searchScope.index,
-          ),
-          options: GroupButtonOptions(
-            borderRadius: BorderRadius.circular(8),
-            buttonHeight: 30,
-            textPadding: const EdgeInsets.symmetric(horizontal: 10),
-            selectedColor: colorScheme.primaryContainer,
-            selectedTextStyle: TextStyle(
-              color: colorScheme.onPrimaryContainer,
-              fontSize: 12,
-            ),
-            unselectedColor: colorScheme.surfaceContainerHigh,
-            unselectedTextStyle: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-            ),
-            mainGroupAlignment: MainGroupAlignment.start,
-          ),
-        ),
-      ],
     );
   }
 }

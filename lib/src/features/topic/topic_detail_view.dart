@@ -290,12 +290,12 @@ class _TopicDetailViewState extends State<TopicDetailView>
     );
   }
 
-  Widget? _buildLocalSchemaHeaderTag(
-    BuildContext context,
-    AppLocalizations? l10n,
-  ) {
+  ({Widget? tag, bool isPinned, double estimatedWidth})
+  _buildLocalSchemaFactItem(BuildContext context, AppLocalizations? l10n) {
     final stored = _storedLocalSchemas;
-    if (stored == null || !stored.hasAny || l10n == null) return null;
+    if (stored == null || !stored.hasAny || l10n == null) {
+      return (tag: null, isPinned: false, estimatedWidth: 0);
+    }
 
     final side = stored.value != null
         ? LocalSchemaSide.value
@@ -320,15 +320,23 @@ class _TopicDetailViewState extends State<TopicDetailView>
           )
         : assignment.path.split(RegExp(r'[/\\]')).last;
 
-    return Tooltip(
-      message: tooltip,
-      child: TopicTag(
-        text,
-        key: const Key('topic_local_schema_tag'),
-        isSchema: true,
-        onTap: () => _openLocalSchemaDialogFromHeader(side),
+    return (
+      tag: Tooltip(
+        message: tooltip,
+        child: TopicTag(
+          text,
+          key: const Key('topic_local_schema_tag'),
+          isSchema: true,
+          onTap: () => _openLocalSchemaDialogFromHeader(side),
+        ),
       ),
+      isPinned: hasError,
+      estimatedWidth: _estimateTagWidth(text),
     );
+  }
+
+  static double _estimateTagWidth(String text, {bool hasIcon = false}) {
+    return text.length * 5.2 + 14.0 + (hasIcon ? 16.0 : 0.0);
   }
 
   void _onActiveConnectionChanged() {
@@ -559,7 +567,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
             Expanded(
               child: Row(
                 children: [
-                  Flexible(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -596,18 +604,78 @@ class _TopicDetailViewState extends State<TopicDetailView>
         );
 
         if (!compact) {
-          return Row(
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ...identityRow.children,
-              const SizedBox(width: 16),
-              Expanded(child: progressTile),
+              Row(
+                children: [
+                  closeButton,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(child: _buildTopicTitleRow(context)),
+                        if (hasSchema(
+                          schemaController,
+                          widget.profile,
+                          widget.topic.name,
+                        )) ...[
+                          const SizedBox(width: 12),
+                          _buildSchemaButton(context),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
+                  const SizedBox(width: 16),
+                  Flexible(child: progressTile),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(left: 56),
+                child: _buildTopicTags(context),
+              ),
             ],
           );
         }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [identityRow, const SizedBox(height: 8), progressTile],
+          children: [
+            Row(
+              children: [
+                closeButton,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(child: _buildTopicTitleRow(context)),
+                      if (hasSchema(
+                        schemaController,
+                        widget.profile,
+                        widget.topic.name,
+                      )) ...[
+                        const SizedBox(width: 12),
+                        _buildSchemaButton(context),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 56),
+              child: _buildTopicTags(context),
+            ),
+            const SizedBox(height: 8),
+            progressTile,
+          ],
         );
       },
     );
@@ -742,7 +810,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
         widget.profile,
         topic.name,
       );
-      final localSchemaTag = _buildLocalSchemaHeaderTag(context, l10n);
+      final localSchemaItem = _buildLocalSchemaFactItem(context, l10n);
       return Wrap(
         spacing: 8,
         runSpacing: 4,
@@ -754,7 +822,7 @@ class _TopicDetailViewState extends State<TopicDetailView>
               key: const Key('topic_schema_tag'),
               isSchema: true,
             ),
-          ?localSchemaTag,
+          ?localSchemaItem.tag,
         ],
       );
     }
@@ -777,84 +845,287 @@ class _TopicDetailViewState extends State<TopicDetailView>
           widget.profile,
           topic.name,
         );
-        return Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Tooltip(
+        final pinned = <({Widget widget, double width})>[];
+        final regular = <({Widget widget, double width})>[];
+
+        // 1. Unhealthy partitions warning (always pinned)
+        if (unhealthy > 0) {
+          final text =
+              l10n?.topicHealthWarning(
+                topic.underReplicatedPartitions ?? 0,
+                topic.leaderlessPartitions ?? 0,
+              ) ??
+              'Unhealthy partitions';
+          pinned.add((
+            widget: Tooltip(
               message: healthTooltip,
               child: TopicTag(
-                l10n?.topicPartitionsLabel(topic.partitionCount) ??
-                    "${topic.partitionCount} Partitions",
-                key: const Key('topic_partitions_tag'),
+                text,
+                key: const Key('topic_health_tag'),
                 onTap: () => _openPartitionHealthDialog(context),
               ),
             ),
-            Tooltip(
-              message: healthTooltip,
-              child: TopicTag(
-                l10n?.topicRfLabel(topic.replicationFactor) ??
-                    "RF: ${topic.replicationFactor}",
-                key: const Key('topic_rf_tag'),
-                onTap: () => _openPartitionHealthDialog(context),
-              ),
+            width: _estimateTagWidth(text),
+          ));
+        }
+
+        // 2. Partitions & RF (primary regular facts)
+        final partitionsText =
+            l10n?.topicPartitionsLabel(topic.partitionCount) ??
+            "${topic.partitionCount} Partitions";
+        regular.add((
+          widget: Tooltip(
+            message: healthTooltip,
+            child: TopicTag(
+              partitionsText,
+              key: const Key('topic_partitions_tag'),
+              onTap: () => _openPartitionHealthDialog(context),
             ),
-            if (unhealthy > 0)
-              Tooltip(
-                message: healthTooltip,
-                child: TopicTag(
-                  l10n?.topicHealthWarning(
-                        topic.underReplicatedPartitions ?? 0,
-                        topic.leaderlessPartitions ?? 0,
-                      ) ??
-                      'Unhealthy partitions',
-                  key: const Key('topic_health_tag'),
-                  onTap: () => _openPartitionHealthDialog(context),
-                ),
-              ),
-            ..._buildEstimateTags(context, l10n, topic),
-            if (configView != null) ...[
-              switch (configView.state) {
-                TopicConfigViewState.loading =>
-                  topic.cleanupPolicy != null || topic.retentionMs != null
-                      ? const SizedBox.shrink()
-                      : TopicTag(
-                          l10n?.topicConfigLoading ?? 'loading',
-                          key: const Key('topic_config_loading_tag'),
-                          isConfig: true,
-                        ),
-                TopicConfigViewState.available => const SizedBox.shrink(),
-                TopicConfigViewState.notReadable => TopicTag(
-                  l10n?.topicConfigNotReadable ?? 'not readable — permission?',
+          ),
+          width: _estimateTagWidth(partitionsText),
+        ));
+
+        final rfText =
+            l10n?.topicRfLabel(topic.replicationFactor) ??
+            "RF: ${topic.replicationFactor}";
+        regular.add((
+          widget: Tooltip(
+            message: healthTooltip,
+            child: TopicTag(
+              rfText,
+              key: const Key('topic_rf_tag'),
+              onTap: () => _openPartitionHealthDialog(context),
+            ),
+          ),
+          width: _estimateTagWidth(rfText),
+        ));
+
+        // 3. Estimate fact (pinned if unknown/notReadable, else regular)
+        for (final estItem in _buildEstimateFactItems(context, l10n, topic)) {
+          if (estItem.isPinned) {
+            pinned.add((widget: estItem.widget, width: estItem.width));
+          } else {
+            regular.add((widget: estItem.widget, width: estItem.width));
+          }
+        }
+
+        // 4. Schema tags (pinned if unknown/error, else primary regular)
+        if (schemaLabel != null) {
+          final isSchemaUnknown =
+              schemaController.errorFor(widget.profile) != null;
+          final schemaWidget = TopicTag(
+            schemaLabel,
+            key: const Key('topic_schema_tag'),
+            isSchema: true,
+          );
+          if (isSchemaUnknown) {
+            pinned.add((
+              widget: schemaWidget,
+              width: _estimateTagWidth(schemaLabel),
+            ));
+          } else {
+            regular.add((
+              widget: schemaWidget,
+              width: _estimateTagWidth(schemaLabel),
+            ));
+          }
+        }
+
+        final localSchemaItem = _buildLocalSchemaFactItem(context, l10n);
+        if (localSchemaItem.tag != null) {
+          if (localSchemaItem.isPinned) {
+            pinned.add((
+              widget: localSchemaItem.tag!,
+              width: localSchemaItem.estimatedWidth,
+            ));
+          } else {
+            regular.add((
+              widget: localSchemaItem.tag!,
+              width: localSchemaItem.estimatedWidth,
+            ));
+          }
+        }
+
+        // 5. Config view status (pinned if notReadable/failed, regular if loading)
+        if (configView != null) {
+          switch (configView.state) {
+            case TopicConfigViewState.loading:
+              if (topic.cleanupPolicy == null && topic.retentionMs == null) {
+                final text = l10n?.topicConfigLoading ?? 'loading';
+                regular.add((
+                  widget: TopicTag(
+                    text,
+                    key: const Key('topic_config_loading_tag'),
+                    isConfig: true,
+                  ),
+                  width: _estimateTagWidth(text),
+                ));
+              }
+            case TopicConfigViewState.available:
+              break;
+            case TopicConfigViewState.notReadable:
+              final text =
+                  l10n?.topicConfigNotReadable ?? 'not readable — permission?';
+              pinned.add((
+                widget: TopicTag(
+                  text,
                   key: const Key('topic_config_not_readable_tag'),
                   isConfig: true,
                 ),
-                TopicConfigViewState.failed => TopicTag(
-                  '${l10n?.topicConfigLoadFailed ?? 'could not be loaded'} · ${l10n?.retry ?? 'Retry'}',
+                width: _estimateTagWidth(text),
+              ));
+            case TopicConfigViewState.failed:
+              final text =
+                  '${l10n?.topicConfigLoadFailed ?? 'could not be loaded'} · ${l10n?.retry ?? 'Retry'}';
+              pinned.add((
+                widget: TopicTag(
+                  text,
                   key: const Key('topic_config_failed_tag'),
                   isConfig: true,
                   onTap: () =>
                       topicController!.retryConfig(widget.profile, topic.name),
                 ),
-              },
-            ],
-            ..._buildRetentionAndPolicyTags(context, l10n, topic, configView),
-            _buildTimeRangeWidget(context, l10n, topic),
-            if (schemaLabel != null)
-              TopicTag(
-                schemaLabel,
-                key: const Key('topic_schema_tag'),
-                isSchema: true,
-              ),
-            ?_buildLocalSchemaHeaderTag(context, l10n),
-          ],
+                width: _estimateTagWidth(text),
+              ));
+          }
+        }
+
+        // 6. Retention & policy tags
+        for (final retItem in _buildRetentionAndPolicyFactItems(
+          context,
+          l10n,
+          topic,
+          configView,
+        )) {
+          if (retItem.isPinned) {
+            pinned.add((widget: retItem.widget, width: retItem.width));
+          } else {
+            regular.add((widget: retItem.widget, width: retItem.width));
+          }
+        }
+
+        // 7. Time range facts
+        for (final trItem in _buildTimeRangeFactItems(context, l10n, topic)) {
+          if (trItem.isPinned) {
+            pinned.add((widget: trItem.widget, width: trItem.width));
+          } else {
+            regular.add((widget: trItem.widget, width: trItem.width));
+          }
+        }
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : 1200.0;
+            const spacing = 8.0;
+            const overflowChipReservedWidth = 44.0;
+
+            double usedWidth = 0.0;
+            final visible = <Widget>[];
+            final overflow = <Widget>[];
+
+            for (final item in pinned) {
+              if (visible.isNotEmpty) usedWidth += spacing;
+              usedWidth += item.width;
+              visible.add(item.widget);
+            }
+
+            // Compute total width if all regular items were shown without overflow chip
+            double totalIfAllShown = usedWidth;
+            for (int i = 0; i < regular.length; i++) {
+              if (visible.isNotEmpty || i > 0) totalIfAllShown += spacing;
+              totalIfAllShown += regular[i].width;
+            }
+
+            if (totalIfAllShown <= maxWidth) {
+              for (final item in regular) {
+                visible.add(item.widget);
+              }
+            } else {
+              final budget = maxWidth - overflowChipReservedWidth - spacing;
+              for (final item in regular) {
+                final nextWidth =
+                    usedWidth + (visible.isEmpty ? 0 : spacing) + item.width;
+                if (overflow.isEmpty &&
+                    (nextWidth <= budget || visible.isEmpty)) {
+                  usedWidth = nextWidth;
+                  visible.add(item.widget);
+                } else {
+                  overflow.add(item.widget);
+                }
+              }
+            }
+
+            if (overflow.isNotEmpty) {
+              visible.add(_buildOverflowFactsChip(context, l10n, overflow));
+            }
+
+            return Wrap(
+              key: const Key('topic_facts_strip'),
+              spacing: spacing,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: visible,
+            );
+          },
         );
       },
     );
   }
 
-  List<Widget> _buildEstimateTags(
+  Widget _buildOverflowFactsChip(
+    BuildContext context,
+    AppLocalizations? l10n,
+    List<Widget> overflowItems,
+  ) {
+    final count = overflowItems.length;
+    final semanticLabel =
+        l10n?.topicFactsMoreCount(count) ?? '$count more topic facts';
+
+    return MenuAnchor(
+      style: MenuStyle(
+        padding: const WidgetStatePropertyAll(EdgeInsets.all(10)),
+        backgroundColor: WidgetStatePropertyAll(
+          Theme.of(context).colorScheme.surfaceContainerHigh,
+        ),
+      ),
+      menuChildren: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: overflowItems,
+          ),
+        ),
+      ],
+      builder: (context, controller, child) {
+        return Semantics(
+          label: semanticLabel,
+          button: true,
+          child: Tooltip(
+            message: semanticLabel,
+            child: TopicTag(
+              '+$count',
+              key: const Key('topic_facts_overflow_tag'),
+              isConfig: true,
+              onTap: () {
+                if (controller.isOpen) {
+                  controller.close();
+                } else {
+                  controller.open();
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<({Widget widget, bool isPinned, double width})> _buildEstimateFactItems(
     BuildContext context,
     AppLocalizations? l10n,
     TopicMetadata topic,
@@ -864,57 +1135,83 @@ class _TopicDetailViewState extends State<TopicDetailView>
       case TopicFactStatus.idle:
         return const [];
       case TopicFactStatus.loading:
+        final text = l10n?.topicConfigLoading ?? 'loading';
         return [
-          TopicTag(
-            l10n?.topicConfigLoading ?? 'loading',
-            key: const Key('topic_estimate_loading_tag'),
-            isConfig: true,
+          (
+            widget: TopicTag(
+              text,
+              key: const Key('topic_estimate_loading_tag'),
+              isConfig: true,
+            ),
+            isPinned: false,
+            width: _estimateTagWidth(text),
           ),
         ];
       case TopicFactStatus.error:
         if (offsets.notReadable) {
+          final text =
+              l10n?.topicHeaderEstimateNotReadable ?? 'Messages: not readable';
           return [
-            TopicTag(
-              l10n?.topicHeaderEstimateNotReadable ?? 'Messages: not readable',
-              key: const Key('topic_estimate_not_readable_tag'),
-              isConfig: true,
+            (
+              widget: TopicTag(
+                text,
+                key: const Key('topic_estimate_not_readable_tag'),
+                isConfig: true,
+              ),
+              isPinned: true,
+              width: _estimateTagWidth(text),
             ),
           ];
         }
+        final text = l10n?.topicHeaderEstimateUnknown ?? 'Messages: unknown';
         return [
-          Tooltip(
-            message: offsets.error ?? '',
-            child: TopicTag(
-              l10n?.topicHeaderEstimateUnknown ?? 'Messages: unknown',
-              key: const Key('topic_estimate_unknown_tag'),
-              isConfig: true,
+          (
+            widget: Tooltip(
+              message: offsets.error ?? '',
+              child: TopicTag(
+                text,
+                key: const Key('topic_estimate_unknown_tag'),
+                isConfig: true,
+              ),
             ),
+            isPinned: true,
+            width: _estimateTagWidth(text),
           ),
         ];
       case TopicFactStatus.value:
         final est = offsets.data!;
         if (est.notReadable) {
+          final text =
+              l10n?.topicHeaderEstimateNotReadable ?? 'Messages: not readable';
           return [
-            Tooltip(
-              message: est.unreadableReason ?? '',
-              child: TopicTag(
-                l10n?.topicHeaderEstimateNotReadable ??
-                    'Messages: not readable',
-                key: const Key('topic_estimate_not_readable_tag'),
-                isConfig: true,
+            (
+              widget: Tooltip(
+                message: est.unreadableReason ?? '',
+                child: TopicTag(
+                  text,
+                  key: const Key('topic_estimate_not_readable_tag'),
+                  isConfig: true,
+                ),
               ),
+              isPinned: true,
+              width: _estimateTagWidth(text),
             ),
           ];
         }
         if (est.totalSpan == null) {
+          final text = l10n?.topicHeaderEstimateUnknown ?? 'Messages: unknown';
           return [
-            Tooltip(
-              message: est.unreadableReason ?? '',
-              child: TopicTag(
-                l10n?.topicHeaderEstimateUnknown ?? 'Messages: unknown',
-                key: const Key('topic_estimate_unknown_tag'),
-                isConfig: true,
+            (
+              widget: Tooltip(
+                message: est.unreadableReason ?? '',
+                child: TopicTag(
+                  text,
+                  key: const Key('topic_estimate_unknown_tag'),
+                  isConfig: true,
+                ),
               ),
+              isPinned: true,
+              width: _estimateTagWidth(text),
             ),
           ];
         }
@@ -934,20 +1231,21 @@ class _TopicDetailViewState extends State<TopicDetailView>
           key: const Key('topic_estimate_tag'),
           isConfig: true,
         );
-        if (isCompactedOrUnknown && l10n != null) {
-          return [
-            Tooltip(
-              key: const Key('topic_estimate_compaction_tooltip'),
-              message: l10n.topicHeaderEstimateCompactedNote,
-              child: tag,
-            ),
-          ];
-        }
-        return [tag];
+        final widget = (isCompactedOrUnknown && l10n != null)
+            ? Tooltip(
+                key: const Key('topic_estimate_compaction_tooltip'),
+                message: l10n.topicHeaderEstimateCompactedNote,
+                child: tag,
+              )
+            : tag;
+        return [
+          (widget: widget, isPinned: false, width: _estimateTagWidth(label)),
+        ];
     }
   }
 
-  List<Widget> _buildRetentionAndPolicyTags(
+  List<({Widget widget, bool isPinned, double width})>
+  _buildRetentionAndPolicyFactItems(
     BuildContext context,
     AppLocalizations? l10n,
     TopicMetadata topic,
@@ -958,14 +1256,20 @@ class _TopicDetailViewState extends State<TopicDetailView>
       if (configView?.state == TopicConfigViewState.notReadable) {
         return const [];
       }
-      return [
-        TopicTag(
+      final text =
           l10n?.topicHeaderRetentionLabel(
-                l10n.topicHeaderRetentionNotReadable,
-              ) ??
-              'Retention: not readable',
-          key: const Key('topic_retention_not_readable_tag'),
-          isConfig: true,
+            l10n.topicHeaderRetentionNotReadable,
+          ) ??
+          'Retention: not readable';
+      return [
+        (
+          widget: TopicTag(
+            text,
+            key: const Key('topic_retention_not_readable_tag'),
+            isConfig: true,
+          ),
+          isPinned: true,
+          width: _estimateTagWidth(text),
         ),
       ];
     }
@@ -980,29 +1284,47 @@ class _TopicDetailViewState extends State<TopicDetailView>
         topic.retentionMs;
     final retentionBytes = configs.data?.retentionBytes;
 
-    return [
-      if (policy != null && policy.isNotEmpty)
-        TopicTag(splitPolicy(policy), isConfig: true),
-      if (retentionMs != null && retentionMs.isNotEmpty && l10n != null)
-        TopicTag(
-          l10n.topicHeaderRetentionLabel(
-            formatRetentionDuration(retentionMs, l10n),
-          ),
+    final items = <({Widget widget, bool isPinned, double width})>[];
+    if (policy != null && policy.isNotEmpty) {
+      final policyText = splitPolicy(policy);
+      items.add((
+        widget: TopicTag(policyText, isConfig: true),
+        isPinned: false,
+        width: _estimateTagWidth(policyText),
+      ));
+    }
+    if (retentionMs != null && retentionMs.isNotEmpty && l10n != null) {
+      final retText = l10n.topicHeaderRetentionLabel(
+        formatRetentionDuration(retentionMs, l10n),
+      );
+      items.add((
+        widget: TopicTag(
+          retText,
           key: const Key('topic_retention_tag'),
           isConfig: true,
         ),
-      if (retentionBytes != null && retentionBytes.isNotEmpty && l10n != null)
-        TopicTag(
-          l10n.topicHeaderRetentionBytesLabel(
-            formatRetentionBytes(retentionBytes, l10n),
-          ),
+        isPinned: false,
+        width: _estimateTagWidth(retText),
+      ));
+    }
+    if (retentionBytes != null && retentionBytes.isNotEmpty && l10n != null) {
+      final bytesText = l10n.topicHeaderRetentionBytesLabel(
+        formatRetentionBytes(retentionBytes, l10n),
+      );
+      items.add((
+        widget: TopicTag(
+          bytesText,
           key: const Key('topic_retention_bytes_tag'),
           isConfig: true,
         ),
-    ];
+        isPinned: false,
+        width: _estimateTagWidth(bytesText),
+      ));
+    }
+    return items;
   }
 
-  Widget _buildTimeRangeWidget(
+  List<({Widget widget, bool isPinned, double width})> _buildTimeRangeFactItems(
     BuildContext context,
     AppLocalizations? l10n,
     TopicMetadata topic,
@@ -1010,55 +1332,95 @@ class _TopicDetailViewState extends State<TopicDetailView>
     final tr = factsController.timeRange;
     switch (tr.status) {
       case TopicFactStatus.idle:
-        return Tooltip(
-          message:
-              l10n?.topicHeaderLoadTimeRangeTooltip(topic.partitionCount) ??
-              'Read oldest & newest message timestamps across ${topic.partitionCount} partitions',
-          child: OutlinedButton.icon(
-            key: const Key('topic_load_time_range_button'),
-            onPressed: factsController.loadTimeRange,
-            style: OutlinedButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              minimumSize: const Size(24, 24),
+        final labelText = l10n?.topicHeaderLoadTimeRange ?? 'Load time range';
+        return [
+          (
+            widget: Tooltip(
+              message:
+                  l10n?.topicHeaderLoadTimeRangeTooltip(topic.partitionCount) ??
+                  'Read oldest & newest message timestamps across ${topic.partitionCount} partitions',
+              child: OutlinedButton.icon(
+                key: const Key('topic_load_time_range_button'),
+                onPressed: factsController.loadTimeRange,
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(24, 24),
+                ),
+                icon: const Icon(Icons.schedule, size: 14),
+                label: Text(
+                  labelText,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
             ),
-            icon: const Icon(Icons.schedule, size: 14),
-            label: Text(
-              l10n?.topicHeaderLoadTimeRange ?? 'Load time range',
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
+            isPinned: false,
+            width: _estimateTagWidth(labelText, hasIcon: true) + 8,
           ),
-        );
+        ];
       case TopicFactStatus.loading:
-        return TopicTag(
-          l10n?.topicHeaderTimeRangeLoading ?? 'Loading time range…',
-          key: const Key('topic_time_range_loading_tag'),
-          isConfig: true,
-        );
+        final text = l10n?.topicHeaderTimeRangeLoading ?? 'Loading time range…';
+        return [
+          (
+            widget: TopicTag(
+              text,
+              key: const Key('topic_time_range_loading_tag'),
+              isConfig: true,
+            ),
+            isPinned: false,
+            width: _estimateTagWidth(text),
+          ),
+        ];
       case TopicFactStatus.error:
-        return TopicTag(
-          '${l10n?.topicHeaderTimeRangeError(tr.error ?? '') ?? 'Time range failed'} · ${l10n?.retry ?? 'Retry'}',
-          key: const Key('topic_time_range_error_tag'),
-          isConfig: true,
-          onTap: factsController.loadTimeRange,
-        );
+        final text =
+            '${l10n?.topicHeaderTimeRangeError(tr.error ?? '') ?? 'Time range failed'} · ${l10n?.retry ?? 'Retry'}';
+        return [
+          (
+            widget: TopicTag(
+              text,
+              key: const Key('topic_time_range_error_tag'),
+              isConfig: true,
+              onTap: factsController.loadTimeRange,
+            ),
+            isPinned: true,
+            width: _estimateTagWidth(text),
+          ),
+        ];
       case TopicFactStatus.value:
         final range = tr.data!;
         if (range.allEmpty) {
-          return TopicTag(
-            l10n?.topicHeaderTimeRangeEmpty ?? 'No messages',
-            key: const Key('topic_time_range_empty_tag'),
-            isConfig: true,
-          );
+          final text = l10n?.topicHeaderTimeRangeEmpty ?? 'No messages';
+          return [
+            (
+              widget: TopicTag(
+                text,
+                key: const Key('topic_time_range_empty_tag'),
+                isConfig: true,
+              ),
+              isPinned: false,
+              width: _estimateTagWidth(text),
+            ),
+          ];
         }
         final oldest = range.oldest;
         final newest = range.newest;
         if (oldest == null || newest == null) {
-          return TopicTag(
-            l10n?.topicHeaderTimeRangeUnknown ?? 'Time range: unknown',
-            key: const Key('topic_time_range_unknown_tag'),
-            isConfig: true,
-          );
+          final text =
+              l10n?.topicHeaderTimeRangeUnknown ?? 'Time range: unknown';
+          return [
+            (
+              widget: TopicTag(
+                text,
+                key: const Key('topic_time_range_unknown_tag'),
+                isConfig: true,
+              ),
+              isPinned: true,
+              width: _estimateTagWidth(text),
+            ),
+          ];
         }
         final oldestStr = _formatZoneTimestamp(
           context,
@@ -1099,7 +1461,13 @@ class _TopicDetailViewState extends State<TopicDetailView>
           ),
         );
         if (nonFoundReasons.isEmpty) {
-          return mainTag;
+          return [
+            (
+              widget: mainTag,
+              isPinned: false,
+              width: _estimateTagWidth(valueText),
+            ),
+          ];
         }
         final partialText =
             l10n?.topicHeaderTimeRangePartial(
@@ -1108,13 +1476,14 @@ class _TopicDetailViewState extends State<TopicDetailView>
               range.partitionsTotal,
             ) ??
             'Partial (${range.oldestKnown}/${range.partitionsTotal} oldest, ${range.newestKnown}/${range.partitionsTotal} newest)';
-        return Wrap(
-          spacing: 6,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            mainTag,
-            Tooltip(
+        return [
+          (
+            widget: mainTag,
+            isPinned: false,
+            width: _estimateTagWidth(valueText),
+          ),
+          (
+            widget: Tooltip(
               key: const Key('topic_time_range_partial_tooltip'),
               message: nonFoundReasons.join('\n'),
               child: TopicTag(
@@ -1123,8 +1492,10 @@ class _TopicDetailViewState extends State<TopicDetailView>
                 isConfig: true,
               ),
             ),
-          ],
-        );
+            isPinned: true,
+            width: _estimateTagWidth(partialText),
+          ),
+        ];
     }
   }
 

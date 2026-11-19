@@ -5288,4 +5288,58 @@ class AppLocalizationsDe extends AppLocalizations {
   String localDecodeErrorNotJson(String detail) {
     return 'Payload ist kein gültiges UTF-8-JSON: $detail';
   }
+
+  @override
+  String get fetchFilterPlaceholderBoth =>
+      'Beim Abrufen filtern (Schlüssel & Wert)...';
+
+  @override
+  String get fetchFilterPlaceholderKey =>
+      'Beim Abrufen filtern (nur Schlüssel)...';
+
+  @override
+  String get fetchFilterPlaceholderValue =>
+      'Beim Abrufen filtern (nur Wert)...';
+
+  @override
+  String get fetchFilterTooltip =>
+      'Filtert Nachrichten bereits beim Lesen aus dem Topic (begrenzt, welche Nachrichten abgerufen werden).';
+
+  @override
+  String fetchFilterScopeTypeSummary(String scope, String type) {
+    return '$scope · $type';
+  }
+
+  @override
+  String get fetchFilterMenuTooltip =>
+      'Suchbereich und Vergleichstyp für den Abruffilter ändern';
+
+  @override
+  String get moreFiltersButton => 'Weitere Filter';
+
+  @override
+  String moreFiltersButtonWithCount(int count) {
+    return 'Weitere Filter ($count)';
+  }
+
+  @override
+  String get moreFiltersOpenTooltip => 'Weitere Abruffilter anzeigen';
+
+  @override
+  String get moreFiltersCloseTooltip => 'Weitere Abruffilter ausblenden';
+
+  @override
+  String get timePresetsMenuTooltip => 'Relative Zeitvorlagen';
+
+  @override
+  String get timeRangeEndBeforeStartError =>
+      'Endzeit darf nicht vor der Startzeit liegen.';
+
+  @override
+  String get timeRangeInvalidTimestampError => 'Ungültiges Zeitstempelformat.';
+
+  @override
+  String topicFactsMoreCount(int count) {
+    return '$count weitere Topic-Fakten';
+  }
 }

@@ -133,5 +133,44 @@ void main() {
       expect(find.text('Abbrechen'), findsOneWidget);
       expect(find.text('Anwenden'), findsOneWidget);
     });
+
+    testWidgets(
+      'compactPresets hides inline chip row and offers presets in a dropdown menu',
+      (tester) async {
+        final controller = TextEditingController();
+        String? selectedLabel;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: TimestampPickerField(
+                controller: controller,
+                label: 'Start Time',
+                compactPresets: true,
+                onLabelChanged: (l) => selectedLabel = l,
+              ),
+            ),
+          ),
+        );
+
+        // No inline chip row
+        expect(find.byType(ChoiceChip), findsNothing);
+
+        final presetMenuBtn = find.byIcon(Icons.timer_outlined);
+        expect(presetMenuBtn, findsOneWidget);
+
+        await tester.tap(presetMenuBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('-1h'), findsOneWidget);
+        await tester.tap(find.text('-1h'));
+        await tester.pumpAndSettle();
+
+        expect(controller.text, isNotEmpty);
+        expect(selectedLabel, '1h');
+      },
+    );
   });
 }

@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment_tag.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
@@ -74,6 +75,10 @@ class ClusterDropdown extends StatelessWidget {
                           c.environmentLabel!.trim().isNotEmpty) ...[
                         const SizedBox(width: 8),
                         EnvironmentTagChip(profile: c, compact: true),
+                      ],
+                      if (c.tlsVerification == TlsVerification.disabled) ...[
+                        const SizedBox(width: 8),
+                        const InsecureTlsBadge(compact: true),
                       ],
                     ],
                   ),

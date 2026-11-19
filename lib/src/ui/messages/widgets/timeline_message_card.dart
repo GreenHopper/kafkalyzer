@@ -3,6 +3,7 @@ import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/highlight_text_utils.dart';
 import 'package:kafkalyzer/src/ui/text_preview_utils.dart';
 import 'package:kafkalyzer/src/ui/tombstone_widget.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 
 class TimelineMessageCard extends StatelessWidget {
   final KafkaMessage message;
@@ -76,38 +77,60 @@ class TimelineMessageCard extends StatelessWidget {
     );
   }
 
+  Color _effectiveCardBackground(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final baseSurface =
+        theme.cardTheme.color ?? colorScheme.surfaceContainerLow;
+    if (!isSelected) return baseSurface;
+    final overlay = colorScheme.primaryContainer.withValues(
+      alpha: theme.brightness == Brightness.dark ? 0.45 : 0.65,
+    );
+    return Color.alphaBlend(overlay, baseSurface);
+  }
+
   Widget _buildKey(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final cardBg = _effectiveCardBackground(context);
+    final fallback = isSelected
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
+    final keyColor = TextPreviewUtils.ensureContrast(
+      colorScheme.primary,
+      cardBg,
+      fallback,
+    );
+    final baseFontSize = theme.textTheme.titleSmall?.fontSize ?? 14.0;
+    final keyStyle = AppFonts.robotoMono(
+      fontSize: baseFontSize,
+      height: 1.4,
+      fontWeight: FontWeight.bold,
+      color: keyColor,
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.vpn_key,
-          size: 16,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        Icon(Icons.vpn_key, size: 16, color: keyColor),
         const SizedBox(width: 8),
         Flexible(
           child: RichText(
+            textScaler: MediaQuery.textScalerOf(context),
             text: TextSpan(
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontFamily: 'monospace',
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              style: keyStyle,
               children: HighlightTextUtils.buildHighlightedSpans(
                 message.key!,
                 searchPhrase ?? "",
-                Theme.of(context).textTheme.titleSmall!.copyWith(
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                TextStyle(
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                keyStyle,
+                keyStyle.copyWith(
+                  backgroundColor: isSelected
+                      ? colorScheme.tertiaryContainer
+                      : colorScheme.primaryContainer,
+                  color: isSelected
+                      ? colorScheme.onTertiaryContainer
+                      : colorScheme.onPrimaryContainer,
                 ),
               ),
             ),
@@ -156,25 +179,32 @@ class TimelineMessageCard extends StatelessWidget {
   }
 
   Widget _buildPayloadPreview(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final payloadPreview = TextPreviewUtils.getPayloadPreview(message.payload);
+    final baseFontSize = theme.textTheme.bodyMedium?.fontSize ?? 13.0;
+    final baseStyle = AppFonts.robotoMono(
+      fontSize: baseFontSize,
+      height: 1.4,
+      color: isSelected
+          ? colorScheme.onPrimaryContainer
+          : colorScheme.onSurface,
+    );
+    final cardBg = _effectiveCardBackground(context);
 
     return RichText(
       maxLines: 3,
       overflow: TextOverflow.ellipsis,
+      textScaler: MediaQuery.textScalerOf(context),
       text: TextSpan(
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
-        children: HighlightTextUtils.buildHighlightedSpans(
-          payloadPreview,
-          searchPhrase ?? "",
-          Theme.of(
-            context,
-          ).textTheme.bodyMedium!.copyWith(fontFamily: 'monospace'),
-          TextStyle(
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
+        style: baseStyle,
+        children: TextPreviewUtils.buildSyntaxHighlightedPreviewSpans(
+          preview: payloadPreview,
+          searchPhrase: searchPhrase ?? "",
+          baseStyle: baseStyle,
+          colorScheme: colorScheme,
+          backgroundColor: cardBg,
+          isSelected: isSelected,
         ),
       ),
     );

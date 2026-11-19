@@ -138,6 +138,8 @@ class MessagesViewState extends State<MessagesView> {
   final GlobalKey _tableViewKey = GlobalKey();
   final GlobalKey _timelineViewKey = GlobalKey();
   final GlobalKey _diffViewKey = GlobalKey();
+  final GlobalKey<MessagesDiffViewState> _diffStateKey =
+      GlobalKey<MessagesDiffViewState>();
   final FocusNode _shortcutFocusNode = FocusNode(
     debugLabel: 'messagesViewShortcuts',
   );
@@ -920,6 +922,10 @@ class MessagesViewState extends State<MessagesView> {
                     onViewChanged: _onViewModeChanged,
                     showSchemaView: _showSchemaView,
                   ),
+                  if (_activeView == 'diff') ...[
+                    const SizedBox(width: 8),
+                    _buildDiffIgnoreToolbarControl(context),
+                  ],
                   const SizedBox(width: 8),
                   MessageSearchBar(
                     searchPhrase: _searchPhrase,
@@ -1145,6 +1151,24 @@ class MessagesViewState extends State<MessagesView> {
     );
   }
 
+  Widget _buildDiffIgnoreToolbarControl(BuildContext context) {
+    final diffState = _diffStateKey.currentState;
+    if (diffState == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _diffStateKey.currentState != null) {
+          setState(() {});
+        }
+      });
+      return const SizedBox.shrink();
+    }
+    return ValueListenableBuilder<int>(
+      valueListenable: diffState.toolbarStateRevision,
+      builder: (context, _, _) {
+        return diffState.buildIgnoreToolbarControl(context);
+      },
+    );
+  }
+
   Widget _buildContent() {
     if (_cachedFilteredMessages.isEmpty) {
       final l10n = AppLocalizations.of(context);
@@ -1246,10 +1270,12 @@ class MessagesViewState extends State<MessagesView> {
           key: _diffViewKey,
           padding: const EdgeInsets.all(16),
           child: MessagesDiffView(
+            key: _diffStateKey,
             messages: _cachedSortedMessages,
             onMessageTap: _handleMessageTap,
             searchPhrase: _searchPhrase,
             selectedMessage: _selectedMessage,
+            showIgnoreHeader: false,
           ),
         );
       case 'timeline':

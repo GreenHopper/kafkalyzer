@@ -1666,5 +1666,19 @@
   "localDecodeErrorUnknownMessageIndex": "Unbekannter Protobuf-Nachrichtenindex im Wire-Präfix: {detail}",
   "localDecodeErrorPayloadMismatch": "Payload stimmt nicht mit dem Schema überein: {detail}",
   "localDecodeErrorTrailingBytes": "Unerwartete überzählige Bytes nach dekodiertem Payload: {detail}",
-  "localDecodeErrorNotJson": "Payload ist kein gültiges UTF-8-JSON: {detail}"
+  "localDecodeErrorNotJson": "Payload ist kein gültiges UTF-8-JSON: {detail}",
+  "fetchFilterPlaceholderBoth": "Beim Abrufen filtern (Schlüssel & Wert)...",
+  "fetchFilterPlaceholderKey": "Beim Abrufen filtern (nur Schlüssel)...",
+  "fetchFilterPlaceholderValue": "Beim Abrufen filtern (nur Wert)...",
+  "fetchFilterTooltip": "Filtert Nachrichten bereits beim Lesen aus dem Topic (begrenzt, welche Nachrichten abgerufen werden).",
+  "fetchFilterScopeTypeSummary": "{scope} · {type}",
+  "fetchFilterMenuTooltip": "Suchbereich und Vergleichstyp für den Abruffilter ändern",
+  "moreFiltersButton": "Weitere Filter",
+  "moreFiltersButtonWithCount": "Weitere Filter ({count})",
+  "moreFiltersOpenTooltip": "Weitere Abruffilter anzeigen",
+  "moreFiltersCloseTooltip": "Weitere Abruffilter ausblenden",
+  "timePresetsMenuTooltip": "Relative Zeitvorlagen",
+  "timeRangeEndBeforeStartError": "Endzeit darf nicht vor der Startzeit liegen.",
+  "timeRangeInvalidTimestampError": "Ungültiges Zeitstempelformat.",
+  "topicFactsMoreCount": "{count} weitere Topic-Fakten"
 }

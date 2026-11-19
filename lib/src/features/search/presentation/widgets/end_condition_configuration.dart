@@ -10,6 +10,7 @@ class EndConditionConfiguration extends StatelessWidget {
   final TextEditingController endOffsetController;
   final TextEditingController endTimestampController;
   final Widget? Function(TextEditingController)? variableSuffixBuilder;
+  final bool compactPresets;
 
   const EndConditionConfiguration({
     super.key,
@@ -18,6 +19,7 @@ class EndConditionConfiguration extends StatelessWidget {
     required this.endOffsetController,
     required this.endTimestampController,
     this.variableSuffixBuilder,
+    this.compactPresets = false,
   });
 
   @override
@@ -100,7 +102,8 @@ class EndConditionConfiguration extends StatelessWidget {
                 TimestampPickerField(
                   controller: endTimestampController,
                   label: l10n.endTimestamp,
-                  showInlineChips: true,
+                  showInlineChips: !compactPresets,
+                  compactPresets: compactPresets,
                   suffixIcon: variableSuffixBuilder?.call(
                     endTimestampController,
                   ),

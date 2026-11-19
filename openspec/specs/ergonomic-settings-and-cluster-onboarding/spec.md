@@ -255,7 +255,8 @@ A tagged profile SHALL show an environment chip with its label text and colour o
 
 #### Scenario: Tag shown together with the insecure marker
 - **WHEN** a profile is tagged "PROD" and has TLS verification disabled
-- **THEN** its tiles and tabs SHALL show both the environment chip and the insecure marker
+- **THEN** its sidebar tile, Settings tile and Explorer header banner SHALL show both the environment chip and the insecure marker
+- **AND** its tabs SHALL show only the environment chip
 
 #### Scenario: Tagged cluster in a dropdown
 - **WHEN** the user opens the cluster dropdown in the Consumer Lag view

@@ -13,6 +13,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/mess
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_widget.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/message_metadata_card.dart';
 import 'package:kafkalyzer/src/ui/messages/widgets/timeline_message_card.dart';
+import 'package:kafkalyzer/src/utils/app_fonts.dart';
 import 'package:kafkalyzer/src/ui/scroll_utils.dart';
 import 'package:kafkalyzer/src/ui/tombstone_widget.dart';
 import 'package:kafkalyzer/src/ui/text_preview_utils.dart';
@@ -23,6 +24,7 @@ class MessagesDiffView extends StatefulWidget {
   final String? searchPhrase;
   final KafkaMessage? selectedMessage;
   final DiffIgnoreListService? ignoreListService;
+  final bool showIgnoreHeader;
 
   const MessagesDiffView({
     super.key,
@@ -31,13 +33,15 @@ class MessagesDiffView extends StatefulWidget {
     this.searchPhrase,
     this.selectedMessage,
     this.ignoreListService,
+    this.showIgnoreHeader = true,
   });
 
   @override
-  State<MessagesDiffView> createState() => _MessagesDiffViewState();
+  State<MessagesDiffView> createState() => MessagesDiffViewState();
 }
 
-class _MessagesDiffViewState extends State<MessagesDiffView> {
+class MessagesDiffViewState extends State<MessagesDiffView> {
+  final ValueNotifier<int> toolbarStateRevision = ValueNotifier<int>(0);
   // Map<String, KafkaMessage> where Key is the message ID and value is the previous one.
   final Map<String, KafkaMessage> _previousMessages = {};
 
@@ -82,6 +86,7 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
     _ignoreService.removeListener(_onIgnoreListChanged);
     _ownedIgnoreService?.dispose();
     _scrollController.dispose();
+    toolbarStateRevision.dispose();
     super.dispose();
   }
 
@@ -165,6 +170,11 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
         !_topics.contains(_selectedHeaderTopic)) {
       _selectedHeaderTopic = _topics.first;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        toolbarStateRevision.value++;
+      }
+    });
 
     // Group messages by key internally to find chronological predecessors.
     // Display order stays as provided by MessagesView; this ascending sort is
@@ -201,6 +211,7 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
       }
     }
     if (mounted) {
+      toolbarStateRevision.value++;
       setState(() {});
     }
   }
@@ -217,6 +228,7 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
         anyChanged = true;
       }
     }
+    toolbarStateRevision.value++;
     if (anyChanged) {
       setState(() {});
     }
@@ -323,62 +335,61 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget buildIgnoreToolbarControl(BuildContext context) {
+    if (_topics.isEmpty) return const SizedBox.shrink();
     final l10n = AppLocalizations.of(context);
-    if (widget.messages.isEmpty) {
-      return Center(
-        child: Text(l10n?.noMessagesToDisplay ?? 'No messages to display'),
-      );
-    }
-
     final headerTopic = _selectedHeaderTopic ?? _topics.first;
     final ignoredCount = _ignoreService.getPathsSync(headerTopic).length;
     final hasLoadError = _ignoreService.hasLoadError(headerTopic);
 
-    return Column(
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-          child: Row(
-            children: [
-              if (_topics.length > 1) ...[
-                DropdownButton<String>(
-                  value: headerTopic,
-                  isDense: true,
-                  items: _topics
-                      .map(
-                        (t) =>
-                            DropdownMenuItem<String>(value: t, child: Text(t)),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedHeaderTopic = value;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(width: 12),
-              ],
-              TextButton.icon(
-                icon: const Icon(Icons.filter_list_off, size: 16),
-                label: Text(
-                  l10n?.diffIgnoredFieldsHeader(ignoredCount) ??
-                      'Ignored fields ($ignoredCount)',
-                ),
-                onPressed: () => _openIgnoreDialog(headerTopic),
-              ),
-              if (hasLoadError) ...[
-                const SizedBox(width: 12),
+        if (_topics.length > 1) ...[
+          DropdownButton<String>(
+            key: const Key('diff_ignore_topic_selector'),
+            value: headerTopic,
+            isDense: true,
+            items: _topics
+                .map((t) => DropdownMenuItem<String>(value: t, child: Text(t)))
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _selectedHeaderTopic = value;
+                });
+                toolbarStateRevision.value++;
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+        TextButton.icon(
+          key: const Key('diff_ignored_fields_button'),
+          icon: const Icon(Icons.filter_list_off, size: 16),
+          label: Text(
+            l10n?.diffIgnoredFieldsHeader(ignoredCount) ??
+                'Ignored fields ($ignoredCount)',
+          ),
+          onPressed: () => _openIgnoreDialog(headerTopic),
+        ),
+        if (hasLoadError) ...[
+          const SizedBox(width: 6),
+          Tooltip(
+            message:
+                l10n?.diffIgnoreLoadWarning(headerTopic) ??
+                'Could not read saved ignore list for $headerTopic.',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 Icon(
                   Icons.warning_amber_rounded,
                   size: 16,
                   color: Theme.of(context).colorScheme.error,
                 ),
                 const SizedBox(width: 4),
-                Expanded(
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 260),
                   child: Text(
                     l10n?.diffIgnoreLoadWarning(headerTopic) ??
                         'Could not read saved ignore list for $headerTopic.',
@@ -390,10 +401,37 @@ class _MessagesDiffViewState extends State<MessagesDiffView> {
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
-        const Divider(height: 1),
+        ],
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (widget.messages.isEmpty) {
+      return Center(
+        child: Text(l10n?.noMessagesToDisplay ?? 'No messages to display'),
+      );
+    }
+
+    return Column(
+      children: [
+        if (widget.showIgnoreHeader) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: 6.0,
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: buildIgnoreToolbarControl(context),
+            ),
+          ),
+          const Divider(height: 1),
+        ],
         Expanded(
           child: Timeline.tileBuilder(
             controller: _scrollController,
@@ -615,9 +653,15 @@ class _LazyDiffViewerState extends State<_LazyDiffViewer> {
         } else if (widget.current.payload == null) {
           return const TombstoneWidget();
         } else {
+          final theme = Theme.of(context);
+          final baseFontSize = theme.textTheme.bodyMedium?.fontSize ?? 13.0;
           return Text(
             TextPreviewUtils.getPayloadPreview(widget.current.payload),
-            style: const TextStyle(fontFamily: 'monospace'),
+            style: AppFonts.robotoMono(
+              fontSize: baseFontSize,
+              height: 1.4,
+              color: theme.colorScheme.onSurface,
+            ),
           );
         }
       },

@@ -457,16 +457,16 @@ void main() {
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.byType(TopicSearchBar), findsOneWidget);
-      expect(find.text(l10n.advancedFiltersToggle), findsOneWidget);
+      expect(find.text(l10n.moreFiltersButton), findsOneWidget);
       expect(find.text('Partition (Opt.)'), findsNothing);
 
-      await tester.tap(find.text(l10n.advancedFiltersToggle));
+      await tester.tap(find.text(l10n.moreFiltersButton));
       await tester.pumpAndSettle();
 
       expect(find.text('Partition (Opt.)'), findsOneWidget);
       expect(find.text('Fast Trace (Hash Key)'), findsOneWidget);
 
-      await tester.tap(find.text(l10n.advancedFiltersToggle));
+      await tester.tap(find.text(l10n.moreFiltersButton));
       await tester.pumpAndSettle();
 
       expect(find.text('Partition (Opt.)'), findsNothing);
@@ -1310,6 +1310,140 @@ void main() {
       schemaController.notifyListeners();
       await tester.pumpAndSettle();
       expect(find.text('Schema (unknown)'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'single-line facts strip collapses lower-priority regular facts into +N overflow popover on narrow viewports while pinning warnings and unknown states',
+    (tester) async {
+      const profile = ClusterProfile(
+        name: 'Test Cluster',
+        bootstrapServers: 'localhost:9092',
+        schemaRegistryUrl: 'http://localhost:8081',
+        tlsVerification: TlsVerification.enabled,
+      );
+      const unhealthyTopic = TopicMetadata(
+        name: 'orders',
+        partitionCount: 12,
+        replicationFactor: 3,
+        underReplicatedPartitions: 2,
+        leaderlessPartitions: 1,
+      );
+
+      final schemaController =
+          getIt<SchemaController>() as FakeSchemaController;
+      schemaController.schemas = ['orders-value'];
+      schemaController.types['orders-value'] = const SchemaTypeKnown(
+        api.SchemaKindDto.avro,
+      );
+
+      final factsMeta = _ConfigurableFactsMetadataService();
+      var timeRangeCalls = 0;
+      factsMeta.onOffsets = () async => const PartitionOffsetDistribution(
+        topic: 'orders',
+        readAtMs: 1000,
+        partitions: [],
+        totalSpan: 1000000,
+        knownSpan: 1000000,
+        complete: true,
+        skewStatus: OffsetSkewStatus.balanced,
+      );
+      factsMeta.onConfigs = () async => const [
+        TopicConfigResult(
+          topic: 'orders',
+          status: TopicConfigStatus.available,
+          entries: [
+            TopicConfigEntry(
+              name: 'cleanup.policy',
+              value: 'compact',
+              source: TopicConfigSource.dynamicTopic,
+              isDefault: false,
+              isSensitive: false,
+              isReadOnly: false,
+            ),
+            TopicConfigEntry(
+              name: 'retention.ms',
+              value: '31550400000',
+              source: TopicConfigSource.dynamicTopic,
+              isDefault: false,
+              isSensitive: false,
+              isReadOnly: false,
+            ),
+            TopicConfigEntry(
+              name: 'retention.bytes',
+              value: '1073741824',
+              source: TopicConfigSource.dynamicTopic,
+              isDefault: false,
+              isSensitive: false,
+              isReadOnly: false,
+            ),
+          ],
+        ),
+      ];
+      factsMeta.onTimeRange = () async {
+        timeRangeCalls++;
+        return const TopicTimeRange(
+          oldest: null,
+          newest: null,
+          partitionsTotal: 12,
+          partitionsEmpty: 12,
+          oldestKnown: 0,
+          newestKnown: 0,
+          allEmpty: true,
+          probes: [],
+        );
+      };
+
+      final active = FakeActiveConnectionController()
+        ..activeProfile = profile
+        ..topic = unhealthyTopic
+        ..mockFactsController = TopicFactsController(
+          profile: profile,
+          topicName: unhealthyTopic.name,
+          metadataService: factsMeta,
+        );
+      getIt.unregister<ActiveConnectionController>();
+      getIt.registerSingleton<ActiveConnectionController>(active);
+
+      tester.view.physicalSize = const Size(900, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              width: 720,
+              height: 800,
+              child: TopicDetailView(topic: unhealthyTopic, profile: profile),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Pinned unhealthy warning must stay visible in the strip
+      expect(find.byKey(const Key('topic_health_tag')), findsOneWidget);
+      // Overflow +N chip must be present on narrow widths
+      final overflowChip = find.byKey(const Key('topic_facts_overflow_tag'));
+      expect(overflowChip, findsOneWidget);
+      expect(
+        find.byKey(const Key('topic_load_time_range_button')),
+        findsNothing,
+      );
+
+      // Opening the +N popover reveals the collapsed facts and keeps actions working
+      await tester.tap(overflowChip);
+      await tester.pumpAndSettle();
+
+      final loadTrBtn = find.byKey(const Key('topic_load_time_range_button'));
+      expect(loadTrBtn, findsOneWidget);
+      await tester.tap(loadTrBtn);
+      await tester.pumpAndSettle();
+      expect(timeRangeCalls, 1);
     },
   );
 }

@@ -12,6 +12,7 @@ class StartConditionConfiguration extends StatelessWidget {
   final Widget? Function(TextEditingController)? variableSuffixBuilder;
   final String? selectedTimestampLabel;
   final ValueChanged<String?>? onTimestampLabelChanged;
+  final bool compactPresets;
 
   const StartConditionConfiguration({
     super.key,
@@ -22,6 +23,7 @@ class StartConditionConfiguration extends StatelessWidget {
     this.variableSuffixBuilder,
     this.selectedTimestampLabel,
     this.onTimestampLabelChanged,
+    this.compactPresets = false,
   });
 
   @override
@@ -130,7 +132,8 @@ class StartConditionConfiguration extends StatelessWidget {
           TimestampPickerField(
             controller: startTimestampController,
             label: l10n.startTimestamp,
-            showInlineChips: true,
+            showInlineChips: !compactPresets,
+            compactPresets: compactPresets,
             selectedLabel: selectedTimestampLabel,
             onLabelChanged: onTimestampLabelChanged,
             suffixIcon: variableSuffixBuilder?.call(startTimestampController),

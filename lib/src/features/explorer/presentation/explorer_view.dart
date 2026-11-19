@@ -606,37 +606,53 @@ class _ExplorerViewState extends State<ExplorerView> {
     bool isActive,
     TopicController topicController,
   ) {
-    return Row(
-      children: [
-        if (topicController.hasCachedTopics(cluster))
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Icon(
-              Icons.check_circle,
-              size: 16,
-              color: Theme.of(context).colorScheme.primary,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hasEnvTag =
+            cluster.environmentLabel != null &&
+            cluster.environmentLabel!.trim().isNotEmpty;
+        final isNarrow =
+            constraints.maxWidth.isFinite &&
+            (constraints.maxWidth < 210 ||
+                (hasEnvTag && constraints.maxWidth < 250) ||
+                (cluster.name.length > 14 && constraints.maxWidth < 245));
+        return Row(
+          children: [
+            if (topicController.hasCachedTopics(cluster))
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            Flexible(
+              child: Text(
+                cluster.name,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isActive
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : (topicController.hasCachedTopics(cluster)
+                            ? Theme.of(context).colorScheme.primary
+                            : null),
+                ),
+              ),
             ),
-          ),
-        Flexible(
-          child: Text(
-            cluster.name,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: isActive
-                  ? Theme.of(context).colorScheme.onPrimaryContainer
-                  : (topicController.hasCachedTopics(cluster)
-                        ? Theme.of(context).colorScheme.primary
-                        : null),
-            ),
-          ),
-        ),
-        if (cluster.environmentLabel != null &&
-            cluster.environmentLabel!.trim().isNotEmpty) ...[
-          const SizedBox(width: 6),
-          EnvironmentTagChip(profile: cluster, compact: true),
-        ],
-      ],
+            if (cluster.environmentLabel != null &&
+                cluster.environmentLabel!.trim().isNotEmpty) ...[
+              const SizedBox(width: 6),
+              EnvironmentTagChip(profile: cluster, compact: true),
+            ],
+            if (cluster.tlsVerification == TlsVerification.disabled) ...[
+              const SizedBox(width: 6),
+              InsecureTlsBadge(compact: true, iconOnly: isNarrow),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -1509,11 +1525,6 @@ class _ExplorerViewState extends State<ExplorerView> {
                     profile: resolvedTabProfile,
                     compact: true,
                   ),
-                ],
-                if (resolvedTabProfile.tlsVerification ==
-                    TlsVerification.disabled) ...[
-                  const SizedBox(width: 4),
-                  const InsecureTlsBadge(compact: true),
                 ],
               ],
             ),

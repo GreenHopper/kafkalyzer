@@ -3437,5 +3437,35 @@
     "placeholders": {
       "detail": { "type": "String" }
     }
+  },
+  "fetchFilterPlaceholderBoth": "Filter while fetching (key & value)...",
+  "fetchFilterPlaceholderKey": "Filter while fetching (key only)...",
+  "fetchFilterPlaceholderValue": "Filter while fetching (value only)...",
+  "fetchFilterTooltip": "Filters messages while reading from the topic (limits which messages are fetched).",
+  "fetchFilterScopeTypeSummary": "{scope} · {type}",
+  "@fetchFilterScopeTypeSummary": {
+    "placeholders": {
+      "scope": { "type": "String" },
+      "type": { "type": "String" }
+    }
+  },
+  "fetchFilterMenuTooltip": "Change fetch filter scope and match type",
+  "moreFiltersButton": "More filters",
+  "moreFiltersButtonWithCount": "More filters ({count})",
+  "@moreFiltersButtonWithCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "moreFiltersOpenTooltip": "Show more fetch filters",
+  "moreFiltersCloseTooltip": "Hide more fetch filters",
+  "timePresetsMenuTooltip": "Relative time presets",
+  "timeRangeEndBeforeStartError": "End time must not be before start time.",
+  "timeRangeInvalidTimestampError": "Invalid timestamp format.",
+  "topicFactsMoreCount": "{count} more topic facts",
+  "@topicFactsMoreCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
   }
 }

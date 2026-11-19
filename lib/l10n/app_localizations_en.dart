@@ -5242,4 +5242,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String localDecodeErrorNotJson(String detail) {
     return 'Payload is not valid UTF-8 JSON: $detail';
   }
+
+  @override
+  String get fetchFilterPlaceholderBoth =>
+      'Filter while fetching (key & value)...';
+
+  @override
+  String get fetchFilterPlaceholderKey => 'Filter while fetching (key only)...';
+
+  @override
+  String get fetchFilterPlaceholderValue =>
+      'Filter while fetching (value only)...';
+
+  @override
+  String get fetchFilterTooltip =>
+      'Filters messages while reading from the topic (limits which messages are fetched).';
+
+  @override
+  String fetchFilterScopeTypeSummary(String scope, String type) {
+    return '$scope · $type';
+  }
+
+  @override
+  String get fetchFilterMenuTooltip =>
+      'Change fetch filter scope and match type';
+
+  @override
+  String get moreFiltersButton => 'More filters';
+
+  @override
+  String moreFiltersButtonWithCount(int count) {
+    return 'More filters ($count)';
+  }
+
+  @override
+  String get moreFiltersOpenTooltip => 'Show more fetch filters';
+
+  @override
+  String get moreFiltersCloseTooltip => 'Hide more fetch filters';
+
+  @override
+  String get timePresetsMenuTooltip => 'Relative time presets';
+
+  @override
+  String get timeRangeEndBeforeStartError =>
+      'End time must not be before start time.';
+
+  @override
+  String get timeRangeInvalidTimestampError => 'Invalid timestamp format.';
+
+  @override
+  String topicFactsMoreCount(int count) {
+    return '$count more topic facts';
+  }
 }

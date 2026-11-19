@@ -3,8 +3,13 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 
 class InsecureTlsBadge extends StatelessWidget {
   final bool compact;
+  final bool iconOnly;
 
-  const InsecureTlsBadge({super.key, this.compact = false});
+  const InsecureTlsBadge({
+    super.key,
+    this.compact = false,
+    this.iconOnly = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +22,7 @@ class InsecureTlsBadge extends StatelessWidget {
         message: l10n.insecureTlsBadgeTooltip,
         child: Container(
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 6 : 8,
+            horizontal: iconOnly ? 4 : (compact ? 6 : 8),
             vertical: compact ? 2 : 3,
           ),
           decoration: BoxDecoration(
@@ -33,14 +38,16 @@ class InsecureTlsBadge extends StatelessWidget {
                 size: compact ? 12 : 14,
                 color: colorScheme.onErrorContainer,
               ),
-              const SizedBox(width: 4),
-              Text(
-                l10n.insecureTlsBadgeLabel,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onErrorContainer,
-                  fontWeight: FontWeight.w600,
+              if (!iconOnly) ...[
+                const SizedBox(width: 4),
+                Text(
+                  l10n.insecureTlsBadgeLabel,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

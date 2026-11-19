@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
@@ -120,7 +121,7 @@ void main() {
   }
 
   testWidgets(
-    'TopicSearchBar renders compact default row with advanced toggle as trailing element',
+    'TopicSearchBar renders compact default row with inline scope/type menu and More filters button',
     (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -128,43 +129,147 @@ void main() {
       // Verify scan mode label is shown
       expect(find.text('Latest Messages'), findsOneWidget);
 
-      // Verify limit and filter placeholder
-      expect(find.text('Filter on fetch (key or value)...'), findsOneWidget);
-      expect(find.text('Advanced'), findsOneWidget);
+      // Verify fetch-time filter placeholder, inline scope/type summary, and More filters button
+      expect(
+        find.text('Filter while fetching (key & value)...'),
+        findsOneWidget,
+      );
+      expect(find.text('Both · Contains'), findsOneWidget);
+      expect(find.text('More filters'), findsOneWidget);
 
       // Verify lower right start action button is not rendered
       expect(find.byKey(const Key('search_bar_start_button')), findsNothing);
     },
   );
 
-  testWidgets('TopicSearchBar toggles progressive disclosure advanced panel', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildTestWidget());
-    await tester.pumpAndSettle();
+  testWidgets(
+    'TopicSearchBar opens More filters overlay popover without pushing down sibling widgets and closes on Escape or outside click',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Column(
+              children: [
+                TopicSearchBar(
+                  scanMode: TopicScanMode.latestN,
+                  onScanModeChanged: (_) {},
+                  quickFilterController: quickFilterController,
+                  fieldController: fieldController,
+                  filterType: FilterType.contains,
+                  onFilterTypeChanged: (_) {},
+                  searchScope: SearchScope.both,
+                  onSearchScopeChanged: (_) {},
+                  limitResults: true,
+                  onLimitResultsChanged: (_) {},
+                  maxResultsController: maxResultsController,
+                  partitionController: partitionController,
+                  fastTraceEnabled: false,
+                  onFastTraceEnabledChanged: (_) {},
+                  startStrategy: MultiSearchStartStrategy.latest,
+                  onStartStrategyChanged: (_) {},
+                  startOffsetController: startOffsetController,
+                  startTimestampController: startTimestampController,
+                  endStrategy: MultiSearchEndStrategy.latest,
+                  onEndStrategyChanged: (_) {},
+                  endOffsetController: endOffsetController,
+                  endTimestampController: endTimestampController,
+                  onStart: () {},
+                ),
+                const Expanded(
+                  child: SizedBox(
+                    key: Key('results_area_below_search_bar'),
+                    width: double.infinity,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    // Advanced panel is collapsed initially
-    expect(find.text('Partition (Opt.)'), findsNothing);
+      final resultsFinder = find.byKey(
+        const Key('results_area_below_search_bar'),
+      );
+      final initialResultsTop = tester.getTopLeft(resultsFinder).dy;
 
-    // Tap advanced toggle
-    await tester.tap(find.text('Advanced'));
-    await tester.pumpAndSettle();
+      // Popover is closed initially
+      expect(find.text('Partition (Opt.)'), findsNothing);
 
-    // Now advanced options should be visible
-    expect(find.text('Partition (Opt.)'), findsOneWidget);
-    expect(find.text('Fast Trace (Hash Key)'), findsOneWidget);
-    expect(find.text('Exact'), findsOneWidget);
-  });
+      // Tap More filters toggle
+      await tester.tap(find.byKey(const Key('more_filters_button')));
+      await tester.pumpAndSettle();
+
+      // Popover options are visible and results area did not move down
+      expect(find.text('Partition (Opt.)'), findsOneWidget);
+      expect(find.text('Fast Trace (Hash Key)'), findsOneWidget);
+      expect(tester.getTopLeft(resultsFinder).dy, equals(initialResultsTop));
+
+      // Press Escape to close popover
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.text('Partition (Opt.)'), findsNothing);
+    },
+  );
 
   testWidgets(
-    'TopicSearchBar renders active filter chips when collapsed and non-default filters exist',
+    'inline scope/type menu updates scope, match type, and fetch filter placeholder',
+    (tester) async {
+      SearchScope currentScope = SearchScope.both;
+      FilterType currentType = FilterType.contains;
+
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) {
+            return buildTestWidget(
+              searchScope: currentScope,
+              onSearchScopeChanged: (s) => setState(() => currentScope = s),
+              filterType: currentType,
+              onFilterTypeChanged: (t) => setState(() => currentType = t),
+            );
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Both · Contains'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('fetch_filter_scope_type_menu')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Key').last);
+      await tester.pumpAndSettle();
+
+      expect(currentScope, SearchScope.key);
+      expect(find.text('Key · Contains'), findsOneWidget);
+      expect(find.text('Filter while fetching (key only)...'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('fetch_filter_scope_type_menu')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Exact').last);
+      await tester.pumpAndSettle();
+
+      expect(currentType, FilterType.exact);
+      expect(find.text('Key · Exact'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'TopicSearchBar renders active filter count badge and chips when collapsed and non-default filters exist',
     (tester) async {
       partitionController.text = '3';
+      fieldController.text = 'order.id';
       await tester.pumpWidget(buildTestWidget(filterType: FilterType.exact));
       await tester.pumpAndSettle();
 
+      // Button shows active count for popover filters (Field + Partition = 2)
+      expect(find.text('More filters (2)'), findsOneWidget);
       // Should show filter chips
       expect(find.text('Partition: 3'), findsOneWidget);
+      expect(find.text('Field: order.id'), findsOneWidget);
       expect(find.text('Type: exact'), findsOneWidget);
 
       // Deleting partition chip clears controller
@@ -176,6 +281,38 @@ void main() {
       await tester.tap(cancelIcon);
       await tester.pumpAndSettle();
       expect(partitionController.text, isEmpty);
+      expect(find.text('More filters (1)'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Time Range mode shows start and end in one compact row with preset menus and blocks scan when end is before start',
+    (tester) async {
+      var started = false;
+      startTimestampController.text = '2000';
+      endTimestampController.text = '1000';
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          scanMode: TopicScanMode.timeRange,
+          onStart: () => started = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No inline preset ChoiceChips are shown in compact time range row
+      expect(find.byType(ChoiceChip), findsNothing);
+      expect(find.byIcon(Icons.timer_outlined), findsNWidgets(2));
+      expect(
+        find.text('End time must not be before start time.'),
+        findsOneWidget,
+      );
+
+      final searchField = find.widgetWithIcon(TextField, Icons.search);
+      await tester.tap(searchField);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(started, isFalse);
     },
   );
 
@@ -453,13 +590,17 @@ void main() {
 
     expect(find.text('Startzeit'), findsOneWidget);
     expect(find.text('Endzeit'), findsOneWidget);
+    expect(
+      find.text('Beim Abrufen filtern (Schlüssel & Wert)...'),
+      findsOneWidget,
+    );
+    expect(find.text('Beides · Enthält'), findsOneWidget);
+    expect(find.text('Weitere Filter'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.tune));
     await tester.pumpAndSettle();
 
     expect(find.text('Partition (opt.)'), findsOneWidget);
     expect(find.text('Feld (Opt.)'), findsOneWidget);
-    expect(find.text('Typ:'), findsOneWidget);
-    expect(find.text('Bereich:'), findsOneWidget);
   });
 }

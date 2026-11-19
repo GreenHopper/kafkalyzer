@@ -1,6 +1,7 @@
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/controllers/cluster_overview_controller.dart';
@@ -1138,7 +1139,7 @@ void main() {
     });
 
     testWidgets(
-      'shows InsecureTlsBadge on open topic tab only for disabled tlsVerification profile',
+      'shows InsecureTlsBadge on sidebar cluster entry and NOT on open topic tabs',
       (tester) async {
         tester.view.physicalSize = const Size(1280, 800);
         tester.view.devicePixelRatio = 1.0;
@@ -1150,18 +1151,20 @@ void main() {
           securityProtocol: 'SSL',
           tlsVerification: TlsVerification.disabled,
         );
-        const topic = TopicMetadata(
+        const topic1 = TopicMetadata(
           name: 'orders',
           partitionCount: 1,
           replicationFactor: 1,
         );
-        final recordDisabled = OpenTopicRecord(
-          topic,
-          disabledProfile,
-          id: 'tab-disabled',
+        const topic2 = TopicMetadata(
+          name: 'payments',
+          partitionCount: 1,
+          replicationFactor: 1,
         );
+        final record1 = OpenTopicRecord(topic1, disabledProfile, id: 'tab-1');
+        final record2 = OpenTopicRecord(topic2, disabledProfile, id: 'tab-2');
         final recordEnabled = OpenTopicRecord(
-          topic,
+          topic1,
           testProfile,
           id: 'tab-enabled',
         );
@@ -1198,13 +1201,13 @@ void main() {
         );
         when(mockActiveConnectionController.error).thenReturn(null);
         when(mockActiveConnectionController.topicFilter).thenReturn('');
-        when(mockActiveConnectionController.topics).thenReturn([topic]);
+        when(
+          mockActiveConnectionController.topics,
+        ).thenReturn([topic1, topic2]);
         when(
           mockActiveConnectionController.openTopics,
-        ).thenReturn([recordDisabled, recordEnabled]);
-        when(
-          mockActiveConnectionController.activeTopic,
-        ).thenReturn(recordDisabled);
+        ).thenReturn([record1, record2, recordEnabled]);
+        when(mockActiveConnectionController.activeTopic).thenReturn(record1);
         when(
           mockActiveConnectionController.getStreamController(any),
         ).thenReturn(streamCtrl);
@@ -1216,14 +1219,40 @@ void main() {
         ).thenReturn(true);
         when(
           mockTopicController.getTopics(disabledProfile),
-        ).thenReturn([topic]);
+        ).thenReturn([topic1, topic2]);
         when(mockTopicController.isLoading(disabledProfile)).thenReturn(false);
 
         await tester.pumpWidget(createWidgetUnderTest());
         await tester.pump();
         await tester.pump();
 
-        expect(find.text('Insecure TLS'), findsOneWidget);
+        final sidebarFinder = find.byKey(
+          const Key('explorer_sidebar_container'),
+        );
+        // Exactly one InsecureTlsBadge is shown, and it lives in the sidebar
+        // cluster entry — none of the open topic tabs render it.
+        expect(find.byType(InsecureTlsBadge), findsOneWidget);
+        expect(
+          find.descendant(
+            of: sidebarFinder,
+            matching: find.byType(InsecureTlsBadge),
+          ),
+          findsOneWidget,
+        );
+
+        // When the sidebar is dragged to its minimum width (260 px),
+        // the badge switches to icon-only mode (icon + semantics preserved).
+        final handleFinder = find.byKey(
+          const Key('explorer_sidebar_resize_handle'),
+        );
+        await tester.drag(handleFinder, const Offset(-500, 0));
+        await tester.pumpAndSettle();
+
+        final badge = tester.widget<InsecureTlsBadge>(
+          find.byType(InsecureTlsBadge),
+        );
+        expect(badge.iconOnly, isTrue);
+        expect(find.byIcon(Icons.gpp_bad_outlined), findsOneWidget);
       },
     );
 
