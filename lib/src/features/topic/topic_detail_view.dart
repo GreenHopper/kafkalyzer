@@ -14,6 +14,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/widgets/local_schema
 import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_dialog.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_progress_tile.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
@@ -32,13 +33,10 @@ import 'package:kafkalyzer/src/services/topic_config_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
-import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
-import 'package:kafkalyzer/src/ui/widgets/dropped_messages_indicator.dart';
 import 'package:kafkalyzer/src/features/search/domain/filter_terms.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search_bar.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 
 enum StartStrategy { latest, earliest, customOffset, customTimestamp }
 
@@ -600,7 +598,10 @@ class _TopicDetailViewState extends State<TopicDetailView>
 
         final progressTile = Align(
           alignment: Alignment.centerRight,
-          child: _buildProgressTile(context, colorScheme),
+          child: TopicDetailProgressTile(
+              stream: streamController,
+              onStart: startStreaming,
+            ),
         );
 
         if (!compact) {
@@ -1526,121 +1527,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
         icon: const Icon(Icons.schema_outlined, size: 16),
         label: Text(AppLocalizations.of(context)?.schemaAction ?? "Schema"),
       ),
-    );
-  }
-
-  Widget _buildProgressTile(BuildContext context, ColorScheme colorScheme) {
-    final l10n = AppLocalizations.of(context);
-    final droppedCount = streamController.droppedCount;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 700),
-      child: Row(
-        children: [
-          Expanded(
-            child: TopicProgressTile(
-              topic: l10n?.scanProgressTitle ?? "Scan Progress",
-              status: streamController.isStreaming
-                  ? StepStatus.running
-                  : (streamController.totalConsumed > 0
-                        ? StepStatus.completed
-                        : StepStatus.pending),
-              progress: SearchProgress(
-                streamController.totalConsumed,
-                streamController.totalToScan,
-                startTime: streamController.startTime,
-              ),
-              matchCount: streamController.receivedCount,
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              extraSubtitle: droppedCount > 0
-                  ? DroppedMessagesIndicator(
-                      droppedCount: droppedCount,
-                      bufferLimit: streamController.bufferLimit,
-                    )
-                  : null,
-              trailing: const SizedBox.shrink(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(child: _buildProgressActions(context, colorScheme)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressActions(BuildContext context, ColorScheme colorScheme) {
-    final l10n = AppLocalizations.of(context);
-    final showPauseResume =
-        streamController.isStreaming || streamController.isPaused;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
-      alignment: WrapAlignment.end,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        if (showPauseResume)
-          if (streamController.isPaused)
-            Tooltip(
-              message:
-                  l10n?.resumeViewTooltip ?? 'Resume updating the message view',
-              child: OutlinedButton.icon(
-                onPressed: streamController.resume,
-                icon: const Icon(Icons.play_arrow, size: 16),
-                label: Text(
-                  l10n?.resumeViewWithNew(streamController.pendingCount) ??
-                      'Resume · ${streamController.pendingCount} new',
-                ),
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                ),
-              ),
-            )
-          else
-            Tooltip(
-              message:
-                  l10n?.pauseViewTooltip ??
-                  'Pause view updates while keeping the stream active',
-              child: OutlinedButton.icon(
-                onPressed: streamController.pause,
-                icon: const Icon(Icons.pause, size: 16),
-                label: Text(l10n?.pauseView ?? 'Pause view'),
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                ),
-              ),
-            ),
-        if (streamController.isStreaming)
-          FilledButton.icon(
-            onPressed: () => streamController.stopStreaming(),
-            icon: const Icon(Icons.stop, size: 16),
-            label: Text(l10n?.stop ?? 'Stop'),
-            style: FilledButton.styleFrom(
-              backgroundColor: colorScheme.error,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-          )
-        else
-          FilledButton.icon(
-            onPressed: startStreaming,
-            icon: const Icon(Icons.play_arrow, size: 16),
-            label: Text(l10n?.stream ?? 'Stream'),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-          ),
-        IconButton.filledTonal(
-          onPressed: streamController.clearMessages,
-          icon: const Icon(Icons.delete_sweep, size: 16),
-          tooltip: l10n?.clearMessagesTooltip ?? "Clear Messages",
-          style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
-        ),
-      ],
     );
   }
 
