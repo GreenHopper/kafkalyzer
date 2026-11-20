@@ -5,8 +5,6 @@ import 'package:kafkalyzer/src/features/settings/presentation/widgets/passphrase
 import 'package:kafkalyzer/src/services/encrypted_bundle.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
@@ -21,6 +19,7 @@ import 'package:kafkalyzer/src/utils/archive_safety.dart';
 
 import 'package:kafkalyzer/src/features/settings/presentation/controllers/settings_import_export_controller.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/general_settings_section.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/settings_config_section.dart';
 
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/settings_appearance_section.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/settings_diagnostics_section.dart';
@@ -99,7 +98,10 @@ class _SettingsViewState extends State<SettingsView> {
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 32),
-              _buildConfigImportExport(context, l10n),
+              SettingsConfigSection(
+                l10n: l10n,
+                exportController: _exportController,
+              ),
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 32),
@@ -122,118 +124,6 @@ class _SettingsViewState extends State<SettingsView> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildConfigImportExport(BuildContext context, AppLocalizations l10n) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.configuration, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 4),
-        Text(
-          l10n.globalConfigDescription,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () =>
-                    _exportController.exportConfiguration(context, l10n),
-                icon: const Icon(Icons.download),
-                label: Text(l10n.exportConfiguration),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final settingsService = getIt<SettingsService>();
-                  try {
-                    final importResult = await settingsService
-                        .importConfiguration(
-                          dialogTitle: l10n.importConfiguration,
-                          promptPassphrase: ({required previousAttemptFailed}) {
-                            if (!context.mounted) return Future.value(null);
-                            return PassphrasePromptDialog.show(
-                              context,
-                              previousAttemptFailed: previousAttemptFailed,
-                            );
-                          },
-                          onClusterConflict: (imported, suggestedRename) {
-                            if (!context.mounted) return Future.value(null);
-                            return ImportConflictDialog.show(
-                              context,
-                              profileName: imported.name,
-                              suggestedRename: suggestedRename,
-                              takenNormalizedNames:
-                                  getIt<ClusterListController>().clusters
-                                      .map((c) => normalizeProfileName(c.name))
-                                      .toSet(),
-                            );
-                          },
-                        );
-                    if (importResult != null && context.mounted) {
-                      final summary = importResult.summary;
-                      final message = summary != null
-                          ? l10n.importSummary(
-                              summary.imported,
-                              summary.replaced,
-                              summary.renamed,
-                              summary.skipped,
-                            )
-                          : l10n.configurationImportedSuccessfully;
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(message)));
-                    }
-                  } on EncryptedBundleException catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(_mapEncryptedBundleError(l10n, e)),
-                        ),
-                      );
-                    }
-                  } on StoredDataUnreadableException {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.storeUnreadableActionRefused),
-                        ),
-                      );
-                    }
-                  } on UnsafeArchiveEntryException catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            l10n.importRejectedUnsafeEntry(e.entryName),
-                          ),
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.failedToImport(e.toString())),
-                        ),
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.upload),
-                label: Text(l10n.importConfiguration),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -366,7 +256,7 @@ class _SettingsViewState extends State<SettingsView> {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(_mapEncryptedBundleError(l10n, e)),
+                        content: Text(mapEncryptedBundleError(l10n, e)),
                       ),
                     );
                   }
@@ -707,20 +597,5 @@ class _SettingsViewState extends State<SettingsView> {
           ),
       ],
     );
-  }
-
-  String _mapEncryptedBundleError(
-    AppLocalizations l10n,
-    EncryptedBundleException error,
-  ) {
-    return switch (error.kind) {
-      EncryptedBundleFailure.corrupt => l10n.importEncryptedCorrupt,
-      EncryptedBundleFailure.unsupported => l10n.importEncryptedUnsupported,
-      EncryptedBundleFailure.tooExpensive => l10n.importEncryptedTooExpensive,
-      EncryptedBundleFailure.passphraseTooShort ||
-      EncryptedBundleFailure.internal => l10n.failedToImport(
-        error.message ?? error.kind.name,
-      ),
-    };
   }
 }
