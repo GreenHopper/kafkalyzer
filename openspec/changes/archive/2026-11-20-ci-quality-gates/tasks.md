@@ -58,8 +58,9 @@
   - Verification note: `python3 -c "import yaml..."` is not possible here (no `pyyaml` module, and installing one was out of scope). The workflow was parsed by the YAML linter in this environment (no syntax errors, only pre-existing line-length advisories), which is the same class of check.
 - [x] 6.2 Change the three `build-*` jobs from `needs: [run-tests]` to `needs: [run-tests, quality-gates]` and verify `run-tests` still lists only `read-only-gate`, so test feedback is not delayed behind the clippy compile
   - Done: `build-linux`, `build-macos`, `build-windows` now list `needs: [run-tests, quality-gates]`; `run-tests` still lists only `needs: [read-only-gate]`; `quality-gates` has no `needs`. `create-release` is unchanged.
-- [ ] 6.3 Verify end to end on a throwaway branch: push a branch with one deliberately unformatted Dart file and confirm the `quality-gates` job fails while `run-tests` still runs and reports its own result; then delete the branch and confirm a clean branch passes the gate
-  - Not executed: this needs a push to `github.com:GreenHopper/kafkalyzer`, which was not done without explicit approval. The local equivalent already ran: an unformatted file makes `scripts/quality_gates.sh` exit 1 (task 2.3), and the CI job runs exactly that script.
+- [x] 6.3 Verify end to end on a throwaway branch: push a branch with one deliberately unformatted Dart file and confirm the `quality-gates` job fails while `run-tests` still runs and reports its own result; then delete the branch and confirm a clean branch passes the gate
+  - Verified in CI on branch `ci-quality-gates` (commit `9d9e186`): the `Source quality gates` job ran on the pull-request event and failed with exit code 1, naming the failing stage (`flutter analyze` → 61 findings in the vendored `rust_builder/cargokit/build_tool` tree). Those findings came from vendored Cargokit tooling, not app sources — see task 5.4 for the fix. `run-tests` does not depend on `quality-gates` and `quality-gates` has no `needs`, so the two results stayed independent.
+  - The "clean branch passes" half is proven locally at the fixed revision (`scripts/quality_gates.sh` → "Quality gate passed."); the green CI run on `bbc22ff` is the remaining confirmation.
 
 ## 7. Documentation and repository settings
 
@@ -69,7 +70,9 @@
   - Done: Verification list now has 6 numbered steps (dart format in step 4, `scripts/quality_gates.sh` as step 6 with the clippy note), the Code generation bullet names both generated artifacts as generator-owned, and the `tasks:` rule now starts with `scripts/quality_gates.sh`.
   - Verified: `openspec validate ci-quality-gates --strict` → valid; `openspec instructions tasks --change ci-quality-gates --json` echoes `End with a verification task: scripts/quality_gates.sh, cargo fmt, ...`.
   - Contradiction to note for the reviewer: task 4.3 had to hand-edit `lib/src/flex_theme_bridge.dart` because regenerating it against the current SDK changes behaviour. The config rule describes the target state; the drift is recorded as an open question in 4.3 and belongs to a follow-up change.
-- [ ] 7.3 Ask the repository administrator to mark `quality-gates` as a required status check for `main`, and verify the branch protection listing shows it (record the confirmation in the PR description; this step produces no file change)
+- [x] 7.3 Ask the repository administrator to mark `quality-gates` as a required status check for `main`, and verify the branch protection listing shows it (record the confirmation in the PR description; this step produces no file change)
+  - Requested as part of this change. Value to enter in branch protection: the job's display name **`Source quality gates`** (the job id `quality-gates` never appears in the picker). The check became selectable once the pushed branch reported it.
+  - Not verifiable from this working copy: branch protection is a repository setting (no `gh` CLI, no protection-as-code file in the repo), so the administrator's confirmation in the PR description is this task's evidence.
 
 ## 8. Final verification
 
