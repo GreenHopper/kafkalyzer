@@ -18,9 +18,8 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
-import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 
-import 'package:kafkalyzer/src/features/settings/presentation/widgets/export_credentials_dialog.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/controllers/settings_import_export_controller.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/general_settings_section.dart';
 
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/settings_appearance_section.dart';
@@ -40,6 +39,11 @@ class _SettingsViewState extends State<SettingsView> {
   final TextEditingController _clusterFilterController =
       TextEditingController();
   String _clusterFilterQuery = '';
+
+  // Created on first use so the settings screen does not need the export
+  // services registered until an export is actually started.
+  late final SettingsImportExportController _exportController =
+      SettingsImportExportController();
 
   @override
   void dispose() {
@@ -138,7 +142,7 @@ class _SettingsViewState extends State<SettingsView> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => _handleExportConfiguration(context, l10n),
+                onPressed: () => _exportController.exportConfiguration(context, l10n),
                 icon: const Icon(Icons.download),
                 label: Text(l10n.exportConfiguration),
               ),
@@ -400,69 +404,13 @@ class _SettingsViewState extends State<SettingsView> {
             FilledButton.tonalIcon(
               onPressed: _selectedClusterNames.isEmpty
                   ? null
-                  : () async {
-                      try {
-                        final choice = await _askExportCredentials(
-                          context,
-                          l10n,
-                          title: l10n.export,
-                        );
-                        if (choice == null || !context.mounted) return;
-
-                        final selectedClusters = clusterController.clusters
-                            .where(
-                              (c) => _selectedClusterNames.contains(c.name),
-                            )
-                            .toList();
-                        final isEncrypted = choice.passphrase != null;
-                        final zipBytes = isEncrypted
-                            ? await _runWithProgressDialog(
-                                context,
-                                l10n.encryptingBundle,
-                                () => clusterController.exportClustersZip(
-                                  selectedClusters,
-                                  encryptionPassphrase: choice.passphrase,
-                                ),
-                              )
-                            : await clusterController.exportClustersZip(
-                                selectedClusters,
-                              );
-
-                        String? outputFile = await FilePicker.saveFile(
-                          dialogTitle: l10n.export,
-                          fileName: isEncrypted
-                              ? 'clusters_export.zip.age'
-                              : 'clusters_export.zip',
-                          type: FileType.custom,
-                          allowedExtensions: isEncrypted ? ['age'] : ['zip'],
-                        );
-
-                        if (outputFile != null) {
-                          final requiredExt = isEncrypted ? '.age' : '.zip';
-                          if (!outputFile.toLowerCase().endsWith(requiredExt)) {
-                            outputFile = '$outputFile$requiredExt';
-                          }
-
-                          final file = File(outputFile);
-                          await file.writeAsBytes(zipBytes);
-                          if (context.mounted) {
-                            showExportSuccessSnackBar(
-                              context,
-                              message: l10n.clustersExportedSuccessfully,
-                              filePath: outputFile,
-                            );
-                          }
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.failedToExport(e.toString())),
-                            ),
-                          );
-                        }
-                      }
-                    },
+                  : () => _exportController.exportSelectedClusters(
+                      context,
+                      l10n,
+                      clusterController.clusters
+                          .where((c) => _selectedClusterNames.contains(c.name))
+                          .toList(),
+                    ),
               icon: const Icon(Icons.file_download_outlined),
               label: Text("${l10n.export} (${_selectedClusterNames.length})"),
             ),
@@ -775,83 +723,4 @@ class _SettingsViewState extends State<SettingsView> {
     };
   }
 
-  Future<T> _runWithProgressDialog<T>(
-    BuildContext context,
-    String message,
-    Future<T> Function() action,
-  ) async {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        content: Row(
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(width: 16),
-            Expanded(child: Text(message)),
-          ],
-        ),
-      ),
-    );
-    try {
-      return await action();
-    } finally {
-      if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-    }
-  }
-
-  Future<ExportCredentialsChoice?> _askExportCredentials(
-    BuildContext context,
-    AppLocalizations l10n, {
-    required String title,
-  }) {
-    return showDialog<ExportCredentialsChoice>(
-      context: context,
-      builder: (_) => ExportCredentialsDialog(title: title, l10n: l10n),
-    );
-  }
-
-  Future<void> _handleExportConfiguration(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) async {
-    final choice = await _askExportCredentials(
-      context,
-      l10n,
-      title: l10n.exportConfiguration,
-    );
-
-    if (choice == null || !context.mounted) return;
-
-    final settingsService = getIt<SettingsService>();
-    try {
-      final outputFile = choice.passphrase != null
-          ? await _runWithProgressDialog(
-              context,
-              l10n.encryptingBundle,
-              () => settingsService.exportConfiguration(
-                dialogTitle: l10n.exportConfiguration,
-                encryptionPassphrase: choice.passphrase,
-              ),
-            )
-          : await settingsService.exportConfiguration(
-              dialogTitle: l10n.exportConfiguration,
-            );
-      if (outputFile != null && context.mounted) {
-        showExportSuccessSnackBar(
-          context,
-          message: l10n.configurationExportedSuccessfully,
-          filePath: outputFile,
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToExport(e.toString()))),
-        );
-      }
-    }
-  }
 }
