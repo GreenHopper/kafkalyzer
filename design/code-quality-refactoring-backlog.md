@@ -82,6 +82,20 @@ awk -F: '/^SF:/{f=$2}/^LF:/{lf=$2}/^LH:/{lh=$2}/^end_of_record/{if(f!~/lib\/src\
 
 **Why it matters:** these four files absorb most feature work; review diffs of 300+ lines and merge conflicts come from here.
 **Task:** split one file per PR, no behaviour change, existing widget tests must stay green.
+
+**Result (change `split-god-widgets`, three of four files):**
+
+| File | Before | After |
+|---|---|---|
+| `settings_view.dart` | 1 905 L | **76 L** — six section widgets + `SettingsImportExportController` |
+| `topic_detail_view.dart` | 1 769 L | **655 L** — progress tile, fact strip/tags, header |
+| `explorer_view.dart` | 1 721 L | **608 L** — sidebar, cluster list, topic panel |
+| `messages_table_view.dart` | 1 598 L | untouched — moved to `relocate-messages-feature` (Q-7) |
+
+Largest new file: 620 L (`explorer_sidebar_topics.dart`). The `Timer.periodic`
+in the topic-list age label is now `TopicListRefreshTicker` with an injectable
+timer factory and two fake-clock tests. The size guard in
+`scripts/quality_gates.sh` fails any touched file that crosses 800 lines.
 1. `settings_view.dart` → one file per section: diagnostics, appearance, about/updates, cluster import/export (`_buildClusterListContent` 903–1173 and `_runWithProgressDialog`/`_askExportCredentials`/`_handleExportConfiguration` 1188–1265 move into `widgets/cluster_config_io.dart`), plus `_GeneralSettingsSection`, `_IntSettingField`, `_MessageBufferLimitField` into `widgets/`.
 2. Move the cluster import/export orchestration out of `State` into a `SettingsImportExportController` (watch_it `StateNotifier`), matching the pattern already used by `ClusterListController`.
 3. Repeat for `topic_detail_view.dart` (tabs → one widget per tab) and `explorer_view.dart` (extract the 30 s refresh timer into a controller so it is testable).
