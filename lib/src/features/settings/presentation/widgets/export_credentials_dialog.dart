@@ -10,7 +10,11 @@ class ExportCredentialsDialog extends StatefulWidget {
   final String title;
   final AppLocalizations l10n;
 
-  const ExportCredentialsDialog({super.key, required this.title, required this.l10n});
+  const ExportCredentialsDialog({
+    super.key,
+    required this.title,
+    required this.l10n,
+  });
 
   @override
   State<ExportCredentialsDialog> createState() =>

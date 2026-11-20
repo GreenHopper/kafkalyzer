@@ -131,7 +131,7 @@ class SettingsAboutAndUpdatesSection extends StatelessWidget {
         _buildAboutPathRow(context, l10n.aboutOutputFolderLabel, outputFolder),
       ],
     );
-    }
+  }
 
   Widget _buildAboutPathRow(BuildContext context, String label, String value) {
     final theme = Theme.of(context);
@@ -157,5 +157,5 @@ class SettingsAboutAndUpdatesSection extends StatelessWidget {
         ],
       ),
     );
-    }
+  }
 }

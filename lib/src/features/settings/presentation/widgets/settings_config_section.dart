@@ -11,7 +11,6 @@ import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
 
-
 class SettingsConfigSection extends StatelessWidget {
   final AppLocalizations l10n;
   final SettingsImportExportController exportController;
@@ -138,16 +137,16 @@ class SettingsConfigSection extends StatelessWidget {
 
 /// Maps a failed encrypted import onto the message the UI shows.
 String mapEncryptedBundleError(
-    AppLocalizations l10n,
-    EncryptedBundleException error,
-  ) {
-    return switch (error.kind) {
-      EncryptedBundleFailure.corrupt => l10n.importEncryptedCorrupt,
-      EncryptedBundleFailure.unsupported => l10n.importEncryptedUnsupported,
-      EncryptedBundleFailure.tooExpensive => l10n.importEncryptedTooExpensive,
-      EncryptedBundleFailure.passphraseTooShort ||
-      EncryptedBundleFailure.internal => l10n.failedToImport(
-        error.message ?? error.kind.name,
-      ),
-    };
-  }
+  AppLocalizations l10n,
+  EncryptedBundleException error,
+) {
+  return switch (error.kind) {
+    EncryptedBundleFailure.corrupt => l10n.importEncryptedCorrupt,
+    EncryptedBundleFailure.unsupported => l10n.importEncryptedUnsupported,
+    EncryptedBundleFailure.tooExpensive => l10n.importEncryptedTooExpensive,
+    EncryptedBundleFailure.passphraseTooShort ||
+    EncryptedBundleFailure.internal => l10n.failedToImport(
+      error.message ?? error.kind.name,
+    ),
+  };
+}

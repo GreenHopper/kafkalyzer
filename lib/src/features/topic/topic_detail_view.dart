@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter/services.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/search/domain/filter_field_suggestions.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
@@ -14,6 +13,7 @@ import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_dialog.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_fact_tags.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_header.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_tags.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_progress_tile.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dart';
@@ -40,8 +40,6 @@ import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 
 enum StartStrategy { latest, earliest, customOffset, customTimestamp }
-
-enum TopicViewMode { messages, analysis, config }
 
 class TopicDetailView extends StatefulWidget {
   final TopicMetadata topic;
@@ -334,7 +332,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
     );
   }
 
-
   void _onActiveConnectionChanged() {
     _maybeLoadFactsIfActive();
   }
@@ -428,7 +425,61 @@ class _TopicDetailViewState extends State<TopicDetailView>
                     ),
                   ),
                 ),
-                child: _buildHeader(context),
+                child: TopicDetailHeader(
+                  topicName: widget.topic.name,
+                  profile: widget.profile,
+                  topicController: topicController,
+                  factsController: factsController,
+                  viewMode: _viewMode,
+                  onViewModeChanged: (mode) => setState(() => _viewMode = mode),
+                  onSelectConfig: () {
+                    _ensureConfigController();
+                    setState(() => _viewMode = TopicViewMode.config);
+                  },
+                  onClose: () {
+                    final isRunning =
+                        streamController.isStreaming ||
+                        analysisController.isAnalyzing;
+                    confirmCloseTab(
+                      context,
+                      isOperationRunning: isRunning,
+                      onClose: () {
+                        if (widget.tabId != null) {
+                          activeController.closeTopicTab(widget.tabId!);
+                        } else {
+                          activeController.closeTopic(
+                            widget.topic,
+                            widget.profile.name,
+                          );
+                        }
+                      },
+                    );
+                  },
+                  showSchema: hasSchema(
+                    schemaController,
+                    widget.profile,
+                    widget.topic.name,
+                  ),
+                  onOpenSchema: _openSchemaView,
+                  tags: TopicDetailTags(
+                    profile: widget.profile,
+                    topic: _currentTopic,
+                    topicController: topicController,
+                    factsController: factsController,
+                    schemaController: schemaController,
+                    timeDisplaySettings: _timeDisplaySettings,
+                    localSchemaFact: _buildLocalSchemaFactItem(
+                      context,
+                      AppLocalizations.of(context),
+                    ),
+                    onOpenPartitionHealthDialog: () =>
+                        _openPartitionHealthDialog(context),
+                  ),
+                  progressTile: TopicDetailProgressTile(
+                    stream: streamController,
+                    onStart: startStreaming,
+                  ),
+                ),
               ),
             ),
             if (_viewMode == TopicViewMode.messages) ...[
@@ -523,289 +574,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context);
-
-    final closeButton = IconButton(
-      onPressed: () {
-        final isRunning =
-            streamController.isStreaming || analysisController.isAnalyzing;
-        confirmCloseTab(
-          context,
-          isOperationRunning: isRunning,
-          onClose: () {
-            if (widget.tabId != null) {
-              activeController.closeTopicTab(widget.tabId!);
-            } else {
-              activeController.closeTopic(widget.topic, widget.profile.name);
-            }
-          },
-        );
-      },
-      icon: const Icon(Icons.close),
-      tooltip: l10n?.closeTab ?? "Close Tab",
-      style: IconButton.styleFrom(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-      ),
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // shortcut: fixed breakpoints, raise the second one if the pane gets wider sidebars
-        final compact = constraints.maxWidth < 1220;
-        final iconOnly = constraints.maxWidth < 700;
-
-        final identityRow = Row(
-          children: [
-            closeButton,
-            const SizedBox(width: 16),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildTopicTitleRow(context),
-                        const SizedBox(height: 8),
-                        TopicDetailTags(
-                profile: widget.profile,
-                topic: _currentTopic,
-                topicController: topicController,
-                factsController: factsController,
-                schemaController: schemaController,
-                timeDisplaySettings: _timeDisplaySettings,
-                localSchemaFact: _buildLocalSchemaFactItem(
-                  context,
-                  AppLocalizations.of(context),
-                ),
-                onOpenPartitionHealthDialog: () =>
-                    _openPartitionHealthDialog(context),
-              ),
-                      ],
-                    ),
-                  ),
-                  if (hasSchema(
-                    schemaController,
-                    widget.profile,
-                    widget.topic.name,
-                  )) ...[
-                    const SizedBox(width: 12),
-                    _buildSchemaButton(context),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
-          ],
-        );
-
-        if (_viewMode != TopicViewMode.messages) {
-          return identityRow;
-        }
-
-        final progressTile = Align(
-          alignment: Alignment.centerRight,
-          child: TopicDetailProgressTile(
-              stream: streamController,
-              onStart: startStreaming,
-            ),
-        );
-
-        if (!compact) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  closeButton,
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(child: _buildTopicTitleRow(context)),
-                        if (hasSchema(
-                          schemaController,
-                          widget.profile,
-                          widget.topic.name,
-                        )) ...[
-                          const SizedBox(width: 12),
-                          _buildSchemaButton(context),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
-                  const SizedBox(width: 16),
-                  Flexible(child: progressTile),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.only(left: 56),
-                child: TopicDetailTags(
-                profile: widget.profile,
-                topic: _currentTopic,
-                topicController: topicController,
-                factsController: factsController,
-                schemaController: schemaController,
-                timeDisplaySettings: _timeDisplaySettings,
-                localSchemaFact: _buildLocalSchemaFactItem(
-                  context,
-                  AppLocalizations.of(context),
-                ),
-                onOpenPartitionHealthDialog: () =>
-                    _openPartitionHealthDialog(context),
-              ),
-              ),
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                closeButton,
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(child: _buildTopicTitleRow(context)),
-                      if (hasSchema(
-                        schemaController,
-                        widget.profile,
-                        widget.topic.name,
-                      )) ...[
-                        const SizedBox(width: 12),
-                        _buildSchemaButton(context),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.only(left: 56),
-              child: TopicDetailTags(
-                profile: widget.profile,
-                topic: _currentTopic,
-                topicController: topicController,
-                factsController: factsController,
-                schemaController: schemaController,
-                timeDisplaySettings: _timeDisplaySettings,
-                localSchemaFact: _buildLocalSchemaFactItem(
-                  context,
-                  AppLocalizations.of(context),
-                ),
-                onOpenPartitionHealthDialog: () =>
-                    _openPartitionHealthDialog(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            progressTile,
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildTopicModeSwitcher(
-    BuildContext context,
-    ColorScheme colorScheme,
-    AppLocalizations? l10n,
-    bool iconOnly,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.all(2),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _TopicModeButton(
-            icon: Icons.list_alt_rounded,
-            label: l10n?.messagesView ?? 'Messages',
-            isSelected: _viewMode == TopicViewMode.messages,
-            showLabel: !iconOnly,
-            onTap: () => setState(() => _viewMode = TopicViewMode.messages),
-          ),
-          const SizedBox(width: 2),
-          _TopicModeButton(
-            icon: Icons.analytics_outlined,
-            label: l10n?.topicAnalysis ?? 'Analysis',
-            isSelected: _viewMode == TopicViewMode.analysis,
-            showLabel: !iconOnly,
-            onTap: () => setState(() => _viewMode = TopicViewMode.analysis),
-          ),
-          const SizedBox(width: 2),
-          _TopicModeButton(
-            icon: Icons.tune,
-            label: l10n?.topicModeConfig ?? 'Configuration',
-            isSelected: _viewMode == TopicViewMode.config,
-            showLabel: !iconOnly,
-            onTap: () {
-              _ensureConfigController();
-              setState(() => _viewMode = TopicViewMode.config);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopicTitleRow(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Row(
-      children: [
-        Flexible(
-          child: Text(
-            widget.topic.name,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.copy, size: 18),
-          tooltip: l10n?.copyTopicName ?? "Copy Topic Name",
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: widget.topic.name));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n?.topicNameCopied ?? "Topic name copied"),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
-        ),
-        IconButton(
-          key: const Key('topic_header_refresh_facts_button'),
-          icon: const Icon(Icons.refresh, size: 18),
-          tooltip:
-              l10n?.topicHeaderRefreshFactsTooltip ?? 'Refresh topic facts',
-          onPressed: () {
-            topicController?.fetchTopics(widget.profile, force: true);
-            factsController.refresh();
-          },
-        ),
-      ],
-    );
-  }
-
   void _openPartitionHealthDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -821,18 +589,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
             });
           }
         },
-      ),
-    );
-  }
-
-  Widget _buildSchemaButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16),
-      child: OutlinedButton.icon(
-        onPressed: _openSchemaView,
-        style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-        icon: const Icon(Icons.schema_outlined, size: 16),
-        label: Text(AppLocalizations.of(context)?.schemaAction ?? "Schema"),
       ),
     );
   }
@@ -894,69 +650,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
       endTimestamp: endTimestamp,
       runForever: _endStrategy == MultiSearchEndStrategy.live,
       startFromTail: _startStrategy == MultiSearchStartStrategy.latest,
-    );
-  }
-}
-
-class _TopicModeButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final bool showLabel;
-  final VoidCallback onTap;
-
-  const _TopicModeButton({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.showLabel = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected ? colorScheme.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: isSelected
-              ? Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                )
-              : null,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
-            if (!showLabel) const SizedBox(width: 4),
-            if (showLabel) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }

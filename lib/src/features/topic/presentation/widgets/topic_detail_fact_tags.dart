@@ -15,7 +15,6 @@ import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 /// They take the facts controller as a parameter instead of reading it off a
 /// state object, which keeps the header itself free of the fetch logic.
 
-
 double estimateTagWidth(String text, {bool hasIcon = false}) {
   return text.length * 5.2 + 14.0 + (hasIcon ? 16.0 : 0.0);
 }
@@ -169,8 +168,7 @@ List<({Widget widget, bool isPinned, double width})> buildEstimateFactItems(
       final label =
           l10n?.topicHeaderEstimateValue(formattedCount) ??
           '≈ $formattedCount messages (estimate)';
-      final policy =
-          facts.configs.data?.cleanupPolicy ?? topic.cleanupPolicy;
+      final policy = facts.configs.data?.cleanupPolicy ?? topic.cleanupPolicy;
       final isCompactedOrUnknown =
           policy == null || policy.isEmpty || policy.contains('compact');
       final tag = TopicTag(
@@ -205,9 +203,7 @@ buildRetentionAndPolicyFactItems(
       return const [];
     }
     final text =
-        l10n?.topicHeaderRetentionLabel(
-          l10n.topicHeaderRetentionNotReadable,
-        ) ??
+        l10n?.topicHeaderRetentionLabel(l10n.topicHeaderRetentionNotReadable) ??
         'Retention: not readable';
     return [
       (
@@ -227,9 +223,7 @@ buildRetentionAndPolicyFactItems(
       configView?.cleanupPolicy ??
       topic.cleanupPolicy;
   final retentionMs =
-      configs.data?.retentionMs ??
-      configView?.retentionMs ??
-      topic.retentionMs;
+      configs.data?.retentionMs ?? configView?.retentionMs ?? topic.retentionMs;
   final retentionBytes = configs.data?.retentionBytes;
 
   final items = <({Widget widget, bool isPinned, double width})>[];
@@ -358,8 +352,7 @@ List<({Widget widget, bool isPinned, double width})> buildTimeRangeFactItems(
       final oldest = range.oldest;
       final newest = range.newest;
       if (oldest == null || newest == null) {
-        final text =
-            l10n?.topicHeaderTimeRangeUnknown ?? 'Time range: unknown';
+        final text = l10n?.topicHeaderTimeRangeUnknown ?? 'Time range: unknown';
         return [
           (
             widget: TopicTag(
@@ -429,11 +422,7 @@ List<({Widget widget, bool isPinned, double width})> buildTimeRangeFactItems(
           ) ??
           'Partial (${range.oldestKnown}/${range.partitionsTotal} oldest, ${range.newestKnown}/${range.partitionsTotal} newest)';
       return [
-        (
-          widget: mainTag,
-          isPinned: false,
-          width: estimateTagWidth(valueText),
-        ),
+        (widget: mainTag, isPinned: false, width: estimateTagWidth(valueText)),
         (
           widget: Tooltip(
             key: const Key('topic_time_range_partial_tooltip'),

@@ -11,7 +11,8 @@ class IntSettingField extends StatefulWidget {
   final SharedPreferences prefs;
   final int resetGeneration;
 
-  const IntSettingField({super.key, 
+  const IntSettingField({
+    super.key,
     this.fieldKey,
     required this.setting,
     required this.label,

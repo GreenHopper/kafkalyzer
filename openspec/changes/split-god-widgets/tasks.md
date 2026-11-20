@@ -32,7 +32,9 @@
   - Left in the shell: `_buildHeader`, `_buildTopicModeSwitcher`, `_buildTopicTitleRow`, `_buildTopicTags` (the 287-line method) and `_buildSchemaButton`. They go to `topic_detail_header.dart` next; the existing `topic_tag.dart` / `topic_partition_health_dialog.dart` already cover the leaf widgets, so nothing duplicates them.
   - Done: `topic_detail_tags.dart` holds the fact strip; its 287-line `_buildTopicTags` is now six named helpers (`_metadataErrorTags`, `_addHealthFacts`, `_addSchemaFact`, `_addLocalSchemaFact`, `_addConfigStatusFacts`, `_factsStrip` plus the shared `_addFacts`) that build the same pinned/regular lists.
 
-- [ ] 3.3 Confirm `topic_detail_view.dart` is at or below 800 lines and holds only the shell plus the state the tabs share. Verify: `scripts/quality_gates.sh`, then `flutter test` for the topic feature and the a11y test.
+- [x] 3.3 Confirm `topic_detail_view.dart` is at or below 800 lines and holds only the shell plus the state the tabs share. Verify: `scripts/quality_gates.sh`, then `flutter test` for the topic feature and the a11y test.
+  - Also moved: `TopicDetailHeader` (close button, title row, mode switcher, schema action, and the tags/progress slots) and the private `_TopicModeButton`; `TopicViewMode` now lives in that file. `topic_detail_view.dart` 962 -> 658 lines.
+  - Verified: `scripts/quality_gates.sh` passes (format, `flutter analyze`, `cargo fmt`, size guard), and `flutter test test/src/features/topic test/src/a11y/accessibility_guidelines_test.dart` runs 239 tests green.
 
 ## 4. Split `explorer_view.dart` (1 721 lines)
 
