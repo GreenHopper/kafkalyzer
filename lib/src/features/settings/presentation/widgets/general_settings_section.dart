@@ -15,8 +15,7 @@ class GeneralSettingsSection extends StatefulWidget {
   const GeneralSettingsSection({super.key});
 
   @override
-  State<GeneralSettingsSection> createState() =>
-      GeneralSettingsSectionState();
+  State<GeneralSettingsSection> createState() => GeneralSettingsSectionState();
 }
 
 class GeneralSettingsSectionState extends State<GeneralSettingsSection> {

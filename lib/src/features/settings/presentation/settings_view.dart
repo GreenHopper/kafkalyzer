@@ -142,7 +142,8 @@ class _SettingsViewState extends State<SettingsView> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => _exportController.exportConfiguration(context, l10n),
+                onPressed: () =>
+                    _exportController.exportConfiguration(context, l10n),
                 icon: const Icon(Icons.download),
                 label: Text(l10n.exportConfiguration),
               ),
@@ -722,5 +723,4 @@ class _SettingsViewState extends State<SettingsView> {
       ),
     };
   }
-
 }

@@ -132,9 +132,7 @@ class SettingsImportExportController {
                 encryptionPassphrase: choice.passphrase,
               ),
             )
-          : await _clusterListController.exportClustersZip(
-              selectedClusters,
-            );
+          : await _clusterListController.exportClustersZip(selectedClusters);
 
       final picked = await FilePicker.saveFile(
         dialogTitle: l10n.export,

@@ -47,25 +47,24 @@ void main() {
     );
   }
 
-  testWidgets(
-    'cancelling the credential prompt runs no export',
-    (tester) async {
-      final (controller, context, l10n) = await pumpHost(tester);
+  testWidgets('cancelling the credential prompt runs no export', (
+    tester,
+  ) async {
+    final (controller, context, l10n) = await pumpHost(tester);
 
-      unawaited(controller.exportConfiguration(context, l10n));
-      await tester.pump();
-      await tester.tap(find.text(l10n.cancel));
-      await tester.pumpAndSettle();
+    unawaited(controller.exportConfiguration(context, l10n));
+    await tester.pump();
+    await tester.tap(find.text(l10n.cancel));
+    await tester.pumpAndSettle();
 
-      verifyNever(
-        settingsService.exportConfiguration(
-          dialogTitle: anyNamed('dialogTitle'),
-          encryptionPassphrase: anyNamed('encryptionPassphrase'),
-        ),
-      );
-      expect(find.byType(SnackBar), findsNothing);
-    },
-  );
+    verifyNever(
+      settingsService.exportConfiguration(
+        dialogTitle: anyNamed('dialogTitle'),
+        encryptionPassphrase: anyNamed('encryptionPassphrase'),
+      ),
+    );
+    expect(find.byType(SnackBar), findsNothing);
+  });
 
   testWidgets(
     'a failing export reports the error and shows no success message',
