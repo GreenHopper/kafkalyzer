@@ -14,6 +14,7 @@ import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_dialog.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_fact_tags.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_tags.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_progress_tile.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
@@ -569,7 +570,20 @@ class _TopicDetailViewState extends State<TopicDetailView>
                       children: [
                         _buildTopicTitleRow(context),
                         const SizedBox(height: 8),
-                        _buildTopicTags(context),
+                        TopicDetailTags(
+                profile: widget.profile,
+                topic: _currentTopic,
+                topicController: topicController,
+                factsController: factsController,
+                schemaController: schemaController,
+                timeDisplaySettings: _timeDisplaySettings,
+                localSchemaFact: _buildLocalSchemaFactItem(
+                  context,
+                  AppLocalizations.of(context),
+                ),
+                onOpenPartitionHealthDialog: () =>
+                    _openPartitionHealthDialog(context),
+              ),
                       ],
                     ),
                   ),
@@ -634,7 +648,20 @@ class _TopicDetailViewState extends State<TopicDetailView>
               const SizedBox(height: 6),
               Padding(
                 padding: const EdgeInsets.only(left: 56),
-                child: _buildTopicTags(context),
+                child: TopicDetailTags(
+                profile: widget.profile,
+                topic: _currentTopic,
+                topicController: topicController,
+                factsController: factsController,
+                schemaController: schemaController,
+                timeDisplaySettings: _timeDisplaySettings,
+                localSchemaFact: _buildLocalSchemaFactItem(
+                  context,
+                  AppLocalizations.of(context),
+                ),
+                onOpenPartitionHealthDialog: () =>
+                    _openPartitionHealthDialog(context),
+              ),
               ),
             ],
           );
@@ -669,7 +696,20 @@ class _TopicDetailViewState extends State<TopicDetailView>
             const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.only(left: 56),
-              child: _buildTopicTags(context),
+              child: TopicDetailTags(
+                profile: widget.profile,
+                topic: _currentTopic,
+                topicController: topicController,
+                factsController: factsController,
+                schemaController: schemaController,
+                timeDisplaySettings: _timeDisplaySettings,
+                localSchemaFact: _buildLocalSchemaFactItem(
+                  context,
+                  AppLocalizations.of(context),
+                ),
+                onOpenPartitionHealthDialog: () =>
+                    _openPartitionHealthDialog(context),
+              ),
             ),
             const SizedBox(height: 8),
             progressTile,
@@ -782,300 +822,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
           }
         },
       ),
-    );
-  }
-
-  Widget _buildTopicTags(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final topic = _currentTopic;
-    final healthTooltip =
-        l10n?.partitionHealthTooltip ??
-        'View partition replication & health details';
-
-    if (!topic.metadataKnown) {
-      final err = topic.metadataError!;
-      final reason = switch (err.kind) {
-        TopicMetadataErrorKind.notFound =>
-          l10n?.topicMetadataNotFound ?? 'topic not found',
-        TopicMetadataErrorKind.notAuthorized =>
-          l10n?.topicConfigNotReadable ?? 'not readable — permission?',
-        TopicMetadataErrorKind.other =>
-          l10n?.topicConfigLoadFailed ?? 'could not be loaded',
-      };
-      final schemaLabel = resolveTopicSchemaLabel(
-        l10n,
-        schemaController,
-        widget.profile,
-        topic.name,
-      );
-      final localSchemaItem = _buildLocalSchemaFactItem(context, l10n);
-      return Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: [
-          TopicTag(reason, key: const Key('topic_metadata_error_tag')),
-          if (schemaLabel != null)
-            TopicTag(
-              schemaLabel,
-              key: const Key('topic_schema_tag'),
-              isSchema: true,
-            ),
-          ?localSchemaItem.tag,
-        ],
-      );
-    }
-
-    final unhealthy =
-        (topic.underReplicatedPartitions ?? 0) +
-        (topic.leaderlessPartitions ?? 0);
-    final configView = topicController?.configFor(widget.profile, topic.name);
-
-    return ListenableBuilder(
-      listenable: Listenable.merge([
-        factsController,
-        _timeDisplaySettings,
-        schemaController,
-      ]),
-      builder: (context, _) {
-        final schemaLabel = resolveTopicSchemaLabel(
-          l10n,
-          schemaController,
-          widget.profile,
-          topic.name,
-        );
-        final pinned = <({Widget widget, double width})>[];
-        final regular = <({Widget widget, double width})>[];
-
-        // 1. Unhealthy partitions warning (always pinned)
-        if (unhealthy > 0) {
-          final text =
-              l10n?.topicHealthWarning(
-                topic.underReplicatedPartitions ?? 0,
-                topic.leaderlessPartitions ?? 0,
-              ) ??
-              'Unhealthy partitions';
-          pinned.add((
-            widget: Tooltip(
-              message: healthTooltip,
-              child: TopicTag(
-                text,
-                key: const Key('topic_health_tag'),
-                onTap: () => _openPartitionHealthDialog(context),
-              ),
-            ),
-            width: estimateTagWidth(text),
-          ));
-        }
-
-        // 2. Partitions & RF (primary regular facts)
-        final partitionsText =
-            l10n?.topicPartitionsLabel(topic.partitionCount) ??
-            "${topic.partitionCount} Partitions";
-        regular.add((
-          widget: Tooltip(
-            message: healthTooltip,
-            child: TopicTag(
-              partitionsText,
-              key: const Key('topic_partitions_tag'),
-              onTap: () => _openPartitionHealthDialog(context),
-            ),
-          ),
-          width: estimateTagWidth(partitionsText),
-        ));
-
-        final rfText =
-            l10n?.topicRfLabel(topic.replicationFactor) ??
-            "RF: ${topic.replicationFactor}";
-        regular.add((
-          widget: Tooltip(
-            message: healthTooltip,
-            child: TopicTag(
-              rfText,
-              key: const Key('topic_rf_tag'),
-              onTap: () => _openPartitionHealthDialog(context),
-            ),
-          ),
-          width: estimateTagWidth(rfText),
-        ));
-
-        // 3. Estimate fact (pinned if unknown/notReadable, else regular)
-        for (final estItem in buildEstimateFactItems(factsController, context, l10n, topic)) {
-          if (estItem.isPinned) {
-            pinned.add((widget: estItem.widget, width: estItem.width));
-          } else {
-            regular.add((widget: estItem.widget, width: estItem.width));
-          }
-        }
-
-        // 4. Schema tags (pinned if unknown/error, else primary regular)
-        if (schemaLabel != null) {
-          final isSchemaUnknown =
-              schemaController.errorFor(widget.profile) != null;
-          final schemaWidget = TopicTag(
-            schemaLabel,
-            key: const Key('topic_schema_tag'),
-            isSchema: true,
-          );
-          if (isSchemaUnknown) {
-            pinned.add((
-              widget: schemaWidget,
-              width: estimateTagWidth(schemaLabel),
-            ));
-          } else {
-            regular.add((
-              widget: schemaWidget,
-              width: estimateTagWidth(schemaLabel),
-            ));
-          }
-        }
-
-        final localSchemaItem = _buildLocalSchemaFactItem(context, l10n);
-        if (localSchemaItem.tag != null) {
-          if (localSchemaItem.isPinned) {
-            pinned.add((
-              widget: localSchemaItem.tag!,
-              width: localSchemaItem.estimatedWidth,
-            ));
-          } else {
-            regular.add((
-              widget: localSchemaItem.tag!,
-              width: localSchemaItem.estimatedWidth,
-            ));
-          }
-        }
-
-        // 5. Config view status (pinned if notReadable/failed, regular if loading)
-        if (configView != null) {
-          switch (configView.state) {
-            case TopicConfigViewState.loading:
-              if (topic.cleanupPolicy == null && topic.retentionMs == null) {
-                final text = l10n?.topicConfigLoading ?? 'loading';
-                regular.add((
-                  widget: TopicTag(
-                    text,
-                    key: const Key('topic_config_loading_tag'),
-                    isConfig: true,
-                  ),
-                  width: estimateTagWidth(text),
-                ));
-              }
-            case TopicConfigViewState.available:
-              break;
-            case TopicConfigViewState.notReadable:
-              final text =
-                  l10n?.topicConfigNotReadable ?? 'not readable — permission?';
-              pinned.add((
-                widget: TopicTag(
-                  text,
-                  key: const Key('topic_config_not_readable_tag'),
-                  isConfig: true,
-                ),
-                width: estimateTagWidth(text),
-              ));
-            case TopicConfigViewState.failed:
-              final text =
-                  '${l10n?.topicConfigLoadFailed ?? 'could not be loaded'} · ${l10n?.retry ?? 'Retry'}';
-              pinned.add((
-                widget: TopicTag(
-                  text,
-                  key: const Key('topic_config_failed_tag'),
-                  isConfig: true,
-                  onTap: () =>
-                      topicController!.retryConfig(widget.profile, topic.name),
-                ),
-                width: estimateTagWidth(text),
-              ));
-          }
-        }
-
-        // 6. Retention & policy tags
-        for (final retItem in buildRetentionAndPolicyFactItems(
-          factsController,
-          context,
-          l10n,
-          topic,
-          configView,
-        )) {
-          if (retItem.isPinned) {
-            pinned.add((widget: retItem.widget, width: retItem.width));
-          } else {
-            regular.add((widget: retItem.widget, width: retItem.width));
-          }
-        }
-
-        // 7. Time range facts
-        for (final trItem in buildTimeRangeFactItems(
-          factsController,
-          _timeDisplaySettings,
-          context,
-          l10n,
-          topic,
-        )) {
-          if (trItem.isPinned) {
-            pinned.add((widget: trItem.widget, width: trItem.width));
-          } else {
-            regular.add((widget: trItem.widget, width: trItem.width));
-          }
-        }
-
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final maxWidth = constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : 1200.0;
-            const spacing = 8.0;
-            const overflowChipReservedWidth = 44.0;
-
-            double usedWidth = 0.0;
-            final visible = <Widget>[];
-            final overflow = <Widget>[];
-
-            for (final item in pinned) {
-              if (visible.isNotEmpty) usedWidth += spacing;
-              usedWidth += item.width;
-              visible.add(item.widget);
-            }
-
-            // Compute total width if all regular items were shown without overflow chip
-            double totalIfAllShown = usedWidth;
-            for (int i = 0; i < regular.length; i++) {
-              if (visible.isNotEmpty || i > 0) totalIfAllShown += spacing;
-              totalIfAllShown += regular[i].width;
-            }
-
-            if (totalIfAllShown <= maxWidth) {
-              for (final item in regular) {
-                visible.add(item.widget);
-              }
-            } else {
-              final budget = maxWidth - overflowChipReservedWidth - spacing;
-              for (final item in regular) {
-                final nextWidth =
-                    usedWidth + (visible.isEmpty ? 0 : spacing) + item.width;
-                if (overflow.isEmpty &&
-                    (nextWidth <= budget || visible.isEmpty)) {
-                  usedWidth = nextWidth;
-                  visible.add(item.widget);
-                } else {
-                  overflow.add(item.widget);
-                }
-              }
-            }
-
-            if (overflow.isNotEmpty) {
-              visible.add(buildOverflowFactsChip(context, l10n, overflow));
-            }
-
-            return Wrap(
-              key: const Key('topic_facts_strip'),
-              spacing: spacing,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: visible,
-            );
-          },
-        );
-      },
     );
   }
 
