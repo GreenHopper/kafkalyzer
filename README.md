@@ -160,6 +160,13 @@ The application uses `shared_preferences` to store local configurations and clus
 We use **GitHub Actions** for continuous integration and automated release packaging across Linux, macOS, and Windows.
 
 - **Selective CI**: Pull requests and main pushes execute unit tests (`flutter test` and `cargo test`).
+- **Source Quality Gates**: The `Source quality gates` job runs `bash scripts/quality_gates.sh`, the same script you can run locally before pushing:
+
+  ```bash
+  bash scripts/quality_gates.sh
+  ```
+
+  It checks Dart formatting (`dart format --output=none --set-exit-if-changed lib test`), the Dart analyzer (`flutter analyze`) and Rust formatting (`cargo fmt --all --manifest-path rust/Cargo.toml --check`), and stops at the first finding. Release builds wait for it. The Rust lint check (`cargo clippy --workspace --all-targets -- -D warnings`) is not enabled yet: 30 pre-existing findings must be removed first.
 - **Automated Releases**: Pushing a version tag (`v*`) automatically builds release binaries for all target platforms and creates a GitHub Release.
 - **Artifacts**: You can find the latest binaries in the "Actions" tab or the "Releases" section of the repository.
 

@@ -4,7 +4,9 @@ themes produced by flex_color_scheme (which still targets legacy flutter/materia
 
 Both packages are API-identical forks, so a field-by-field copy works.
 """
-import re, os
+import os
+import re
+import subprocess
 
 LEGACY_SRC = '/home/kaufmannr/development/flutter/packages/flutter/lib/src/material'  # <flutter-sdk>/packages/flutter/lib/src/material
 OUT = 'lib/src/flex_theme_bridge.dart'
@@ -32,12 +34,12 @@ SHARED_WORDS = {
     'Brightness','TargetPlatform','PlatformBrightness','ImageFilter','Function','VoidCallback',
     'IconSize','IconColor','IconWeight','IconGeometry','IconPlatform','BorderSide','BoxShadow',
     'List','Set','Map','Iterable','WidgetStateProperty','MaterialStateProperty','WidgetState',
-    'MaterialState','Scribbleable','FocusHighlightStrategy','EdgeInsets','EdgeInsetsGeometry',
-    'FocusNode','TextBaseline','TextLeadingDistribution','Overflow','WrapAlignment','WrapAlignment?',
-    'Axis','CrossAxisAlignment','MainAxisSize','BoxFit','BoxBorder','Shadow','TextOverflow',
+    'MaterialState','Scribbleable',
+    'TextBaseline','TextLeadingDistribution','Overflow','WrapAlignment','WrapAlignment?',
+    'TextOverflow',
     'TextWrap','StrutStyle','StrutStyle?',
     'ElevationOverlayMode','ElevationOverlayMode?','MaterialType','MaterialType?',
-    'ImageFilter','FilterQuality','FilterQuality?','Clip','Clip?','ShapeBorder','ShapeBorder?',
+    'FilterQuality','FilterQuality?','Clip','Clip?','ShapeBorder','ShapeBorder?',
     # classes that live in flutter/widgets, flutter/painting or dart:ui (shared with material_ui):
     'IconThemeData','IconThemeData?','PageTransitionBuilder','PageTransitionsThemeBuilder',
     'Offset','Offset?','BorderRadiusGeometry','BorderRadiusGeometry?','Decoration','Decoration?',
@@ -419,11 +421,17 @@ lines.append('// the modern `package:material_ui` ThemeData expected by Flutter 
 lines.append('//')
 lines.append('// See https://github.com/rydmike/flex_color_scheme/issues/310')
 lines.append('//')
+# dart format splits the long one-line guards this generator emits, which
+# would otherwise raise curly-brace infos in the generated file.
+lines.append('// ignore_for_file: curly_braces_in_flow_control_structures')
+# The legacy Material import below is unavoidable while flex_color_scheme
+# has not migrated; see the issue linked above.
+lines.append('// ignore: deprecated_member_use')
 lines.append("import 'package:flutter/material.dart' as legacy;")
 lines.append("import 'package:material_ui/material_ui.dart' as modern;")
 lines.append('')
 # ---- special runtime-type shape mappers ----
-for (cls, param), (base_type, shapes) in SPECIAL_PARAMS.items():
+for (_, _), (base_type, shapes) in SPECIAL_PARAMS.items():
     helper = f'_map{base_type}Shapes'
     lines.append(f'modern.{base_type}? {helper}(legacy.{base_type}? v) {{')
     lines.append('  if (v == null) return null;')
@@ -480,6 +488,10 @@ try:
         f.write('\n'.join(lines) + '\n')
 except OSError as e:
     raise SystemExit(f'Failed to write {OUT}: {e}') from e
+
+# Format the generated file so `dart format --set-exit-if-changed` in the CI
+# quality gate passes on it; the generator output is not format-clean itself.
+subprocess.run(['dart', 'format', OUT], check=True)
 
 print("mapped types:", [m.name for m in mapped])
 print("skipped td fields:", skipped_all)
