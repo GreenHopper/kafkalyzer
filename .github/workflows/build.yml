@@ -70,9 +70,17 @@ jobs:
     name: Source quality gates
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # Der Size-Guard vergleicht die geaenderten Dateien mit der Revision,
+      # von der der Change ausgeht; ohne sie waere "schon zu gross" nicht von
+      # "gerade erst zu gross geworden" zu unterscheiden.
+      KAFKALYZER_BASE_REF: >-
+        ${{ github.event.pull_request.base.sha || 'refs/remotes/origin/main' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # size guard needs the merge base
 
       - name: Install system dependencies
         run: |
