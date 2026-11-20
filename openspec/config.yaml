@@ -95,6 +95,11 @@ context: |
         source files.
       - Format Dart code strictly using `dart format`.
       - Format Rust code strictly using `cargo fmt`.
+      - Keep hand-written Dart source files at or below 800 lines. Split a
+        screen into one file per section under the owning feature's
+        `presentation/widgets/` (one public widget class per file), and extend
+        an existing util file instead of adding a new one. The CI size guard
+        checks the files a change touches; generated sources are exempt.
       - Use structured logging via the Dart `logger` package and the Rust `log`
         crate instead of `print`, `debugPrint` or ad-hoc log files. Never log
         secrets or message payloads.
@@ -202,9 +207,9 @@ context: |
          `flutter analyze`, `flutter test`
       5. `scripts/check_read_only.sh`
       6. `scripts/quality_gates.sh` runs the CI gate checks in one call (dart
-         format, flutter analyze, cargo fmt --check) and stops at the first
-         finding. clippy is not part of it yet: it joins with `-D warnings`
-         only once the change `enable-rust-lint-gate` lands.
+         format, flutter analyze, cargo fmt --check, source-file size guard) and
+         stops at the first finding. clippy is not part of it yet: it joins with
+         `-D warnings` only once the change `enable-rust-lint-gate` lands.
 
 # Per-artifact generation rules
 rules:
