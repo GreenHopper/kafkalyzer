@@ -46,6 +46,10 @@
   - Done: removed `src/rust/api/kafka_consumer.dart` from the first, `filter_expression_editing_controller.dart` from the second. `flutter analyze` → `No issues found!`.
 - [x] 5.3 Run `flutter test` and verify all 1 298 tests still pass after the regeneration and import removals
   - Done: `All tests passed!` (+1298). Note: this passed only after the bridge file was reverted to HEAD — see the open question in 4.3.
+- [x] 5.4 Fix the first CI gate run: `flutter analyze` reported 61 findings under `rust_builder/cargokit/build_tool/` in CI (it stays clean locally only because that vendored package has a leftover local `.dart_tool/package_config.json`)
+  - Root cause: `rust_builder/` is vendored third-party Cargokit tooling (own `pubspec.yaml`, 40 tracked files, its dependencies are never fetched in this repo), and `analysis_options.yaml` did not exclude it. The findings are `uri_does_not_exist` plus `dangling_library_doc_comments` in that package, not in kafkalyzer sources.
+  - Fix: added `rust_builder/**` to the existing `analyzer: exclude:` list in `analysis_options.yaml` — same category as the already-excluded `build/**`, `linux/**`, `windows_shared/src/**`. No lint rule was weakened and no severity lowered, so the spec's "no repository-wide exception for hand-written sources" requirement still holds.
+  - Verified under CI conditions: moved `rust_builder/cargokit/build_tool/.dart_tool` out of the tree, `flutter analyze` → `No issues found!`; restored it, `scripts/quality_gates.sh` → "Quality gate passed."
 
 ## 6. CI wiring
 

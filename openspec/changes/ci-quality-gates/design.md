@@ -110,5 +110,5 @@ Rollback: revert the `build.yml` commit. The source fixes (unused imports, regen
 ## Open Questions
 
 - Should the gate also enforce the documented 120-character line limit (no tool is installed for it today)? Deferred; it does not change this design.
-- Should `flutter analyze` be run on `test/` and `packages/velopack_flutter/` too, or only on `lib` + `test` as the current default (whole-project `flutter analyze` already covers `lib` and `test`)? Deferred; the current default is used.
+- Should `flutter analyze` be run on `test/` and `packages/velopack_flutter/` too, or only on `lib` + `test` as the current default (whole-project `flutter analyze` already covers `lib` and `test`)? Resolved by the first CI run: whole-project analyze is kept, and vendored third-party tooling (`rust_builder/**`, Cargokit) is excluded in `analysis_options.yaml` next to the existing `build/**` / platform-dir excludes.
 - Exact date/commit at which `enable-rust-lint-gate` can be switched on depends on Q-4; the switch itself needs no new design.
