@@ -27,10 +27,9 @@ import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/topic/utils/dlq_topic_detector.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment_tag.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
-import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/cluster_overview_view.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_sidebar_clusters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ExplorerView extends WatchingStatefulWidget {
@@ -51,9 +50,6 @@ enum _SidebarBrowseMode { topics, subjects }
 class _ExplorerViewState extends State<ExplorerView> {
   late TextEditingController _filterController;
   _SidebarBrowseMode _browseMode = _SidebarBrowseMode.topics;
-  final TextEditingController _clusterFilterController =
-      TextEditingController();
-  String _clusterFilterQuery = '';
   final ScrollController _tabScrollController = ScrollController();
   bool _isSidebarCollapsed = false;
   double _sidebarWidth = ExplorerView.defaultSidebarWidth;
@@ -95,7 +91,6 @@ class _ExplorerViewState extends State<ExplorerView> {
   @override
   void dispose() {
     _filterController.dispose();
-    _clusterFilterController.dispose();
     _tabScrollController.dispose();
     super.dispose();
   }
@@ -295,11 +290,10 @@ class _ExplorerViewState extends State<ExplorerView> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSidebarHeader(context, l10n),
-            _buildSidebarClusterList(
-              context,
-              clusterController,
-              activeController,
-              topicController,
+            ExplorerClusterList(
+              clusterController: clusterController,
+              activeController: activeController,
+              topicController: topicController,
             ),
             if (activeController.activeProfile != null) ...[
               const Divider(height: 1),
@@ -431,228 +425,6 @@ class _ExplorerViewState extends State<ExplorerView> {
           ),
         ],
       ),
-    );
-  }
-
-  ClusterProfile _resolveLatestProfile(
-    ClusterProfile fallback,
-    ClusterListController clusterController,
-  ) {
-    return clusterController.clusters.cast<ClusterProfile?>().firstWhere(
-          (c) => c?.name == fallback.name,
-          orElse: () => null,
-        ) ??
-        fallback;
-  }
-
-  Future<void> _handleDisconnectCluster(
-    BuildContext context,
-    ClusterProfile cluster,
-    ActiveConnectionController activeController,
-  ) async {
-    if (activeController.hasRunningOperations(cluster)) {
-      final l10n = AppLocalizations.of(context)!;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(l10n.disconnectConfirmTitle(cluster.name)),
-          content: Text(l10n.disconnectConfirmBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(l10n.disconnectConfirmAction),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true) return;
-    }
-    activeController.disconnect();
-  }
-
-  Widget _buildSidebarClusterList(
-    BuildContext context,
-    ClusterListController clusterController,
-    ActiveConnectionController activeController,
-    TopicController topicController,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    final showFilter = clusterController.clusters.length > 5;
-    final filtered = showFilter
-        ? clusterController.clusters
-              .where((c) => matchesClusterFilter(c, _clusterFilterQuery))
-              .toList()
-        : clusterController.clusters;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (showFilter) ...[
-          ClusterFilterField(
-            controller: _clusterFilterController,
-            dense: true,
-            onChanged: (q) => setState(() => _clusterFilterQuery = q),
-          ),
-          const SizedBox(height: 8),
-        ],
-        if (showFilter && filtered.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              children: [
-                Text(
-                  l10n.clusterFilterNoMatch,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                TextButton(
-                  onPressed: () {
-                    _clusterFilterController.clear();
-                    setState(() => _clusterFilterQuery = '');
-                  },
-                  child: Text(l10n.clusterFilterClear),
-                ),
-              ],
-            ),
-          )
-        else
-          LimitedBox(
-            maxHeight: 200,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: filtered.map((cluster) {
-                  return _buildClusterListItem(
-                    context,
-                    cluster,
-                    activeController,
-                    topicController,
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildClusterListItem(
-    BuildContext context,
-    ClusterProfile cluster,
-    ActiveConnectionController activeController,
-    TopicController topicController,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    final isActive = activeController.activeProfile?.name == cluster.name;
-    final isConnecting =
-        activeController.connectingProfile?.name == cluster.name ||
-        (isActive && activeController.isConnecting);
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        selected: isActive,
-        selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
-        selectedColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        title: _buildClusterListTitle(
-          context,
-          cluster,
-          isActive,
-          topicController,
-        ),
-        onTap: isConnecting
-            ? null
-            : () {
-                getIt<ActiveConnectionController>().connect(cluster);
-                getIt<SchemaController>().fetchSchemas(cluster);
-              },
-        trailing: isConnecting
-            ? const SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : (isActive
-                  ? Semantics(
-                      label: l10n.disconnectClusterTooltip,
-                      button: true,
-                      child: IconButton(
-                        icon: const Icon(Icons.link_off, size: 16),
-                        tooltip: l10n.disconnectClusterTooltip,
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () => _handleDisconnectCluster(
-                          context,
-                          cluster,
-                          activeController,
-                        ),
-                      ),
-                    )
-                  : null),
-      ),
-    );
-  }
-
-  Widget _buildClusterListTitle(
-    BuildContext context,
-    ClusterProfile cluster,
-    bool isActive,
-    TopicController topicController,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final hasEnvTag =
-            cluster.environmentLabel != null &&
-            cluster.environmentLabel!.trim().isNotEmpty;
-        final isNarrow =
-            constraints.maxWidth.isFinite &&
-            (constraints.maxWidth < 210 ||
-                (hasEnvTag && constraints.maxWidth < 250) ||
-                (cluster.name.length > 14 && constraints.maxWidth < 245));
-        return Row(
-          children: [
-            if (topicController.hasCachedTopics(cluster))
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: Icon(
-                  Icons.check_circle,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            Flexible(
-              child: Text(
-                cluster.name,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: isActive
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : (topicController.hasCachedTopics(cluster)
-                            ? Theme.of(context).colorScheme.primary
-                            : null),
-                ),
-              ),
-            ),
-            if (cluster.environmentLabel != null &&
-                cluster.environmentLabel!.trim().isNotEmpty) ...[
-              const SizedBox(width: 6),
-              EnvironmentTagChip(profile: cluster, compact: true),
-            ],
-            if (cluster.tlsVerification == TlsVerification.disabled) ...[
-              const SizedBox(width: 6),
-              InsecureTlsBadge(compact: true, iconOnly: isNarrow),
-            ],
-          ],
-        );
-      },
     );
   }
 
@@ -1302,7 +1074,7 @@ class _ExplorerViewState extends State<ExplorerView> {
     final safeIndex = activeIndex >= 0 ? activeIndex : 0;
 
     final activeBannerProfile = activeController.activeProfile != null
-        ? _resolveLatestProfile(
+        ? resolveLatestProfile(
             activeController.activeProfile!,
             getIt<ClusterListController>(),
           )
@@ -1454,7 +1226,7 @@ class _ExplorerViewState extends State<ExplorerView> {
     final isRunning = streamCtrl.isStreaming || analysisCtrl.isAnalyzing;
 
     final resolvedTabProfile = getIt.isRegistered<ClusterListController>()
-        ? _resolveLatestProfile(record.profile, getIt<ClusterListController>())
+        ? resolveLatestProfile(record.profile, getIt<ClusterListController>())
         : record.profile;
 
     return Row(
