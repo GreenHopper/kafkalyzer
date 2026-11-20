@@ -1,23 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/services.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/passphrase_prompt_dialog.dart';
 import 'package:kafkalyzer/src/services/encrypted_bundle.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/services/appearance_settings.dart';
-import 'package:kafkalyzer/src/services/diagnostics/app_logging.dart';
-import 'package:kafkalyzer/src/services/diagnostics/diagnostics_report.dart';
-import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
-import 'package:kafkalyzer/src/services/file_opener_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
-import 'package:kafkalyzer/src/services/time_display_settings.dart';
-import 'package:kafkalyzer/src/services/update_service.dart';
-import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
 import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
@@ -25,20 +14,18 @@ import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dial
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment_tag.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/import_conflict_dialog.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:kafkalyzer/src/utils/app_version_helper.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/export_credentials_dialog.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/general_settings_section.dart';
-import 'package:kafkalyzer/src/features/settings/presentation/widgets/section_reset_confirmation.dart';
 
-import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/settings_appearance_section.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/settings_diagnostics_section.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/settings_about_and_updates_section.dart';
 
 class SettingsView extends WatchingStatefulWidget {
   const SettingsView({super.key});
@@ -100,7 +87,7 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
               ),
               const SizedBox(height: 32),
-              _buildAppearanceSection(context, l10n),
+              SettingsAppearanceSection(l10n: l10n),
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 32),
@@ -123,412 +110,14 @@ class _SettingsViewState extends State<SettingsView> {
               ),
               const SizedBox(height: 16),
               const Divider(),
-              _buildDiagnosticsSection(context, l10n),
+              SettingsDiagnosticsSection(l10n: l10n),
               const SizedBox(height: 16),
               const Divider(),
-              _buildAboutAndUpdates(context, l10n),
+              SettingsAboutAndUpdatesSection(l10n: l10n),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildDiagnosticsSection(BuildContext context, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-    final logPath = AppLogging.fileLogPath;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(l10n.settingsDiagnosticsTitle, style: theme.textTheme.titleLarge),
-        const SizedBox(height: 8),
-        Text(
-          '${l10n.settingsDiagnosticsLogPathLabel}: '
-          '${logPath ?? l10n.settingsFileLoggingUnavailable}',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: [
-            OutlinedButton.icon(
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                if (logPath == null || logPath.isEmpty) {
-                  messenger
-                    ..clearSnackBars()
-                    ..showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          l10n.settingsOpenLogFolderFailed(
-                            l10n.diagnosticsUnavailable,
-                          ),
-                        ),
-                      ),
-                    );
-                  return;
-                }
-                final ok = await getIt<FileOpenerService>().showInFolder(
-                  logPath,
-                );
-                if (!ok) {
-                  messenger
-                    ..clearSnackBars()
-                    ..showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          l10n.settingsOpenLogFolderFailed(logPath),
-                        ),
-                      ),
-                    );
-                }
-              },
-              icon: const Icon(Icons.folder_open, size: 18),
-              label: Text(l10n.settingsOpenLogFolder),
-            ),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                final activeProfile =
-                    getIt.isRegistered<ActiveConnectionController>()
-                    ? getIt<ActiveConnectionController>().activeProfile
-                    : null;
-                final recentErrors = getIt.isRegistered<ErrorReporter>()
-                    ? getIt<ErrorReporter>().recent
-                    : const <ErrorRecord>[];
-                final report = DiagnosticsReport.build(
-                  appVersion: AppVersionHelper.version,
-                  osName: Platform.operatingSystem,
-                  osVersion: Platform.operatingSystemVersion,
-                  locale: Localizations.localeOf(context).toLanguageTag(),
-                  logPath: logPath,
-                  activeProfile: activeProfile,
-                  recentErrors: recentErrors,
-                );
-                try {
-                  await Clipboard.setData(ClipboardData(text: report));
-                  messenger
-                    ..clearSnackBars()
-                    ..showSnackBar(
-                      SnackBar(content: Text(l10n.settingsDiagnosticsCopied)),
-                    );
-                } catch (_) {
-                  messenger
-                    ..clearSnackBars()
-                    ..showSnackBar(
-                      SnackBar(content: Text(l10n.errorDetailsCopyFailed)),
-                    );
-                }
-              },
-              icon: const Icon(Icons.copy, size: 18),
-              label: Text(l10n.settingsCopyDiagnostics),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Future<void> _openAboutDialog(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) async {
-    String dataFolder;
-    try {
-      dataFolder = (await getApplicationSupportDirectory()).path;
-    } catch (_) {
-      dataFolder = l10n.diagnosticsUnknown;
-    }
-
-    String outputFolder;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final dir = prefs.getString('general_default_output_dir');
-      outputFolder = (dir != null && dir.trim().isNotEmpty)
-          ? dir
-          : l10n.diagnosticsUnknown;
-    } catch (_) {
-      outputFolder = l10n.diagnosticsUnknown;
-    }
-
-    final logFolder = AppLogging.logDirectoryPath ?? l10n.diagnosticsUnknown;
-    if (!context.mounted) return;
-
-    showAboutDialog(
-      context: context,
-      applicationName: 'Kafkalyzer',
-      applicationVersion: 'v${AppVersionHelper.version}',
-      applicationLegalese: l10n.aboutLegalese,
-      children: [
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              '${l10n.aboutRepositoryLabel}: ',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            TextButton(
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                try {
-                  final ok = await launchUrl(
-                    Uri.parse(UpdateService.defaultRepositoryUrl),
-                  );
-                  if (!ok) {
-                    messenger
-                      ..clearSnackBars()
-                      ..showSnackBar(
-                        SnackBar(content: Text(l10n.aboutOpenLinkFailed)),
-                      );
-                  }
-                } catch (_) {
-                  messenger
-                    ..clearSnackBars()
-                    ..showSnackBar(
-                      SnackBar(content: Text(l10n.aboutOpenLinkFailed)),
-                    );
-                }
-              },
-              child: const Text(UpdateService.defaultRepositoryUrl),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        _buildAboutPathRow(context, l10n.aboutLogFolderLabel, logFolder),
-        _buildAboutPathRow(context, l10n.aboutDataFolderLabel, dataFolder),
-        _buildAboutPathRow(context, l10n.aboutOutputFolderLabel, outputFolder),
-      ],
-    );
-  }
-
-  Widget _buildAboutPathRow(BuildContext context, String label, String value) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label: ',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Expanded(
-            child: SelectableText(
-              value,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAboutAndUpdates(BuildContext context, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Kafkalyzer v${AppVersionHelper.version}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const ReadOnlySecurityBadge(),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => UpdateDialog.show(context),
-                  icon: const Icon(Icons.system_update_alt, size: 18),
-                  label: Text(l10n.checkForUpdates),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => _openAboutDialog(context, l10n),
-                  icon: const Icon(Icons.info_outline, size: 18),
-                  label: Text(l10n.settingsAboutButton),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => ShortcutOverviewDialog.show(context),
-                  icon: const Icon(Icons.keyboard_outlined, size: 18),
-                  label: Text(l10n.settingsKeyboardShortcutsButton),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppearanceSection(BuildContext context, AppLocalizations l10n) {
-    final appearance = getIt.isRegistered<AppearanceSettings>()
-        ? getIt<AppearanceSettings>()
-        : AppearanceSettings();
-    final timeDisplay = getIt.isRegistered<TimeDisplaySettings>()
-        ? getIt<TimeDisplaySettings>()
-        : TimeDisplaySettings.fallback;
-
-    return AnimatedBuilder(
-      animation: Listenable.merge([appearance, timeDisplay]),
-      builder: (context, _) {
-        final isCustomScale = !AppearanceSettings.textScalePresets.any(
-          (p) => (p - appearance.textScale).abs() < 0.001,
-        );
-        final scaleEntries = <DropdownMenuEntry<double>>[
-          for (final preset in AppearanceSettings.textScalePresets)
-            DropdownMenuEntry<double>(
-              value: preset,
-              label: '${(preset * 100).round()}%',
-            ),
-          if (isCustomScale)
-            DropdownMenuEntry<double>(
-              value: appearance.textScale,
-              label: l10n.textSizeCustom((appearance.textScale * 100).round()),
-            ),
-        ];
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.appearanceSectionTitle,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                ),
-                TextButton(
-                  key: const Key('reset_appearance_button'),
-                  onPressed: () => confirmSectionReset(
-                    context,
-                    l10n,
-                    l10n.appearanceSectionTitle,
-                    () async {
-                      await appearance.resetToDefaults();
-                      timeDisplay.setMode(TimeDisplayMode.local);
-                    },
-                  ),
-                  child: Text(l10n.resetToDefaults),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 24,
-              runSpacing: 16,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.themeLabel,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: 6),
-                    SegmentedButton<ThemeMode>(
-                      key: const Key('appearance_theme_selector'),
-                      segments: [
-                        ButtonSegment(
-                          value: ThemeMode.system,
-                          label: Text(l10n.themeSystem),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.light,
-                          label: Text(l10n.themeLight),
-                        ),
-                        ButtonSegment(
-                          value: ThemeMode.dark,
-                          label: Text(l10n.themeDark),
-                        ),
-                      ],
-                      selected: {appearance.themeMode},
-                      onSelectionChanged: (sel) {
-                        appearance.setThemeMode(sel.first);
-                      },
-                    ),
-                  ],
-                ),
-                DropdownMenu<String>(
-                  key: const Key('appearance_language_dropdown'),
-                  label: Text(l10n.languageLabel),
-                  initialSelection: appearance.locale?.languageCode ?? 'system',
-                  dropdownMenuEntries: [
-                    DropdownMenuEntry(
-                      value: 'system',
-                      label: l10n.languageSystem,
-                    ),
-                    DropdownMenuEntry(value: 'en', label: l10n.languageEnglish),
-                    DropdownMenuEntry(value: 'de', label: l10n.languageGerman),
-                  ],
-                  onSelected: (val) {
-                    if (val == null || val == 'system') {
-                      appearance.setLocale(null);
-                    } else {
-                      appearance.setLocale(Locale(val));
-                    }
-                  },
-                ),
-                DropdownMenu<double>(
-                  key: const Key('appearance_text_scale_dropdown'),
-                  label: Text(l10n.textSizeLabel),
-                  initialSelection: appearance.textScale,
-                  dropdownMenuEntries: scaleEntries,
-                  onSelected: (val) {
-                    if (val != null) {
-                      appearance.setTextScale(val);
-                    }
-                  },
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.timeDisplayLabel,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: 6),
-                    SegmentedButton<TimeDisplayMode>(
-                      key: const Key('appearance_time_display_selector'),
-                      segments: [
-                        ButtonSegment(
-                          value: TimeDisplayMode.local,
-                          label: Text(l10n.timeDisplayLocal),
-                        ),
-                        ButtonSegment(
-                          value: TimeDisplayMode.utc,
-                          label: Text(l10n.timeDisplayUtc),
-                        ),
-                      ],
-                      selected: {timeDisplay.value},
-                      onSelectionChanged: (sel) {
-                        timeDisplay.setMode(sel.first);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        );
-      },
     );
   }
 
