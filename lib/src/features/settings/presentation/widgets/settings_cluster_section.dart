@@ -37,7 +37,8 @@ class SettingsClusterSection extends WatchingStatefulWidget {
 
 class _SettingsClusterSectionState extends State<SettingsClusterSection> {
   final Set<String> _selectedClusterNames = {};
-  final TextEditingController _clusterFilterController = TextEditingController();
+  final TextEditingController _clusterFilterController =
+      TextEditingController();
   String _clusterFilterQuery = '';
 
   @override
@@ -215,9 +216,7 @@ class _SettingsClusterSectionState extends State<SettingsClusterSection> {
                 } on EncryptedBundleException catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(mapEncryptedBundleError(l10n, e)),
-                      ),
+                      SnackBar(content: Text(mapEncryptedBundleError(l10n, e))),
                     );
                   }
                 } on StoredDataUnreadableException {
