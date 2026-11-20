@@ -30,7 +30,10 @@ context: |
         in-house `SmartVirtualJsonTree` (`lib/src/ui/smart_tree/`).
       - Code generation: freezed / json_serializable (build_runner), mockito
         mocks for the Rust bridge (`test/src/rust/api/rust_mocks.mocks.dart`,
-        checked in).
+        checked in). Generated localizations (`lib/l10n/*.dart`, configured in
+        `l10n.yaml`) and `lib/src/flex_theme_bridge.dart` (from
+        `scripts/gen_flex_theme_bridge.py`) are generator-owned too: change the
+        generator or its configuration, never the generated file.
       - Source layout:
         `lib/src/features/<feature>/{presentation,domain,data,application}`,
         shared widgets in `lib/src/ui/`, services in `lib/src/services/`,
@@ -195,8 +198,13 @@ context: |
          test --workspace` (in `rust/`)
       2. `flutter_rust_bridge_codegen generate`
       3. `dart run build_runner build` (regenerates the checked-in bridge mocks)
-      4. `flutter analyze`, `flutter test`
+      4. `dart format --output=none --set-exit-if-changed lib test`,
+         `flutter analyze`, `flutter test`
       5. `scripts/check_read_only.sh`
+      6. `scripts/quality_gates.sh` runs the CI gate checks in one call (dart
+         format, flutter analyze, cargo fmt --check) and stops at the first
+         finding. clippy is not part of it yet: it joins with `-D warnings`
+         only once the change `enable-rust-lint-gate` lands.
 
 # Per-artifact generation rules
 rules:
@@ -288,6 +296,7 @@ rules:
       regenerating bridge code and mocks when rust/src/api/ changes, and for
       adding en and de ARB keys.
     - >-
-      End with a verification task: cargo fmt, cargo clippy, cargo test, flutter
-      analyze, flutter test and scripts/check_read_only.sh.
+      End with a verification task: scripts/quality_gates.sh, cargo fmt, cargo
+      clippy, cargo test, flutter analyze, flutter test and
+      scripts/check_read_only.sh.
 skillsScope: project

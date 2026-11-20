@@ -20,6 +20,9 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # Vendored Cargokit build tooling (third-party, own pubspec, its deps are
+    # not fetched in this repo) - not app source, same category as build/**.
+    - rust_builder/**
   errors:
     invalid_annotation_target: ignore
     deprecated_member_use: error

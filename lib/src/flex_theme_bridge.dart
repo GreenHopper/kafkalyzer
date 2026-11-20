@@ -5,6 +5,7 @@
 //
 // See https://github.com/rydmike/flex_color_scheme/issues/310
 //
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart' as legacy;
 import 'package:material_ui/material_ui.dart' as modern;
 
