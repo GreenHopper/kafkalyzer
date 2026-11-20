@@ -4,17 +4,13 @@ import 'package:flutter/gestures.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:watch_it/watch_it.dart';
-import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/navigation/widgets/quick_jump_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
-import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
-import 'package:kafkalyzer/src/features/schema/presentation/widgets/subject_browser_list.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
-import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
@@ -27,7 +23,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/cluster_overview_view.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_sidebar_clusters.dart';
-import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_sidebar_topics.dart';
+import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_sidebar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ExplorerView extends WatchingStatefulWidget {
@@ -43,13 +39,9 @@ class ExplorerView extends WatchingStatefulWidget {
   State<ExplorerView> createState() => _ExplorerViewState();
 }
 
-enum _SidebarBrowseMode { topics, subjects }
-
 class _ExplorerViewState extends State<ExplorerView> {
-  _SidebarBrowseMode _browseMode = _SidebarBrowseMode.topics;
   final ScrollController _tabScrollController = ScrollController();
   bool _isSidebarCollapsed = false;
-  double _sidebarWidth = ExplorerView.defaultSidebarWidth;
 
   @override
   void initState() {
@@ -63,13 +55,6 @@ class _ExplorerViewState extends State<ExplorerView> {
     setState(() {
       _isSidebarCollapsed =
           prefs.getBool(ExplorerView.sidebarCollapsedPrefKey) ?? false;
-      _sidebarWidth =
-          (prefs.getDouble(ExplorerView.sidebarWidthPrefKey) ??
-                  ExplorerView.defaultSidebarWidth)
-              .clamp(
-                ExplorerView.minSidebarWidth,
-                ExplorerView.maxSidebarWidth,
-              );
     });
   }
 
@@ -134,13 +119,14 @@ class _ExplorerViewState extends State<ExplorerView> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSidebarArea(
-              context,
-              l10n,
-              clusterController,
-              activeController,
-              topicController,
-              schemaController,
+            ExplorerSidebar(
+              clusterController: clusterController,
+              activeController: activeController,
+              topicController: topicController,
+              schemaController: schemaController,
+              collapsed: _isSidebarCollapsed,
+              onToggleCollapsed: _toggleSidebar,
+              onQuickJump: () => _showQuickJumpDialog(context),
             ),
             if (_isSidebarCollapsed)
               VerticalDivider(
@@ -162,292 +148,6 @@ class _ExplorerViewState extends State<ExplorerView> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSidebarArea(
-    BuildContext context,
-    AppLocalizations l10n,
-    ClusterListController clusterController,
-    ActiveConnectionController activeController,
-    TopicController topicController,
-    SchemaController schemaController,
-  ) {
-    return ClipRect(
-      child: AnimatedSize(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOutCubic,
-        alignment: Alignment.centerLeft,
-        child: _isSidebarCollapsed
-            ? _buildCollapsedSidebarRail(context, l10n)
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSidebar(
-                    context,
-                    l10n,
-                    clusterController,
-                    activeController,
-                    topicController,
-                    schemaController,
-                  ),
-                  _buildSidebarResizeHandle(context),
-                ],
-              ),
-      ),
-    );
-  }
-
-  Widget _buildSidebarResizeHandle(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.resizeLeftRight,
-      child: GestureDetector(
-        key: const Key('explorer_sidebar_resize_handle'),
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragUpdate: (details) {
-          setState(() {
-            _sidebarWidth = (_sidebarWidth + details.delta.dx).clamp(
-              ExplorerView.minSidebarWidth,
-              ExplorerView.maxSidebarWidth,
-            );
-          });
-        },
-        onHorizontalDragEnd: (_) async {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setDouble(
-            ExplorerView.sidebarWidthPrefKey,
-            _sidebarWidth,
-          );
-        },
-        child: Container(
-          width: 6,
-          color: Colors.transparent,
-          child: Center(
-            child: Container(
-              width: 1,
-              color: Theme.of(
-                context,
-              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCollapsedSidebarRail(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) {
-    return SizedBox(
-      width: 40,
-      child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            IconButton(
-              key: const Key('explorer_expand_sidebar'),
-              icon: const Icon(Icons.view_sidebar_outlined),
-              tooltip: l10n.expandSidebar,
-              onPressed: _toggleSidebar,
-            ),
-            const SizedBox(height: 8),
-            IconButton(
-              key: const Key('explorer_collapsed_quick_jump_button'),
-              icon: const Icon(Icons.bolt, size: 20),
-              tooltip: l10n.quickJumpTitle,
-              onPressed: () => _showQuickJumpDialog(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSidebar(
-    BuildContext context,
-    AppLocalizations l10n,
-    ClusterListController clusterController,
-    ActiveConnectionController activeController,
-    TopicController topicController,
-    SchemaController schemaController,
-  ) {
-    return SizedBox(
-      key: const Key('explorer_sidebar_container'),
-      width: _sidebarWidth,
-      child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildSidebarHeader(context, l10n),
-            ExplorerClusterList(
-              clusterController: clusterController,
-              activeController: activeController,
-              topicController: topicController,
-            ),
-            if (activeController.activeProfile != null) ...[
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-                child: Semantics(
-                  label: l10n.explorerModeSwitcherSemantics,
-                  child: SegmentedButton<_SidebarBrowseMode>(
-                    key: const Key('explorer_browse_mode_switcher'),
-                    showSelectedIcon: false,
-                    segments: [
-                      ButtonSegment<_SidebarBrowseMode>(
-                        value: _SidebarBrowseMode.topics,
-                        label: Text(l10n.explorerModeTopics),
-                        icon: const Icon(Icons.topic_outlined, size: 16),
-                      ),
-                      ButtonSegment<_SidebarBrowseMode>(
-                        value: _SidebarBrowseMode.subjects,
-                        label: Text(l10n.explorerModeSubjects),
-                        icon: const Icon(Icons.schema_outlined, size: 16),
-                      ),
-                    ],
-                    selected: {_browseMode},
-                    onSelectionChanged: (selection) {
-                      setState(() {
-                        _browseMode = selection.first;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              if (_browseMode == _SidebarBrowseMode.topics) ...[
-                Expanded(
-                  child: ExplorerTopicPanel(
-                    activeController: activeController,
-                    topicController: topicController,
-                    schemaController: schemaController,
-                    onQuickJump: () => _showQuickJumpDialog(context),
-                  ),
-                ),
-              ] else
-                SubjectBrowserList(
-                  profile: activeController.activeProfile!,
-                  schemaController: schemaController,
-                  topicNames:
-                      topicController
-                          .getTopics(activeController.activeProfile!)
-                          ?.map((t) => t.name)
-                          .toList() ??
-                      const [],
-                  onSelectSubject: (subject) {
-                    final activeProfile = activeController.activeProfile!;
-                    showDialog<void>(
-                      context: context,
-                      builder: (ctx) => SchemaViewerDialog(
-                        profile: activeProfile,
-                        initialSubject: subject,
-                        controller: schemaController,
-                        onNavigateToTopic: (topicName) {
-                          openTopicByNameWithFeedback(
-                            controller: activeController,
-                            profile: activeProfile,
-                            topicName: topicName,
-                            messenger: ScaffoldMessenger.maybeOf(context),
-                            l10n: l10n,
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  onOpenClusterSettings: () {
-                    final activeProfile = activeController.activeProfile!;
-                    showDialog<void>(
-                      context: context,
-                      builder: (ctx) => ClusterConfigDialog(
-                        cluster: activeProfile,
-                        existingNames: clusterController.clusters
-                            .map((c) => c.name)
-                            .toList(),
-                      ),
-                    );
-                  },
-                ),
-            ],
-            if (_browseMode == _SidebarBrowseMode.topics &&
-                activeController.activeProfile != null &&
-                schemaController.errorFor(activeController.activeProfile!) !=
-                    null)
-              ErrorBanner(
-                margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                title: l10n.subjectsLoadFailed(
-                  schemaController.errorFor(activeController.activeProfile!)!,
-                ),
-              ),
-            if (activeController.error != null)
-              _buildErrorBox(context, activeController),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSidebarHeader(BuildContext context, AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              l10n.clusters,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
-          IconButton(
-            key: const Key('explorer_collapse_sidebar'),
-            icon: const Icon(Icons.view_sidebar_outlined),
-            tooltip: l10n.collapseSidebar,
-            visualDensity: VisualDensity.compact,
-            onPressed: _toggleSidebar,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _connectionErrorTitle(
-    AppLocalizations l10n,
-    ConnectionErrorKind kind,
-  ) {
-    switch (kind) {
-      case ConnectionErrorKind.invalidBootstrapServers:
-        return l10n.connectionErrorInvalidBootstrapServers;
-      case ConnectionErrorKind.tlsVerificationFailed:
-        return l10n.connectionErrorTlsVerificationFailed;
-      case ConnectionErrorKind.validationFailed:
-        return l10n.connectionErrorValidationFailed;
-      case ConnectionErrorKind.brokerTransport:
-        return l10n.connectionErrorBrokerTransport;
-      case ConnectionErrorKind.connectionRefused:
-        return l10n.connectionErrorConnectionRefused;
-      case ConnectionErrorKind.other:
-        return l10n.connectionErrorOther;
-    }
-  }
-
-  Widget _buildErrorBox(
-    BuildContext context,
-    ActiveConnectionController activeController,
-  ) {
-    final err = activeController.error!;
-    final l10n = AppLocalizations.of(context)!;
-    final title = _connectionErrorTitle(l10n, err.kind);
-    return ErrorBanner(
-      margin: const EdgeInsets.all(12),
-      title: title,
-      detail: err.detail,
-      onDismiss: activeController.clearError,
     );
   }
 

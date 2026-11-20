@@ -38,11 +38,16 @@
 
 ## 4. Split `explorer_view.dart` (1 721 lines)
 
-- [ ] 4.1 Move the sidebar builders (281 to 1105: sidebar, header, cluster list, cluster list item, topics controls, topic filter, topic list) into files under `lib/src/features/explorer/presentation/widgets/`, following the existing `cluster_overview_view.dart` naming.
-- [ ] 4.2 Move the error box (1206) and the tab strip builders (1339 to 1676) into `explorer_tab_strip.dart` in the same directory, but only if the shell is still above 800 lines after 4.1. Measure and record the count either way.
-- [ ] 4.3 Replace the `Timer.periodic` inside `_TopicListAgeLabelState` (1692) with `TopicListRefreshTicker`: a class taking the interval and a `Timer` factory (or `clock`-style injection) as parameters, with the 30-second default kept at the call site, and a `dispose` that cancels. The label widget keeps its current text and semantics.
-- [ ] 4.4 Add `test/src/features/explorer/presentation/widgets/topic_list_refresh_ticker_test.dart` using fake async: the label repaints after 30 seconds, and cancelling stops the timer (no timer left after dispose).
-- [ ] 4.5 Verify the Explorer regressions that already exist: `flutter test test/src/features/explorer` including `explorer_view_test.dart` and `debug_explorer_test.dart`, plus the a11y test.
+- [x] 4.1 Move the sidebar builders (281 to 1105: sidebar, header, cluster list, cluster list item, topics controls, topic filter, topic list) into files under `lib/src/features/explorer/presentation/widgets/`, following the existing `cluster_overview_view.dart` naming.
+- [x] 4.2 Move the error box (1206) and the tab strip builders (1339 to 1676) into `explorer_tab_strip.dart` in the same directory, but only if the shell is still above 800 lines after 4.1. Measure and record the count either way.
+- [x] 4.3 Replace the `Timer.periodic` inside `_TopicListAgeLabelState` (1692) with `TopicListRefreshTicker`: a class taking the interval and a `Timer` factory (or `clock`-style injection) as parameters, with the 30-second default kept at the call site, and a `dispose` that cancels. The label widget keeps its current text and semantics.
+- [x] 4.4 Add `test/src/features/explorer/presentation/widgets/topic_list_refresh_ticker_test.dart` using fake async: the label repaints after 30 seconds, and cancelling stops the timer (no timer left after dispose).
+- [x] 4.5 Verify the Explorer regressions that already exist: `flutter test test/src/features/explorer` including `explorer_view_test.dart` and `debug_explorer_test.dart`, plus the a11y test.
+  - Done as three files: `explorer_sidebar.dart` (333: sidebar shell, resize handle, collapsed rail, header, browse-mode switcher, connection error box), `explorer_sidebar_clusters.dart` (274: `ExplorerClusterList`, cluster tile and title, plus `resolveLatestProfile` / `disconnectCluster` helpers) and `explorer_sidebar_topics.dart` (622: `ExplorerTopicPanel` with the count row, filter chips, filter field and topic list). `explorer_view.dart` 1721 -> 608 lines.
+  - 4.2 not needed: the shell measured 608 lines after 4.1, below the 800 guard, so the error box and tab strip builders stayed where they are.
+  - `TopicListRefreshTicker` lives in `topic_list_refresh_ticker.dart` (32 lines) with the 30 s default kept at the call site; the age label uses it unchanged in text and key.
+  - Verified: `flutter test test/src/features/explorer test/src/a11y/accessibility_guidelines_test.dart` -> 77 tests green (was 57 explorer + 20 a11y), plus 2 new ticker tests. `flutter analyze` clean.
+
 
 ## 5. Final verification
 
