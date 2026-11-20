@@ -27,8 +27,10 @@
 
 ## 3. Split `topic_detail_view.dart` (1 769 lines)
 
-- [ ] 3.1 Inventory the builders (`_buildHeader` 530, `_buildTopicModeSwitcher` 684, `_buildTopicTitleRow` 730, `_buildTopicTags` 790, `_buildOverflowFactsChip` 1077, `_buildSchemaButton` 1520, `_buildProgressTile` 1532, `_buildProgressActions` 1571) and the existing files under `lib/src/features/topic/presentation/widgets/`, so nothing is added twice.
-- [ ] 3.2 Move the header group (mode switcher, title row, tags, facts chips, schema button) into `topic_detail_header.dart` and the progress group into `topic_detail_progress_tile.dart` in that directory, with plain parameters and callbacks. Split the 286-line method found in this file into named helpers while moving it, without changing what it renders.
+- [x] 3.1 Inventory the builders (`_buildHeader` 530, `_buildTopicModeSwitcher` 684, `_buildTopicTitleRow` 730, `_buildTopicTags` 790, `_buildOverflowFactsChip` 1077, `_buildSchemaButton` 1520, `_buildProgressTile` 1532, `_buildProgressActions` 1571) and the existing files under `lib/src/features/topic/presentation/widgets/`, so nothing is added twice.
+- [ ] 3.2 Move the header group (mode switcher, title row, tags, facts chips, schema button) into `topic_detail_header.dart` and the progress group into `topic_detail_progress_tile.dart` in that directory, with plain parameters and callbacks. Split the 286-line method found in this file into named helpers while moving it, without changing what it renders.  - Progress: progress group moved to `topic_detail_progress_tile.dart`; the fact-tag builders (estimate, retention and policy, time range, overflow chip) moved to `topic_detail_fact_tags.dart` as top-level functions taking the facts controller and time display settings. `topic_detail_view.dart` 1769 -> 1216 lines.
+  - Left in the shell: `_buildHeader`, `_buildTopicModeSwitcher`, `_buildTopicTitleRow`, `_buildTopicTags` (the 287-line method) and `_buildSchemaButton`. They go to `topic_detail_header.dart` next; the existing `topic_tag.dart` / `topic_partition_health_dialog.dart` already cover the leaf widgets, so nothing duplicates them.
+
 - [ ] 3.3 Confirm `topic_detail_view.dart` is at or below 800 lines and holds only the shell plus the state the tabs share. Verify: `scripts/quality_gates.sh`, then `flutter test` for the topic feature and the a11y test.
 
 ## 4. Split `explorer_view.dart` (1 721 lines)
