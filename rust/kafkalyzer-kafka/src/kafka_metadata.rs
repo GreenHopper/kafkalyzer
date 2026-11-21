@@ -590,25 +590,20 @@ pub(crate) fn classify_chunk_raw(
         Ok(resources) => {
             let mut by_topic: HashMap<String, TopicConfigOutcome> =
                 HashMap::with_capacity(resources.len());
-            for res in resources {
-                match res {
-                    Ok(mut raw) => {
-                        for entry in &mut raw.entries {
-                            if entry.is_sensitive {
-                                entry.value = None;
-                            }
-                        }
-                        let outcome = if raw.entries.is_empty() {
-                            TopicConfigOutcome::NotReadable(
-                                "broker returned no configuration entries".to_string(),
-                            )
-                        } else {
-                            TopicConfigOutcome::Available(raw.entries)
-                        };
-                        by_topic.insert(raw.topic, outcome);
+            for mut raw in resources.into_iter().flatten() {
+                for entry in &mut raw.entries {
+                    if entry.is_sensitive {
+                        entry.value = None;
                     }
-                    Err(_) => {}
                 }
+                let outcome = if raw.entries.is_empty() {
+                    TopicConfigOutcome::NotReadable(
+                        "broker returned no configuration entries".to_string(),
+                    )
+                } else {
+                    TopicConfigOutcome::Available(raw.entries)
+                };
+                by_topic.insert(raw.topic, outcome);
             }
             requested
                 .iter()
@@ -743,12 +738,16 @@ pub fn classify_config_error(code: RDKafkaErrorCode) -> TopicConfigUnavailable {
     }
 }
 
+/// One admin round-trip for a chunk of topics: per topic either its config
+/// entries or the librdkafka error that stood in the way.
+type ConfigChunk = std::result::Result<
+    Vec<std::result::Result<(String, Vec<CoreTopicConfigEntry>), RDKafkaErrorCode>>,
+    String,
+>;
+
 pub(crate) fn assemble_detailed_config_chunk(
     requested: &[&str],
-    result: std::result::Result<
-        Vec<std::result::Result<(String, Vec<CoreTopicConfigEntry>), RDKafkaErrorCode>>,
-        String,
-    >,
+    result: ConfigChunk,
 ) -> Vec<TopicConfigs> {
     match result {
         Err(msg) => requested
