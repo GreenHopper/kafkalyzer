@@ -141,24 +141,7 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
   });
 
   Stream<KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
-    required ClusterProfile profile,
-    required String topic,
-    List<String>? filterTerms,
-    String? filterField,
-    required FilterType filterType,
-    required SearchScope searchScope,
-    String? filterExpression,
-    Map<String, List<String>>? filterVariables,
-    PlatformInt64? startOffset,
-    PlatformInt64? startTimestamp,
-    int? startPartition,
-    String? fastTraceKey,
-    PlatformInt64? endOffset,
-    PlatformInt64? endTimestamp,
-    int? maxResults,
-    required bool runForever,
-    bool? startFromTail,
-    TopicLocalSchemasDto? localSchemas,
+    required ConsumeRequest request,
   });
 
   Future<ClientConfig> crateApiKafkaUtilsCreateConfig({
@@ -700,24 +683,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
 
   @override
   Stream<KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
-    required ClusterProfile profile,
-    required String topic,
-    List<String>? filterTerms,
-    String? filterField,
-    required FilterType filterType,
-    required SearchScope searchScope,
-    String? filterExpression,
-    Map<String, List<String>>? filterVariables,
-    PlatformInt64? startOffset,
-    PlatformInt64? startTimestamp,
-    int? startPartition,
-    String? fastTraceKey,
-    PlatformInt64? endOffset,
-    PlatformInt64? endTimestamp,
-    int? maxResults,
-    required bool runForever,
-    bool? startFromTail,
-    TopicLocalSchemasDto? localSchemas,
+    required ConsumeRequest request,
   }) {
     final sink = RustStreamSink<KafkaMessage>();
     unawaited(
@@ -725,30 +691,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
         NormalTask(
           callFfi: (port_) {
             final serializer = SseSerializer(generalizedFrbRustBinding);
-            sse_encode_box_autoadd_cluster_profile(profile, serializer);
-            sse_encode_String(topic, serializer);
-            sse_encode_opt_list_String(filterTerms, serializer);
-            sse_encode_opt_String(filterField, serializer);
-            sse_encode_filter_type(filterType, serializer);
-            sse_encode_search_scope(searchScope, serializer);
-            sse_encode_opt_String(filterExpression, serializer);
-            sse_encode_opt_Map_String_list_String_None(
-              filterVariables,
-              serializer,
-            );
-            sse_encode_opt_box_autoadd_i_64(startOffset, serializer);
-            sse_encode_opt_box_autoadd_i_64(startTimestamp, serializer);
-            sse_encode_opt_box_autoadd_i_32(startPartition, serializer);
-            sse_encode_opt_String(fastTraceKey, serializer);
-            sse_encode_opt_box_autoadd_i_64(endOffset, serializer);
-            sse_encode_opt_box_autoadd_i_64(endTimestamp, serializer);
-            sse_encode_opt_box_autoadd_i_32(maxResults, serializer);
-            sse_encode_bool(runForever, serializer);
-            sse_encode_opt_box_autoadd_bool(startFromTail, serializer);
-            sse_encode_opt_box_autoadd_topic_local_schemas_dto(
-              localSchemas,
-              serializer,
-            );
+            sse_encode_box_autoadd_consume_request(request, serializer);
             sse_encode_StreamSink_kafka_message_Sse(sink, serializer);
             pdeCallFfi(
               generalizedFrbRustBinding,
@@ -762,27 +705,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
             decodeErrorData: sse_decode_AnyhowException,
           ),
           constMeta: kCrateApiKafkaConsumerConsumeWithFilterConstMeta,
-          argValues: [
-            profile,
-            topic,
-            filterTerms,
-            filterField,
-            filterType,
-            searchScope,
-            filterExpression,
-            filterVariables,
-            startOffset,
-            startTimestamp,
-            startPartition,
-            fastTraceKey,
-            endOffset,
-            endTimestamp,
-            maxResults,
-            runForever,
-            startFromTail,
-            localSchemas,
-            sink,
-          ],
+          argValues: [request, sink],
           apiImpl: this,
         ),
       ),
@@ -793,27 +716,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   TaskConstMeta get kCrateApiKafkaConsumerConsumeWithFilterConstMeta =>
       const TaskConstMeta(
         debugName: "consume_with_filter",
-        argNames: [
-          "profile",
-          "topic",
-          "filterTerms",
-          "filterField",
-          "filterType",
-          "searchScope",
-          "filterExpression",
-          "filterVariables",
-          "startOffset",
-          "startTimestamp",
-          "startPartition",
-          "fastTraceKey",
-          "endOffset",
-          "endTimestamp",
-          "maxResults",
-          "runForever",
-          "startFromTail",
-          "localSchemas",
-          "sink",
-        ],
+        argNames: ["request", "sink"],
       );
 
   @override
@@ -2696,6 +2599,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  ConsumeRequest dco_decode_box_autoadd_consume_request(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_consume_request(raw);
+  }
+
+  @protected
   DiagnosisHint dco_decode_box_autoadd_diagnosis_hint(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_diagnosis_hint(raw);
@@ -3015,6 +2924,34 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       stages: dco_decode_list_stage_result(arr[1]),
       unattributed: dco_decode_list_String(arr[2]),
       elapsedMs: dco_decode_u_64(arr[3]),
+    );
+  }
+
+  @protected
+  ConsumeRequest dco_decode_consume_request(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 18)
+      throw Exception('unexpected arr length: expect 18 but see ${arr.length}');
+    return ConsumeRequest(
+      profile: dco_decode_cluster_profile(arr[0]),
+      topic: dco_decode_String(arr[1]),
+      filterTerms: dco_decode_opt_list_String(arr[2]),
+      filterField: dco_decode_opt_String(arr[3]),
+      filterType: dco_decode_filter_type(arr[4]),
+      searchScope: dco_decode_search_scope(arr[5]),
+      filterExpression: dco_decode_opt_String(arr[6]),
+      filterVariables: dco_decode_opt_Map_String_list_String_None(arr[7]),
+      startOffset: dco_decode_opt_box_autoadd_i_64(arr[8]),
+      startTimestamp: dco_decode_opt_box_autoadd_i_64(arr[9]),
+      startPartition: dco_decode_opt_box_autoadd_i_32(arr[10]),
+      fastTraceKey: dco_decode_opt_String(arr[11]),
+      endOffset: dco_decode_opt_box_autoadd_i_64(arr[12]),
+      endTimestamp: dco_decode_opt_box_autoadd_i_64(arr[13]),
+      maxResults: dco_decode_opt_box_autoadd_i_32(arr[14]),
+      runForever: dco_decode_bool(arr[15]),
+      startFromTail: dco_decode_opt_box_autoadd_bool(arr[16]),
+      localSchemas: dco_decode_opt_box_autoadd_topic_local_schemas_dto(arr[17]),
     );
   }
 
@@ -5221,6 +5158,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  ConsumeRequest sse_decode_box_autoadd_consume_request(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_consume_request(deserializer));
+  }
+
+  @protected
   DiagnosisHint sse_decode_box_autoadd_diagnosis_hint(
     SseDeserializer deserializer,
   ) {
@@ -5601,6 +5546,53 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       stages: var_stages,
       unattributed: var_unattributed,
       elapsedMs: var_elapsedMs,
+    );
+  }
+
+  @protected
+  ConsumeRequest sse_decode_consume_request(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_profile = sse_decode_cluster_profile(deserializer);
+    var var_topic = sse_decode_String(deserializer);
+    var var_filterTerms = sse_decode_opt_list_String(deserializer);
+    var var_filterField = sse_decode_opt_String(deserializer);
+    var var_filterType = sse_decode_filter_type(deserializer);
+    var var_searchScope = sse_decode_search_scope(deserializer);
+    var var_filterExpression = sse_decode_opt_String(deserializer);
+    var var_filterVariables = sse_decode_opt_Map_String_list_String_None(
+      deserializer,
+    );
+    var var_startOffset = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_startTimestamp = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_startPartition = sse_decode_opt_box_autoadd_i_32(deserializer);
+    var var_fastTraceKey = sse_decode_opt_String(deserializer);
+    var var_endOffset = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_endTimestamp = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_maxResults = sse_decode_opt_box_autoadd_i_32(deserializer);
+    var var_runForever = sse_decode_bool(deserializer);
+    var var_startFromTail = sse_decode_opt_box_autoadd_bool(deserializer);
+    var var_localSchemas = sse_decode_opt_box_autoadd_topic_local_schemas_dto(
+      deserializer,
+    );
+    return ConsumeRequest(
+      profile: var_profile,
+      topic: var_topic,
+      filterTerms: var_filterTerms,
+      filterField: var_filterField,
+      filterType: var_filterType,
+      searchScope: var_searchScope,
+      filterExpression: var_filterExpression,
+      filterVariables: var_filterVariables,
+      startOffset: var_startOffset,
+      startTimestamp: var_startTimestamp,
+      startPartition: var_startPartition,
+      fastTraceKey: var_fastTraceKey,
+      endOffset: var_endOffset,
+      endTimestamp: var_endTimestamp,
+      maxResults: var_maxResults,
+      runForever: var_runForever,
+      startFromTail: var_startFromTail,
+      localSchemas: var_localSchemas,
     );
   }
 
@@ -8595,6 +8587,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_box_autoadd_consume_request(
+    ConsumeRequest self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_consume_request(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_diagnosis_hint(
     DiagnosisHint self,
     SseSerializer serializer,
@@ -8966,6 +8967,38 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_list_stage_result(self.stages, serializer);
     sse_encode_list_String(self.unattributed, serializer);
     sse_encode_u_64(self.elapsedMs, serializer);
+  }
+
+  @protected
+  void sse_encode_consume_request(
+    ConsumeRequest self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_cluster_profile(self.profile, serializer);
+    sse_encode_String(self.topic, serializer);
+    sse_encode_opt_list_String(self.filterTerms, serializer);
+    sse_encode_opt_String(self.filterField, serializer);
+    sse_encode_filter_type(self.filterType, serializer);
+    sse_encode_search_scope(self.searchScope, serializer);
+    sse_encode_opt_String(self.filterExpression, serializer);
+    sse_encode_opt_Map_String_list_String_None(
+      self.filterVariables,
+      serializer,
+    );
+    sse_encode_opt_box_autoadd_i_64(self.startOffset, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.startTimestamp, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.startPartition, serializer);
+    sse_encode_opt_String(self.fastTraceKey, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.endOffset, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.endTimestamp, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.maxResults, serializer);
+    sse_encode_bool(self.runForever, serializer);
+    sse_encode_opt_box_autoadd_bool(self.startFromTail, serializer);
+    sse_encode_opt_box_autoadd_topic_local_schemas_dto(
+      self.localSchemas,
+      serializer,
+    );
   }
 
   @protected
