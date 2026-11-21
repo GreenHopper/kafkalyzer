@@ -144,6 +144,8 @@ Step 3 landed with a named session set — the 11 types in `sessionWideState` (`
 **Done when:** `cargo clippy --all-targets -- -D warnings` exits 0 and `flutter test` still passes.
 **Effort:** 3 h (≈1 h of it is waiting for codegen + build).
 
+**Status:** implemented in `openspec/changes/rust-ffi-parameter-objects` (2026-08-10). `cargo clippy --workspace --all-targets` now reports **zero** warnings — all 30 locations cleared, no new `allow`. The worst signature went from 19 arguments to 5: `kafkalyzer-kafka` takes a `ConsumeCriteria` (what to look for) and a `ScanBounds` (where to stop), plus `ScanTarget`, `ResolvedPlan`, `ScanFilter` and `DecodeContext` for the helpers that previously took 18, 14, 11 and 9 positional neighbours; the bridge crosses in one `ConsumeRequest`. `MultiSearchController` keeps its named-parameter factory, so the Dart fakes never moved and this was not a rewrite of the consumer tree. Two deviations from the table above: `to_domain(&self)` became by-value `to_domain(self)` — the three types are `Copy`, which is what the lint asked for and needs no rename — and the `useless_conversion` at `kafka_types.rs:1193` came from a lag test that converted a domain type to itself, so the fix was to name the bridge type and make the assertion real. One behaviour change rode along: a saved search whose stored criterion this version cannot name now raises a `FormatException` that `SavedSearchesService` reports per preset instead of running the search with a silent default. **The gate itself is not enabled** — `enable-rust-lint-gate` adds `-- -D warnings` and is now unblocked, since `quality_gates.sh` can flip without failing on the baseline.
+
 ---
 
 ### Q-5 · Cover the 8 files that actually have test gaps
@@ -248,4 +250,4 @@ Total for Tier 1: **about 2.5 working days** if done by one person, sequentially
 
 Each Tier 1/2 ID maps to one OpenSpec change. Suggested names (use `openspec/changes/<name>/`):
 
-`ci-quality-gates` (Q-1) · `split-god-widgets` (Q-2) · `remove-global-controller-state` (Q-3, implemented) · `rust-ffi-parameter-objects` (Q-4) · `cover-test-gaps` (Q-5) · `break-feature-cycles` (Q-6) · `relocate-messages-feature` (Q-7) · `relocate-feature-services` (Q-8) · `verify-generated-bindings` (Q-9) · `material-ui-migration-tracking` (Q-10) · `ci-kafka-integration-tests` (Q-11).
+`ci-quality-gates` (Q-1) · `split-god-widgets` (Q-2) · `remove-global-controller-state` (Q-3, implemented) · `rust-ffi-parameter-objects` (Q-4, implemented) · `enable-rust-lint-gate` (Q-4 follow-up: re-add `cargo clippy --workspace --all-targets -- -D warnings` to `scripts/quality_gates.sh`; unblocked 2026-08-10 now that the workspace is clean) · `cover-test-gaps` (Q-5) · `break-feature-cycles` (Q-6) · `relocate-messages-feature` (Q-7) · `relocate-feature-services` (Q-8) · `verify-generated-bindings` (Q-9) · `material-ui-migration-tracking` (Q-10) · `ci-kafka-integration-tests` (Q-11).

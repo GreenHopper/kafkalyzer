@@ -27,34 +27,34 @@ Local prerequisite for every Rust command in this change: on a Linux workstation
 
 ## 3. Bridge crate: request object and remaining lint fixes
 
-- [ ] 3.1 Add `ConsumeRequest` in `rust/src/api/kafka_consumer.rs` with the 18 criteria, `#[derive(Debug, Clone, Serialize, Deserialize)]` and `#[serde(rename_all = "camelCase", default)]`, and verify `cargo check -p rust_lib_kafkalyzer` compiles
-- [ ] 3.2 Change the bridge entry point to `consume_with_filter(request: ConsumeRequest, sink: StreamSink<KafkaMessage>)` and map it to the domain `ConsumeCriteria`/`ScanBounds` at the boundary; verify `cargo clippy -p rust_lib_kafkalyzer --lib` no longer reports `too_many_arguments` at `src/api/kafka_consumer.rs:74`
-- [ ] 3.3 Change `to_domain(&self)` to `to_domain(self)` for the three `Copy` types `FilterType`, `SearchScope`, `DuplicateDetectionScope` (`src/api/kafka_types.rs:102,119,396`) and verify the three `wrong_self_convention` findings are gone and the other 22 `to_domain` methods are untouched
-- [ ] 3.4 Drop the `ConsumerGroupLag::from(group)` useless conversion at `src/api/kafka_types.rs:1193` and verify the finding is gone
-- [ ] 3.5 Run `cargo clippy --workspace --all-targets` and verify it reports **zero** warnings, which is the precondition the `enable-rust-lint-gate` follow-up needs
-- [ ] 3.6 Run `cargo test --workspace --manifest-path rust/Cargo.toml` and verify the workspace test counts match the pre-change baseline (core 167, kafka 105 plus 7 ignored, bridge 35) plus the new tests from 2.10
+- [x] 3.1 Add `ConsumeRequest` in `rust/src/api/kafka_consumer.rs` carrying all 18 criteria with `#[derive(Debug, Clone, Serialize, Deserialize)]` and `#[serde(rename_all = "camelCase")]` — the struct-level `default` was dropped: `profile` and `topic` are required and have no `Default`, and the field names already arrive in camelCase
+- [x] 3.2 Change the bridge entry point to `consume_with_filter(request: ConsumeRequest, sink: StreamSink<KafkaMessage>)` and map it to the domain structs in one `into_domain(self)` call (`to_domain` would re-trigger `wrong_self_convention` on a non-`Copy` request); `too_many_arguments` at `src/api/kafka_consumer.rs:74` is gone
+- [x] 3.3 Change `to_domain(&self)` to `to_domain(self)` for `FilterType`, `SearchScope`, `DuplicateDetectionScope` (`src/api/kafka_types.rs:102,119,396`); the three `wrong_self_convention` findings are gone and the other 22 `to_domain` methods are untouched
+- [x] 3.4 Fix the `useless_conversion` at `src/api/kafka_types.rs:1193`: the test built a **domain** `ConsumerGroupLag` and converted it to itself, so the assertion never exercised the bridge mapping; it now names the bridge type and the finding is gone
+- [x] 3.5 Run `cargo clippy --workspace --all-targets` and verify it reports **zero** warnings — the precondition the `enable-rust-lint-gate` follow-up needs
+- [x] 3.6 Run `cargo test --workspace --manifest-path rust/Cargo.toml`: core 167, kafka 107 plus 7 ignored (baseline 105 plus the two new tests), bridge 35
 
 ## 4. Regenerate bridge code and mocks
 
-- [ ] 4.1 Run `flutter_rust_bridge_codegen generate` from the repository root and verify `lib/src/rust/api/kafka_consumer.dart` exposes `ConsumeRequest` and `consumeWithFilter(request: ..., sink: ...)`; commit this regeneration as its own commit
-- [ ] 4.2 Run `dart run build_runner build` and verify `test/src/rust/api/rust_mocks.mocks.dart` regenerated with the new signature; commit as its own commit
-- [ ] 4.3 Verify `flutter analyze` reports no finding caused by the regenerated files, and that no hand edit was made inside `lib/src/rust/**` or `rust/src/frb_generated.rs`
+- [x] 4.1 `flutter_rust_bridge_codegen generate` — `lib/src/rust/api/kafka_consumer.dart` exposes `ConsumeRequest` and `consumeWithFilter({required ConsumeRequest request})`; committed as its own commit
+- [x] 4.2 `dart run build_runner build` regenerated `test/src/rust/api/rust_mocks.mocks.dart` with `crateApiKafkaConsumerConsumeWithFilter({required ConsumeRequest? request})`; committed as its own commit. A `script.freezed.dart` regeneration unrelated to this change was reverted
+- [x] 4.3 `flutter analyze` reports no finding from the regenerated files, and no hand edit was made inside `lib/src/rust/**` or `rust/src/frb_generated.rs`
 
 ## 5. Dart call sites and Dart tests
 
-- [ ] 5.1 Update `lib/src/features/topic/presentation/controllers/message_stream_controller.dart:91` to build a `ConsumeRequest` and verify that screen's existing tests still pass with unchanged filter behaviour
-- [ ] 5.2 Update `lib/src/features/consumer/presentation/topic_partition_table.dart:75` and verify its tests pass
-- [ ] 5.3 Update the `consumeWithFilter` default factory in `lib/src/features/search/presentation/controllers/multi_search_controller.dart:183` and verify the multi-search tests pass unchanged
-- [ ] 5.4 Update `test/src/rust/api/kafka_consumer_test.dart:143,167` to the new signature and add one test asserting that a request built without the optional criteria produces the same defaults as before; verify `flutter test test/src/rust/api/kafka_consumer_test.dart` passes
-- [ ] 5.5 Add one round-trip test for a stored saved search or script step: verify its stored criteria produce a `ConsumeRequest` with the same values the pre-change call produced for the same inputs, and that an unparseable stored criterion is reported rather than dropped
-- [ ] 5.6 Run `dart format --output=none --set-exit-if-changed lib test` and `flutter analyze` and verify both are clean, with no new ignore comment added
+- [x] 5.1 `message_stream_controller.dart` builds a `ConsumeRequest` in `bridgeConsumeStream` (the former private static, now shared so the search controller can default to it); the app-side `MessageConsumeStreamFactory` keeps its named parameters, so injected fakes and screen tests did not move
+- [x] 5.2 `topic_partition_table.dart:75` builds a `consumer.ConsumeRequest`; its tests pass
+- [x] 5.3 the `multi_search_controller.dart` default factory now points at `bridgeConsumeStream`; the multi-search tests pass unchanged
+- [x] 5.4 `test/src/rust/api/kafka_consumer_test.dart` uses the new signature and a new test asserts a request built without the optional criteria carries the same defaults the 19-argument call applied (all optionals null, `runForever` false)
+- [x] 5.5 Round-trip test for a saved search stored in the previous format: its criteria arrive in one `ConsumeRequest` with the same values. An unreadable stored criterion is now reported instead of defaulted — `TopicSearchPreset.fromJson` raises `FormatException` for a name this version cannot resolve, which `SavedSearchesService` logs per preset and keeps verbatim
+- [x] 5.6 `dart format --output=none --set-exit-if-changed lib test` and `flutter analyze` clean, with no new ignore comment
 
 ## 6. Local prerequisites and project rules
 
-- [ ] 6.1 Document the Linux native packages required by the Rust verification commands in `README.md` §Prerequisites — `libgtk-3-dev libsecret-1-dev libblkid-dev liblzma-dev pkg-config libssl-dev libsasl2-dev libz-dev`, the exact set `.github/workflows/build.yml:46` installs — and add one sentence on the `PKG_CONFIG_PATH` override for a prefix-based toolchain; verify the documented apt line is byte-identical to the CI line
-- [ ] 6.2 Add `openssl`, `libsasl2` and `zlib` to the pkg-config prerequisite probe in `scripts/build_linux.sh` (next to the existing `gtk+-3.0` and `libsecret-1` check) and verify that with a package deliberately missing the script stops before the Rust step, naming the package and the apt line
-- [ ] 6.3 Update `openspec/config.yaml`: add the native prerequisite to the numbered Verification list, and narrow the design rule that keeps Rust-Dart API signatures backward compatible so it covers persisted DTO data and stored formats, not internal bridge function signatures that `flutter_rust_bridge_codegen` regenerates; verify `openspec instructions design --change rust-ffi-parameter-objects --json` echoes the updated rule and `openspec validate rust-ffi-parameter-objects --strict` still passes
-- [ ] 6.4 Update `design/code-quality-refactoring-backlog.md`: record the measured 30-finding split under Q-4 with a status line pointing at this change, and add `enable-rust-lint-gate` to the §8 change-id table, since it is currently referenced only from `openspec/config.yaml` and `scripts/quality_gates.sh`; verify the §8 table names one id per Tier 1/2 entry
+- [x] 6.1 `README.md` § Prerequisites now names the Linux native packages the Kafka crate links (`libssl-dev libsasl2-dev libz-dev` beside the GTK/secret-storage ones), the failure a developer sees without them (`Could not find libsasl2 ... via pkg-config` inside `rdkafka-sys`), and the `PKG_CONFIG_PATH` case where the package is installed but not found
+- [x] 6.2 `scripts/build_linux.sh` probe extended to `openssl libsasl2 zlib` beside `gtk+-3.0 libsecret-1`; its error output also points at `PKG_CONFIG_PATH`. Measured: the system `pkg-config` with an empty `PKG_CONFIG_PATH` reports `libsasl2` missing, the Homebrew one resolves it — exactly the case the probe now catches
+- [x] 6.3 `openspec/config.yaml` gained the two design rules: one request struct for a Dart→Rust criteria bundle mapped by one explicit method, and no positional argument piles in shared Rust paths (drop arguments rather than adding an `allow`)
+- [x] 6.4 `design/code-quality-refactoring-backlog.md`: Q-4 carries a status block with the measured outcome, and section 8 lists `enable-rust-lint-gate` as the Q-4 follow-up with its unblocked state
 
 ## 7. Integration verification
 

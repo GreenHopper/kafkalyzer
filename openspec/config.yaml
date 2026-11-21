@@ -263,6 +263,17 @@ rules:
       and keep previously stored data (profiles, saved searches, scripts,
       reports) loadable.
     - >-
+      Bridge parameter objects: a Dart to Rust call that carries more than a
+      handful of criteria crosses in one request struct whose fields hold the
+      names, and is mapped to the domain type by one explicit method — no
+      generative or macro-built mapping.
+    - >-
+      No positional argument piles in shared Rust code: a consumption path takes
+      one criteria struct and one bounds struct instead of optional values of
+      one type next to each other, and it silences
+      `clippy::too_many_arguments` by dropping arguments, not by adding an
+      `allow`.
+    - >-
       Status Access: Reach session-wide state through a constructor parameter
       that defaults to the container (`widget.x ?? getIt<T>()`) instead of deep
       prop-drilling; state belonging to one screen or dialog stays view-owned.

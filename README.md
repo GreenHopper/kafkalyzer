@@ -128,6 +128,13 @@ The application uses `shared_preferences` to store local configurations and clus
 - **Flutter SDK**: [Install Flutter](https://flutter.dev/docs/get-started/install)
 - **Rust Toolchain**: [Install Rust](https://www.rust-lang.org/tools/install)
 - **Codegen Tools**: `flutter_rust_bridge_codegen` v2 (only if modifying the bridge).
+- **Linux — native packages**: the Kafka client links OpenSSL, Cyrus SASL and zlib, so a
+  Linux build also needs `libssl-dev libsasl2-dev libz-dev` next to the usual
+  `libgtk-3-dev libsecret-1-dev libblkid-dev`. Without them the build fails while compiling
+  `rdkafka-sys`, most often as `Could not find libsasl2 ... via pkg-config`.
+  `scripts/build_linux.sh` checks all five before it starts. If a package is installed but
+  still reported missing — typical for a Homebrew install — add its library directory to
+  `PKG_CONFIG_PATH`.
 
 ### Installation
 
