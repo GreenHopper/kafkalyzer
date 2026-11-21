@@ -180,7 +180,7 @@ class MultiSearchController extends ChangeNotifier {
     int Function()? bufferLimitProvider,
     LocalSchemaAssignmentService? localSchemaService,
     Logger? logger,
-  }) : _consumeStreamFactory = consumeStreamFactory ?? consumeWithFilter,
+  }) : _consumeStreamFactory = consumeStreamFactory ?? bridgeConsumeStream,
        _logger = logger ?? getIt<Logger>(),
        _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit,
        _localSchemaService =

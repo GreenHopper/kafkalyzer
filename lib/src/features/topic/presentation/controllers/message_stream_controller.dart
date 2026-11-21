@@ -33,6 +33,50 @@ typedef MessageConsumeStreamFactory =
       TopicLocalSchemasDto? localSchemas,
     });
 
+/// The default seam: packs the app's named criteria into the single request
+/// object the native layer takes.
+Stream<KafkaMessage> bridgeConsumeStream({
+  required ClusterProfile profile,
+  required String topic,
+  List<String>? filterTerms,
+  String? filterField,
+  required FilterType filterType,
+  required SearchScope searchScope,
+  String? filterExpression,
+  Map<String, List<String>>? filterVariables,
+  String? fastTraceKey,
+  int? startOffset,
+  int? startTimestamp,
+  int? startPartition,
+  int? maxResults,
+  int? endOffset,
+  int? endTimestamp,
+  required bool runForever,
+  bool? startFromTail,
+  TopicLocalSchemasDto? localSchemas,
+}) => consumeWithFilter(
+  request: ConsumeRequest(
+    profile: profile,
+    topic: topic,
+    filterTerms: filterTerms,
+    filterField: filterField,
+    filterType: filterType,
+    searchScope: searchScope,
+    filterExpression: filterExpression,
+    filterVariables: filterVariables,
+    fastTraceKey: fastTraceKey,
+    startOffset: startOffset,
+    startTimestamp: startTimestamp,
+    startPartition: startPartition,
+    maxResults: maxResults,
+    endOffset: endOffset,
+    endTimestamp: endTimestamp,
+    runForever: runForever,
+    startFromTail: startFromTail,
+    localSchemas: localSchemas,
+  ),
+);
+
 class MessageStreamController extends ChangeNotifier {
   MessageStreamController({
     Logger? logger,
@@ -40,7 +84,7 @@ class MessageStreamController extends ChangeNotifier {
     int Function()? bufferLimitProvider,
     LocalSchemaAssignmentService? localSchemaService,
   }) : _logger = logger ?? getIt<Logger>(),
-       _consumeStreamFactory = consumeStreamFactory ?? _defaultConsumeStream,
+       _consumeStreamFactory = consumeStreamFactory ?? bridgeConsumeStream,
        _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit,
        _localSchemaService =
            localSchemaService ??
@@ -68,46 +112,6 @@ class MessageStreamController extends ChangeNotifier {
     final limit = _bufferLimitProvider();
     return limit > 0 ? limit : SettingsService.defaultMessageBufferLimit;
   }
-
-  static Stream<KafkaMessage> _defaultConsumeStream({
-    required ClusterProfile profile,
-    required String topic,
-    List<String>? filterTerms,
-    String? filterField,
-    required FilterType filterType,
-    required SearchScope searchScope,
-    String? filterExpression,
-    Map<String, List<String>>? filterVariables,
-    String? fastTraceKey,
-    int? startOffset,
-    int? startTimestamp,
-    int? startPartition,
-    int? maxResults,
-    int? endOffset,
-    int? endTimestamp,
-    required bool runForever,
-    bool? startFromTail,
-    TopicLocalSchemasDto? localSchemas,
-  }) => consumeWithFilter(
-    profile: profile,
-    topic: topic,
-    filterTerms: filterTerms,
-    filterField: filterField,
-    filterType: filterType,
-    searchScope: searchScope,
-    filterExpression: filterExpression,
-    filterVariables: filterVariables,
-    fastTraceKey: fastTraceKey,
-    startOffset: startOffset,
-    startTimestamp: startTimestamp,
-    startPartition: startPartition,
-    maxResults: maxResults,
-    endOffset: endOffset,
-    endTimestamp: endTimestamp,
-    runForever: runForever,
-    startFromTail: startFromTail,
-    localSchemas: localSchemas,
-  );
 
   StreamSubscription<KafkaMessage>? _subscription;
   late MessageRingBuffer _buffer;

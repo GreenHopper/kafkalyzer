@@ -74,65 +74,71 @@ class TopicSearchPreset {
   };
 
   factory TopicSearchPreset.fromJson(Map<String, dynamic> json) {
-    TopicScanMode parseScanMode(String? name) {
-      return TopicScanMode.values.firstWhere(
-        (m) => m.name == name,
-        orElse: () => TopicScanMode.latestN,
-      );
-    }
-
-    FilterType parseFilterType(String? name) {
-      return FilterType.values.firstWhere(
-        (f) => f.name == name,
-        orElse: () => FilterType.contains,
-      );
-    }
-
-    SearchScope parseSearchScope(String? name) {
-      return SearchScope.values.firstWhere(
-        (s) => s.name == name,
-        orElse: () => SearchScope.both,
-      );
-    }
-
-    MultiSearchStartStrategy parseStartStrategy(String? name) {
-      return MultiSearchStartStrategy.values.firstWhere(
-        (s) => s.name == name,
-        orElse: () => MultiSearchStartStrategy.latest,
-      );
-    }
-
-    MultiSearchEndStrategy parseEndStrategy(String? name) {
-      return MultiSearchEndStrategy.values.firstWhere(
-        (e) => e.name == name,
-        orElse: () => MultiSearchEndStrategy.latest,
-      );
-    }
-
     return TopicSearchPreset(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Untitled',
       clusterName: json['clusterName'] as String? ?? '',
       topicName: json['topicName'] as String? ?? '',
-      scanMode: parseScanMode(json['scanMode'] as String?),
-      filterType: parseFilterType(json['filterType'] as String?),
-      searchScope: parseSearchScope(json['searchScope'] as String?),
+      scanMode: _parseStoredEnum(
+        TopicScanMode.values,
+        json['scanMode'] as String?,
+        TopicScanMode.latestN,
+        'scanMode',
+      ),
+      filterType: _parseStoredEnum(
+        FilterType.values,
+        json['filterType'] as String?,
+        FilterType.contains,
+        'filterType',
+      ),
+      searchScope: _parseStoredEnum(
+        SearchScope.values,
+        json['searchScope'] as String?,
+        SearchScope.both,
+        'searchScope',
+      ),
       filterTerm: json['filterTerm'] as String? ?? '',
       filterExpression: json['filterExpression'] as String? ?? '',
       fastTraceEnabled: json['fastTraceEnabled'] as bool? ?? false,
       limitResults: json['limitResults'] as bool? ?? true,
       maxResults: json['maxResults']?.toString() ?? '200',
       partition: json['partition']?.toString() ?? '',
-      startStrategy: parseStartStrategy(json['startStrategy'] as String?),
+      startStrategy: _parseStoredEnum(
+        MultiSearchStartStrategy.values,
+        json['startStrategy'] as String?,
+        MultiSearchStartStrategy.latest,
+        'startStrategy',
+      ),
       startOffset: json['startOffset']?.toString() ?? '',
       startTimestamp: json['startTimestamp']?.toString() ?? '',
-      endStrategy: parseEndStrategy(json['endStrategy'] as String?),
+      endStrategy: _parseStoredEnum(
+        MultiSearchEndStrategy.values,
+        json['endStrategy'] as String?,
+        MultiSearchEndStrategy.latest,
+        'endStrategy',
+      ),
       endOffset: json['endOffset']?.toString() ?? '',
       endTimestamp: json['endTimestamp']?.toString() ?? '',
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
     );
+  }
+
+  /// A stored enum criterion: a missing value keeps its documented default, but
+  /// a value this version cannot name is an error, so the loader reports it
+  /// instead of quietly running the search with something else.
+  static T _parseStoredEnum<T extends Enum>(
+    List<T> values,
+    String? stored,
+    T fallback,
+    String field,
+  ) {
+    if (stored == null) return fallback;
+    for (final value in values) {
+      if (value.name == stored) return value;
+    }
+    throw FormatException('Unknown $field "$stored"');
   }
 
   TopicSearchPreset copyWith({

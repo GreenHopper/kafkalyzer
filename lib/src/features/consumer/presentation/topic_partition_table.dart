@@ -73,15 +73,17 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
           ? null
           : await assignments.scanOptionsFor(widget.profile.name, part.topic);
       final stream = consumer.consumeWithFilter(
-        profile: widget.profile,
-        topic: part.topic,
-        filterType: FilterType.contains,
-        searchScope: SearchScope.both,
-        startOffset: part.currentOffset,
-        startPartition: part.partition,
-        maxResults: 1,
-        runForever: false,
-        localSchemas: localSchemas,
+        request: consumer.ConsumeRequest(
+          profile: widget.profile,
+          topic: part.topic,
+          filterType: FilterType.contains,
+          searchScope: SearchScope.both,
+          startOffset: part.currentOffset,
+          startPartition: part.partition,
+          maxResults: 1,
+          runForever: false,
+          localSchemas: localSchemas,
+        ),
       );
 
       consumer.KafkaMessage? message;
