@@ -71,25 +71,68 @@ impl From<kafkalyzer_core::kafka_types::KafkaMessage> for KafkaMessage {
     }
 }
 
+/// One message-consumption request: what to read, how to filter it and when
+/// to stop. Every criterion carries its own name, so a call site can no longer
+/// exchange two optional values by position.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConsumeRequest {
+    pub profile: ClusterProfile,
+    pub topic: String,
+    pub filter_terms: Option<Vec<String>>,
+    pub filter_field: Option<String>,
+    pub filter_type: FilterType,
+    pub search_scope: SearchScope,
+    pub filter_expression: Option<String>,
+    pub filter_variables: Option<std::collections::HashMap<String, Vec<String>>>,
+    pub start_offset: Option<i64>,
+    pub start_timestamp: Option<i64>,
+    pub start_partition: Option<i32>,
+    pub fast_trace_key: Option<String>,
+    pub end_offset: Option<i64>,
+    pub end_timestamp: Option<i64>,
+    pub max_results: Option<i32>,
+    pub run_forever: bool,
+    pub start_from_tail: Option<bool>,
+    pub local_schemas: Option<TopicLocalSchemasDto>,
+}
+
+impl ConsumeRequest {
+    /// The two shapes the scan works with: the criteria as asked for, and the
+    /// offset window.
+    fn into_domain(
+        self,
+    ) -> (
+        kafkalyzer_kafka::kafka_consumer::ConsumeCriteria,
+        kafkalyzer_kafka::kafka_consumer::ScanBounds,
+    ) {
+        (
+            kafkalyzer_kafka::kafka_consumer::ConsumeCriteria {
+                filter_terms: self.filter_terms,
+                filter_field: self.filter_field,
+                filter_type: self.filter_type.to_domain(),
+                search_scope: self.search_scope.to_domain(),
+                filter_expression: self.filter_expression,
+                filter_variables: self.filter_variables,
+                local_schemas: self.local_schemas.map(|ls| ls.to_domain()),
+                fast_trace_key: self.fast_trace_key,
+                start_partition: self.start_partition,
+                max_results: self.max_results,
+                run_forever: self.run_forever,
+            },
+            kafkalyzer_kafka::kafka_consumer::ScanBounds {
+                start_offset: self.start_offset,
+                start_timestamp: self.start_timestamp,
+                end_offset: self.end_offset,
+                end_timestamp: self.end_timestamp,
+                start_from_tail: self.start_from_tail.unwrap_or(false),
+            },
+        )
+    }
+}
+
 pub async fn consume_with_filter(
-    profile: ClusterProfile,
-    topic: String,
-    filter_terms: Option<Vec<String>>,
-    filter_field: Option<String>,
-    filter_type: FilterType,
-    search_scope: SearchScope,
-    filter_expression: Option<String>,
-    filter_variables: Option<std::collections::HashMap<String, Vec<String>>>,
-    start_offset: Option<i64>,
-    start_timestamp: Option<i64>,
-    start_partition: Option<i32>,
-    fast_trace_key: Option<String>,
-    end_offset: Option<i64>,
-    end_timestamp: Option<i64>,
-    max_results: Option<i32>,
-    run_forever: bool,
-    start_from_tail: Option<bool>,
-    local_schemas: Option<TopicLocalSchemasDto>,
+    request: ConsumeRequest,
     sink: StreamSink<KafkaMessage>,
 ) -> Result<()> {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
@@ -106,32 +149,16 @@ pub async fn consume_with_filter(
 
     let kafka_sink = kafkalyzer_kafka::kafka_consumer::StreamSink::new(tx);
 
-    let domain_profile = profile.to_domain();
-    let domain_filter_type = filter_type.to_domain();
-    let domain_search_scope = search_scope.to_domain();
-    let from_tail = start_from_tail.unwrap_or(false);
-    let domain_local_schemas = local_schemas.map(|ls| ls.to_domain());
+    let domain_profile = request.profile.to_domain();
+    let topic = request.topic.clone();
+    let (criteria, bounds) = request.into_domain();
 
     tokio::task::spawn_blocking(move || {
         kafkalyzer_kafka::kafka_consumer::consume_with_filter(
             domain_profile,
             topic,
-            filter_terms,
-            filter_field,
-            domain_filter_type,
-            domain_search_scope,
-            filter_expression,
-            filter_variables,
-            start_offset,
-            start_timestamp,
-            start_partition,
-            fast_trace_key,
-            end_offset,
-            end_timestamp,
-            max_results,
-            run_forever,
-            from_tail,
-            domain_local_schemas,
+            criteria,
+            bounds,
             kafka_sink,
         )
     })

@@ -99,7 +99,7 @@ pub enum FilterType {
 }
 
 impl FilterType {
-    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::FilterType {
+    pub(crate) fn to_domain(self) -> kafkalyzer_core::kafka_types::FilterType {
         match self {
             FilterType::Contains => kafkalyzer_core::kafka_types::FilterType::Contains,
             FilterType::Regex => kafkalyzer_core::kafka_types::FilterType::Regex,
@@ -116,7 +116,7 @@ pub enum SearchScope {
 }
 
 impl SearchScope {
-    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::SearchScope {
+    pub(crate) fn to_domain(self) -> kafkalyzer_core::kafka_types::SearchScope {
         match self {
             SearchScope::Key => kafkalyzer_core::kafka_types::SearchScope::Key,
             SearchScope::Value => kafkalyzer_core::kafka_types::SearchScope::Value,
@@ -393,7 +393,7 @@ impl From<kafkalyzer_core::kafka_types::DuplicateDetectionScope> for DuplicateDe
 }
 
 impl DuplicateDetectionScope {
-    pub(crate) fn to_domain(&self) -> kafkalyzer_core::kafka_types::DuplicateDetectionScope {
+    pub(crate) fn to_domain(self) -> kafkalyzer_core::kafka_types::DuplicateDetectionScope {
         match self {
             Self::PayloadOnly => kafkalyzer_core::kafka_types::DuplicateDetectionScope::PayloadOnly,
             Self::KeyAndPayload => {
@@ -1149,7 +1149,9 @@ impl From<kafkalyzer_core::kafka_types::TopicAnalysisProgress> for TopicAnalysis
 #[cfg(test)]
 mod tests {
     use kafkalyzer_core::consumer_group_protocol::TopicPartition as DomainTopicPartition;
-    use kafkalyzer_core::kafka_types::{ConsumerGroupLag, ConsumerGroupMember};
+    use kafkalyzer_core::kafka_types::{
+        ConsumerGroupLag as DomainConsumerGroupLag, ConsumerGroupMember,
+    };
 
     fn member(id: &str, partitions: &[(String, i32)]) -> ConsumerGroupMember {
         ConsumerGroupMember {
@@ -1170,7 +1172,7 @@ mod tests {
 
     #[test]
     fn group_lag_carries_members_and_their_partitions() {
-        let group = ConsumerGroupLag {
+        let group = DomainConsumerGroupLag {
             group_id: "orders-consumers".to_string(),
             state: "Stable".to_string(),
             protocol_type: "consumer".to_string(),
@@ -1190,7 +1192,7 @@ mod tests {
             ownership_known: true,
         };
 
-        let mapped = ConsumerGroupLag::from(group);
+        let mapped = super::ConsumerGroupLag::from(group);
 
         assert_eq!(mapped.members.len(), 3);
         assert_eq!(mapped.members[0].assignments[0].partition, 0);
