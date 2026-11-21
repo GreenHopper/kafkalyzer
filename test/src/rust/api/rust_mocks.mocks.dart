@@ -3,6 +3,7 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+
 import 'dart:async' as _i17;
 import 'dart:ffi' as _i15;
 import 'dart:typed_data' as _i20;
@@ -390,45 +391,11 @@ class MockKafkalyzerRustLibApi extends _i1.Mock
 
   @override
   _i17.Stream<_i18.KafkaMessage> crateApiKafkaConsumerConsumeWithFilter({
-    required _i2.ClusterProfile? profile,
-    required String? topic,
-    List<String>? filterTerms,
-    String? filterField,
-    required _i2.FilterType? filterType,
-    required _i2.SearchScope? searchScope,
-    String? filterExpression,
-    Map<String, List<String>>? filterVariables,
-    int? startOffset,
-    int? startTimestamp,
-    int? startPartition,
-    String? fastTraceKey,
-    int? endOffset,
-    int? endTimestamp,
-    int? maxResults,
-    required bool? runForever,
-    bool? startFromTail,
-    _i10.TopicLocalSchemasDto? localSchemas,
+    required _i18.ConsumeRequest? request,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#crateApiKafkaConsumerConsumeWithFilter, [], {
-              #profile: profile,
-              #topic: topic,
-              #filterTerms: filterTerms,
-              #filterField: filterField,
-              #filterType: filterType,
-              #searchScope: searchScope,
-              #filterExpression: filterExpression,
-              #filterVariables: filterVariables,
-              #startOffset: startOffset,
-              #startTimestamp: startTimestamp,
-              #startPartition: startPartition,
-              #fastTraceKey: fastTraceKey,
-              #endOffset: endOffset,
-              #endTimestamp: endTimestamp,
-              #maxResults: maxResults,
-              #runForever: runForever,
-              #startFromTail: startFromTail,
-              #localSchemas: localSchemas,
+              #request: request,
             }),
             returnValue: _i17.Stream<_i18.KafkaMessage>.empty(),
           )

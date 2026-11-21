@@ -3,6 +3,7 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+
 import 'dart:async' as _i12;
 
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart'
