@@ -177,7 +177,6 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('theme_mode', false);
 
-    await getIt.reset();
     getIt.registerSingleton<Logger>(Logger());
     final appearance = AppearanceSettings();
     await appearance.load(prefs);
@@ -215,7 +214,6 @@ void main() {
     if (getIt.isRegistered<UpdateService>()) {
       getIt<UpdateService>().dispose();
     }
-    await getIt.reset();
   });
 
   Widget createWidgetUnderTest() {

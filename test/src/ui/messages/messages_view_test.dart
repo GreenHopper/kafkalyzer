@@ -63,7 +63,6 @@ void main() {
   late FakeMessageExportService fakeExportService;
 
   setUp(() async {
-    await getIt.reset();
     getIt.registerSingleton<Logger>(Logger(level: Level.off));
     getIt.registerSingleton<FileOpenerService>(
       FileOpenerService(logger: getIt<Logger>()),
@@ -73,9 +72,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   Widget createWidgetUnderTest({
     required List<KafkaMessage> messages,

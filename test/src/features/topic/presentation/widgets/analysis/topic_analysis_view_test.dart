@@ -159,7 +159,6 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final getIt = GetIt.instance;
-    await getIt.reset();
     getIt.registerSingleton<Logger>(
       Logger(printer: PrettyPrinter(methodCount: 0)),
     );
@@ -199,11 +198,9 @@ void main() {
 
   setUp(() {
     resetMockitoState();
-    if (!GetIt.instance.isRegistered<TopicAnalysisHistoryService>()) {
-      GetIt.instance.registerSingleton<TopicAnalysisHistoryService>(
-        _EmptyHistoryService(),
-      );
-    }
+    GetIt.instance.registerSingleton<TopicAnalysisHistoryService>(
+      _EmptyHistoryService(),
+    );
     when(
       mockApi.crateApiReportCompareCompareReports(
         before: anyNamed('before'),

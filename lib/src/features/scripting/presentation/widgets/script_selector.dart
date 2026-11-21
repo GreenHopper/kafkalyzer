@@ -10,17 +10,21 @@ class ScriptSelector extends StatelessWidget {
   final String? errorText;
   final bool Function(Script)? filter;
 
+  /// Session-wide collaborator; null falls back to the application container.
+  final ScriptController? scriptController;
+
   const ScriptSelector({
     super.key,
     this.selectedScriptName,
     required this.onSelected,
     this.errorText,
     this.filter,
+    this.scriptController,
   });
 
   @override
   Widget build(BuildContext context) {
-    final scriptController = getIt<ScriptController>();
+    final scriptController = this.scriptController ?? getIt<ScriptController>();
 
     return ListenableBuilder(
       listenable: scriptController,

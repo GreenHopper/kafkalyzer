@@ -27,7 +27,16 @@ import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_s
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ExplorerView extends WatchingStatefulWidget {
-  const ExplorerView({super.key});
+  const ExplorerView({
+    super.key,
+    this.clusterController,
+    this.activeConnection,
+  });
+
+  /// Session-wide state; null falls back to the application container. `build`
+  /// keeps subscribing through `watchIt`, these serve the one-off reads.
+  final ClusterListController? clusterController;
+  final ActiveConnectionController? activeConnection;
 
   static const String sidebarCollapsedPrefKey = 'explorer_sidebar_collapsed';
   static const String sidebarWidthPrefKey = 'explorer_sidebar_width';
@@ -42,6 +51,15 @@ class ExplorerView extends WatchingStatefulWidget {
 class _ExplorerViewState extends State<ExplorerView> {
   final ScrollController _tabScrollController = ScrollController();
   bool _isSidebarCollapsed = false;
+
+  ClusterListController get _clusterController =>
+      widget.clusterController ?? getIt<ClusterListController>();
+
+  ClusterListController? get _maybeClusterController =>
+      widget.clusterController ??
+      (getIt.isRegistered<ClusterListController>()
+          ? getIt<ClusterListController>()
+          : null);
 
   @override
   void initState() {
@@ -74,8 +92,9 @@ class _ExplorerViewState extends State<ExplorerView> {
   }
 
   void _showQuickJumpDialog(BuildContext context) {
-    final clusterController = getIt<ClusterListController>();
-    final activeController = getIt<ActiveConnectionController>();
+    final clusterController = _clusterController;
+    final activeController =
+        widget.activeConnection ?? getIt<ActiveConnectionController>();
     showDialog<void>(
       context: context,
       builder: (ctx) => QuickJumpDialog(
@@ -237,7 +256,7 @@ class _ExplorerViewState extends State<ExplorerView> {
     final activeBannerProfile = activeController.activeProfile != null
         ? resolveLatestProfile(
             activeController.activeProfile!,
-            getIt<ClusterListController>(),
+            _clusterController,
           )
         : null;
 
@@ -386,9 +405,10 @@ class _ExplorerViewState extends State<ExplorerView> {
     final title = _getTabTitle(activeController, record);
     final isRunning = streamCtrl.isStreaming || analysisCtrl.isAnalyzing;
 
-    final resolvedTabProfile = getIt.isRegistered<ClusterListController>()
-        ? resolveLatestProfile(record.profile, getIt<ClusterListController>())
-        : record.profile;
+    final clusterController = _maybeClusterController;
+    final resolvedTabProfile = clusterController == null
+        ? record.profile
+        : resolveLatestProfile(record.profile, clusterController);
 
     return Row(
       mainAxisSize: MainAxisSize.min,

@@ -109,13 +109,22 @@ timer factory and two fake-clock tests. The size guard in
 ### Q-3 · Kill the service locator inside features
 **Evidence:** `getIt<...>()` appears **160×** inside `lib/src/features`, 21× in `lib/src/ui`; `lib/src/dependency_injection.dart:65-95` registers **11 controllers as `registerLazySingleton`**. `test/flutter_test_config.dart` never calls `getIt.reset()`.
 **Why it matters:** controllers are process-global mutable singletons, so widget tests inherit each other's state — the last commit (`e786fd7` "Fix timing-sensitive Flutter tests") is a symptom, not a fix. Widgets also cannot be given a failing or fake controller.
+**Measurement correction:** step 1 was bigger than assumed — 46 test files (67 call sites, 31 of them in `setUp`) already called `getIt.reset()`, not 10.
 **Task:**
 1. Add `tearDown(() => getIt.reset())` to `test/flutter_test_config.dart` and fix what breaks (that is the real inventory of hidden global state).
 2. Convert the 11 singleton controller registrations to `registerFactory` + `ChangeNotifierProvider`/`ValueNotifier` scoping (the project already depends on `provider`) so controller lifetime follows the widget subtree.
 3. Replace field-level `final x = getIt<X>()` in widget classes with constructor parameters that default to `getIt<X>()` — this keeps call sites unchanged and makes fakes possible. Do it file by file; `lib/src/features/consumer/presentation/consumer_lag_view.dart:264,388` (async Kafka calls inside a widget) first.
 
-**Done when:** `getIt<` count inside `lib/src/features/**/presentation/widgets` is below 20, and the test suite passes with `getIt.reset()` in `tearDown`.
+**Done when:** no hand-written source under `lib/src/features/*/presentation/` resolves session-wide state from the container outside a constructor-parameter default — `bash scripts/quality_gates.sh locator-guard` enforces this on the files a change touches — and the suite passes with the shared `getIt.reset()`. (Replaces the earlier "count below 20", which measured the wrong thing: the number of lookups is fine, a lookup in the wrong place is not.)
 **Effort:** 1 h for step 1 (discovery), then 1–2 days for 2+3. Biggest item in this list.
+
+**Result (change `remove-global-controller-state`, implemented):**
+
+Step 1 landed first: `getIt.reset()` now lives in `test/flutter_test_config.dart`, the per-file resets are deleted, and the suite is order-independent (reversed order and per-file runs pass).
+
+Step 2 was dropped: `provider` was declared but imported nowhere and has been removed from `pubspec.yaml`. Lifetime instead follows the widget through constructor parameters that default to the container (`this.x ?? getIt<T>()`), so existing call sites stay unchanged and tests pass their own instance.
+
+Step 3 landed with a named session set — the 11 types in `sessionWideState` (`lib/src/dependency_injection.dart`): `ActiveConnectionController`, `ClusterListController`, `TlsTransitionController`, `MultiSearchController`, `TopicController`, `ClusterOverviewController`, `SchemaController`, `MainNavigationController`, `ScriptController`, `ScriptRunner`, `ConsumerGroupDirectory`. The dead `TopicAnalysisController` registration is gone, `setupDependencyInjection` is split into `setupCoreServices` / `registerSessionWideState` / `registerScriptExecutionState`, and the headless runner registers only what it executes.
 
 ---
 
@@ -239,4 +248,4 @@ Total for Tier 1: **about 2.5 working days** if done by one person, sequentially
 
 Each Tier 1/2 ID maps to one OpenSpec change. Suggested names (use `openspec/changes/<name>/`):
 
-`ci-quality-gates` (Q-1) · `split-god-widgets` (Q-2) · `remove-global-controller-state` (Q-3) · `rust-ffi-parameter-objects` (Q-4) · `cover-test-gaps` (Q-5) · `break-feature-cycles` (Q-6) · `relocate-messages-feature` (Q-7) · `relocate-feature-services` (Q-8) · `verify-generated-bindings` (Q-9) · `material-ui-migration-tracking` (Q-10) · `ci-kafka-integration-tests` (Q-11).
+`ci-quality-gates` (Q-1) · `split-god-widgets` (Q-2) · `remove-global-controller-state` (Q-3, implemented) · `rust-ffi-parameter-objects` (Q-4) · `cover-test-gaps` (Q-5) · `break-feature-cycles` (Q-6) · `relocate-messages-feature` (Q-7) · `relocate-feature-services` (Q-8) · `verify-generated-bindings` (Q-9) · `material-ui-migration-tracking` (Q-10) · `ci-kafka-integration-tests` (Q-11).

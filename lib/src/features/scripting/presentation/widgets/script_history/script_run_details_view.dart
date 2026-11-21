@@ -28,14 +28,22 @@ class ScriptRunDetailsView extends StatefulWidget {
     required this.run,
     required this.script,
     required this.onBack,
+    this.logger,
+    this.runner,
   });
+
+  /// Session-wide collaborators; null falls back to the application container.
+  final Logger? logger;
+  final ScriptRunner? runner;
 
   @override
   State<ScriptRunDetailsView> createState() => _ScriptRunDetailsViewState();
 }
 
 class _ScriptRunDetailsViewState extends State<ScriptRunDetailsView> {
-  final _logger = getIt<Logger>();
+  Logger get _logger => widget.logger ?? getIt<Logger>();
+
+  ScriptRunner get _runner => widget.runner ?? getIt<ScriptRunner>();
 
   List<ScriptResultMessage>? _allMessages;
   Map<String, Map<String, List<KafkaMessage>>>? _groupedResults;
@@ -111,9 +119,7 @@ class _ScriptRunDetailsViewState extends State<ScriptRunDetailsView> {
 
     try {
       final grouped = <String, Map<String, List<KafkaMessage>>>{};
-      final allMessages = await getIt<ScriptRunner>().loadRunResults(
-        widget.run,
-      );
+      final allMessages = await _runner.loadRunResults(widget.run);
 
       for (final msg in allMessages) {
         grouped.putIfAbsent(msg.stepId, () => {});

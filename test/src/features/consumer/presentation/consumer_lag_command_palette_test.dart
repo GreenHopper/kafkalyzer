@@ -169,7 +169,6 @@ void main() {
   late MainNavigationController nav;
 
   setUp(() async {
-    await getIt.reset();
     SharedPreferences.setMockInitialValues({});
     metadata = _FakeMetadataService()
       ..groups = [_makeGroup('group-a'), _makeGroup('group-b')];
@@ -188,9 +187,7 @@ void main() {
     getIt.registerSingleton<MainNavigationController>(nav);
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   Widget buildApp() {
     return const MaterialApp(

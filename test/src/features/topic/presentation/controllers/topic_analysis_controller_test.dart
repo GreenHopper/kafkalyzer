@@ -76,7 +76,6 @@ void main() {
   late TopicAnalysisController controller;
 
   setUp(() {
-    getIt.reset();
     logger = Logger(printer: PrettyPrinter(methodCount: 0));
     getIt.registerSingleton<Logger>(logger);
     fake = FakeExportService();

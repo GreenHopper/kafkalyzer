@@ -28,7 +28,6 @@ void main() {
   late ClusterListController listController;
 
   setUp(() async {
-    await getIt.reset();
     SharedPreferences.setMockInitialValues({});
     fakeService = _FakeClusterService();
     getIt.registerSingleton<ClusterService>(fakeService);

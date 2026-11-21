@@ -135,7 +135,6 @@ void main() {
   late String tempDir;
 
   setUp(() {
-    getIt.reset();
     getIt.registerSingleton<Logger>(
       Logger(printer: PrettyPrinter(methodCount: 0)),
     );

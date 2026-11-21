@@ -94,7 +94,6 @@ void main() {
   ];
 
   setUp(() async {
-    await getIt.reset();
     GoogleFonts.config.allowRuntimeFetching = false;
     SharedPreferences.setMockInitialValues({});
     fakeRunner = FakeScriptRunner(messages);
@@ -103,9 +102,7 @@ void main() {
     getIt.registerSingleton<MessageExportService>(FakeMessageExportService());
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   testWidgets(
     'tapping a script result opens dockable inspector without a modal dialog',

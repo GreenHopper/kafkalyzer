@@ -217,16 +217,13 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await getIt.reset();
     getIt.registerSingleton<Logger>(_QuietLogger());
     getIt.registerSingleton<RecentTopicsService>(RecentTopicsService());
     getIt.registerSingleton<AppearanceSettings>(AppearanceSettings());
     getIt.registerSingleton<SessionRestoreService>(SessionRestoreService());
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   final themes = <String, ThemeData>{
     'light': ThemeData(

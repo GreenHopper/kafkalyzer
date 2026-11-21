@@ -79,16 +79,13 @@ void main() {
   );
 
   setUp(() async {
-    await getIt.reset();
     stubService = _StubKafkaMetadataService();
     getIt.registerSingleton<Logger>(Logger(level: Level.off));
     getIt.registerSingleton<KafkaMetadataService>(stubService);
     controller = TopicController();
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   test(
     'failing fetchTopics exposes errorFor and later success clears it',

@@ -14,6 +14,10 @@ class ScriptHistoryView extends StatefulWidget {
   final bool defaultToLoadResults;
   final ScriptRun? initialRun;
 
+  /// Session-wide collaborators; null falls back to the application container.
+  final Logger? logger;
+  final ScriptRunner? runner;
+
   const ScriptHistoryView({
     super.key,
     required this.script,
@@ -21,6 +25,8 @@ class ScriptHistoryView extends StatefulWidget {
     this.onLoadRun,
     this.defaultToLoadResults = false,
     this.initialRun,
+    this.logger,
+    this.runner,
   });
 
   @override
@@ -28,7 +34,10 @@ class ScriptHistoryView extends StatefulWidget {
 }
 
 class _ScriptHistoryViewState extends State<ScriptHistoryView> {
-  final _logger = getIt<Logger>();
+  Logger get _logger => widget.logger ?? getIt<Logger>();
+
+  ScriptRunner get _runner => widget.runner ?? getIt<ScriptRunner>();
+
   List<ScriptRun>? _history;
   ScriptRun? _selectedRun;
 
@@ -59,7 +68,7 @@ class _ScriptHistoryViewState extends State<ScriptHistoryView> {
 
   Future<void> _loadHistory() async {
     try {
-      final history = await getIt<ScriptRunner>().getPastRuns(widget.script);
+      final history = await _runner.getPastRuns(widget.script);
       // Sort by timestamp desc
       history.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 

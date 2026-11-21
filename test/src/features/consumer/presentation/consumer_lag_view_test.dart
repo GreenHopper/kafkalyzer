@@ -225,7 +225,6 @@ void main() {
 
   setUp(() {
     final getIt = GetIt.instance;
-    getIt.reset();
 
     fakeMetadataService = FakeKafkaMetadataService();
     getIt.registerSingleton<Logger>(Logger());

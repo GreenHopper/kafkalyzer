@@ -27,7 +27,13 @@ class ScriptHistoryList extends StatelessWidget {
     required this.onRefresh,
     this.onRerun,
     this.onLoadRun,
+    this.runner,
   });
+
+  /// Session-wide collaborator; null falls back to the application container.
+  final ScriptRunner? runner;
+
+  ScriptRunner get _runner => runner ?? getIt<ScriptRunner>();
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +83,7 @@ class ScriptHistoryList extends StatelessWidget {
 
               if (result != null && result.files.single.path != null) {
                 try {
-                  await getIt<ScriptRunner>().importRunArchive(
+                  await _runner.importRunArchive(
                     result.files.single.path!,
                     script,
                   );
@@ -258,7 +264,7 @@ class ScriptHistoryList extends StatelessWidget {
                   "Export Run Archive",
               onPressed: () async {
                 final l10n = AppLocalizations.of(context);
-                final path = await getIt<ScriptRunner>().exportRunArchive(run);
+                final path = await _runner.exportRunArchive(run);
                 if (path != null && context.mounted) {
                   final safeName = run.id.replaceAll(
                     RegExp(r'[<>:"/\\|?*]'),
@@ -327,7 +333,7 @@ class ScriptHistoryList extends StatelessWidget {
 
                 if (confirm == true) {
                   try {
-                    await getIt<ScriptRunner>().deleteRun(run);
+                    await _runner.deleteRun(run);
                     onRefresh();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(

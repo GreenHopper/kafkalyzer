@@ -5,24 +5,20 @@ import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/fake_cluster_profile_tools.dart';
+import 'helpers/test_container.dart';
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
-  setUpAll(() {
+  setUp(() async {
+    await getIt.reset();
     SharedPreferences.setMockInitialValues({});
-    if (!getIt.isRegistered<ClusterProfileTools>()) {
-      getIt.registerLazySingleton<ClusterProfileTools>(
-        () => FakeClusterProfileTools(),
-      );
-    }
+    registerTestSessionState();
+    getIt.registerLazySingleton<ClusterProfileTools>(
+      () => FakeClusterProfileTools(),
+    );
   });
 
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-    if (!getIt.isRegistered<ClusterProfileTools>()) {
-      getIt.registerLazySingleton<ClusterProfileTools>(
-        () => FakeClusterProfileTools(),
-      );
-    }
+  tearDown(() async {
+    await getIt.reset();
   });
 
   await testMain();

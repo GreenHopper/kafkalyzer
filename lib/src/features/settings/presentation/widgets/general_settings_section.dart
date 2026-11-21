@@ -12,7 +12,19 @@ import 'package:kafkalyzer/src/features/settings/presentation/widgets/message_bu
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/section_reset_confirmation.dart';
 
 class GeneralSettingsSection extends StatefulWidget {
-  const GeneralSettingsSection({super.key});
+  const GeneralSettingsSection({
+    super.key,
+    this.settingsService,
+    this.multiSearchController,
+    this.analysisHistory,
+    this.sessionRestore,
+  });
+
+  /// Session-wide collaborators; null falls back to the application container.
+  final SettingsService? settingsService;
+  final MultiSearchController? multiSearchController;
+  final TopicAnalysisHistoryService? analysisHistory;
+  final SessionRestoreService? sessionRestore;
 
   @override
   State<GeneralSettingsSection> createState() => GeneralSettingsSectionState();
@@ -22,6 +34,21 @@ class GeneralSettingsSectionState extends State<GeneralSettingsSection> {
   SharedPreferences? _prefs;
   final TextEditingController _dirController = TextEditingController();
   int _resetGeneration = 0;
+
+  SettingsService get _settingsService =>
+      widget.settingsService ?? getIt<SettingsService>();
+
+  MultiSearchController? get _multiSearchController =>
+      widget.multiSearchController ??
+      (getIt.isRegistered<MultiSearchController>()
+          ? getIt<MultiSearchController>()
+          : null);
+
+  TopicAnalysisHistoryService get _analysisHistory =>
+      widget.analysisHistory ?? getIt<TopicAnalysisHistoryService>();
+
+  SessionRestoreService get _sessionRestore =>
+      widget.sessionRestore ?? getIt<SessionRestoreService>();
 
   @override
   void initState() {
@@ -58,7 +85,7 @@ class GeneralSettingsSectionState extends State<GeneralSettingsSection> {
     );
     if (confirmed != true || !mounted) return;
     try {
-      await getIt<TopicAnalysisHistoryService>().clearAll();
+      await _analysisHistory.clearAll();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.deleteSavedAnalysisReportsSuccess)),
@@ -80,10 +107,8 @@ class GeneralSettingsSectionState extends State<GeneralSettingsSection> {
   }
 
   Future<void> _resetGeneral() async {
-    await getIt<SettingsService>().resetGeneralSettings();
-    if (getIt.isRegistered<MultiSearchController>()) {
-      getIt<MultiSearchController>().loadDirectory();
-    }
+    await _settingsService.resetGeneralSettings();
+    _multiSearchController?.loadDirectory();
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
@@ -142,9 +167,7 @@ class GeneralSettingsSectionState extends State<GeneralSettingsSection> {
                       selected,
                     );
                     _dirController.text = selected;
-                    if (getIt.isRegistered<MultiSearchController>()) {
-                      getIt<MultiSearchController>().loadDirectory();
-                    }
+                    _multiSearchController?.loadDirectory();
                   }
                 },
               ),
@@ -265,7 +288,7 @@ class GeneralSettingsSectionState extends State<GeneralSettingsSection> {
             value:
                 prefs.getBool(SessionRestoreService.prefRestoreEnabled) ?? true,
             onChanged: (bool value) async {
-              await getIt<SessionRestoreService>().setRestorationEnabled(value);
+              await _sessionRestore.setRestorationEnabled(value);
               setState(() {});
             },
           ),

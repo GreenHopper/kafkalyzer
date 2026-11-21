@@ -558,6 +558,13 @@ void main() {
         ),
       );
 
+      // The app's default window: this inspector shows two schema cards and
+      // needs the height the desktop shell actually gives it.
+      tester.view.physicalSize = const Size(2560, 1440);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         _wrap(
           TopicSchemaInspectorView(

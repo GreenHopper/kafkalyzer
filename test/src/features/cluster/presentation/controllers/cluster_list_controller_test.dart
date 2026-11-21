@@ -50,7 +50,6 @@ void main() {
   late MockClusterService mockService;
 
   setUp(() async {
-    await getIt.reset();
     mockService = MockClusterService();
     getIt.registerSingleton<ClusterService>(mockService);
 

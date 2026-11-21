@@ -33,12 +33,18 @@ class TopicConfigCompareDialog extends StatefulWidget {
   final List<ClusterProfile>? clusters;
   final List<String> Function(ClusterProfile profile)? cachedTopicsLookup;
 
+  /// Session-wide collaborators; null falls back to the application container.
+  final ClusterListController? clusterController;
+  final TopicController? topicController;
+
   const TopicConfigCompareDialog({
     super.key,
     required this.currentProfile,
     required this.openTopicName,
     this.clusters,
     this.cachedTopicsLookup,
+    this.clusterController,
+    this.topicController,
   });
 
   @override
@@ -60,11 +66,13 @@ class _TopicConfigCompareDialogState extends State<TopicConfigCompareDialog> {
   }
 
   List<ClusterProfile> _orderedProfiles() {
-    final source =
-        widget.clusters ??
+    final clusterController =
+        widget.clusterController ??
         (getIt.isRegistered<ClusterListController>()
-            ? getIt<ClusterListController>().clusters
-            : <ClusterProfile>[]);
+            ? getIt<ClusterListController>()
+            : null);
+    final source =
+        widget.clusters ?? clusterController?.clusters ?? <ClusterProfile>[];
     final current = widget.currentProfile;
     final others = source.where((p) => p.name != current.name).toList();
     final matchedCurrent = source
@@ -77,10 +85,15 @@ class _TopicConfigCompareDialogState extends State<TopicConfigCompareDialog> {
     if (widget.cachedTopicsLookup != null) {
       return widget.cachedTopicsLookup!(profile);
     }
-    if (!getIt.isRegistered<TopicController>()) {
+    final topicController =
+        widget.topicController ??
+        (getIt.isRegistered<TopicController>()
+            ? getIt<TopicController>()
+            : null);
+    if (topicController == null) {
       return const [];
     }
-    final topics = getIt<TopicController>().getTopics(profile);
+    final topics = topicController.getTopics(profile);
     if (topics == null) {
       return const [];
     }

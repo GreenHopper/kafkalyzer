@@ -59,14 +59,11 @@ void main() {
   late _FakeKafkaMetadataService fakeMetadata;
 
   setUp(() {
-    getIt.reset();
     fakeMetadata = _FakeKafkaMetadataService();
     getIt.registerSingleton<KafkaMetadataService>(fakeMetadata);
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   testWidgets(
     'defaults to current profile and open topic name, and shows insecure badge',

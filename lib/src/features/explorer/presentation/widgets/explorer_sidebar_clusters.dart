@@ -1,6 +1,5 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment_tag.dart';
@@ -60,12 +59,14 @@ class ExplorerClusterList extends StatefulWidget {
   final ClusterListController clusterController;
   final ActiveConnectionController activeController;
   final TopicController topicController;
+  final SchemaController schemaController;
 
   const ExplorerClusterList({
     super.key,
     required this.clusterController,
     required this.activeController,
     required this.topicController,
+    required this.schemaController,
   });
 
   @override
@@ -133,6 +134,7 @@ class _ExplorerClusterListState extends State<ExplorerClusterList> {
                     cluster: cluster,
                     activeController: widget.activeController,
                     topicController: widget.topicController,
+                    schemaController: widget.schemaController,
                   );
                 }).toList(),
               ),
@@ -147,11 +149,13 @@ class _ClusterTile extends StatelessWidget {
   final ClusterProfile cluster;
   final ActiveConnectionController activeController;
   final TopicController topicController;
+  final SchemaController schemaController;
 
   const _ClusterTile({
     required this.cluster,
     required this.activeController,
     required this.topicController,
+    required this.schemaController,
   });
 
   @override
@@ -180,8 +184,8 @@ class _ClusterTile extends StatelessWidget {
         onTap: isConnecting
             ? null
             : () {
-                getIt<ActiveConnectionController>().connect(cluster);
-                getIt<SchemaController>().fetchSchemas(cluster);
+                activeController.connect(cluster);
+                schemaController.fetchSchemas(cluster);
               },
         trailing: isConnecting
             ? const SizedBox(

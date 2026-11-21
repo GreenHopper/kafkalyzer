@@ -41,15 +41,12 @@ void main() {
   late _TrackingDiagnosticsService diagnostics;
 
   setUp(() async {
-    await getIt.reset();
     diagnostics = _TrackingDiagnosticsService();
     getIt.registerSingleton<ConnectionDiagnosticsService>(diagnostics);
     getIt.registerSingleton<ClusterProfileTools>(FakeClusterProfileTools());
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   group('Environment tag in ClusterConfigDialog', () {
     testWidgets('entering PROD preselects red and saves tag', (tester) async {

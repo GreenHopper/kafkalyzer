@@ -14,6 +14,10 @@ context: |
       OpenSpec change name and follow the guardrails (L1-L7) and decisions
       (E1-E20) of that document. Entries marked as deferred or listed under
       non-goals there MUST NOT be proposed.
+    - The code-quality backlog lives in
+      `design/code-quality-refactoring-backlog.md`. Its section 8 table fixes
+      the change id for every Q-n entry; use that id as the OpenSpec change
+      name, and keep the table's status in step with the implemented change.
 
   Tech Stack:
     - Frontend: Flutter (Dart SDK >= 3.9) targeting desktop only. Flutter Web
@@ -188,8 +192,15 @@ context: |
       - Icon-only controls need a tooltip and a semantic label. State must not
         be conveyed by colour alone; status colours come from the theme's colour
         scheme.
-      - Global state (active cluster, settings) is accessed through
-        `ActiveConnectionController` or `getIt`.
+      - State lifetime: session-wide state (active cluster and profile,
+        cluster list, TLS transition, main navigation, multi search, topic,
+        schema, script, script-run and consumer-group directory) is registered
+        once per app session and reached through a constructor parameter whose
+        default is the container (`widget.x ?? getIt<T>()`). Anything that
+        belongs to a single screen or dialog is view-owned. A presentation
+        source must not look session-wide state up from the container outside
+        such a constructor-parameter default; `scripts/quality_gates.sh`
+        enforces this on the files a change touches.
 
     - Localization:
       - All user-facing strings must be localized using `AppLocalizations` (via
@@ -207,9 +218,10 @@ context: |
          `flutter analyze`, `flutter test`
       5. `scripts/check_read_only.sh`
       6. `scripts/quality_gates.sh` runs the CI gate checks in one call (dart
-         format, flutter analyze, cargo fmt --check, source-file size guard) and
-         stops at the first finding. clippy is not part of it yet: it joins with
-         `-D warnings` only once the change `enable-rust-lint-gate` lands.
+         format, flutter analyze, cargo fmt --check, source-file size guard,
+         session-wide state locator guard) and stops at the first finding.
+         clippy is not part of it yet: it joins with `-D warnings` only once the
+         change `enable-rust-lint-gate` lands.
 
 # Per-artifact generation rules
 rules:
@@ -251,9 +263,11 @@ rules:
       and keep previously stored data (profiles, saved searches, scripts,
       reports) loadable.
     - >-
-      Status Access: For accessing global state (like the active cluster or
-      settings), prefer using ActiveConnectionController or getIt over deep
-      prop-drilling unless a widget is purely presentational.
+      Status Access: Reach session-wide state through a constructor parameter
+      that defaults to the container (`widget.x ?? getIt<T>()`) instead of deep
+      prop-drilling; state belonging to one screen or dialog stays view-owned.
+      `watch_it` may keep a screen subscribed to the session-wide object it
+      renders.
     - >-
       Detail design choices, state flow, and any alternatives considered.
     - >-

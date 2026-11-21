@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
@@ -49,9 +48,7 @@ class _StubScriptController extends ChangeNotifier implements ScriptController {
 }
 
 void main() {
-  setUp(() async {
-    await getIt.reset();
-  });
+  setUp(() async {});
 
   Widget buildBanner({
     required ValueNotifier<bool> keyringUnavailable,

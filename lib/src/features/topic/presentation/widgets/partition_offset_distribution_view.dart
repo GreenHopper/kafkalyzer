@@ -23,12 +23,18 @@ class PartitionOffsetDistributionView extends StatefulWidget {
   final String? cleanupPolicy;
   final VoidCallback? onOpenAnalysis;
 
+  /// Session-wide collaborators; null falls back to the application container.
+  final ActiveConnectionController? connectionController;
+  final KafkaMetadataService? kafkaMetadata;
+
   const PartitionOffsetDistributionView({
     super.key,
     required this.profile,
     required this.topicName,
     this.cleanupPolicy,
     this.onOpenAnalysis,
+    this.connectionController,
+    this.kafkaMetadata,
   });
 
   @override
@@ -51,9 +57,14 @@ class _PartitionOffsetDistributionViewState
   @override
   void initState() {
     super.initState();
-    if (getIt.isRegistered<ActiveConnectionController>()) {
-      _connectionController = getIt<ActiveConnectionController>();
-      _connectionController!.addListener(_onConnectionChanged);
+    final connection =
+        widget.connectionController ??
+        (getIt.isRegistered<ActiveConnectionController>()
+            ? getIt<ActiveConnectionController>()
+            : null);
+    if (connection != null) {
+      _connectionController = connection;
+      connection.addListener(_onConnectionChanged);
     }
     unawaited(_loadOffsets());
   }
@@ -111,7 +122,8 @@ class _PartitionOffsetDistributionViewState
 
     try {
       final threshold = await _readSkewThreshold();
-      final metadataService = getIt<KafkaMetadataService>();
+      final metadataService =
+          widget.kafkaMetadata ?? getIt<KafkaMetadataService>();
       final result = await metadataService.fetchPartitionOffsets(
         profile: widget.profile,
         topic: widget.topicName,

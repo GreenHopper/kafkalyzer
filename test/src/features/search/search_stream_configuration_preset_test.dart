@@ -15,15 +15,12 @@ void main() {
   late SavedSearchesService savedSearchesService;
 
   setUp(() async {
-    await getIt.reset();
     SharedPreferences.setMockInitialValues({});
     savedSearchesService = SavedSearchesService();
     getIt.registerSingleton<SavedSearchesService>(savedSearchesService);
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   testWidgets('renders preset bar and populates inputs when preset selected', (
     WidgetTester tester,

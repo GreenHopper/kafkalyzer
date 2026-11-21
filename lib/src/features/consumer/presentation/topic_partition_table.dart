@@ -20,6 +20,9 @@ class TopicPartitionTable extends StatefulWidget {
   final int lagWarnThreshold;
   final AppLocalizations l10n;
 
+  /// Null falls back to the application container; a test injects its own.
+  final LocalSchemaAssignmentService? schemaAssignments;
+
   const TopicPartitionTable({
     super.key,
     required this.profile,
@@ -28,6 +31,7 @@ class TopicPartitionTable extends StatefulWidget {
     this.partitionTrends,
     this.lagWarnThreshold = 0,
     required this.l10n,
+    this.schemaAssignments,
   });
 
   @override
@@ -44,6 +48,12 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     return NumberFormat.decimalPattern(locale).format(value);
   }
 
+  LocalSchemaAssignmentService? get _schemaAssignments =>
+      widget.schemaAssignments ??
+      (getIt.isRegistered<LocalSchemaAssignmentService>()
+          ? getIt<LocalSchemaAssignmentService>()
+          : null);
+
   int? _calculatePartitionDelta(TopicPartitionLag part) {
     if (widget.partitionDeltas == null) return null;
     final key = "${part.topic}-${part.partition}";
@@ -58,12 +68,10 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     });
 
     try {
-      final localSchemas = getIt.isRegistered<LocalSchemaAssignmentService>()
-          ? await getIt<LocalSchemaAssignmentService>().scanOptionsFor(
-              widget.profile.name,
-              part.topic,
-            )
-          : null;
+      final assignments = _schemaAssignments;
+      final localSchemas = assignments == null
+          ? null
+          : await assignments.scanOptionsFor(widget.profile.name, part.topic);
       final stream = consumer.consumeWithFilter(
         profile: widget.profile,
         topic: part.topic,

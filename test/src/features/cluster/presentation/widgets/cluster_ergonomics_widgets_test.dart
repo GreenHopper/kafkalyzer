@@ -34,13 +34,9 @@ class _StubTopicController extends TopicController {
 }
 
 void main() {
-  setUp(() async {
-    await getIt.reset();
-  });
+  setUp(() async {});
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   testWidgets(
     'EnvironmentTagChip renders label and semantics, hides when untagged',

@@ -13,12 +13,32 @@ import 'package:kafkalyzer/src/utils/app_version_helper.dart';
 class SettingsDiagnosticsSection extends StatelessWidget {
   final AppLocalizations l10n;
 
-  const SettingsDiagnosticsSection({super.key, required this.l10n});
+  const SettingsDiagnosticsSection({
+    super.key,
+    required this.l10n,
+    this.fileOpener,
+    this.activeConnection,
+    this.errorReporter,
+  });
+
+  /// Session-wide collaborators; null falls back to the application container.
+  final FileOpenerService? fileOpener;
+  final ActiveConnectionController? activeConnection;
+  final ErrorReporter? errorReporter;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final logPath = AppLogging.fileLogPath;
+    final fileOpener = this.fileOpener ?? getIt<FileOpenerService>();
+    final activeConnection =
+        this.activeConnection ??
+        (getIt.isRegistered<ActiveConnectionController>()
+            ? getIt<ActiveConnectionController>()
+            : null);
+    final errorReporter =
+        this.errorReporter ??
+        (getIt.isRegistered<ErrorReporter>() ? getIt<ErrorReporter>() : null);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,9 +74,7 @@ class SettingsDiagnosticsSection extends StatelessWidget {
                     );
                   return;
                 }
-                final ok = await getIt<FileOpenerService>().showInFolder(
-                  logPath,
-                );
+                final ok = await fileOpener.showInFolder(logPath);
                 if (!ok) {
                   messenger
                     ..clearSnackBars()
@@ -75,13 +93,9 @@ class SettingsDiagnosticsSection extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
-                final activeProfile =
-                    getIt.isRegistered<ActiveConnectionController>()
-                    ? getIt<ActiveConnectionController>().activeProfile
-                    : null;
-                final recentErrors = getIt.isRegistered<ErrorReporter>()
-                    ? getIt<ErrorReporter>().recent
-                    : const <ErrorRecord>[];
+                final activeProfile = activeConnection?.activeProfile;
+                final recentErrors =
+                    errorReporter?.recent ?? const <ErrorRecord>[];
                 final report = DiagnosticsReport.build(
                   appVersion: AppVersionHelper.version,
                   osName: Platform.operatingSystem,

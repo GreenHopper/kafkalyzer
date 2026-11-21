@@ -126,9 +126,7 @@ void main() {
     // ScriptRunView uses ClusterListController (mocked above).
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(() {});
 
   const script = Script(
     id: '1',

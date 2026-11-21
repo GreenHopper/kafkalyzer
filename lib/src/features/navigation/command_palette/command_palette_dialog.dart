@@ -21,7 +21,22 @@ class CommandPaletteDialog extends StatefulWidget {
     required this.rootContext,
     this.snapshotOverride,
     this.onOpenReferenceOverride,
+    this.navigation,
+    this.clusterListController,
+    this.activeConnection,
+    this.topicController,
+    this.scriptController,
+    this.consumerGroupDirectory,
   });
+
+  /// Session-wide state the palette reads; null falls back to the application
+  /// container so a test can substitute its own.
+  final MainNavigationController? navigation;
+  final ClusterListController? clusterListController;
+  final ActiveConnectionController? activeConnection;
+  final TopicController? topicController;
+  final ScriptController? scriptController;
+  final ConsumerGroupDirectory? consumerGroupDirectory;
 
   /// Outer navigator context used after the palette pops (for example to open
   /// [QuickJumpDialog]).
@@ -70,14 +85,19 @@ class _CommandPaletteDialogState extends State<CommandPaletteDialog> {
       return widget.snapshotOverride!;
     }
 
-    final nav = getIt<MainNavigationController>();
-    final clusterList = getIt<ClusterListController>();
-    final activeConn = getIt<ActiveConnectionController>();
-    final topicController = getIt<TopicController>();
-    final scriptController = getIt<ScriptController>();
-    final groupDirectory = getIt.isRegistered<ConsumerGroupDirectory>()
-        ? getIt<ConsumerGroupDirectory>()
-        : null;
+    final nav = widget.navigation ?? getIt<MainNavigationController>();
+    final clusterList =
+        widget.clusterListController ?? getIt<ClusterListController>();
+    final activeConn =
+        widget.activeConnection ?? getIt<ActiveConnectionController>();
+    final topicController = widget.topicController ?? getIt<TopicController>();
+    final scriptController =
+        widget.scriptController ?? getIt<ScriptController>();
+    final groupDirectory =
+        widget.consumerGroupDirectory ??
+        (getIt.isRegistered<ConsumerGroupDirectory>()
+            ? getIt<ConsumerGroupDirectory>()
+            : null);
 
     final activeProfile = activeConn.activeProfile;
     final topics = activeProfile == null

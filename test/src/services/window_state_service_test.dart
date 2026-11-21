@@ -209,7 +209,7 @@ void main() {
       final service = WindowStateService(
         adapter: adapter,
         isWaylandDetector: () => false,
-        saveDebounceDelay: const Duration(milliseconds: 30),
+        saveDebounceDelay: Duration.zero,
       );
       service.attachListener();
 
@@ -217,7 +217,8 @@ void main() {
       adapter.bounds = const Rect.fromLTWH(40, 60, 1100, 720);
       service.onWindowResize();
       service.onWindowMove();
-      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       final prefs = await SharedPreferences.getInstance();
       final saved1 = SavedWindowState.tryParse(
@@ -233,7 +234,8 @@ void main() {
       adapter.maximized = true;
       adapter.bounds = const Rect.fromLTWH(0, 0, 1920, 1080);
       service.onWindowMaximize();
-      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       final saved2 = SavedWindowState.tryParse(
         prefs.getString(WindowStateService.storageKey),

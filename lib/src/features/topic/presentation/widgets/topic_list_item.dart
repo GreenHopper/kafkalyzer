@@ -24,6 +24,10 @@ class TopicListItem extends StatefulWidget {
   final VoidCallback? onToggleFavourite;
   final bool isMissingFavourite;
 
+  /// Session-wide collaborators; null falls back to the application container.
+  final TopicController? topicController;
+  final SchemaController? schemaController;
+
   const TopicListItem({
     super.key,
     required this.topic,
@@ -40,6 +44,8 @@ class TopicListItem extends StatefulWidget {
     this.isFavourite = false,
     this.onToggleFavourite,
     this.isMissingFavourite = false,
+    this.topicController,
+    this.schemaController,
   });
 
   @override
@@ -48,6 +54,16 @@ class TopicListItem extends StatefulWidget {
 
 class _TopicListItemState extends State<TopicListItem> {
   bool _isExpanded = false;
+
+  TopicController? get _topicController =>
+      widget.topicController ??
+      (getIt.isRegistered<TopicController>() ? getIt<TopicController>() : null);
+
+  SchemaController? get _schemaController =>
+      widget.schemaController ??
+      (getIt.isRegistered<SchemaController>()
+          ? getIt<SchemaController>()
+          : null);
 
   @override
   Widget build(BuildContext context) {
@@ -69,10 +85,9 @@ class _TopicListItemState extends State<TopicListItem> {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child:
-          getIt.isRegistered<TopicController>() && widget.clusterProfile != null
+      child: _topicController != null && widget.clusterProfile != null
           ? ListenableBuilder(
-              listenable: getIt<TopicController>(),
+              listenable: _topicController!,
               builder: (context, child) => Tooltip(
                 message: _buildTooltipMessage(context),
                 waitDuration: const Duration(milliseconds: 350),
@@ -475,18 +490,18 @@ class _TopicListItemState extends State<TopicListItem> {
     }
 
     final schemaLabel =
-        widget.clusterProfile != null && getIt.isRegistered<SchemaController>()
+        widget.clusterProfile != null && _schemaController != null
         ? resolveTopicSchemaLabel(
             l10n,
-            getIt<SchemaController>(),
+            _schemaController!,
             widget.clusterProfile!,
             topic.name,
           )
         : null;
 
     final TopicConfigView? configView =
-        widget.clusterProfile != null && getIt.isRegistered<TopicController>()
-        ? getIt<TopicController>().configFor(widget.clusterProfile!, topic.name)
+        widget.clusterProfile != null && _topicController != null
+        ? _topicController!.configFor(widget.clusterProfile!, topic.name)
         : null;
 
     String meta;

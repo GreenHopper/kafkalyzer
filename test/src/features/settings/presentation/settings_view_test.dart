@@ -85,7 +85,6 @@ void main() {
     mockSettingsService = MockSettingsService();
 
     final getIt = GetIt.instance;
-    getIt.reset();
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
     getIt.registerSingleton<ActiveConnectionController>(
       mockActiveConnectionController,

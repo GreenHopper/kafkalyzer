@@ -31,14 +31,11 @@ void main() {
   final getIt = GetIt.instance;
 
   setUp(() async {
-    await getIt.reset();
     getIt.registerSingleton<MessageExportService>(FakeMessageExportService());
     SharedPreferences.setMockInitialValues({});
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   final testMessages = [
     const KafkaMessage(

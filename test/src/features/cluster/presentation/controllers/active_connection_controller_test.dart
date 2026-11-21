@@ -108,7 +108,6 @@ void main() {
   late SessionRestoreService sessionRestoreService;
 
   setUp(() async {
-    await getIt.reset();
     SharedPreferences.setMockInitialValues({});
     getIt.registerLazySingleton<Logger>(() => MockLogger());
 

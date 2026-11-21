@@ -13,9 +13,7 @@ import 'package:logger/logger.dart';
 
 void main() {
   setUpAll(() {
-    if (!getIt.isRegistered<Logger>()) {
-      getIt.registerSingleton<Logger>(Logger(level: Level.off));
-    }
+    getIt.registerSingleton<Logger>(Logger(level: Level.off));
   });
 
   group('5.1 TopicSearchPreset & ScriptStep filterExpression', () {

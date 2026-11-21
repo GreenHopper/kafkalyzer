@@ -19,10 +19,19 @@ class SettingsConfigSection extends StatelessWidget {
     super.key,
     required this.l10n,
     required this.exportController,
+    this.settingsService,
+    this.clusterController,
   });
+
+  /// Session-wide collaborators; null falls back to the application container.
+  final SettingsService? settingsService;
+  final ClusterListController? clusterController;
 
   @override
   Widget build(BuildContext context) {
+    final settingsService = this.settingsService ?? getIt<SettingsService>();
+    final clusterController =
+        this.clusterController ?? getIt<ClusterListController>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -49,7 +58,6 @@ class SettingsConfigSection extends StatelessWidget {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: () async {
-                  final settingsService = getIt<SettingsService>();
                   try {
                     final importResult = await settingsService
                         .importConfiguration(
@@ -67,10 +75,9 @@ class SettingsConfigSection extends StatelessWidget {
                               context,
                               profileName: imported.name,
                               suggestedRename: suggestedRename,
-                              takenNormalizedNames:
-                                  getIt<ClusterListController>().clusters
-                                      .map((c) => normalizeProfileName(c.name))
-                                      .toSet(),
+                              takenNormalizedNames: clusterController.clusters
+                                  .map((c) => normalizeProfileName(c.name))
+                                  .toSet(),
                             );
                           },
                         );

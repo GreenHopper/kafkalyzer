@@ -12,7 +12,6 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
@@ -40,7 +39,42 @@ import 'package:kafkalyzer/src/services/time_display_settings.dart';
 
 final getIt = GetIt.instance;
 
+/// The only application state that outlives the screen that produced it.
+///
+/// Each entry is here because a named spec requires the user to find it again
+/// after leaving the screen that created it - for example `topic-search-tabs`
+/// keeps every background tab session, `consumer-lag-trend` keeps the retained
+/// lag history, and a running script has to finish while its view is disposed.
+/// State that no such requirement covers belongs to the widget subtree that
+/// creates it and is handed to its consumers as a constructor parameter
+/// (see `SettingsImportExportController`), never registered here.
+///
+/// `scripts/quality_gates.sh` reads this list: a changed source under a
+/// feature's `presentation/` must not gain a container lookup for one of these
+/// types, it receives them from its caller instead.
+const List<Type> sessionWideState = <Type>[
+  ActiveConnectionController,
+  ClusterListController,
+  TlsTransitionController,
+  MultiSearchController,
+  TopicController,
+  ClusterOverviewController,
+  SchemaController,
+  MainNavigationController,
+  ScriptController,
+  ScriptRunner,
+  ConsumerGroupDirectory,
+];
+
+/// Wires the full desktop application: every service plus the session-wide state.
 void setupDependencyInjection({ErrorReporter? errorReporter}) {
+  setupCoreServices(errorReporter: errorReporter);
+  registerSessionWideState();
+}
+
+/// Services that hold no screen state: they are safe to share across entry
+/// points and every entry point that touches them registers them.
+void setupCoreServices({ErrorReporter? errorReporter}) {
   getIt.registerLazySingleton<Logger>(() => Logger());
   getIt.registerLazySingleton<SecureStorageService>(
     () => SecureStorageService(logger: getIt<Logger>()),
@@ -62,38 +96,10 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
   getIt.registerLazySingleton<SchemaRegistryService>(
     () => SchemaRegistryService(),
   );
-  getIt.registerLazySingleton<ClusterListController>(
-    () => ClusterListController(),
-  );
-  getIt.registerLazySingleton<TlsTransitionController>(
-    () => TlsTransitionController(),
-  );
-  getIt.registerLazySingleton<ActiveConnectionController>(
-    () => ActiveConnectionController(),
-  );
-  getIt.registerLazySingleton<MultiSearchController>(
-    () => MultiSearchController(),
-  );
-  getIt.registerLazySingleton<TopicController>(() => TopicController());
-  getIt.registerLazySingleton<ClusterOverviewController>(
-    () => ClusterOverviewController(),
-  );
-  getIt.registerFactory<TopicAnalysisController>(
-    () => TopicAnalysisController(),
-  );
-  getIt.registerLazySingleton<SchemaController>(() => SchemaController());
   getIt.registerLazySingleton<AppearanceSettings>(() => AppearanceSettings());
   getIt.registerLazySingleton<WindowStateService>(() => WindowStateService());
-  getIt.registerLazySingleton<MainNavigationController>(
-    () => MainNavigationController(),
-  );
-  getIt.registerLazySingleton<ConsumerGroupDirectory>(
-    () => ConsumerGroupDirectory(),
-  );
 
   getIt.registerLazySingleton<ScriptRepository>(() => ScriptRepository());
-  getIt.registerLazySingleton<ScriptController>(() => ScriptController());
-  getIt.registerLazySingleton<ScriptRunner>(() => ScriptRunner());
   getIt.registerLazySingleton<ErrorReporter>(
     () => errorReporter ?? ErrorReporter(),
   );
@@ -127,4 +133,48 @@ void setupDependencyInjection({ErrorReporter? errorReporter}) {
   getIt.registerLazySingleton<LocalSchemaAssignmentService>(
     () => LocalSchemaAssignmentService(),
   );
+}
+
+/// The session-wide state of the desktop application, exactly the types listed
+/// in [sessionWideState].
+void registerSessionWideState() {
+  getIt.registerLazySingleton<ClusterListController>(
+    () => ClusterListController(),
+  );
+  getIt.registerLazySingleton<TlsTransitionController>(
+    () => TlsTransitionController(),
+  );
+  getIt.registerLazySingleton<ActiveConnectionController>(
+    () => ActiveConnectionController(),
+  );
+  getIt.registerLazySingleton<MultiSearchController>(
+    () => MultiSearchController(),
+  );
+  getIt.registerLazySingleton<TopicController>(() => TopicController());
+  getIt.registerLazySingleton<ClusterOverviewController>(
+    () => ClusterOverviewController(),
+  );
+  getIt.registerLazySingleton<SchemaController>(() => SchemaController());
+  getIt.registerLazySingleton<MainNavigationController>(
+    () => MainNavigationController(),
+  );
+  getIt.registerLazySingleton<ConsumerGroupDirectory>(
+    () => ConsumerGroupDirectory(),
+  );
+  getIt.registerLazySingleton<ScriptController>(() => ScriptController());
+  getIt.registerLazySingleton<ScriptRunner>(() => ScriptRunner());
+}
+
+/// The headless script runner's own wiring: core services plus the state
+/// [ScriptRunner] reads while it works. No GUI-only controller is registered,
+/// so a headless run cannot pick up desktop state by accident.
+void registerScriptExecutionState() {
+  getIt.registerLazySingleton<ClusterListController>(
+    () => ClusterListController(),
+  );
+  getIt.registerLazySingleton<MultiSearchController>(
+    () => MultiSearchController(),
+  );
+  getIt.registerLazySingleton<TopicController>(() => TopicController());
+  getIt.registerLazySingleton<ScriptRunner>(() => ScriptRunner());
 }

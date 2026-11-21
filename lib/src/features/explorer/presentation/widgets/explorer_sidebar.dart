@@ -167,6 +167,7 @@ class _ExplorerSidebarState extends State<ExplorerSidebar> {
               clusterController: clusterController,
               activeController: activeController,
               topicController: topicController,
+              schemaController: schemaController,
             ),
             if (activeController.activeProfile != null) ...[
               const Divider(height: 1),
