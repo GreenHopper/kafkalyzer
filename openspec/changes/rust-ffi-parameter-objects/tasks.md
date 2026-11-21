@@ -6,11 +6,11 @@ Local prerequisite for every Rust command in this change: on a Linux workstation
 
 ## 1. kafkalyzer-core lint fixes
 
-- [ ] 1.1 Run `cargo clippy -p kafkalyzer-core --all-targets` and record the 9 findings as the group work list; verify the list matches `duplicate_fingerprint.rs:332`, `filter_expr.rs:1908,1958,1982,1996`, `size_stats.rs:220`, `tests/spike_s2_descriptor_set.rs:91,108,119`
-- [ ] 1.2 Fix `redundant_iter_cloned` at `kafkalyzer-core/src/duplicate_fingerprint.rs:332` by hand (iterator already yields owned items) and verify `cargo test -p kafkalyzer-core` passes with the same test count as before
-- [ ] 1.3 Apply `cargo clippy --fix --lib -p kafkalyzer-core --tests` for the four `field_reassign_with_default` findings in `filter_expr.rs` tests and the `unnecessary_cast` in `size_stats.rs` tests, review the diff, and verify `cargo test -p kafkalyzer-core` passes (expect 167 core tests)
-- [ ] 1.4 Fix the three findings in `kafkalyzer-core/tests/spike_s2_descriptor_set.rs` (`needless_lifetimes` at lines 91 and 119, `useless_conversion` at line 108) and verify `cargo clippy -p kafkalyzer-core --all-targets` reports zero warnings
-- [ ] 1.5 Commit group 1 alone and verify `cargo fmt --all --manifest-path rust/Cargo.toml --check` is clean
+- [x] 1.1 Run `cargo clippy -p kafkalyzer-core --all-targets` and record the 9 findings as the group work list; verify the list matches `duplicate_fingerprint.rs:325-351`, `filter_expr.rs:1908,1958,1982,1996`, `size_stats.rs:220`, `tests/spike_s2_descriptor_set.rs:91,108,119`
+- [x] 1.2 Fix `redundant_iter_cloned` at `kafkalyzer-core/src/duplicate_fingerprint.rs:332` by hand and verify `cargo test -p kafkalyzer-core` passes with the same test count as before — clippy's own suggestion (`.iter()` without `.cloned()`) does not compile, because the spawned threads need owned batches; fixed by copying `batches` once outside the measured region and consuming it with `into_iter()`
+- [x] 1.3 Apply `cargo clippy --fix --lib -p kafkalyzer-core --tests` for the four `field_reassign_with_default` findings in `filter_expr.rs` tests and the `unnecessary_cast` in `size_stats.rs` tests, review the diff, and verify `cargo test -p kafkalyzer-core` passes (expect 167 core tests) — the autofix was rolled back by cargo because its rewrite breaks the borrow rules in these tests (E0505/E0597); all five findings applied by hand as struct literals instead
+- [x] 1.4 Fix the three findings in `kafkalyzer-core/tests/spike_s2_descriptor_set.rs` (`needless_lifetimes` at lines 91 and 119, `useless_conversion` at line 108) and verify `cargo clippy -p kafkalyzer-core --all-targets` reports zero warnings
+- [x] 1.5 Commit group 1 alone and verify `cargo fmt --all --manifest-path rust/Cargo.toml --check` is clean
 
 ## 2. kafkalyzer-kafka parameter structs and lint fixes
 

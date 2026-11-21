@@ -217,7 +217,7 @@ mod tests {
     #[test]
     fn merging_two_workers_equals_one_worker_over_the_same_messages() {
         let messages: Vec<(i32, i64, i64)> = (0..30_000)
-            .map(|i| ((i % 2) as i32, (i / 2) as i64, (i % 500) as i64 + 1))
+            .map(|i| (i % 2, (i / 2) as i64, (i % 500) as i64 + 1))
             .collect();
 
         let mut single = SizeSample::default();
