@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_search_preset.dart';
-import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/search_stream_configuration.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
@@ -16,15 +15,12 @@ void main() {
   late SavedSearchesService savedSearchesService;
 
   setUp(() async {
-    await getIt.reset();
     SharedPreferences.setMockInitialValues({});
     savedSearchesService = SavedSearchesService();
     getIt.registerSingleton<SavedSearchesService>(savedSearchesService);
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   testWidgets('renders preset bar and populates inputs when preset selected', (
     WidgetTester tester,

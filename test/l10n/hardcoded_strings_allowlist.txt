@@ -14,8 +14,8 @@ lib/src/features/explorer/presentation/widgets/cluster_overview_view.dart	'PLAIN
 lib/src/features/explorer/presentation/widgets/explorer_onboarding_view.dart	'PLAINTEXT'	technical: Kafka protocol
 lib/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart	"${widget.topicName}-key / ${widget.topicName}-value"	technical: Schema Registry subject naming pattern
 lib/src/features/search/presentation/widgets/search_stream_configuration.dart	"YYYY-MM-DDTHH:mm:ss"	technical: ISO-8601 date format pattern
-lib/src/features/settings/presentation/settings_view.dart	'Kafkalyzer v${AppVersionHelper.version}'	technical: product name
-lib/src/features/settings/presentation/settings_view.dart	'PLAINTEXT'	technical: Kafka protocol
+lib/src/features/settings/presentation/widgets/settings_about_and_updates_section.dart	'Kafkalyzer v${AppVersionHelper.version}'	technical: product name
+lib/src/features/settings/presentation/widgets/settings_cluster_section.dart	'PLAINTEXT'	technical: Kafka protocol
 lib/src/services/appearance_settings.dart	locale?.languageCode == 'en'	technical: locale preference parser
 lib/src/services/appearance_settings.dart	locale?.languageCode == 'de'	technical: locale preference parser
 lib/src/ui/messages/widgets/message_inspector_panel.dart	'<null>'	technical: null key literal

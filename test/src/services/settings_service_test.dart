@@ -212,7 +212,6 @@ void main() {
   });
 
   setUp(() async {
-    await getIt.reset();
     reset(mockRustApi);
     _registerClusterCodec(mockRustApi);
 

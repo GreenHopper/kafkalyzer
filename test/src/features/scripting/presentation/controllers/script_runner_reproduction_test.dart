@@ -130,7 +130,6 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
 
-    getIt.reset();
     getIt.registerSingleton<Logger>(MockLogger());
     getIt.registerSingleton<KafkaMetadataService>(MockKafkaMetadataService());
     getIt.registerSingleton<ClusterService>(MockClusterService());

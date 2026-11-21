@@ -167,7 +167,7 @@ class SearchProgress {
 }
 
 class MultiSearchController extends ChangeNotifier {
-  final Logger _logger = getIt<Logger>();
+  final Logger _logger;
   final MessageConsumeStreamFactory _consumeStreamFactory;
   final int Function() _bufferLimitProvider;
   final LocalSchemaAssignmentService? _localSchemaService;
@@ -179,7 +179,9 @@ class MultiSearchController extends ChangeNotifier {
     MessageConsumeStreamFactory? consumeStreamFactory,
     int Function()? bufferLimitProvider,
     LocalSchemaAssignmentService? localSchemaService,
+    Logger? logger,
   }) : _consumeStreamFactory = consumeStreamFactory ?? consumeWithFilter,
+       _logger = logger ?? getIt<Logger>(),
        _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit,
        _localSchemaService =
            localSchemaService ??

@@ -99,33 +99,19 @@ class MockSchemaController extends SchemaController {
 }
 
 void main() {
-  setUpAll(() async {
+  setUp(() {
     // Register mocks
     SharedPreferences.setMockInitialValues({});
-    if (!GetIt.I.isRegistered<ClusterService>()) {
-      GetIt.I.registerSingleton<ClusterService>(MockClusterService());
-    }
-    if (!GetIt.I.isRegistered<ClusterListController>()) {
-      GetIt.I.registerSingleton<ClusterListController>(
-        MockClusterListController(),
-      );
-    }
-    if (!GetIt.I.isRegistered<KafkaMetadataService>()) {
-      GetIt.I.registerSingleton<KafkaMetadataService>(
-        MockKafkaMetadataService(),
-      );
-    }
-    if (!GetIt.I.isRegistered<TopicController>()) {
-      GetIt.I.registerSingleton<TopicController>(MockTopicController());
-    }
-    if (!GetIt.I.isRegistered<SchemaRegistryService>()) {
-      GetIt.I.registerSingleton<SchemaRegistryService>(
-        MockSchemaRegistryService(),
-      );
-    }
-    if (!GetIt.I.isRegistered<SchemaController>()) {
-      GetIt.I.registerSingleton<SchemaController>(MockSchemaController());
-    }
+    GetIt.I.registerSingleton<ClusterService>(MockClusterService());
+    GetIt.I.registerSingleton<ClusterListController>(
+      MockClusterListController(),
+    );
+    GetIt.I.registerSingleton<KafkaMetadataService>(MockKafkaMetadataService());
+    GetIt.I.registerSingleton<TopicController>(MockTopicController());
+    GetIt.I.registerSingleton<SchemaRegistryService>(
+      MockSchemaRegistryService(),
+    );
+    GetIt.I.registerSingleton<SchemaController>(MockSchemaController());
   });
 
   testWidgets('ScriptStepEditor handles long topic names without overflow', (

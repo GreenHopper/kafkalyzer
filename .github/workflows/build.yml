@@ -66,9 +66,51 @@ jobs:
       - name: Run Rust tests
         run: cargo test --manifest-path rust/Cargo.toml
 
+  quality-gates:
+    name: Source quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Der Size-Guard vergleicht die geaenderten Dateien mit der Revision,
+      # von der der Change ausgeht; ohne sie waere "schon zu gross" nicht von
+      # "gerade erst zu gross geworden" zu unterscheiden.
+      KAFKALYZER_BASE_REF: >-
+        ${{ github.event.pull_request.base.sha || 'refs/remotes/origin/main' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # size guard needs the merge base
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev libsecret-1-dev libblkid-dev liblzma-dev \
+            pkg-config libssl-dev libsasl2-dev libz-dev
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          cache-workspaces: "rust"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      # Same script a developer runs locally; it fails on the first finding.
+      - name: Run quality gates
+        run: bash scripts/quality_gates.sh
+
   build-linux:
     name: Build Linux
-    needs: [run-tests] # Wartet zwingend auf erfolgreiche Tests
+    needs: [run-tests, quality-gates] # Wartet zwingend auf erfolgreiche Tests
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
@@ -96,7 +138,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libsecret-1-dev libblkid-dev liblzma-dev pkg-config libssl-dev libsasl2-dev libz-dev
+          sudo apt-get install -y \
+            libgtk-3-dev libsecret-1-dev libblkid-dev liblzma-dev \
+            pkg-config libssl-dev libsasl2-dev libz-dev
 
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -177,7 +221,7 @@ jobs:
 
   build-macos:
     name: Build macOS
-    needs: [run-tests] # Wartet zwingend auf erfolgreiche Tests
+    needs: [run-tests, quality-gates] # Wartet zwingend auf erfolgreiche Tests
     runs-on: macos-latest
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
@@ -278,7 +322,7 @@ jobs:
 
   build-windows:
     name: Build Windows
-    needs: [run-tests] # Wartet zwingend auf erfolgreiche Tests
+    needs: [run-tests, quality-gates] # Wartet zwingend auf erfolgreiche Tests
     runs-on: windows-latest
     if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:

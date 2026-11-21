@@ -34,7 +34,6 @@ void main() {
   );
 
   setUp(() async {
-    await getIt.reset();
     SharedPreferences.setMockInitialValues({
       'saved_scripts_v1': jsonEncode([
         testScript.toJson(),
@@ -49,9 +48,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   Widget createWidgetUnderTest() {
     return MaterialApp(

@@ -36,7 +36,6 @@ void main() {
     mockSchemaController = MockSchemaController();
 
     final getIt = GetIt.instance;
-    getIt.reset();
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
     getIt.registerSingleton<ActiveConnectionController>(
       mockActiveConnectionController,

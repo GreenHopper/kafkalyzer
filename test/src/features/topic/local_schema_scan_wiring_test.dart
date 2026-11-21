@@ -28,13 +28,10 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await getIt.reset();
     getIt.registerLazySingleton<Logger>(() => Logger(level: Level.off));
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   test(
     'MessageStreamController forwards localSchemas when assigned and null otherwise',

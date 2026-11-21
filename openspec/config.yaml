@@ -14,6 +14,10 @@ context: |
       OpenSpec change name and follow the guardrails (L1-L7) and decisions
       (E1-E20) of that document. Entries marked as deferred or listed under
       non-goals there MUST NOT be proposed.
+    - The code-quality backlog lives in
+      `design/code-quality-refactoring-backlog.md`. Its section 8 table fixes
+      the change id for every Q-n entry; use that id as the OpenSpec change
+      name, and keep the table's status in step with the implemented change.
 
   Tech Stack:
     - Frontend: Flutter (Dart SDK >= 3.9) targeting desktop only. Flutter Web
@@ -30,7 +34,10 @@ context: |
         in-house `SmartVirtualJsonTree` (`lib/src/ui/smart_tree/`).
       - Code generation: freezed / json_serializable (build_runner), mockito
         mocks for the Rust bridge (`test/src/rust/api/rust_mocks.mocks.dart`,
-        checked in).
+        checked in). Generated localizations (`lib/l10n/*.dart`, configured in
+        `l10n.yaml`) and `lib/src/flex_theme_bridge.dart` (from
+        `scripts/gen_flex_theme_bridge.py`) are generator-owned too: change the
+        generator or its configuration, never the generated file.
       - Source layout:
         `lib/src/features/<feature>/{presentation,domain,data,application}`,
         shared widgets in `lib/src/ui/`, services in `lib/src/services/`,
@@ -92,6 +99,11 @@ context: |
         source files.
       - Format Dart code strictly using `dart format`.
       - Format Rust code strictly using `cargo fmt`.
+      - Keep hand-written Dart source files at or below 800 lines. Split a
+        screen into one file per section under the owning feature's
+        `presentation/widgets/` (one public widget class per file), and extend
+        an existing util file instead of adding a new one. The CI size guard
+        checks the files a change touches; generated sources are exempt.
       - Use structured logging via the Dart `logger` package and the Rust `log`
         crate instead of `print`, `debugPrint` or ad-hoc log files. Never log
         secrets or message payloads.
@@ -180,8 +192,15 @@ context: |
       - Icon-only controls need a tooltip and a semantic label. State must not
         be conveyed by colour alone; status colours come from the theme's colour
         scheme.
-      - Global state (active cluster, settings) is accessed through
-        `ActiveConnectionController` or `getIt`.
+      - State lifetime: session-wide state (active cluster and profile,
+        cluster list, TLS transition, main navigation, multi search, topic,
+        schema, script, script-run and consumer-group directory) is registered
+        once per app session and reached through a constructor parameter whose
+        default is the container (`widget.x ?? getIt<T>()`). Anything that
+        belongs to a single screen or dialog is view-owned. A presentation
+        source must not look session-wide state up from the container outside
+        such a constructor-parameter default; `scripts/quality_gates.sh`
+        enforces this on the files a change touches.
 
     - Localization:
       - All user-facing strings must be localized using `AppLocalizations` (via
@@ -195,8 +214,14 @@ context: |
          test --workspace` (in `rust/`)
       2. `flutter_rust_bridge_codegen generate`
       3. `dart run build_runner build` (regenerates the checked-in bridge mocks)
-      4. `flutter analyze`, `flutter test`
+      4. `dart format --output=none --set-exit-if-changed lib test`,
+         `flutter analyze`, `flutter test`
       5. `scripts/check_read_only.sh`
+      6. `scripts/quality_gates.sh` runs the CI gate checks in one call (dart
+         format, flutter analyze, cargo fmt --check, source-file size guard,
+         session-wide state locator guard) and stops at the first finding.
+         clippy is not part of it yet: it joins with `-D warnings` only once the
+         change `enable-rust-lint-gate` lands.
 
 # Per-artifact generation rules
 rules:
@@ -238,9 +263,11 @@ rules:
       and keep previously stored data (profiles, saved searches, scripts,
       reports) loadable.
     - >-
-      Status Access: For accessing global state (like the active cluster or
-      settings), prefer using ActiveConnectionController or getIt over deep
-      prop-drilling unless a widget is purely presentational.
+      Status Access: Reach session-wide state through a constructor parameter
+      that defaults to the container (`widget.x ?? getIt<T>()`) instead of deep
+      prop-drilling; state belonging to one screen or dialog stays view-owned.
+      `watch_it` may keep a screen subscribed to the session-wide object it
+      renders.
     - >-
       Detail design choices, state flow, and any alternatives considered.
     - >-
@@ -288,6 +315,7 @@ rules:
       regenerating bridge code and mocks when rust/src/api/ changes, and for
       adding en and de ARB keys.
     - >-
-      End with a verification task: cargo fmt, cargo clippy, cargo test, flutter
-      analyze, flutter test and scripts/check_read_only.sh.
+      End with a verification task: scripts/quality_gates.sh, cargo fmt, cargo
+      clippy, cargo test, flutter analyze, flutter test and
+      scripts/check_read_only.sh.
 skillsScope: project

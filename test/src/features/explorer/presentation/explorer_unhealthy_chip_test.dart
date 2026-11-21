@@ -92,12 +92,9 @@ class _FakeProfileTools implements ClusterProfileTools {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await getIt.reset();
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   testWidgets(
     'sidebar shows unhealthy filter chip after showUnhealthyTopicsOnly and clears on delete',

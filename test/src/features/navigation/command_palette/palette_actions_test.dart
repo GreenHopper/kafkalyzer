@@ -96,7 +96,6 @@ void main() {
   late MainNavigationController nav;
 
   setUp(() async {
-    await getIt.reset();
     spyActive = _SpyActiveConnectionController();
     nav = MainNavigationController();
     getIt.registerSingleton<MainNavigationController>(nav);
@@ -113,9 +112,7 @@ void main() {
     getIt.registerSingleton<ScriptController>(_FakeScriptController());
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   Widget buildHost() {
     return MaterialApp(

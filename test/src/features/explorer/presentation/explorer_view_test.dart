@@ -90,7 +90,6 @@ void main() {
     mockSchemaController = FixedMockSchemaController();
 
     final getIt = GetIt.instance;
-    await getIt.reset();
     getIt.registerLazySingleton<Logger>(() => MockLogger());
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
     getIt.registerSingleton<ActiveConnectionController>(

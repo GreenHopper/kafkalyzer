@@ -1,4 +1,7 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+// The theme bridge takes legacy Material ThemeData until flex_color_scheme
+// migrates to package:material_ui (flex_color_scheme#310).
+// ignore: deprecated_member_use
 import 'package:flutter/material.dart' as legacy;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';

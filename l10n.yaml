@@ -2,3 +2,7 @@ arb-dir: lib/l10n
 template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
 output-dir: lib/l10n
+# gen-l10n still emits Global*Localizations, which Flutter 3.47+ marks
+# deprecated. There is no generated-code alternative yet, so the
+# generated files opt out of that lint.
+header-file: l10n_header.txt

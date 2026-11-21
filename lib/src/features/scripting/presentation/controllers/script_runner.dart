@@ -25,12 +25,26 @@ import 'package:kafkalyzer/src/utils/archive_safety.dart';
 enum StepStatus { pending, running, completed, error }
 
 class ScriptRunner extends ChangeNotifier {
-  final Logger _logger = getIt<Logger>();
+  final Logger _logger;
   final MultiSearchController _multiSearchController;
+  final ClusterListController _clusterController;
+  final TopicController _topicController;
+  final ScriptRepository _scriptRepository;
 
-  ScriptRunner({MultiSearchController? multiSearchController})
-    : _multiSearchController =
-          multiSearchController ?? getIt<MultiSearchController>();
+  /// Dependencies default to the application container; a test or the headless
+  /// runner passes its own.
+  ScriptRunner({
+    MultiSearchController? multiSearchController,
+    Logger? logger,
+    ClusterListController? clusterController,
+    TopicController? topicController,
+    ScriptRepository? scriptRepository,
+  }) : _multiSearchController =
+           multiSearchController ?? getIt<MultiSearchController>(),
+       _logger = logger ?? getIt<Logger>(),
+       _clusterController = clusterController ?? getIt<ClusterListController>(),
+       _topicController = topicController ?? getIt<TopicController>(),
+       _scriptRepository = scriptRepository ?? getIt<ScriptRepository>();
 
   /// Executes the given [script] with the provided [variableValues].
   ///
@@ -45,9 +59,6 @@ class ScriptRunner extends ChangeNotifier {
   /// 3. **Decoupling**: This runner is UI-agnostic. It relies on [MultiSearchController] for Kafka interactions.
   ///    It does not depend on BuildContext or specific UI widgets.
   MultiSearchController get multiSearchController => _multiSearchController;
-  final ClusterListController _clusterController =
-      getIt<ClusterListController>();
-  final TopicController _topicController = getIt<TopicController>();
 
   Map<String, String> _variableValues = {};
 
@@ -1115,7 +1126,7 @@ class ScriptRunner extends ChangeNotifier {
 
       // 2. Custom script directories
       try {
-        final scriptRepo = getIt<ScriptRepository>();
+        final scriptRepo = _scriptRepository;
         final scripts = await scriptRepo.getScripts();
         for (final script in scripts) {
           if (script.outputDirectory != null &&

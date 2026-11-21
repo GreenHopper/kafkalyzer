@@ -16,7 +16,6 @@ void main() {
     late TextEditingController controller;
 
     setUp(() async {
-      await getIt.reset();
       controller = TextEditingController();
     });
 

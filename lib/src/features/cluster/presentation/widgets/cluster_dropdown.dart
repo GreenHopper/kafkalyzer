@@ -14,6 +14,10 @@ class ClusterDropdown extends StatelessWidget {
   final bool isExpanded;
   final EdgeInsetsGeometry? contentPadding;
 
+  /// Session-wide controllers; null falls back to the application container.
+  final ClusterListController? clusterController;
+  final TopicController? topicController;
+
   const ClusterDropdown({
     super.key,
     required this.value,
@@ -22,12 +26,15 @@ class ClusterDropdown extends StatelessWidget {
     this.isDense = true,
     this.isExpanded = true,
     this.contentPadding,
+    this.clusterController,
+    this.topicController,
   });
 
   @override
   Widget build(BuildContext context) {
-    final clusterController = getIt<ClusterListController>();
-    final topicController = getIt<TopicController>();
+    final clusterController =
+        this.clusterController ?? getIt<ClusterListController>();
+    final topicController = this.topicController ?? getIt<TopicController>();
 
     return ListenableBuilder(
       listenable: Listenable.merge([clusterController, topicController]),

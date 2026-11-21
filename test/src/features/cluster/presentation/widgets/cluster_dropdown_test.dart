@@ -61,8 +61,6 @@ void main() {
   );
 
   setUp(() async {
-    await getIt.reset();
-
     getIt.registerSingleton<ClusterService>(MockClusterService());
     getIt.registerSingleton<KafkaMetadataService>(MockKafkaMetadataService());
 

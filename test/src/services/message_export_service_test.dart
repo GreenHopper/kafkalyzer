@@ -45,7 +45,6 @@ void main() {
   late String tempDir;
 
   setUp(() async {
-    await getIt.reset();
     getIt.registerSingleton<Logger>(
       Logger(printer: PrettyPrinter(methodCount: 0)),
     );

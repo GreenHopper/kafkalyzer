@@ -26,7 +26,13 @@ class QuickJumpDialog extends StatefulWidget {
     this.currentCluster,
     this.initialInput,
     this.onJump,
+    this.clusterController,
+    this.activeConnection,
   });
+
+  /// Session-wide state; null falls back to the application container.
+  final ClusterListController? clusterController;
+  final ActiveConnectionController? activeConnection;
 
   @override
   State<QuickJumpDialog> createState() => _QuickJumpDialogState();
@@ -47,10 +53,13 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
 
     if (widget.availableClusters != null) {
       _clusters = widget.availableClusters!;
-    } else if (getIt.isRegistered<ClusterListController>()) {
-      _clusters = getIt<ClusterListController>().clusters;
     } else {
-      _clusters = const [];
+      final clusterController =
+          widget.clusterController ??
+          (getIt.isRegistered<ClusterListController>()
+              ? getIt<ClusterListController>()
+              : null);
+      _clusters = clusterController?.clusters ?? const [];
     }
 
     _selectedCluster =
@@ -162,7 +171,8 @@ class _QuickJumpDialogState extends State<QuickJumpDialog> {
 
     // Default navigation logic via ActiveConnectionController
     if (getIt.isRegistered<ActiveConnectionController>()) {
-      final activeCtrl = getIt<ActiveConnectionController>();
+      final activeCtrl =
+          widget.activeConnection ?? getIt<ActiveConnectionController>();
       if (activeCtrl.activeProfile?.name != cluster.name) {
         await activeCtrl.connect(cluster);
       }

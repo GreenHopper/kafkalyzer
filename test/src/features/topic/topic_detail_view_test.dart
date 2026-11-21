@@ -296,9 +296,7 @@ void main() {
     getIt.registerSingleton<Logger>(Logger());
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(() {});
 
   testWidgets(
     'TopicDetailView clears messages on init and renders topic details',

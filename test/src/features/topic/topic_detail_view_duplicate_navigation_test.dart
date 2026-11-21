@@ -218,7 +218,6 @@ void main() {
   );
 
   setUp(() {
-    getIt.reset();
     fakeActiveController = _FakeActiveConnectionController();
     fakeActiveController.topic = testTopic;
     fakeActiveController.activeProfile = testProfile;
@@ -236,9 +235,7 @@ void main() {
     getIt.registerSingleton<Logger>(Logger());
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(() {});
 
   Widget buildTestView() {
     return MaterialApp(

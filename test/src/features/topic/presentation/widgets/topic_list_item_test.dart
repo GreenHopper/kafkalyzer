@@ -82,7 +82,6 @@ void main() {
   );
 
   setUp(() async {
-    await getIt.reset();
     getIt.registerLazySingleton<SchemaController>(() => MockSchemaController());
   });
 
