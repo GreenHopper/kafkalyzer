@@ -147,12 +147,15 @@ introduce.
 
 ## 7. Integration verification
 
-- [ ] 7.1 Run the full order and verify every step is green: `cargo fmt --all`,
+- [x] 7.1 Run the full order and verify every step is green: `cargo fmt --all`,
       `cargo clippy --workspace --all-targets`, `cargo test --workspace` (in
       `rust/`), `dart format --output=none --set-exit-if-changed lib test`,
       `flutter analyze`, `flutter test`, `scripts/check_read_only.sh` with no new
       exception, and `scripts/quality_gates.sh` including the new guard
-- [ ] 7.2 Spot-check the user-visible invariants on a running app
+- [ ] 7.2 Spot-check the user-visible invariants on a running app (2026-11-22:
+      everything else in group 7 is green — 1 363 Dart tests, clippy, analyze,
+      read-only gate, quality gates with the new guard; this one is the manual
+      pass the user runs in the app, so it stays open until confirmed there)
       (`flutter run -d linux`): topic list filters and favourites persist across a
       navigation round trip, the schema diff dialog shows associated topics or an
       unknown state, the cluster picker still marks clusters with cached topics,
