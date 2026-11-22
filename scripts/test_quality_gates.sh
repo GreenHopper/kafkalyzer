@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# Automated regression test for the session-wide state locator guard in
-# scripts/quality_gates.sh (OpenSpec change: remove-global-controller-state,
-# capability: static-analysis-gates).
+# Automated regression tests for the guards in scripts/quality_gates.sh: the
+# session-wide state locator guard (OpenSpec change: remove-global-controller-
+# state) and the feature import-cycle guard (OpenSpec change: break-feature-
+# cycles), both under the static-analysis-gates capability.
 #
 # The guard compares the worktree with a base revision, so every case runs
 # against a throwaway git repository with a known base.
@@ -69,6 +70,24 @@ void render() {
 }
 EOF
 
+    # Two more feature modules. alpha and beta import each other already at the
+    # base, so the import-cycle guard has a pre-existing cycle to tolerate.
+    mkdir -p "$TEMP_DIR/lib/src/features/beta/presentation/widgets"
+    mkdir -p "$TEMP_DIR/lib/src/features/gamma/presentation"
+    cat > "$TEMP_DIR/lib/src/features/alpha/presentation/alpha_imports_beta.dart" << 'EOF'
+import 'package:kafkalyzer/src/features/beta/presentation/widgets/beta_widget.dart';
+EOF
+    cat > "$TEMP_DIR/lib/src/features/beta/presentation/widgets/beta_widget.dart" << 'EOF'
+import 'package:kafkalyzer/src/features/alpha/presentation/alpha_view.dart';
+
+class BetaWidget {}
+EOF
+    cat > "$TEMP_DIR/lib/src/features/gamma/presentation/gamma_view.dart" << 'EOF'
+import 'package:kafkalyzer/src/features/alpha/presentation/alpha_view.dart';
+
+class GammaView {}
+EOF
+
     git_in add -A >/dev/null
     git_in commit -m base >/dev/null
     BASE_REF="$(git_in rev-parse HEAD)"
@@ -80,10 +99,14 @@ run_guard() {
     "$GATE_SCRIPT" locator-guard >/dev/null 2>&1
 }
 
+run_cycle_guard() {
+    "$GATE_SCRIPT" cycle-guard >/dev/null 2>&1
+}
+
 expect_pass() {
     local label="$1"
     echo -n "$label ... "
-    if run_guard; then
+    if "$RUNNER"; then
         pass
     else
         fail "$label should have passed"
@@ -93,12 +116,15 @@ expect_pass() {
 expect_reject() {
     local label="$1"
     echo -n "$label ... "
-    if run_guard; then
+    if "$RUNNER"; then
         fail "$label should have been rejected"
     else
         echo "OK (rejected as expected)"
     fi
 }
+
+# Which guard the next expect_* call runs; the locator guard is the default.
+RUNNER=run_guard
 
 echo "Running tests for the session-wide state locator guard..."
 
@@ -179,4 +205,44 @@ class WrappedWidget {
 EOF
 expect_pass "Test 9: wrapped null-safe container default is not an ambient lookup"
 
-echo "All locator guard tests passed."
+# OpenSpec change: break-feature-cycles (capability: feature-module-boundaries).
+# The cycle guard compares mutual reachability with the merge base, so the
+# fixture ships with an alpha<->beta cycle the guard must tolerate.
+echo "Running tests for the feature import-cycle guard..."
+RUNNER=run_cycle_guard
+
+build_repo
+expect_pass "Test 10: a cycle that already exists at the base passes"
+
+build_repo
+cat >> "$TEMP_DIR/lib/src/features/beta/presentation/widgets/beta_widget.dart" << 'EOF'
+
+import 'package:kafkalyzer/src/features/gamma/presentation/gamma_view.dart';
+EOF
+expect_reject "Test 11: an import that makes two modules mutually reachable fails"
+
+build_repo
+rm "$TEMP_DIR/lib/src/features/alpha/presentation/alpha_imports_beta.dart"
+expect_pass "Test 12: removing a cycle passes"
+
+build_repo
+cat > "$TEMP_DIR/lib/src/features/alpha/presentation/widgets/generated_bridge.g.dart" << 'EOF'
+import 'package:kafkalyzer/src/features/gamma/presentation/gamma_view.dart';
+EOF
+expect_pass "Test 13: generated source is exempt from the cycle graph"
+
+build_repo
+rm "$TEMP_DIR/lib/src/features/gamma/presentation/gamma_view.dart"
+build_repo
+rm "$TEMP_DIR/lib/src/features/gamma/presentation/gamma_view.dart"
+expect_pass "Test 14: deleting the source of a cycle edge passes"
+
+build_repo
+echo -n "Test 15: unresolvable base revision is a tooling error ... "
+if KAFKALYZER_BASE_REF="definitely-not-a-ref" run_cycle_guard; then
+    fail "a missing base revision must not report success"
+else
+    echo "OK (rejected as expected)"
+fi
+
+echo "All quality gate tests passed."

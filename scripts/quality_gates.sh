@@ -169,7 +169,113 @@ check_controller_locator() {
   return "$failed"
 }
 
+# OpenSpec change: break-feature-cycles (capability: feature-module-boundaries)
+#
+# A feature module may import another one in one direction only. The cycles that
+# already exist at the merge base are not reported - the guard forbids a pair of
+# modules that *becomes* mutually reachable, the same base-relative style the
+# size and locator guards use. Generated sources are exempt, with the same
+# exemption list the size guard uses.
+feature_files() {
+  # $1: revision, or empty for the worktree.
+  if [ -n "$1" ]; then
+    git ls-tree -r --name-only "$1" -- lib/src/features | grep -E '\.dart$' || true
+  else
+    # The worktree is what a contributor edits, so a deleted file is simply gone
+    # from the graph; find also covers files that are not tracked yet.
+    { find lib/src/features -name '*.dart' || true; } | sort
+  fi
+}
+
+# Prints one "from to file" line per cross-feature import. A file that cannot be
+# read is a tooling error, not a missing edge: a silently smaller graph would
+# report "no new cycle" for a repository the guard could not actually read.
+feature_edges() {
+  rev="$1"
+  unreadable=0
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    is_generated "$file" && continue
+    if [ -n "$rev" ]; then
+      if ! git cat-file -e "$rev:$file" 2>/dev/null; then
+        echo "cycle guard: $file is listed at $rev but cannot be read" >&2
+        unreadable=1
+        continue
+      fi
+      source_text="$(git show "$rev:$file")"
+    else
+      if [ ! -f "$file" ]; then
+        echo "cycle guard: $file is listed in the worktree but cannot be read" >&2
+        unreadable=1
+        continue
+      fi
+      source_text="$(cat "$file")"
+    fi
+    from="$(printf '%s\n' "$file" | sed -E 's#^lib/src/features/([^/]+)/.*#\1#')"
+    for to in $(printf '%s\n' "$source_text" |
+      { grep -oE "package:kafkalyzer/src/features/[A-Za-z0-9_]+/" || true; } |
+      sed -E 's#package:kafkalyzer/src/features/([A-Za-z0-9_]+)/#\1#' | sort -u); do
+      [ "$to" = "$from" ] && continue
+      echo "$from $to $file"
+    done
+  done < <(feature_files "$rev")
+  return "$unreadable"
+}
+
+# Warshall over the module set: at most a handful of modules, so the naive
+# closure is cheap and keeps the whole check inside the gate script.
+mutually_reachable_pairs() {
+  awk '
+    { e[$1 SUBSEP $2] = 1; mods[$1] = 1; mods[$2] = 1 }
+    END {
+      for (a in mods)
+        for (b in mods)
+          r[a SUBSEP b] = (a == b || (a SUBSEP b) in e) ? 1 : 0
+      for (k in mods)
+        for (i in mods)
+          for (j in mods)
+            if (r[i SUBSEP k] && r[k SUBSEP j]) r[i SUBSEP j] = 1
+      for (a in mods)
+        for (b in mods)
+          if (a < b && r[a SUBSEP b] && r[b SUBSEP a]) print a, b
+    }
+  '
+}
+
+check_feature_cycles() {
+  base="$(resolve_base)" || return 1
+
+  now_edges="$(feature_edges '')" || return 1
+  now_pairs="$(printf '%s\n' "$now_edges" | mutually_reachable_pairs | sort)"
+  base_edges="$(feature_edges "$base")" || return 1
+  base_pairs="$(printf '%s\n' "$base_edges" | mutually_reachable_pairs | sort)"
+
+  new_pairs="$(comm -23 <(printf '%s\n' "$now_pairs") <(printf '%s\n' "$base_pairs"))"
+  [ -z "$new_pairs" ] && return 0
+
+  failed=0
+  while IFS=' ' read -r a b; do
+    [ -n "$a" ] || continue
+    echo "cycle guard: $a and $b are mutually reachable and were not at $base" >&2
+    for pair in "$a $b" "$b $a"; do
+      set -- $pair
+      file="$(printf '%s\n' "$now_edges" | awk -v f="$1" -v t="$2" '$1==f && $2==t {print $3; exit}')"
+      echo "cycle guard:   $1 -> $2 via ${file:-an import no file lists}" >&2
+    done
+    echo "cycle guard: move the shared item to a shared module, or invert one direction" >&2
+    failed=1
+  done <<< "$new_pairs"
+  return "$failed"
+}
+
 # scripts/test_quality_gates.sh exercises one guard against a fixture repo.
+if [ "${1:-all}" = "cycle-guard" ]; then
+  echo "==> feature import-cycle guard (new mutual reachability)"
+  check_feature_cycles
+  echo "cycle guard passed"
+  exit 0
+fi
+
 if [ "${1:-all}" = "locator-guard" ]; then
   echo "==> session-wide state locator guard (presentation subtrees of touched features)"
   check_controller_locator
@@ -191,6 +297,9 @@ check_file_size
 
 echo "==> session-wide state locator guard (presentation subtrees of touched features)"
 check_controller_locator
+
+echo "==> feature import-cycle guard (new mutual reachability)"
+check_feature_cycles
 
 # Not enabled yet: cargo clippy --manifest-path rust/Cargo.toml --workspace
 # --all-targets -- -D warnings currently reports 30 pre-existing findings.
