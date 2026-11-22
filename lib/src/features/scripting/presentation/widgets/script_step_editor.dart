@@ -6,7 +6,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
-import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_selection_dialog.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_selection_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 

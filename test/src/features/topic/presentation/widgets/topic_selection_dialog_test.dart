@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_selection_dialog.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_selection_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:material_ui/material_ui.dart';
 
