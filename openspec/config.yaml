@@ -99,6 +99,13 @@ context: |
         source files.
       - Format Dart code strictly using `dart format`.
       - Format Rust code strictly using `cargo fmt`.
+      - Feature modules import each other in one direction only: no two feature
+        modules import each other, directly or through other feature modules. A
+        type needed by two features lives in a shared module (`lib/src/ui/`,
+        `lib/src/services/`, `lib/src/utils/`) or behind a port registered in
+        the composition root, it is not reached across the boundary. The CI
+        import-cycle guard rejects a pair of modules that becomes mutually
+        reachable; generated sources are exempt.
       - Keep hand-written Dart source files at or below 800 lines. Split a
         screen into one file per section under the owning feature's
         `presentation/widgets/` (one public widget class per file), and extend
@@ -219,7 +226,8 @@ context: |
       5. `scripts/check_read_only.sh`
       6. `scripts/quality_gates.sh` runs the CI gate checks in one call (dart
          format, flutter analyze, cargo fmt --check, source-file size guard,
-         session-wide state locator guard) and stops at the first finding.
+         session-wide state locator guard, feature import-cycle guard) and stops
+         at the first finding.
          clippy is not part of it yet: it joins with `-D warnings` only once the
          change `enable-rust-lint-gate` lands.
 
@@ -273,6 +281,11 @@ rules:
       one type next to each other, and it silences
       `clippy::too_many_arguments` by dropping arguments, not by adding an
       `allow`.
+    - >-
+      Module boundaries: when behaviour needs a type from another feature
+      module, the design says where the shared item moves to, and no new pair of
+      feature modules ends up mutually reachable. If an existing cycle stays in
+      place, the design states which one and why.
     - >-
       Status Access: Reach session-wide state through a constructor parameter
       that defaults to the container (`widget.x ?? getIt<T>()`) instead of deep

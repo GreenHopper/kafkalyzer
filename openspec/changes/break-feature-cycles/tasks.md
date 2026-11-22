@@ -102,44 +102,44 @@ introduce.
 
 ## 5. Import-cycle guard in the quality gate
 
-- [ ] 5.1 Add the guard to `scripts/quality_gates.sh`: build the feature module
+- [x] 5.1 Add the guard to `scripts/quality_gates.sh`: build the feature module
       graph from hand-written sources in the worktree and at the merge base, and
       fail when a pair of modules becomes mutually reachable, naming the modules
       on the new cycle and the touched source; verify `bash
       scripts/quality_gates.sh` passes on this branch and that the guard reports
       zero new cycles
-- [ ] 5.2 Fail closed on tooling problems: reuse the existing base-resolution
+- [x] 5.2 Fail closed on tooling problems: reuse the existing base-resolution
       helper so a missing base revision, a missing merge base or an unresolvable
       touched source produce a named error instead of a pass; verify by running
       the guard with `KAFKALYZER_BASE_REF` pointed at a nonexistent ref
-- [ ] 5.3 Keep the generated-source exemption identical to the size guard
+- [x] 5.3 Keep the generated-source exemption identical to the size guard
       (`*.g.dart`, `*.freezed.dart`, `lib/src/rust/*`, `lib/l10n/*`) and verify by
       adding a generated-shaped import in a scratch fixture run
-- [ ] 5.4 Add fixture cases to `scripts/test_quality_gates.sh`: new cycle fails,
+- [x] 5.4 Add fixture cases to `scripts/test_quality_gates.sh`: new cycle fails,
       removed cycle passes, pre-existing cycle untouched passes, generated source
       exempt, unresolvable source is a tooling error; verify `bash
       scripts/test_quality_gates.sh` exits 0 and prints each case name
-- [ ] 5.5 Confirm the CI job needs no workflow edit and verify that
+- [x] 5.5 Confirm the CI job needs no workflow edit and verify that
       `.github/workflows/build.yml` still runs `bash scripts/quality_gates.sh` in
       the `quality-gates` job, and that a locally failing guard is the same check
       the pipeline reports
 
 ## 6. Rules and documentation
 
-- [ ] 6.1 Add the dependency-direction rule to `context` (Code Quality & Style)
+- [x] 6.1 Add the dependency-direction rule to `context` (Code Quality & Style)
       in `openspec/config.yaml`: one direction per feature pair, an item used by
       two or more features lives once in a shared module, a reverse need is met by
       relocating the item or by a narrow port; verify the YAML still parses and
       `openspec instructions proposal --change break-feature-cycles --json`
       returns the updated context
-- [ ] 6.2 Add the import-cycle guard to the enumerated check list in
+- [x] 6.2 Add the import-cycle guard to the enumerated check list in
       `context.Verification` step 6 of `openspec/config.yaml` and verify the list
       matches the checks `scripts/quality_gates.sh` actually runs
-- [ ] 6.3 Add one `rules.design` entry in `openspec/config.yaml`: a change must not
+- [x] 6.3 Add one `rules.design` entry in `openspec/config.yaml`: a change must not
       add a feature import cycle and must state where a relocated item goes;
       verify `openspec instructions design --change break-feature-cycles --json`
       lists it
-- [ ] 6.4 Update `design/code-quality-refactoring-backlog.md`: mark Q-6 in the
+- [x] 6.4 Update `design/code-quality-refactoring-backlog.md`: mark Q-6 in the
       section 8 table as implemented by this change, replace the section 5 edge
       matrix and cycle list with the post-change numbers, and record the new guard
       in the section 2 result style; verify the matrix in the document matches the

@@ -203,19 +203,38 @@ Next tier by absolute gaps: `settings_view.dart` 228 uncovered (74 %), `script_r
 
 ## 5. Feature dependency graph (evidence for Q-6)
 
-Directed import count, feature → feature:
+Post-change numbers (2026-11-22, after `break-feature-cycles`). The matrix as it
+was found, and the measurement after every step of the change, are in
+`openspec/changes/break-feature-cycles/baseline-feature-graph.md`.
+
+Directed import count, feature → feature (one count per importing file):
 
 ```text
-cluster → topic 6      consumer → cluster 2      consumer → navigation 1
-explorer → cluster 7   explorer → navigation 1   explorer → schema 3   explorer → topic 9
-navigation → cluster 2 navigation → topic 1      schema → topic 2
-scripting → cluster 6  scripting → navigation 1  scripting → schema 2  scripting → search 8  scripting → topic 2
-search → topic 2       topic → cluster 8         topic → schema 7      topic → scripting 1   topic → search 6
-settings → cluster 7   settings → search 1
+consumer → cluster 2     consumer → navigation 1    explorer → cluster 5
+explorer → navigation 1  explorer → schema 4        explorer → topic 5
+navigation → cluster 1   navigation → topic 1       scripting → cluster 4
+scripting → navigation 1 scripting → schema 2       scripting → search 3
+scripting → topic 2      settings → cluster 5       settings → search 1
+topic → cluster 4        topic → schema 4           topic → search 2
 ```
 
-**Cycles:** cluster↔topic, topic↔schema, topic↔search, scripting→search→topic→scripting.
-Reproduce: `for a in <features>; do for b in <features>; do grep -rc "features/$b/" lib/src/features/$a; done; done`.
+18 one-directional pairs, 48 importing files. **Cycles: none** — `cluster` and
+`schema` import no other feature at all.
+Reproduce: `bash scripts/quality_gates.sh cycle-guard`, which walks the same
+imports and compares mutual reachability with the merge base.
+
+**Result (change `break-feature-cycles`):**
+
+| Cycle | How it broke |
+|---|---|
+| `scripting ↔ topic` | the scan-step status enum moved to `lib/src/ui/topic_progress_tile.dart`, the consume-stream seam to `lib/src/services/message_consume_stream.dart`, and the topic selection dialog to `topic` |
+| `topic ↔ search` | same: the dialog and the consume-stream seam are no longer owned by `search` |
+| `topic ↔ schema` | the schema dialogs ask a `TopicNameSource` port for the topic names instead of importing `TopicController` |
+| `cluster ↔ topic` | topic-list query/filter/sort/favourite state moved from `ActiveConnectionController` into `TopicController`, per-topic controllers into `TopicViewControllerRegistry`, and cluster code now asks for the `TopicStore` port |
+
+`scripts/quality_gates.sh` gained an import-cycle guard: it rejects a pair of
+feature modules that becomes mutually reachable relative to the merge base, with
+generated sources exempt. Without it the graph drifts back within a week.
 
 ---
 
@@ -252,4 +271,4 @@ Total for Tier 1: **about 2.5 working days** if done by one person, sequentially
 
 Each Tier 1/2 ID maps to one OpenSpec change. Suggested names (use `openspec/changes/<name>/`):
 
-`ci-quality-gates` (Q-1) · `split-god-widgets` (Q-2) · `remove-global-controller-state` (Q-3, implemented) · `rust-ffi-parameter-objects` (Q-4, implemented) · `enable-rust-lint-gate` (Q-4 follow-up: re-add `cargo clippy --workspace --all-targets -- -D warnings` to `scripts/quality_gates.sh`; unblocked 2026-08-10 now that the workspace is clean) · `cover-test-gaps` (Q-5, implemented) · `break-feature-cycles` (Q-6) · `relocate-messages-feature` (Q-7) · `relocate-feature-services` (Q-8) · `verify-generated-bindings` (Q-9) · `material-ui-migration-tracking` (Q-10) · `ci-kafka-integration-tests` (Q-11).
+`ci-quality-gates` (Q-1) · `split-god-widgets` (Q-2) · `remove-global-controller-state` (Q-3, implemented) · `rust-ffi-parameter-objects` (Q-4, implemented) · `enable-rust-lint-gate` (Q-4 follow-up: re-add `cargo clippy --workspace --all-targets -- -D warnings` to `scripts/quality_gates.sh`; unblocked 2026-08-10 now that the workspace is clean) · `cover-test-gaps` (Q-5, implemented) · `break-feature-cycles` (Q-6, implemented) · `relocate-messages-feature` (Q-7) · `relocate-feature-services` (Q-8) · `verify-generated-bindings` (Q-9) · `material-ui-migration-tracking` (Q-10) · `ci-kafka-integration-tests` (Q-11).
