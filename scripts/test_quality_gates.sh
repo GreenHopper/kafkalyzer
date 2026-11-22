@@ -150,4 +150,33 @@ else
     echo "OK (rejected as expected)"
 fi
 
+# OpenSpec change: split-god-widgets follow-up. A file split moves an existing
+# lookup into a file that did not exist at the merge base; that is a move, not a
+# gain, and must not fail the gate.
+build_repo
+cat > "$TEMP_DIR/lib/src/features/alpha/presentation/widgets/already_oversized.dart" << 'EOF'
+void buildSomething() {}
+EOF
+cat > "$TEMP_DIR/lib/src/features/alpha/presentation/widgets/moved_into_new_file.dart" << 'EOF'
+void buildSomethingElse() {
+  final foo = getIt<FooController>();
+}
+EOF
+expect_pass "Test 8: lookup moved into a new file in the same subtree passes"
+
+# dart format wraps `x ?? (getIt.isRegistered<T>() ? getIt<T>() : null)` over
+# several lines; the allowed default must survive that wrapping.
+build_repo
+cat > "$TEMP_DIR/lib/src/features/alpha/presentation/widgets/wrapped_default.dart" << 'EOF'
+class WrappedWidget {
+  WrappedWidget({BarController? bar}) : _bar = bar ??
+      (getIt.isRegistered<BarController>()
+          ? getIt<BarController>()
+          : null);
+
+  final BarController? _bar;
+}
+EOF
+expect_pass "Test 9: wrapped null-safe container default is not an ambient lookup"
+
 echo "All locator guard tests passed."

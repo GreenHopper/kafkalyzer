@@ -76,7 +76,10 @@ check_file_size() {
 #
 # Session-wide state is enumerated in the composition root. A presentation
 # source must receive it from its caller instead of picking it up from the
-# container, so a change may not add such a lookup.
+# container, so a change may not increase the ambient lookups of a feature's
+# presentation subtree. The count is taken per subtree rather than per file so
+# splitting a screen into section widgets - which moves an existing lookup into a
+# file that did not exist at the merge base - does not read as a new lookup.
 SESSION_STATE_FILE=lib/src/dependency_injection.dart
 
 session_state_types() {
@@ -84,9 +87,13 @@ session_state_types() {
     { grep -oE '^  [A-Za-z][A-Za-z0-9_]*' || true; } | tr -d ' '
 }
 
-# Counts one session type's container lookups, ignoring the ones written as a
-# constructor-parameter default (`x ?? getIt<Type>()`), which the capability
-# allows and which is how callers keep their call sites unchanged.
+# Counts one session type's container lookups. Two shapes are allowed and are
+# removed before counting, because the capability lets a caller keep its call
+# sites unchanged by defaulting a parameter to the container:
+#   `x ?? getIt<Type>()`
+#   `x ?? (getIt.isRegistered<Type>() ? getIt<Type>() : null)`
+# Both are flattened to one line first, since dart format wraps them freely and
+# a line-based filter would count an allowed default as an ambient lookup.
 count_lookups() {
   {
     if [ "$1" = "-" ]; then
@@ -94,8 +101,34 @@ count_lookups() {
     else
       cat "$1"
     fi
-  } | { grep -vE '\?\? *getIt<' || true; } |
+  } | tr '\n' ' ' |
+    sed -E \
+      -e 's/\([[:space:]]*getIt\.isRegistered<[A-Za-z0-9_]+>\(\)[[:space:]]*\?[[:space:]]*getIt<[A-Za-z0-9_]+>\(\)[[:space:]]*:[[:space:]]*null[[:space:]]*\)/container_default/g' \
+      -e 's/\?\?[[:space:]]*getIt<[A-Za-z0-9_]+>\(\)/container_default/g' |
     { grep -oE "getIt<($2)>" || true; } | wc -l
+}
+
+# Sums the lookups of one session type across a source tree. $1 is the revision,
+# or empty for the worktree; the worktree side is what a contributor edits.
+count_tree_lookups() {
+  rev="$1"
+  dir="$2"
+  type="$3"
+  total=0
+  if [ -n "$rev" ]; then
+    while IFS= read -r file; do
+      [ -n "$file" ] || continue
+      is_generated "$file" && continue
+      total=$((total + $(git show "$rev:$file" | count_lookups - "$type")))
+    done < <(git ls-tree -r --name-only "$rev" -- "$dir")
+  else
+    [ -d "$dir" ] || { echo 0; return; }
+    while IFS= read -r file; do
+      is_generated "$file" && continue
+      total=$((total + $(count_lookups "$file" "$type")))
+    done < <(find "$dir" -name '*.dart' | sort)
+  fi
+  echo "$total"
 }
 
 check_controller_locator() {
@@ -111,28 +144,24 @@ check_controller_locator() {
     return 1
   fi
 
-  files="$(
+  features="$(
     {
       git diff --name-only --diff-filter=d "$base"
       git ls-files -o --exclude-standard
-    } | grep -E '^lib/src/features/[^/]+/presentation/.*\.dart$' | sort -u || true
+    } | grep -E '^lib/src/features/[^/]+/presentation/' |
+      sed -E 's#^lib/src/features/([^/]+)/presentation/.*#\1#' | sort -u || true
   )"
-  [ -z "$files" ] && return 0
+  [ -z "$features" ] && return 0
 
   failed=0
-  for file in $files; do
-    is_generated "$file" && continue
-    [ -f "$file" ] || continue
-    if git cat-file -e "$base:$file" 2>/dev/null; then
-      base_body="$(git show "$base:$file")"
-    else
-      base_body="" # new file: nothing existed at the base
-    fi
+  for feature in $features; do
+    dir="lib/src/features/$feature/presentation"
     for type in $types; do
-      before="$(printf '%s\n' "$base_body" | count_lookups - "$type")"
-      now="$(count_lookups "$file" "$type")"
+      before="$(count_tree_lookups "$base" "$dir" "$type")"
+      now="$(count_tree_lookups '' "$dir" "$type")"
       if [ "$now" -gt "$before" ]; then
-        echo "locator guard: $file adds a container lookup of session-wide $type ($before at $base, now $now)" >&2
+        echo "locator guard: $dir gains a container lookup of session-wide $type ($before at $base, now $now)" >&2
+        echo "locator guard: receive it as a constructor parameter instead; a lookup that only moved to another file inside $dir does not count as a gain" >&2
         failed=1
       fi
     done
@@ -142,7 +171,7 @@ check_controller_locator() {
 
 # scripts/test_quality_gates.sh exercises one guard against a fixture repo.
 if [ "${1:-all}" = "locator-guard" ]; then
-  echo "==> session-wide state locator guard (changed files only)"
+  echo "==> session-wide state locator guard (presentation subtrees of touched features)"
   check_controller_locator
   echo "locator guard passed"
   exit 0
@@ -160,7 +189,7 @@ cargo fmt --all --manifest-path rust/Cargo.toml --check
 echo "==> source file size guard (limit $MAX_LINES lines, changed files only)"
 check_file_size
 
-echo "==> session-wide state locator guard (changed files only)"
+echo "==> session-wide state locator guard (presentation subtrees of touched features)"
 check_controller_locator
 
 # Not enabled yet: cargo clippy --manifest-path rust/Cargo.toml --workspace
