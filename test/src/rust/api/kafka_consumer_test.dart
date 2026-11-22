@@ -1,5 +1,5 @@
 import 'package:kafkalyzer/src/features/search/models/topic_search_preset.dart';
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
+import 'package:kafkalyzer/src/services/message_consume_stream.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
