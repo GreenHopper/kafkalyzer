@@ -1,4 +1,5 @@
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
@@ -25,6 +26,18 @@ Future<void> awaitIsolates(WidgetTester tester) async {
   }
   await tester.pumpAndSettle();
 }
+
+/// Stands in for the topic-name port: the dialogs only ask for the names.
+class _Names implements TopicNameSource {
+  const _Names(this.names);
+  final List<String>? names;
+  @override
+  List<String>? topicNames(ClusterProfile profile) => names;
+}
+
+/// The topic list is treated as not loaded unless a test says otherwise.
+const _names = _Names(null);
+
 
 void main() {
   setUpAll(() {
@@ -79,6 +92,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: SchemaViewerDialog(
+            topicNames: _names,
             profile: testProfile,
             topicName: 'test-topic',
             controller: mockController,
@@ -103,6 +117,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: SchemaViewerDialog(
+            topicNames: _names,
             profile: testProfile,
             topicName: 'test-topic',
             controller: mockController,
@@ -166,6 +181,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: SchemaViewerDialog(
+            topicNames: _names,
             profile: testProfile,
             topicName: 'test-topic',
             controller: mockController,
@@ -192,6 +208,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: SchemaViewerDialog(
+            topicNames: _names,
             profile: testProfile,
             topicName: 'test-topic',
             controller: mockController,
@@ -216,6 +233,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: SchemaViewerDialog(
+            topicNames: _names,
             profile: testProfile,
             topicName: 'test-topic',
             controller: mockController,
@@ -246,6 +264,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('de'),
           home: SchemaViewerDialog(
+            topicNames: _names,
             profile: testProfile,
             topicName: 'test-topic',
             controller: mockController,
@@ -283,6 +302,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('de'),
           home: SchemaViewerDialog(
+            topicNames: _names,
             profile: testProfile,
             topicName: 'test-topic',
             controller: mockController,
@@ -347,10 +367,10 @@ void main() {
                     showDialog<void>(
                       context: context,
                       builder: (_) => SchemaViewerDialog(
+                        topicNames: const _Names(['orders']),
                         profile: testProfile,
                         initialSubject: 'orders-value',
                         controller: mockController,
-                        availableTopics: const ['orders'],
                         onNavigateToTopic: navigated.add,
                       ),
                     );
@@ -377,6 +397,70 @@ void main() {
 
         expect(navigated, ['orders']);
         expect(find.byType(SchemaViewerDialog), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'unknown topic list still lists associated topics and does not claim they are missing',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(
+          mockController.fetchSchemaVersions(any, 'orders-value'),
+        ).thenAnswer((_) async => [1]);
+        when(
+          mockController.fetchSubjectSchemaView(
+            any,
+            'orders-value',
+            version: 1,
+          ),
+        ).thenAnswer(
+          (_) async => const api.SubjectSchemaViewDto(
+            schema: api.SubjectSchemaDto(
+              subject: 'orders-value',
+              version: 1,
+              id: 10,
+              schemaType: api.SchemaKindDto.protobuf,
+              schema: 'syntax = "proto3"; message Order {}',
+              references: [],
+            ),
+            fields: api.SchemaFieldModelDto(
+              kind: api.SchemaKindDto.protobuf,
+              messages: ['Order'],
+              fields: [],
+              truncated: false,
+            ),
+          ),
+        );
+        when(
+          mockController.getAssociatedTopics('orders-value', <String>[]),
+        ).thenAnswer((_) async => ['orders', 'missing-topic']);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: SchemaViewerDialog(
+              topicNames: _names,
+              profile: testProfile,
+              initialSubject: 'orders-value',
+              controller: mockController,
+              onNavigateToTopic: (_) {},
+            ),
+          ),
+        );
+        await awaitIsolates(tester);
+
+        // Unknown is shown as unknown: the names stay plain chips instead of
+        // the "not on cluster" claim an empty list would produce.
+        expect(find.text('missing-topic'), findsOneWidget);
+        expect(find.textContaining('(not on cluster)'), findsNothing);
+        expect(
+          find.byKey(const Key('associated_topic_open_orders')),
+          findsNothing,
+        );
       },
     );
 
@@ -464,10 +548,10 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: SchemaViewerDialog(
+              topicNames: const _Names(['orders']),
               profile: testProfile,
               initialSubject: 'orders-value',
               controller: mockController,
-              availableTopics: const ['orders'],
             ),
           ),
         );

@@ -22,6 +22,7 @@ import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/topic_config_service.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
@@ -132,6 +133,10 @@ void setupCoreServices({ErrorReporter? errorReporter}) {
   );
   getIt.registerLazySingleton<LocalSchemaAssignmentService>(
     () => LocalSchemaAssignmentService(),
+  );
+  // The topic names the schema dialogs show, answered from the topic cache.
+  getIt.registerLazySingleton<TopicNameSource>(
+    () => CachedTopicNames(getIt<TopicController>()),
   );
 }
 

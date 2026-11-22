@@ -76,3 +76,45 @@ MUTUALLY-REACHABLE PAIRS (direct): 4
   That is why the guard grandfathers by reachability rather than by edge count.
 - `topic` is on every cycle: 12 edges out of it, 21 into it.
 - Target after this change: 0 cycles, and the directions listed in design.md D1.
+
+## After group 2 — the small moves (tasks 2.1–2.4)
+
+from\to    cluster consumer explorer navigati   schema scriptin   search settings    topic     total
+cluster           0        0        0        0        0        0        0        0        2        2
+consumer          2        0        0        1        0        0        0        0        0        3
+explorer          5        0        0        1        4        0        0        0        5       15
+navigation        1        0        0        0        0        0        0        0        1        2
+schema            0        0        0        0        0        0        0        0        2        2
+scripting         4        0        0        1        2        0        3        0        2       12
+search            0        0        0        0        0        0        0        0        0        0
+settings          5        0        0        0        0        0        1        0        0        6
+topic             4        0        0        0        4        0        2        0        0       10
+TOTAL EDGES 52
+CYCLES:
+  cluster -> topic -> cluster
+  schema -> topic -> schema
+MUTUALLY-REACHABLE PAIRS (direct): 2
+   cluster <-> topic
+   schema <-> topic
+
+Two cycles left: `cluster↔topic` (group 4) and `topic↔schema` (group 3).
+
+## After group 3 — the schema dialogs behind the topic-name port
+
+from\to    cluster consumer explorer navigati   schema scriptin   search settings    topic     total
+cluster           0        0        0        0        0        0        0        0        2        2
+consumer          2        0        0        1        0        0        0        0        0        3
+explorer          5        0        0        1        4        0        0        0        5       15
+navigation        1        0        0        0        0        0        0        0        1        2
+schema            0        0        0        0        0        0        0        0        0        0
+scripting         4        0        0        1        2        0        3        0        2       12
+search            0        0        0        0        0        0        0        0        0        0
+settings          5        0        0        0        0        0        1        0        0        6
+topic             4        0        0        0        4        0        2        0        0       10
+TOTAL EDGES 50
+CYCLES:
+  cluster -> topic -> cluster
+MUTUALLY-REACHABLE PAIRS (direct): 1
+   cluster <-> topic
+
+One cycle left: `cluster↔topic` (group 4).

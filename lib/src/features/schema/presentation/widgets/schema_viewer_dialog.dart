@@ -1,11 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
 
 class _ViewerTarget {
   final String? topicName;
@@ -27,7 +26,7 @@ class SchemaViewerDialog extends StatefulWidget {
   final ValueChanged<String>? onPinToColumn;
   final ValueChanged<String>? onFilterByField;
   final ValueChanged<String>? onNavigateToTopic;
-  final List<String>? availableTopics;
+  final TopicNameSource topicNames;
 
   const SchemaViewerDialog({
     super.key,
@@ -39,7 +38,7 @@ class SchemaViewerDialog extends StatefulWidget {
     this.onPinToColumn,
     this.onFilterByField,
     this.onNavigateToTopic,
-    this.availableTopics,
+    required this.topicNames,
   }) : assert(topicName != null || initialSubject != null);
 
   @override
@@ -51,7 +50,7 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
   late _ViewerTarget _current;
 
   List<String> _associatedTopics = const [];
-  List<String> _knownClusterTopics = const [];
+  List<String>? _knownClusterTopics;
   bool _isLoadingAssociatedTopics = false;
   Object? _associatedTopicsError;
 
@@ -66,25 +65,17 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
     _loadAssociatedTopics();
   }
 
-  List<String> _resolveAvailableTopics() {
-    if (widget.availableTopics != null) {
-      return widget.availableTopics!;
-    }
-    if (getIt.isRegistered<TopicController>()) {
-      final topics = getIt<TopicController>().getTopics(widget.profile);
-      if (topics != null) {
-        return topics.map((t) => t.name).toList();
-      }
-    }
-    return const [];
-  }
+  /// `null` means the cluster topic list is not loaded, which is not the same
+  /// as a cluster without topics.
+  List<String>? _resolveAvailableTopics() =>
+      widget.topicNames.topicNames(widget.profile);
 
   Future<void> _loadAssociatedTopics() async {
     final subject = _current.subject;
     if (subject == null) {
       setState(() {
         _associatedTopics = const [];
-        _knownClusterTopics = const [];
+        _knownClusterTopics = null;
         _isLoadingAssociatedTopics = false;
         _associatedTopicsError = null;
       });
@@ -101,7 +92,7 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
     try {
       final associated = await widget.controller.getAssociatedTopics(
         subject,
-        available,
+        available ?? const [],
       );
       if (!mounted) return;
       setState(() {
@@ -288,7 +279,8 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           for (final topic in _associatedTopics)
-            if (_knownClusterTopics.contains(topic) &&
+            if (_knownClusterTopics != null &&
+                _knownClusterTopics!.contains(topic) &&
                 widget.onNavigateToTopic != null)
               ActionChip(
                 key: Key('associated_topic_open_$topic'),
@@ -308,10 +300,12 @@ class _SchemaViewerDialogState extends State<SchemaViewerDialog> {
                   color: colorScheme.outline,
                 ),
                 label: Text(
-                  _knownClusterTopics.contains(topic)
+                  _knownClusterTopics == null
                       ? topic
-                      : (l10n?.schemaViewerTopicNotOnCluster(topic) ??
-                            '$topic (not on cluster)'),
+                      : (_knownClusterTopics!.contains(topic)
+                            ? topic
+                            : (l10n?.schemaViewerTopicNotOnCluster(topic) ??
+                                  '$topic (not on cluster)')),
                   style: TextStyle(color: colorScheme.outline),
                 ),
               ),

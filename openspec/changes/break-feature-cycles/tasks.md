@@ -25,50 +25,50 @@ introduce.
 
 ## 2. Shared items with one definition
 
-- [ ] 2.1 Move the scan-step status enum from the scripting runner to the shared
+- [x] 2.1 Move the scan-step status enum from the scripting runner to the shared
       progress widget file and update the six importers, including the headless
       script runner; verify `flutter analyze` is clean and
       `flutter test test/src/features/scripting test/src/features/topic
       test/src/ui` passes with no assertion changed
-- [ ] 2.2 Move the consume-stream factory typedef and the bridge request wrapper
+- [x] 2.2 Move the consume-stream factory typedef and the bridge request wrapper
       from the per-topic stream controller into a new file in the shared services
       module, and point the topic and search controllers at it; verify
       `flutter analyze` is clean, that the new file contains no
       `src/features/` import, and that `flutter test test/src/features/search
       test/src/features/topic` passes
-- [ ] 2.3 Move the environment badge and the insecure-TLS badge (with their
+- [x] 2.3 Move the environment badge and the insecure-TLS badge (with their
       palette helper) to the shared widgets directory and rewrite the imports in
       `cluster`, `explorer`, `settings` and `topic`; verify the badge tests
       `test/src/features/cluster/presentation/widgets/insecure_tls_badge_test.dart`
       and `cluster_ergonomics_widgets_test.dart` pass and that no
       `features/cluster/` import remains in `topic` presentation widgets
-- [ ] 2.4 Move the topic selection dialog and its test from the search feature to
+- [x] 2.4 Move the topic selection dialog and its test from the search feature to
       the topic feature's widgets and update the script step editor import; verify
       `flutter test test/src/features/search/presentation/widgets` passes from its
       new path and that the search feature has no `features/topic/` import left
-- [ ] 2.5 Re-run the matrix from 1.1 and verify the `topic↔scripting`,
+- [x] 2.5 Re-run the matrix from 1.1 and verify the `topic↔scripting`,
       `scripting→search→topic→scripting` and `search→topic` edges are gone while
       `flutter analyze` and `flutter test` stay green
 
 ## 3. Schema dialogs behind a topic-name port
 
-- [ ] 3.1 Add the read-only topic-name port (known topic names for a profile, or
+- [x] 3.1 Add the read-only topic-name port (known topic names for a profile, or
       unknown when not loaded) to the shared services module and implement it in
       the topic feature over its own controller; verify a unit test covers both
       the loaded and the not-loaded answer
-- [ ] 3.2 Wire the implementation once in the composition root next to the other
+- [x] 3.2 Wire the implementation once in the composition root next to the other
       stateless services and verify that the registration list still contains
       exactly the enumerated session-wide state types, so
       `bash scripts/quality_gates.sh locator-guard` passes unchanged
-- [ ] 3.3 Replace the container lookup of the session-wide topic controller in the
+- [x] 3.3 Replace the container lookup of the session-wide topic controller in the
       schema diff and schema viewer dialogs with the port, make the topic-name
       input required, and update the two production callers and the dialog tests;
       verify `flutter test test/src/features/schema/presentation/widgets` passes
       and that neither dialog contains a `getIt.isRegistered` lookup
-- [ ] 3.4 Add the unknown-input case to the associated-topics test and verify the
+- [x] 3.4 Add the unknown-input case to the associated-topics test and verify the
       dialog presents the not-loaded state as unknown rather than as an empty
       association list, matching the existing failure-case presentation
-- [ ] 3.5 Re-run the matrix and verify the `topic↔schema` cycle is gone and that
+- [x] 3.5 Re-run the matrix and verify the `topic↔schema` cycle is gone and that
       `schema` has no import of any `topic` source
 
 ## 4. Topic view state out of the connection controller

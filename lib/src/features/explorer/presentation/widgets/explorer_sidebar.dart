@@ -226,6 +226,7 @@ class _ExplorerSidebarState extends State<ExplorerSidebar> {
                         profile: activeProfile,
                         initialSubject: subject,
                         controller: schemaController,
+                        topicNames: CachedTopicNames(topicController),
                         onNavigateToTopic: (topicName) {
                           openTopicByNameWithFeedback(
                             controller: activeController,

@@ -17,6 +17,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewe
 import 'package:kafkalyzer/src/features/schema/utils/schema_simplifier.dart';
 import 'package:kafkalyzer/src/features/schema/utils/schema_type_labels.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
@@ -535,6 +536,7 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
         initialBaseVersion: _selectedVersion,
         initialCompareVersion: _selectedVersion,
         controller: _controller,
+        topicNames: getIt<TopicNameSource>(),
         onNavigateToTopic: widget.onNavigateToTopic,
       ),
     );
@@ -807,6 +809,7 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
         initialSubject: ref.subject,
         initialVersion: ref.version,
         controller: _controller,
+        topicNames: getIt<TopicNameSource>(),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_diff_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
@@ -12,6 +13,18 @@ import 'package:mockito/mockito.dart';
 
 @GenerateMocks([SchemaController])
 import 'schema_diff_dialog_test.mocks.dart';
+
+/// Stands in for the topic-name port: the dialogs only ask for the names.
+class _Names implements TopicNameSource {
+  const _Names(this.names);
+  final List<String>? names;
+  @override
+  List<String>? topicNames(ClusterProfile profile) => names;
+}
+
+/// The topic list is treated as not loaded unless a test says otherwise.
+const _names = _Names(null);
+
 
 void main() {
   setUpAll(() {
@@ -79,6 +92,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           SchemaDiffDialog(
+            topicNames: _names,
             profile: testProfile,
             subject: 'test-topic-value',
             controller: mockController,
@@ -133,6 +147,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           SchemaDiffDialog(
+            topicNames: _names,
             profile: testProfile,
             subject: 'test-topic-value',
             controller: mockController,
@@ -175,6 +190,7 @@ void main() {
       await tester.pumpWidget(
         createTestApp(
           SchemaDiffDialog(
+            topicNames: _names,
             profile: testProfile,
             subject: 'orders-topic-value',
             controller: mockController,
@@ -282,6 +298,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SchemaDiffDialog(
+              topicNames: _names,
               profile: testProfile,
               subject: 'test-topic-value',
               controller: mockController,
@@ -324,6 +341,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SchemaDiffDialog(
+              topicNames: _names,
               profile: testProfile,
               subject: 'orders-value',
               controller: mockController,

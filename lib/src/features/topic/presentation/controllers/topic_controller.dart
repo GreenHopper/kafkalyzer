@@ -5,6 +5,7 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as api;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
 import 'package:logger/logger.dart';
 
 enum TopicConfigViewState { loading, available, notReadable, failed }
@@ -23,6 +24,18 @@ class TopicConfigView {
   });
 
   const TopicConfigView.loading() : this(state: TopicConfigViewState.loading);
+}
+
+/// Answers [TopicNameSource] from this module's own topic cache, so other
+/// modules can ask which topics exist without importing [TopicController].
+class CachedTopicNames implements TopicNameSource {
+  const CachedTopicNames(this._controller);
+
+  final TopicController _controller;
+
+  @override
+  List<String>? topicNames(ClusterProfile profile) =>
+      _controller.getTopics(profile)?.map((t) => t.name).toList();
 }
 
 class TopicController extends ChangeNotifier {
