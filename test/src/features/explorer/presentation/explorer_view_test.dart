@@ -1,7 +1,7 @@
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/features/cluster/domain/connection_error.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
+import 'package:kafkalyzer/src/ui/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/controllers/cluster_overview_controller.dart';

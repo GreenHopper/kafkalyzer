@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/l10n/app_localizations_en.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
+import 'package:kafkalyzer/src/ui/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_config_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/config/topic_config_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';

@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
+import 'package:kafkalyzer/src/ui/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
 /// Fixed environment tag colour palette adapting to light and dark themes.

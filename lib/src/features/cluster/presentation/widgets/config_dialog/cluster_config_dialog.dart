@@ -11,8 +11,8 @@ import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dial
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_sasl_form.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_ssl_form.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/connection_diagnostics_panel.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/widgets/environment_tag.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/widgets/insecure_tls_badge.dart';
+import 'package:kafkalyzer/src/ui/widgets/environment_tag.dart';
+import 'package:kafkalyzer/src/ui/widgets/insecure_tls_badge.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/connection_diagnostics.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
