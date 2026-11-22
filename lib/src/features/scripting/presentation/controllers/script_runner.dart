@@ -21,8 +21,7 @@ import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dar
 import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
-
-enum StepStatus { pending, running, completed, error }
+import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
 
 class ScriptRunner extends ChangeNotifier {
   final Logger _logger;

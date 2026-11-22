@@ -21,6 +21,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
+import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';

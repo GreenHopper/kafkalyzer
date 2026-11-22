@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
 import 'package:kafkalyzer/src/ui/widgets/dropped_messages_indicator.dart';
