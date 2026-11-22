@@ -174,6 +174,8 @@ Next tier by absolute gaps: `settings_view.dart` 228 uncovered (74 %), `script_r
 **Done when:** `flutter test --coverage` reports ≥ 86 % on hand-written `lib/`, no file under 40 % except `lib/main.dart` (17 %, bootstrap), and the `script_history/` directory is above 70 %.
 **Effort:** 30 min + 3 × 1.5 h + 1 h ≈ **5 h** total.
 
+**Status:** implemented in `openspec/changes/archive/2026-11-22-cover-test-gaps/` (2026-11-22). Fresh measurement: **86.0 %** hand-written `lib/`, `script_history/` **74.6 %**, no hand-written file under 40 % except bootstrap. Scope expanded slightly past the ordered Q-5 list to clear four pre-existing under-40 % wrappers (`app.dart`, `virtual_json_node`, `topic_config_service`, `cluster_profile_tools`) and deepen `update_dialog`. No CI coverage ratchet.
+
 ---
 
 ## 3. Tier 2 — schedule after Tier 1
@@ -250,4 +252,4 @@ Total for Tier 1: **about 2.5 working days** if done by one person, sequentially
 
 Each Tier 1/2 ID maps to one OpenSpec change. Suggested names (use `openspec/changes/<name>/`):
 
-`ci-quality-gates` (Q-1) · `split-god-widgets` (Q-2) · `remove-global-controller-state` (Q-3, implemented) · `rust-ffi-parameter-objects` (Q-4, implemented) · `enable-rust-lint-gate` (Q-4 follow-up: re-add `cargo clippy --workspace --all-targets -- -D warnings` to `scripts/quality_gates.sh`; unblocked 2026-08-10 now that the workspace is clean) · `cover-test-gaps` (Q-5) · `break-feature-cycles` (Q-6) · `relocate-messages-feature` (Q-7) · `relocate-feature-services` (Q-8) · `verify-generated-bindings` (Q-9) · `material-ui-migration-tracking` (Q-10) · `ci-kafka-integration-tests` (Q-11).
+`ci-quality-gates` (Q-1) · `split-god-widgets` (Q-2) · `remove-global-controller-state` (Q-3, implemented) · `rust-ffi-parameter-objects` (Q-4, implemented) · `enable-rust-lint-gate` (Q-4 follow-up: re-add `cargo clippy --workspace --all-targets -- -D warnings` to `scripts/quality_gates.sh`; unblocked 2026-08-10 now that the workspace is clean) · `cover-test-gaps` (Q-5, implemented) · `break-feature-cycles` (Q-6) · `relocate-messages-feature` (Q-7) · `relocate-feature-services` (Q-8) · `verify-generated-bindings` (Q-9) · `material-ui-migration-tracking` (Q-10) · `ci-kafka-integration-tests` (Q-11).

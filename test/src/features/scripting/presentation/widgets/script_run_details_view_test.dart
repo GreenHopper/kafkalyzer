@@ -34,9 +34,13 @@ class FakeScriptRunner extends ChangeNotifier implements ScriptRunner {
   FakeScriptRunner(this.messages);
 
   final List<ScriptResultMessage> messages;
+  bool _throwOnLoad = false;
 
   @override
   Future<List<ScriptResultMessage>> loadRunResults(ScriptRun run) async {
+    if (_throwOnLoad) {
+      throw StateError('failed to load run');
+    }
     return messages;
   }
 
@@ -204,6 +208,49 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Run Summary'), findsOneWidget);
+  });
+
+  testWidgets('failed load shows error banner, not a successful empty run', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    getIt.unregister<ScriptRunner>();
+    getIt.registerSingleton<ScriptRunner>(
+      FakeScriptRunner([]).._throwOnLoad = true,
+    );
+
+    const failedRun = ScriptRun(
+      id: 'run-fail',
+      scriptName: 'Inspect Script',
+      timestamp: 1695888000000,
+      parameters: {},
+      status: ScriptRunStatus.error,
+      path: '/tmp/run-fail',
+      error: 'step failed',
+      scriptSnapshot: script,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ScriptRunDetailsView(
+            run: failedRun,
+            script: script,
+            onBack: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Failed to load details'), findsOneWidget);
+    expect(find.byType(MessageInspectorPanel), findsNothing);
   });
 
   testWidgets('renders German localization in details view and sidebar', (

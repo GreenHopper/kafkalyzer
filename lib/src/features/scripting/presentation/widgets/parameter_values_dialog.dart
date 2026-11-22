@@ -33,6 +33,7 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -76,8 +77,9 @@ class _ParameterValuesDialogState extends State<ParameterValuesDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: 8,
                 children: [
                   TextButton(
                     onPressed: () =>

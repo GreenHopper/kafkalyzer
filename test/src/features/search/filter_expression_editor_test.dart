@@ -133,6 +133,184 @@ void main() {
         expect(find.text('value.status = "FAILED"'), findsOneWidget);
       },
     );
+
+    testWidgets('tapping Builder while invalid keeps text mode', (
+      tester,
+    ) async {
+      final ctrl = FilterExpressionEditingController(
+        initialText: 'INVALID = 1',
+        parseFn: _mockParse,
+        formatFn: _mockFormat,
+      );
+      addTearDown(ctrl.dispose);
+
+      await tester.pumpWidget(_wrap(FilterExpressionEditor(controller: ctrl)));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Builder'));
+      await tester.pumpAndSettle();
+
+      expect(ctrl.mode, FilterExpressionMode.text);
+      expect(find.textContaining('Column 1: Unknown field'), findsOneWidget);
+    });
+
+    testWidgets('builder mode adds conditions and shows suggestions', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final ctrl = FilterExpressionEditingController(
+        initialText: 'value.status = "FAILED"',
+        parseFn: _mockParse,
+        formatFn: _mockFormat,
+      );
+      addTearDown(ctrl.dispose);
+      expect(ctrl.switchMode(FilterExpressionMode.builder), isTrue);
+
+      await tester.pumpWidget(
+        _wrap(
+          FilterExpressionEditor(
+            controller: ctrl,
+            showPlaceholderHint: true,
+            suggestions: const FilterFieldSuggestions(
+              valuePaths: ['status', 'order.id'],
+              headerNames: ['x-req'],
+              source: FilterSuggestionSource.schema,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add condition'), findsWidgets);
+      await tester.tap(find.text('Add condition').first);
+      await tester.pumpAndSettle();
+      expect(ctrl.tree, isA<FilterAndNode>());
+      expect((ctrl.tree! as FilterAndNode).children.length, greaterThan(1));
+      expect(find.text('AND'), findsOneWidget);
+
+      await tester.tap(find.text('Add group'));
+      await tester.pumpAndSettle();
+      expect(find.text('OR'), findsWidgets);
+
+      expect(find.byType(InputChip), findsWidgets);
+      expect(find.text('value.status'), findsWidgets);
+
+      // Tall surface so the edit-condition dialog's dropdowns fit.
+      tester.view.physicalSize = const Size(900, 2200);
+      await tester.pump();
+      await tester.tap(find.byType(InputChip).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Edit condition'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Flip AND → OR on the root group chip.
+      await tester.tap(find.text('AND').first);
+      await tester.pumpAndSettle();
+      expect(ctrl.tree, isA<FilterOrNode>());
+    });
+
+    testWidgets('builder renders NOT wrap, unary ops, and controller swap', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1200, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      FilterCondNode cond({
+        required FilterFieldKind kind,
+        String? path,
+        FilterOpDto op = FilterOpDto.eq,
+        FilterScalarKind scalarKind = FilterScalarKind.string,
+        String text = 'x',
+      }) {
+        return FilterCondNode(
+          FilterConditionDto(
+            fieldKind: kind,
+            fieldPath: path,
+            op: op,
+            scalar: FilterScalarDto(
+              kind: scalarKind,
+              text: text,
+              intVal: null,
+              floatVal: null,
+              boolVal: null,
+            ),
+            listItems: const [],
+          ),
+        );
+      }
+
+      final ctrl = FilterExpressionEditingController(
+        initialText: 'value.status = "X"',
+        parseFn: _mockParse,
+        formatFn: _mockFormat,
+      );
+      addTearDown(ctrl.dispose);
+      ctrl.switchMode(FilterExpressionMode.builder);
+      ctrl.updateTree(
+        FilterNotNode(
+          FilterAndNode([
+            cond(kind: FilterFieldKind.value, path: 'status'),
+            cond(kind: FilterFieldKind.key),
+            cond(kind: FilterFieldKind.header, path: 'x-req'),
+            cond(kind: FilterFieldKind.timestamp, op: FilterOpDto.exists),
+            cond(kind: FilterFieldKind.offset, op: FilterOpDto.isNull),
+            cond(kind: FilterFieldKind.partition, op: FilterOpDto.isNotNull),
+            cond(
+              kind: FilterFieldKind.keyPath,
+              path: 'id',
+              scalarKind: FilterScalarKind.placeholder,
+              text: 'var',
+            ),
+          ]),
+        ),
+      );
+
+      await tester.pumpWidget(_wrap(FilterExpressionEditor(controller: ctrl)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('NOT'), findsWidgets);
+      expect(find.textContaining('key'), findsWidgets);
+      expect(find.textContaining('header.x-req'), findsWidgets);
+      expect(find.textContaining('timestamp'), findsWidgets);
+
+      // Unwrap NOT via chip delete.
+      await tester.tap(find.byIcon(Icons.cancel).first);
+      await tester.pumpAndSettle();
+      expect(ctrl.tree, isA<FilterAndNode>());
+
+      // Nested group remove / NOT controls need a child group.
+      ctrl.updateTree(
+        FilterAndNode([
+          FilterOrNode([cond(kind: FilterFieldKind.value, path: 'a')]),
+        ]),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.exposure_neg_1), findsWidgets);
+      await tester.tap(find.byIcon(Icons.exposure_neg_1).first);
+      await tester.pumpAndSettle();
+      final afterNot = ctrl.tree! as FilterAndNode;
+      expect(afterNot.children.any((c) => c is FilterNotNode), isTrue);
+
+      // didUpdateWidget path: swap controller instance.
+      final ctrl2 = FilterExpressionEditingController(
+        initialText: 'value.status = "Y"',
+        parseFn: _mockParse,
+        formatFn: _mockFormat,
+      );
+      addTearDown(ctrl2.dispose);
+      ctrl2.switchMode(FilterExpressionMode.builder);
+      await tester.pumpWidget(_wrap(FilterExpressionEditor(controller: ctrl2)));
+      await tester.pumpAndSettle();
+      expect(find.byType(FilterExpressionEditor), findsOneWidget);
+      expect(ctrl2.mode, FilterExpressionMode.builder);
+    });
   });
 
   group('6.3 resolveFilterFieldSuggestions', () {
