@@ -173,9 +173,10 @@ class _TopicDetailViewState extends State<TopicDetailView>
     _maxResultsController.text = _defaultResultLimit().toString();
     activeController = getIt<ActiveConnectionController>();
     final key = widget.tabId ?? '${widget.profile.name}:${widget.topic.name}';
-    streamController = activeController.getStreamController(key);
-    analysisController = activeController.getAnalysisController(key);
-    factsController = activeController.getTopicFactsController(
+    final viewControllers = getIt<TopicController>().viewControllers;
+    streamController = viewControllers.stream(key);
+    analysisController = viewControllers.analysis(key);
+    factsController = viewControllers.facts(
       key,
       widget.profile,
       widget.topic.name,

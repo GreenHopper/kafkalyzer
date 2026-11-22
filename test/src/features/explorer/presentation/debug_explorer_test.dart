@@ -87,9 +87,9 @@ void main() {
     when(mockClusterListController.clusters).thenReturn([testProfile]);
     when(mockActiveConnectionController.activeProfile).thenReturn(null);
     when(mockActiveConnectionController.isConnecting).thenReturn(false);
-    when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
+    when(mockTopicController.showInternalTopics).thenReturn(false);
     when(mockActiveConnectionController.error).thenReturn(null);
-    when(mockActiveConnectionController.topicFilter).thenReturn('');
+    when(mockTopicController.topicFilter).thenReturn('');
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();

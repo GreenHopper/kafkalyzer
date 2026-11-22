@@ -3,8 +3,8 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/ui/widgets/environment_tag.dart';
 import 'package:kafkalyzer/src/ui/widgets/insecure_tls_badge.dart';
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/services/topic_store.dart';
 
 class ClusterDropdown extends StatelessWidget {
   final ClusterProfile? value;
@@ -16,7 +16,12 @@ class ClusterDropdown extends StatelessWidget {
 
   /// Session-wide controllers; null falls back to the application container.
   final ClusterListController? clusterController;
-  final TopicController? topicController;
+
+  /// Whether a cluster has cached topics, and what repaints that answer. The
+  /// caller supplies both, so this widget names no topic type; null falls back
+  /// to the shared topic store.
+  final bool Function(ClusterProfile)? hasCachedTopics;
+  final Listenable? topicsListenable;
 
   const ClusterDropdown({
     super.key,
@@ -27,17 +32,22 @@ class ClusterDropdown extends StatelessWidget {
     this.isExpanded = true,
     this.contentPadding,
     this.clusterController,
-    this.topicController,
+    this.hasCachedTopics,
+    this.topicsListenable,
   });
 
   @override
   Widget build(BuildContext context) {
     final clusterController =
         this.clusterController ?? getIt<ClusterListController>();
-    final topicController = this.topicController ?? getIt<TopicController>();
+    final store = getIt<TopicStore>();
+    final hasCachedTopics = this.hasCachedTopics ?? store.hasCachedTopics;
 
     return ListenableBuilder(
-      listenable: Listenable.merge([clusterController, topicController]),
+      listenable: Listenable.merge([
+        clusterController,
+        topicsListenable ?? store.topicListenable,
+      ]),
       builder: (context, _) {
         return DropdownButtonFormField<ClusterProfile>(
           decoration: InputDecoration(
@@ -55,7 +65,7 @@ class ClusterDropdown extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (topicController.hasCachedTopics(c))
+                      if (hasCachedTopics(c))
                         Padding(
                           padding: const EdgeInsets.only(right: 8.0),
                           child: Icon(
@@ -69,10 +79,10 @@ class ClusterDropdown extends StatelessWidget {
                           c.name,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: topicController.hasCachedTopics(c)
+                            color: hasCachedTopics(c)
                                 ? Theme.of(context).colorScheme.primary
                                 : null,
-                            fontWeight: topicController.hasCachedTopics(c)
+                            fontWeight: hasCachedTopics(c)
                                 ? FontWeight.w600
                                 : null,
                           ),

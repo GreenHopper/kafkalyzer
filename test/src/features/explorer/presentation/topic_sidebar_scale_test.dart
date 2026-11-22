@@ -10,6 +10,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_list_it
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/profile_tools.dart';
+import 'package:kafkalyzer/src/services/topic_store.dart';
 import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
@@ -118,6 +119,7 @@ void main() {
         TopicListPreferencesService(),
       );
       getIt.registerSingleton<TopicController>(TopicController());
+      getIt.registerLazySingleton<TopicStore>(() => getIt<TopicController>());
       getIt.registerSingleton<SchemaController>(SchemaController());
       final clusterList = ClusterListController();
       await clusterList.loadClusters();
@@ -129,7 +131,10 @@ void main() {
       await getIt<TopicController>().fetchTopics(profile);
       expect(activeController.error, isNull);
       expect(activeController.activeProfile, isNotNull);
-      expect(activeController.topicListView.visibleTopics.length, 10000);
+      expect(
+        getIt<TopicController>().topicListView(profile).visibleTopics.length,
+        10000,
+      );
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -147,7 +152,7 @@ void main() {
       expect(initialItems, greaterThan(0));
       expect(initialItems, lessThanOrEqualTo(60));
 
-      final computationsBeforeType = activeController.viewComputations;
+      final computationsBeforeType = getIt<TopicController>().viewComputations;
       await tester.enterText(
         find.byKey(const Key('topic_filter_text_field')),
         '9',
@@ -157,7 +162,7 @@ void main() {
       final afterTypeItems = find.byType(TopicListItem).evaluate().length;
       expect(afterTypeItems, lessThanOrEqualTo(60));
       expect(
-        activeController.viewComputations,
+        getIt<TopicController>().viewComputations,
         equals(computationsBeforeType + 1),
       );
     },

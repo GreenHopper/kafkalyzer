@@ -80,7 +80,7 @@ class MockKafkaMetadataService extends KafkaMetadataService {
 }
 
 class MockTopicController extends TopicController {
-  List<TopicMetadata>? topics = [];
+  List<TopicMetadata>? topicList = [];
   final List<String> clearedClusters = [];
 
   @override
@@ -89,7 +89,7 @@ class MockTopicController extends TopicController {
   }
 
   @override
-  List<TopicMetadata>? getTopics(ClusterProfile cluster) => topics;
+  List<TopicMetadata>? getTopics(ClusterProfile cluster) => topicList;
 
   @override
   void clearCache(ClusterProfile cluster) {
@@ -309,8 +309,9 @@ void main() {
         expect(controller.activeTopic?.id, equals(tab2?.id));
 
         // Each tab has independent stream controller
-        final stream1 = controller.getStreamController(tab1!.id);
-        final stream2 = controller.getStreamController(tab2!.id);
+        final viewControllers = getIt<TopicController>().viewControllers;
+        final stream1 = viewControllers.stream(tab1!.id);
+        final stream2 = viewControllers.stream(tab2!.id);
         expect(identical(stream1, stream2), isFalse);
       },
     );
@@ -405,7 +406,8 @@ void main() {
         expect(controller.activeTopic?.id, equals(tab?.id));
         expect(controller.activeTopic?.topic.name, equals('orders'));
 
-        final streamController = controller.getStreamController(tab!.id);
+        final streamController = getIt<TopicController>().viewControllers
+            .stream(tab!.id);
         expect(streamController, isNotNull);
       },
     );
@@ -425,7 +427,7 @@ void main() {
           replicationFactor: 1,
         );
 
-        mockTopicController.topics = [topic1, topic2];
+        mockTopicController.topicList = [topic1, topic2];
 
         await controller.connect(validProfile);
         controller.openTopic(topic: topic1);
@@ -462,7 +464,7 @@ void main() {
         partitionCount: 3,
         replicationFactor: 1,
       );
-      mockTopicController.topics = [topic1];
+      mockTopicController.topicList = [topic1];
 
       await sessionRestoreService.saveSession(
         validProfile.name,
@@ -732,7 +734,7 @@ void main() {
           );
 
           // Null topic list guard
-          mockTopicController.topics = null;
+          mockTopicController.topicList = null;
           await controller.connect(profileA);
           var sessionA = await sessionRestoreService.getSession('Cluster A');
           expect(sessionA?.openTopicNames, ['orders', 'legacy-events']);
@@ -740,7 +742,7 @@ void main() {
 
           // Now connect with only 'orders' present
           controller.disconnect();
-          mockTopicController.topics = [makeTopic('orders')];
+          mockTopicController.topicList = [makeTopic('orders')];
           await controller.connect(profileA);
           await Future<void>.delayed(Duration.zero);
 
@@ -771,18 +773,19 @@ void main() {
           tlsVerification: TlsVerification.enabled,
         );
 
+        final topics = getIt<TopicController>();
         await controller.connect(clusterA);
-        controller.toggleShowInternalTopics(true);
-        controller.setTopicFilterMode(TopicFilterMode.regex);
+        topics.toggleShowInternalTopics(true);
+        topics.setTopicFilterMode(TopicFilterMode.regex);
         await Future<void>.delayed(Duration.zero);
 
         await controller.connect(clusterB);
-        expect(controller.showInternalTopics, isFalse);
-        expect(controller.topicFilterMode, TopicFilterMode.substring);
+        expect(topics.showInternalTopics, isFalse);
+        expect(topics.topicFilterMode, TopicFilterMode.substring);
 
         await controller.connect(clusterA);
-        expect(controller.showInternalTopics, isTrue);
-        expect(controller.topicFilterMode, TopicFilterMode.regex);
+        expect(topics.showInternalTopics, isTrue);
+        expect(topics.topicFilterMode, TopicFilterMode.regex);
       });
 
       test(
@@ -794,17 +797,18 @@ void main() {
             tlsVerification: TlsVerification.enabled,
           );
           await controller.connect(cluster);
-          controller.viewComputations = 0;
+          final topics = getIt<TopicController>();
+          topics.viewComputations = 0;
 
           for (var i = 0; i < 10000; i++) {
-            controller.topicListView;
-            controller.topics;
+            topics.topicListView(cluster);
+            topics.topics(cluster);
           }
-          expect(controller.viewComputations, 1);
+          expect(topics.viewComputations, 1);
 
-          controller.updateTopicFilter('orders');
-          controller.topicListView;
-          expect(controller.viewComputations, 2);
+          topics.updateTopicFilter('orders');
+          topics.topicListView(cluster);
+          expect(topics.viewComputations, 2);
         },
       );
 

@@ -255,6 +255,11 @@ void main() {
         final mockClusters = explorer_mocks.MockClusterListController();
         final mockActive = explorer_mocks.MockActiveConnectionController();
         final mockTopics = explorer_mocks.MockTopicController();
+
+        final registry = explorer_mocks.MockTopicViewControllerRegistry();
+
+        when(mockTopics.viewControllers).thenReturn(registry);
+        when(mockTopics.topicListenable).thenReturn(mockTopics);
         final mockSchemas = explorer_mocks.MockSchemaController();
         final streamCtrl = _FakeMessageStreamController();
         final analysisCtrl = _FakeTopicAnalysisController();
@@ -266,28 +271,28 @@ void main() {
         when(mockActive.activeProfile).thenReturn(testProfile);
         when(mockActive.isConnecting).thenReturn(false);
         when(mockActive.connectingProfile).thenReturn(null);
-        when(mockActive.showInternalTopics).thenReturn(false);
-        when(mockActive.showStreamTopics).thenReturn(false);
+        when(mockTopics.showInternalTopics).thenReturn(false);
+        when(mockTopics.showStreamTopics).thenReturn(false);
         when(mockActive.error).thenReturn(null);
-        when(mockActive.topicFilter).thenReturn('');
-        when(mockActive.topics).thenReturn([testTopic]);
-        when(mockActive.topicListQuery).thenReturn(const TopicListQuery());
-        when(mockActive.topicFilterMode).thenReturn(TopicFilterMode.substring);
-        when(mockActive.topicSortOrder).thenReturn(TopicSortOrder.name);
-        when(mockActive.groupTopicsByPrefix).thenReturn(false);
-        when(mockActive.favouriteTopics).thenReturn(const <String>{});
-        when(mockActive.topicPreferencesUnreadable).thenReturn(false);
-        when(mockActive.topicPreferencesWriteBlocked).thenReturn(false);
+        when(mockTopics.topicFilter).thenReturn('');
+        when(mockTopics.topics(any)).thenReturn([testTopic]);
+        when(mockTopics.topicListQuery).thenReturn(const TopicListQuery());
+        when(mockTopics.topicFilterMode).thenReturn(TopicFilterMode.substring);
+        when(mockTopics.topicSortOrder).thenReturn(TopicSortOrder.name);
+        when(mockTopics.groupTopicsByPrefix).thenReturn(false);
+        when(mockTopics.favouriteTopics).thenReturn(const <String>{});
+        when(mockTopics.topicPreferencesUnreadable).thenReturn(false);
+        when(mockTopics.topicPreferencesWriteBlocked).thenReturn(false);
         when(
-          mockActive.topicListView,
+          mockTopics.topicListView(any),
         ).thenReturn(buildTopicListView([testTopic], const TopicListQuery()));
         when(mockActive.openTopics).thenReturn([tab]);
         when(mockActive.activeTopic).thenReturn(tab);
         when(mockActive.unrestoredTopics).thenReturn(const []);
-        when(mockActive.getStreamController(any)).thenReturn(streamCtrl);
-        when(mockActive.getAnalysisController(any)).thenReturn(analysisCtrl);
-        when(mockActive.unhealthyTopicsOnly).thenReturn(false);
-        when(mockActive.getTopicFactsController(any, any, any, any)).thenReturn(
+        when(registry.stream(any)).thenReturn(streamCtrl);
+        when(registry.analysis(any)).thenReturn(analysisCtrl);
+        when(mockTopics.unhealthyTopicsOnly).thenReturn(false);
+        when(registry.facts(any, any, any)).thenReturn(
           TopicFactsController(profile: testProfile, topicName: testTopic.name),
         );
         when(mockTopics.hasCachedTopics(testProfile)).thenReturn(true);
@@ -380,6 +385,11 @@ void main() {
         final mockClusters = explorer_mocks.MockClusterListController();
         final mockActive = explorer_mocks.MockActiveConnectionController();
         final mockTopics = explorer_mocks.MockTopicController();
+
+        final registry = explorer_mocks.MockTopicViewControllerRegistry();
+
+        when(mockTopics.viewControllers).thenReturn(registry);
+        when(mockTopics.topicListenable).thenReturn(mockTopics);
         final mockSettings = settings_mocks.MockSettingsService();
         final fakeMetadata = _FakeKafkaMetadataService()
           ..lags = const [
@@ -472,6 +482,11 @@ void main() {
 
         final mockClusters = explorer_mocks.MockClusterListController();
         final mockTopics = explorer_mocks.MockTopicController();
+
+        final registry = explorer_mocks.MockTopicViewControllerRegistry();
+
+        when(mockTopics.viewControllers).thenReturn(registry);
+        when(mockTopics.topicListenable).thenReturn(mockTopics);
         when(mockClusters.clusters).thenReturn([testProfile]);
         when(mockTopics.getTopics(testProfile)).thenReturn([testTopic]);
 

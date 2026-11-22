@@ -124,6 +124,12 @@ class _FakeTopicController extends ChangeNotifier implements TopicController {
   bool isLoading(ClusterProfile cluster) => false;
 
   @override
+  bool hasCachedTopics(ClusterProfile cluster) => false;
+
+  @override
+  Listenable get topicListenable => this;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

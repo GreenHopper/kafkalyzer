@@ -29,8 +29,16 @@ void main() {
   test('answers the names of the cached topics', () {
     final source = CachedTopicNames(
       _StubTopics(const [
-        api.TopicMetadata(name: 'orders', partitionCount: 1, replicationFactor: 1),
-        api.TopicMetadata(name: 'audit', partitionCount: 1, replicationFactor: 1),
+        api.TopicMetadata(
+          name: 'orders',
+          partitionCount: 1,
+          replicationFactor: 1,
+        ),
+        api.TopicMetadata(
+          name: 'audit',
+          partitionCount: 1,
+          replicationFactor: 1,
+        ),
       ]),
     );
 

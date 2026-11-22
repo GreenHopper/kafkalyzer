@@ -73,29 +73,29 @@ introduce.
 
 ## 4. Topic view state out of the connection controller
 
-- [ ] 4.1 Move the topic list query, filter, sort, favourite, unhealthy-only and
+- [x] 4.1 Move the topic list query, filter, sort, favourite, unhealthy-only and
       preference-notice state, plus the memoised topic list view, from the
       connection controller to the session-wide topic controller; verify
       `flutter test test/src/features/explorer test/src/features/cluster` passes
       with the existing topic-sidebar and preference-notice assertions unchanged
-- [ ] 4.2 Move the factory and cache for the per-topic stream, facts and analysis
+- [x] 4.2 Move the factory and cache for the per-topic stream, facts and analysis
       controllers into one new controller-registry file in the topic module,
       reached from the topic controller; verify `getStreamController`,
       `getAnalysisController` and `getTopicFactsController` no longer appear in
       `cluster` and that the explorer and topic detail tests pass
-- [ ] 4.3 Move cache clearing for the per-topic controllers to the topic cache and
+- [x] 4.3 Move cache clearing for the per-topic controllers to the topic cache and
       to the disconnect path, and add one regression test per cache that asserts
       the clear on cluster switch and on topic-list refresh; verify the new tests
       fail before the move and pass after it
-- [ ] 4.4 Replace the topic-controller parameter of the cluster picker with a
+- [x] 4.4 Replace the topic-controller parameter of the cluster picker with a
       "has cached topics" predicate and a listenable supplied by its caller, and
       update the explorer sidebar call site and the picker tests; verify
       `flutter test test/src/features/cluster/presentation/widgets` passes and the
       picker still bolds only clusters with cached topics
-- [ ] 4.5 Regenerate the checked-in mock files that reference the moved members
+- [x] 4.5 Regenerate the checked-in mock files that reference the moved members
       (`dart run build_runner build`) and verify the generated files show the new
       seam with no hand edits
-- [ ] 4.6 Re-run the matrix and verify the feature graph is acyclic, that the
+- [x] 4.6 Re-run the matrix and verify the feature graph is acyclic, that the
       connection controller imports no `features/topic/` source, and that both the
       connection controller and the topic controller stay at or below the 800-line
       size limit

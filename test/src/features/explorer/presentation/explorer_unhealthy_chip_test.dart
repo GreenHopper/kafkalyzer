@@ -152,8 +152,11 @@ void main() {
       await activeController.connect(profile);
       await getIt<TopicController>().fetchTopics(profile);
       expect(activeController.error, isNull);
-      expect(activeController.topics.length, 2);
-      expect(activeController.topicListView.visibleTopics.length, 2);
+      expect(getIt<TopicController>().topics(profile).length, 2);
+      expect(
+        getIt<TopicController>().topicListView(profile).visibleTopics.length,
+        2,
+      );
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -177,7 +180,7 @@ void main() {
       expect(findTopicItem('healthy-orders'), findsOneWidget);
       expect(findTopicItem('broken-payments'), findsOneWidget);
 
-      activeController.showUnhealthyTopicsOnly();
+      getIt<TopicController>().showUnhealthyTopicsOnly();
       await tester.pumpAndSettle();
 
       expect(
@@ -198,7 +201,7 @@ void main() {
       await tester.tap(deleteIcon);
       await tester.pumpAndSettle();
 
-      expect(activeController.unhealthyTopicsOnly, isFalse);
+      expect(getIt<TopicController>().unhealthyTopicsOnly, isFalse);
       expect(find.byKey(const Key('topic_unhealthy_only_chip')), findsNothing);
       expect(findTopicItem('healthy-orders'), findsOneWidget);
       expect(findTopicItem('broken-payments'), findsOneWidget);

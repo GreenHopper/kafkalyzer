@@ -23,6 +23,7 @@ import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/topic_config_service.dart';
 import 'package:kafkalyzer/src/services/topic_name_source.dart';
+import 'package:kafkalyzer/src/services/topic_store.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/services/message_export_service.dart';
 import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
@@ -156,6 +157,9 @@ void registerSessionWideState() {
     () => MultiSearchController(),
   );
   getIt.registerLazySingleton<TopicController>(() => TopicController());
+  // Alias, not extra state: lets a module drive the topic list without
+  // importing the topic feature.
+  getIt.registerLazySingleton<TopicStore>(() => getIt<TopicController>());
   getIt.registerLazySingleton<ClusterOverviewController>(
     () => ClusterOverviewController(),
   );

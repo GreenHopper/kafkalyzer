@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
@@ -13,6 +12,7 @@ import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/topic_list_preferences_service.dart';
+import 'package:kafkalyzer/src/services/topic_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeMetadataService implements KafkaMetadataService {
@@ -24,7 +24,9 @@ class _FakeMetadataService implements KafkaMetadataService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _FakeTopicController extends ChangeNotifier implements TopicController {
+/// Supplies the topic cache; the list view state under test is the real
+/// `TopicController` behaviour.
+class _FakeTopicController extends TopicController {
   final Map<String, List<TopicMetadata>> _byCluster = {};
 
   void setTopics(String clusterName, List<TopicMetadata> topics) {
@@ -37,18 +39,19 @@ class _FakeTopicController extends ChangeNotifier implements TopicController {
       _byCluster[cluster.name];
 
   @override
-  Future<void> fetchTopics(
+  bool hasCachedTopics(ClusterProfile cluster) =>
+      _byCluster.containsKey(cluster.name);
+
+  @override
+  Future<void> refreshTopics(
     ClusterProfile cluster, {
     bool force = false,
   }) async {}
 
   @override
-  void clearCache(ClusterProfile cluster) {
+  void clearTopics(ClusterProfile cluster) {
     _byCluster.remove(cluster.name);
   }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeClusterProfileTools implements ClusterProfileTools {
@@ -75,11 +78,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await GetIt.instance.reset();
     GetIt.instance.registerSingleton<Logger>(Logger(level: Level.off));
-    fakeTopicCtrl = _FakeTopicController();
     GetIt.instance.registerSingleton<KafkaMetadataService>(
       _FakeMetadataService(),
     );
+    fakeTopicCtrl = _FakeTopicController();
     GetIt.instance.registerSingleton<TopicController>(fakeTopicCtrl);
+    GetIt.instance.registerLazySingleton<TopicStore>(
+      () => GetIt.instance<TopicController>(),
+    );
     GetIt.instance.registerSingleton<SettingsService>(SettingsService());
     GetIt.instance.registerSingleton<RecentTopicsService>(
       RecentTopicsService(),
@@ -130,14 +136,14 @@ void main() {
 
       await controller.connect(clusterA);
       // Regular filters hide internal topics by default.
-      expect(controller.topics.map((t) => t.name).toList(), [
+      expect(fakeTopicCtrl.topics(clusterA).map((t) => t.name).toList(), [
         'healthy',
         'orders',
       ]);
 
-      controller.showUnhealthyTopicsOnly();
-      expect(controller.unhealthyTopicsOnly, isTrue);
-      expect(controller.topics.map((t) => t.name).toList(), [
+      fakeTopicCtrl.showUnhealthyTopicsOnly();
+      expect(fakeTopicCtrl.unhealthyTopicsOnly, isTrue);
+      expect(fakeTopicCtrl.topics(clusterA).map((t) => t.name).toList(), [
         '__consumer_offsets',
         'orders',
       ]);
@@ -166,21 +172,21 @@ void main() {
           leaderlessPartitions: 0,
         ),
       ]);
-      expect(controller.topics.map((t) => t.name).toList(), [
+      expect(fakeTopicCtrl.topics(clusterA).map((t) => t.name).toList(), [
         '__consumer_offsets',
       ]);
 
       // Clearing restores regular filters.
-      controller.clearUnhealthyTopicsOnly();
-      expect(controller.unhealthyTopicsOnly, isFalse);
-      expect(controller.topics.map((t) => t.name).toList(), [
+      fakeTopicCtrl.clearUnhealthyTopicsOnly();
+      expect(fakeTopicCtrl.unhealthyTopicsOnly, isFalse);
+      expect(fakeTopicCtrl.topics(clusterA).map((t) => t.name).toList(), [
         'healthy',
         'orders',
       ]);
 
       // Activate again and switch cluster -> reset.
-      controller.showUnhealthyTopicsOnly();
-      expect(controller.unhealthyTopicsOnly, isTrue);
+      fakeTopicCtrl.showUnhealthyTopicsOnly();
+      expect(fakeTopicCtrl.unhealthyTopicsOnly, isTrue);
       fakeTopicCtrl.setTopics('cluster-b', const [
         TopicMetadata(
           name: 'b-topic',
@@ -191,8 +197,10 @@ void main() {
         ),
       ]);
       await controller.connect(clusterB);
-      expect(controller.unhealthyTopicsOnly, isFalse);
-      expect(controller.topics.map((t) => t.name).toList(), ['b-topic']);
+      expect(fakeTopicCtrl.unhealthyTopicsOnly, isFalse);
+      expect(fakeTopicCtrl.topics(clusterB).map((t) => t.name).toList(), [
+        'b-topic',
+      ]);
     },
   );
 }

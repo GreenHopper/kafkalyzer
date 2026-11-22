@@ -118,3 +118,30 @@ MUTUALLY-REACHABLE PAIRS (direct): 1
    cluster <-> topic
 
 One cycle left: `cluster↔topic` (group 4).
+
+## After group 4 — topic view state in the topic module
+
+```text
+from\to    cluster consumer explorer navigati   schema scriptin   search settings    topic     total
+cluster           0        0        0        0        0        0        0        0        0        0
+consumer          2        0        0        1        0        0        0        0        0        3
+explorer          5        0        0        1        4        0        0        0        5       15
+navigation        1        0        0        0        0        0        0        0        1        2
+schema            0        0        0        0        0        0        0        0        0        0
+scripting         4        0        0        1        2        0        3        0        2       12
+search            0        0        0        0        0        0        0        0        0        0
+settings          5        0        0        0        0        0        1        0        0        6
+topic             4        0        0        0        4        0        2        0        0       10
+TOTAL EDGES 48
+CYCLES:
+MUTUALLY-REACHABLE PAIRS (direct): 0
+```
+
+Acyclic: 48 edges, no elementary cycle, no mutually reachable pair. `cluster`
+now imports no `features/topic/` source; it reaches the topic cache and the
+per-topic view controllers through the `TopicStore` port in `lib/src/services`,
+which DI resolves to the session-wide topic controller.
+
+Hand-built test containers that construct an `ActiveConnectionController`
+register the `TopicStore` alias the same way `registerSessionWideState` does,
+because the connection controller now asks the container for the port.

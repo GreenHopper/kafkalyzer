@@ -46,19 +46,11 @@ class FakeActiveConnectionController extends ChangeNotifier
   @override
   bool get isConnecting => false;
   @override
-  List<TopicMetadata> get topics => [];
-  @override
   List<OpenTopicRecord> get openTopics => [];
   @override
   OpenTopicRecord? get activeTopic => null;
   @override
   ConnectionError? get error => null;
-  @override
-  String get topicFilter => "";
-  @override
-  bool get showInternalTopics => false;
-  @override
-  bool get showStreamTopics => false;
   @override
   List<String> get unrestoredTopics => const [];
 

@@ -25,7 +25,6 @@ class _Names implements TopicNameSource {
 /// The topic list is treated as not loaded unless a test says otherwise.
 const _names = _Names(null);
 
-
 void main() {
   setUpAll(() {
     GoogleFonts.config.allowRuntimeFetching = false;

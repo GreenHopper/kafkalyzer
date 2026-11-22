@@ -4,30 +4,22 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
-import 'dart:async' as _i10;
+import 'dart:async' as _i6;
 
-import 'package:flutter/foundation.dart' as _i7;
+import 'package:flutter/foundation.dart' as _i3;
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart'
-    as _i14;
+    as _i10;
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart'
-    as _i8;
-import 'package:kafkalyzer/src/features/topic/domain/topic_list_query.dart'
-    as _i3;
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart'
     as _i4;
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart'
-    as _i5;
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart'
-    as _i6;
-import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as _i15;
-import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i9;
-import 'package:kafkalyzer/src/services/cluster_service.dart' as _i11;
-import 'package:kafkalyzer/src/services/encrypted_bundle.dart' as _i17;
-import 'package:kafkalyzer/src/services/settings_service.dart' as _i16;
+import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as _i11;
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart' as _i5;
+import 'package:kafkalyzer/src/services/cluster_service.dart' as _i7;
+import 'package:kafkalyzer/src/services/encrypted_bundle.dart' as _i13;
+import 'package:kafkalyzer/src/services/settings_service.dart' as _i12;
 import 'package:kafkalyzer/src/services/stored_list.dart' as _i2;
-import 'package:listen/src/listen.dart' as _i13;
+import 'package:listen/src/listen.dart' as _i9;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i12;
+import 'package:mockito/src/dummies.dart' as _i8;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -50,38 +42,9 @@ class _FakeStoreStatus_0 extends _i1.SmartFake implements _i2.StoreStatus {
     : super(parent, parentInvocation);
 }
 
-class _FakeTopicListQuery_1 extends _i1.SmartFake
-    implements _i3.TopicListQuery {
-  _FakeTopicListQuery_1(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeTopicListView_2 extends _i1.SmartFake implements _i3.TopicListView {
-  _FakeTopicListView_2(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeMessageStreamController_3 extends _i1.SmartFake
-    implements _i4.MessageStreamController {
-  _FakeMessageStreamController_3(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeTopicAnalysisController_4 extends _i1.SmartFake
-    implements _i5.TopicAnalysisController {
-  _FakeTopicAnalysisController_4(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeTopicFactsController_5 extends _i1.SmartFake
-    implements _i6.TopicFactsController {
-  _FakeTopicFactsController_5(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeValueNotifier_6<T> extends _i1.SmartFake
-    implements _i7.ValueNotifier<T> {
-  _FakeValueNotifier_6(Object parent, Invocation parentInvocation)
+class _FakeValueNotifier_1<T> extends _i1.SmartFake
+    implements _i3.ValueNotifier<T> {
+  _FakeValueNotifier_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -89,18 +52,18 @@ class _FakeValueNotifier_6<T> extends _i1.SmartFake
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockClusterListController extends _i1.Mock
-    implements _i8.ClusterListController {
+    implements _i4.ClusterListController {
   MockClusterListController() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  List<_i9.ClusterProfile> get clusters =>
+  List<_i5.ClusterProfile> get clusters =>
       (super.noSuchMethod(
             Invocation.getter(#clusters),
-            returnValue: <_i9.ClusterProfile>[],
+            returnValue: <_i5.ClusterProfile>[],
           )
-          as List<_i9.ClusterProfile>);
+          as List<_i5.ClusterProfile>);
 
   @override
   bool get isLoading =>
@@ -124,57 +87,57 @@ class MockClusterListController extends _i1.Mock
           as bool);
 
   @override
-  _i10.Future<void> loadClusters() =>
+  _i6.Future<void> loadClusters() =>
       (super.noSuchMethod(
             Invocation.method(#loadClusters, []),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<void> discardUnreadable() =>
+  _i6.Future<void> discardUnreadable() =>
       (super.noSuchMethod(
             Invocation.method(#discardUnreadable, []),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<void> addCluster(_i9.ClusterProfile? profile) =>
+  _i6.Future<void> addCluster(_i5.ClusterProfile? profile) =>
       (super.noSuchMethod(
             Invocation.method(#addCluster, [profile]),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<void> updateCluster(
+  _i6.Future<void> updateCluster(
     int? index,
-    _i9.ClusterProfile? updatedProfile,
+    _i5.ClusterProfile? updatedProfile,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#updateCluster, [index, updatedProfile]),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<void> deleteCluster(int? index) =>
+  _i6.Future<void> deleteCluster(int? index) =>
       (super.noSuchMethod(
             Invocation.method(#deleteCluster, [index]),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<_i11.ImportSummary?> importClustersZip(
+  _i6.Future<_i7.ImportSummary?> importClustersZip(
     List<int>? zipBytes, {
-    _i11.ImportConflictResolver? onConflict,
+    _i7.ImportConflictResolver? onConflict,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -182,14 +145,14 @@ class MockClusterListController extends _i1.Mock
               [zipBytes],
               {#onConflict: onConflict},
             ),
-            returnValue: _i10.Future<_i11.ImportSummary?>.value(),
+            returnValue: _i6.Future<_i7.ImportSummary?>.value(),
           )
-          as _i10.Future<_i11.ImportSummary?>);
+          as _i6.Future<_i7.ImportSummary?>);
 
   @override
-  _i10.Future<_i11.ImportSummary?> importClusters(
+  _i6.Future<_i7.ImportSummary?> importClusters(
     String? jsonString, {
-    _i11.ImportConflictResolver? onConflict,
+    _i7.ImportConflictResolver? onConflict,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -197,13 +160,13 @@ class MockClusterListController extends _i1.Mock
               [jsonString],
               {#onConflict: onConflict},
             ),
-            returnValue: _i10.Future<_i11.ImportSummary?>.value(),
+            returnValue: _i6.Future<_i7.ImportSummary?>.value(),
           )
-          as _i10.Future<_i11.ImportSummary?>);
+          as _i6.Future<_i7.ImportSummary?>);
 
   @override
-  _i10.Future<List<int>> exportClustersZip(
-    List<_i9.ClusterProfile>? clustersToExport, {
+  _i6.Future<List<int>> exportClustersZip(
+    List<_i5.ClusterProfile>? clustersToExport, {
     String? encryptionPassphrase,
   }) =>
       (super.noSuchMethod(
@@ -212,33 +175,33 @@ class MockClusterListController extends _i1.Mock
               [clustersToExport],
               {#encryptionPassphrase: encryptionPassphrase},
             ),
-            returnValue: _i10.Future<List<int>>.value(<int>[]),
+            returnValue: _i6.Future<List<int>>.value(<int>[]),
           )
-          as _i10.Future<List<int>>);
+          as _i6.Future<List<int>>);
 
   @override
-  _i10.Future<String> exportClusters(
-    List<_i9.ClusterProfile>? clustersToExport,
+  _i6.Future<String> exportClusters(
+    List<_i5.ClusterProfile>? clustersToExport,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#exportClusters, [clustersToExport]),
-            returnValue: _i10.Future<String>.value(
-              _i12.dummyValue<String>(
+            returnValue: _i6.Future<String>.value(
+              _i8.dummyValue<String>(
                 this,
                 Invocation.method(#exportClusters, [clustersToExport]),
               ),
             ),
           )
-          as _i10.Future<String>);
+          as _i6.Future<String>);
 
   @override
-  void addListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
   );
 
   @override
-  void removeListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#removeListener, [listener]),
     returnValueForMissingStub: null,
   );
@@ -260,128 +223,10 @@ class MockClusterListController extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockActiveConnectionController extends _i1.Mock
-    implements _i14.ActiveConnectionController {
+    implements _i10.ActiveConnectionController {
   MockActiveConnectionController() {
     _i1.throwOnMissingStub(this);
   }
-
-  @override
-  int get viewComputations =>
-      (super.noSuchMethod(Invocation.getter(#viewComputations), returnValue: 0)
-          as int);
-
-  @override
-  _i3.TopicListQuery get topicListQuery =>
-      (super.noSuchMethod(
-            Invocation.getter(#topicListQuery),
-            returnValue: _FakeTopicListQuery_1(
-              this,
-              Invocation.getter(#topicListQuery),
-            ),
-          )
-          as _i3.TopicListQuery);
-
-  @override
-  bool get showInternalTopics =>
-      (super.noSuchMethod(
-            Invocation.getter(#showInternalTopics),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  bool get showStreamTopics =>
-      (super.noSuchMethod(
-            Invocation.getter(#showStreamTopics),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  String get topicFilter =>
-      (super.noSuchMethod(
-            Invocation.getter(#topicFilter),
-            returnValue: _i12.dummyValue<String>(
-              this,
-              Invocation.getter(#topicFilter),
-            ),
-          )
-          as String);
-
-  @override
-  _i3.TopicFilterMode get topicFilterMode =>
-      (super.noSuchMethod(
-            Invocation.getter(#topicFilterMode),
-            returnValue: _i3.TopicFilterMode.substring,
-          )
-          as _i3.TopicFilterMode);
-
-  @override
-  _i3.TopicSortOrder get topicSortOrder =>
-      (super.noSuchMethod(
-            Invocation.getter(#topicSortOrder),
-            returnValue: _i3.TopicSortOrder.name,
-          )
-          as _i3.TopicSortOrder);
-
-  @override
-  bool get groupTopicsByPrefix =>
-      (super.noSuchMethod(
-            Invocation.getter(#groupTopicsByPrefix),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  Set<String> get favouriteTopics =>
-      (super.noSuchMethod(
-            Invocation.getter(#favouriteTopics),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
-  bool get topicPreferencesUnreadable =>
-      (super.noSuchMethod(
-            Invocation.getter(#topicPreferencesUnreadable),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  bool get topicPreferencesWriteBlocked =>
-      (super.noSuchMethod(
-            Invocation.getter(#topicPreferencesWriteBlocked),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  bool get unhealthyTopicsOnly =>
-      (super.noSuchMethod(
-            Invocation.getter(#unhealthyTopicsOnly),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  _i3.TopicListView get topicListView =>
-      (super.noSuchMethod(
-            Invocation.getter(#topicListView),
-            returnValue: _FakeTopicListView_2(
-              this,
-              Invocation.getter(#topicListView),
-            ),
-          )
-          as _i3.TopicListView);
-
-  @override
-  List<_i15.TopicMetadata> get topics =>
-      (super.noSuchMethod(
-            Invocation.getter(#topics),
-            returnValue: <_i15.TopicMetadata>[],
-          )
-          as List<_i15.TopicMetadata>);
 
   @override
   bool get isConnecting =>
@@ -389,12 +234,12 @@ class MockActiveConnectionController extends _i1.Mock
           as bool);
 
   @override
-  List<_i14.OpenTopicRecord> get openTopics =>
+  List<_i10.OpenTopicRecord> get openTopics =>
       (super.noSuchMethod(
             Invocation.getter(#openTopics),
-            returnValue: <_i14.OpenTopicRecord>[],
+            returnValue: <_i10.OpenTopicRecord>[],
           )
-          as List<_i14.OpenTopicRecord>);
+          as List<_i10.OpenTopicRecord>);
 
   @override
   List<String> get unrestoredTopics =>
@@ -405,75 +250,9 @@ class MockActiveConnectionController extends _i1.Mock
           as List<String>);
 
   @override
-  set viewComputations(int? value) => super.noSuchMethod(
-    Invocation.setter(#viewComputations, value),
-    returnValueForMissingStub: null,
-  );
-
-  @override
   bool get hasListeners =>
       (super.noSuchMethod(Invocation.getter(#hasListeners), returnValue: false)
           as bool);
-
-  @override
-  void toggleShowInternalTopics(bool? value) => super.noSuchMethod(
-    Invocation.method(#toggleShowInternalTopics, [value]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void toggleShowStreamTopics(bool? value) => super.noSuchMethod(
-    Invocation.method(#toggleShowStreamTopics, [value]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void setTopicFilterMode(_i3.TopicFilterMode? mode) => super.noSuchMethod(
-    Invocation.method(#setTopicFilterMode, [mode]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void setTopicSortOrder(_i3.TopicSortOrder? sort) => super.noSuchMethod(
-    Invocation.method(#setTopicSortOrder, [sort]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void setGroupByPrefix(bool? value) => super.noSuchMethod(
-    Invocation.method(#setGroupByPrefix, [value]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void toggleGroupByPrefix() => super.noSuchMethod(
-    Invocation.method(#toggleGroupByPrefix, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void toggleFavourite(String? topicName) => super.noSuchMethod(
-    Invocation.method(#toggleFavourite, [topicName]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void toggleGroupCollapsed(String? prefix) => super.noSuchMethod(
-    Invocation.method(#toggleGroupCollapsed, [prefix]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void showAllTopics() => super.noSuchMethod(
-    Invocation.method(#showAllTopics, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void dismissTopicPreferencesNotice() => super.noSuchMethod(
-    Invocation.method(#dismissTopicPreferencesNotice, []),
-    returnValueForMissingStub: null,
-  );
 
   @override
   void clearError() => super.noSuchMethod(
@@ -482,30 +261,12 @@ class MockActiveConnectionController extends _i1.Mock
   );
 
   @override
-  bool isConnectingCluster(_i9.ClusterProfile? profile) =>
+  bool isConnectingCluster(_i5.ClusterProfile? profile) =>
       (super.noSuchMethod(
             Invocation.method(#isConnectingCluster, [profile]),
             returnValue: false,
           )
           as bool);
-
-  @override
-  void showUnhealthyTopicsOnly() => super.noSuchMethod(
-    Invocation.method(#showUnhealthyTopicsOnly, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void clearUnhealthyTopicsOnly() => super.noSuchMethod(
-    Invocation.method(#clearUnhealthyTopicsOnly, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void updateTopicFilter(String? filter) => super.noSuchMethod(
-    Invocation.method(#updateTopicFilter, [filter]),
-    returnValueForMissingStub: null,
-  );
 
   @override
   void acknowledgeUnrestoredTopics() => super.noSuchMethod(
@@ -514,7 +275,7 @@ class MockActiveConnectionController extends _i1.Mock
   );
 
   @override
-  bool hasRunningOperations(_i9.ClusterProfile? profile) =>
+  bool hasRunningOperations(_i5.ClusterProfile? profile) =>
       (super.noSuchMethod(
             Invocation.method(#hasRunningOperations, [profile]),
             returnValue: false,
@@ -522,9 +283,9 @@ class MockActiveConnectionController extends _i1.Mock
           as bool);
 
   @override
-  _i14.OpenTopicRecord? openTopic({
-    required _i15.TopicMetadata? topic,
-    _i9.ClusterProfile? profile,
+  _i10.OpenTopicRecord? openTopic({
+    required _i11.TopicMetadata? topic,
+    _i5.ClusterProfile? profile,
     bool? forceNew = false,
   }) =>
       (super.noSuchMethod(
@@ -534,11 +295,11 @@ class MockActiveConnectionController extends _i1.Mock
               #forceNew: forceNew,
             }),
           )
-          as _i14.OpenTopicRecord?);
+          as _i10.OpenTopicRecord?);
 
   @override
-  _i10.Future<_i14.OpenTopicRecord?> openTopicByName(
-    _i9.ClusterProfile? profile,
+  _i6.Future<_i10.OpenTopicRecord?> openTopicByName(
+    _i5.ClusterProfile? profile,
     String? name, {
     bool? forceNew = false,
   }) =>
@@ -548,24 +309,24 @@ class MockActiveConnectionController extends _i1.Mock
               [profile, name],
               {#forceNew: forceNew},
             ),
-            returnValue: _i10.Future<_i14.OpenTopicRecord?>.value(),
+            returnValue: _i6.Future<_i10.OpenTopicRecord?>.value(),
           )
-          as _i10.Future<_i14.OpenTopicRecord?>);
+          as _i6.Future<_i10.OpenTopicRecord?>);
 
   @override
-  _i14.OpenTopicRecord? streamTopicWithDefaults(
-    _i15.TopicMetadata? topic, [
-    _i9.ClusterProfile? profile,
+  _i10.OpenTopicRecord? streamTopicWithDefaults(
+    _i11.TopicMetadata? topic, [
+    _i5.ClusterProfile? profile,
   ]) =>
       (super.noSuchMethod(
             Invocation.method(#streamTopicWithDefaults, [topic, profile]),
           )
-          as _i14.OpenTopicRecord?);
+          as _i10.OpenTopicRecord?);
 
   @override
   void setActiveTopic(
-    _i15.TopicMetadata? topic, [
-    _i9.ClusterProfile? profile,
+    _i11.TopicMetadata? topic, [
+    _i5.ClusterProfile? profile,
   ]) => super.noSuchMethod(
     Invocation.method(#setActiveTopic, [topic, profile]),
     returnValueForMissingStub: null,
@@ -578,76 +339,10 @@ class MockActiveConnectionController extends _i1.Mock
   );
 
   @override
-  void setActiveTopicRecord(_i14.OpenTopicRecord? record) => super.noSuchMethod(
+  void setActiveTopicRecord(_i10.OpenTopicRecord? record) => super.noSuchMethod(
     Invocation.method(#setActiveTopicRecord, [record]),
     returnValueForMissingStub: null,
   );
-
-  @override
-  _i4.MessageStreamController getStreamController(
-    String? tabIdOrTopicName, [
-    String? clusterName,
-  ]) =>
-      (super.noSuchMethod(
-            Invocation.method(#getStreamController, [
-              tabIdOrTopicName,
-              clusterName,
-            ]),
-            returnValue: _FakeMessageStreamController_3(
-              this,
-              Invocation.method(#getStreamController, [
-                tabIdOrTopicName,
-                clusterName,
-              ]),
-            ),
-          )
-          as _i4.MessageStreamController);
-
-  @override
-  _i5.TopicAnalysisController getAnalysisController(
-    String? tabIdOrTopicName, [
-    String? clusterName,
-  ]) =>
-      (super.noSuchMethod(
-            Invocation.method(#getAnalysisController, [
-              tabIdOrTopicName,
-              clusterName,
-            ]),
-            returnValue: _FakeTopicAnalysisController_4(
-              this,
-              Invocation.method(#getAnalysisController, [
-                tabIdOrTopicName,
-                clusterName,
-              ]),
-            ),
-          )
-          as _i5.TopicAnalysisController);
-
-  @override
-  _i6.TopicFactsController getTopicFactsController(
-    String? tabIdOrTopicName,
-    _i9.ClusterProfile? profile,
-    String? topicName, [
-    String? clusterName,
-  ]) =>
-      (super.noSuchMethod(
-            Invocation.method(#getTopicFactsController, [
-              tabIdOrTopicName,
-              profile,
-              topicName,
-              clusterName,
-            ]),
-            returnValue: _FakeTopicFactsController_5(
-              this,
-              Invocation.method(#getTopicFactsController, [
-                tabIdOrTopicName,
-                profile,
-                topicName,
-                clusterName,
-              ]),
-            ),
-          )
-          as _i6.TopicFactsController);
 
   @override
   void closeTopicTab(String? tabId) => super.noSuchMethod(
@@ -656,7 +351,7 @@ class MockActiveConnectionController extends _i1.Mock
   );
 
   @override
-  void closeTopic(_i15.TopicMetadata? topic, String? clusterName) =>
+  void closeTopic(_i11.TopicMetadata? topic, String? clusterName) =>
       super.noSuchMethod(
         Invocation.method(#closeTopic, [topic, clusterName]),
         returnValueForMissingStub: null,
@@ -669,13 +364,13 @@ class MockActiveConnectionController extends _i1.Mock
   );
 
   @override
-  _i10.Future<void> connect(_i9.ClusterProfile? profile) =>
+  _i6.Future<void> connect(_i5.ClusterProfile? profile) =>
       (super.noSuchMethod(
             Invocation.method(#connect, [profile]),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
   void disconnect() => super.noSuchMethod(
@@ -684,13 +379,13 @@ class MockActiveConnectionController extends _i1.Mock
   );
 
   @override
-  void addListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
   );
 
   @override
-  void removeListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#removeListener, [listener]),
     returnValueForMissingStub: null,
   );
@@ -711,121 +406,121 @@ class MockActiveConnectionController extends _i1.Mock
 /// A class which mocks [SettingsService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSettingsService extends _i1.Mock implements _i16.SettingsService {
+class MockSettingsService extends _i1.Mock implements _i12.SettingsService {
   MockSettingsService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i7.ValueNotifier<int> get defaultResultLimit =>
+  _i3.ValueNotifier<int> get defaultResultLimit =>
       (super.noSuchMethod(
             Invocation.getter(#defaultResultLimit),
-            returnValue: _FakeValueNotifier_6<int>(
+            returnValue: _FakeValueNotifier_1<int>(
               this,
               Invocation.getter(#defaultResultLimit),
             ),
           )
-          as _i7.ValueNotifier<int>);
+          as _i3.ValueNotifier<int>);
 
   @override
-  _i7.ValueNotifier<int> get messageBufferLimit =>
+  _i3.ValueNotifier<int> get messageBufferLimit =>
       (super.noSuchMethod(
             Invocation.getter(#messageBufferLimit),
-            returnValue: _FakeValueNotifier_6<int>(
+            returnValue: _FakeValueNotifier_1<int>(
               this,
               Invocation.getter(#messageBufferLimit),
             ),
           )
-          as _i7.ValueNotifier<int>);
+          as _i3.ValueNotifier<int>);
 
   @override
-  _i10.Future<void> writeInt(_i16.IntSetting? setting, int? value) =>
+  _i6.Future<void> writeInt(_i12.IntSetting? setting, int? value) =>
       (super.noSuchMethod(
             Invocation.method(#writeInt, [setting, value]),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<int> loadDefaultResultLimit() =>
+  _i6.Future<int> loadDefaultResultLimit() =>
       (super.noSuchMethod(
             Invocation.method(#loadDefaultResultLimit, []),
-            returnValue: _i10.Future<int>.value(0),
+            returnValue: _i6.Future<int>.value(0),
           )
-          as _i10.Future<int>);
+          as _i6.Future<int>);
 
   @override
-  _i10.Future<void> setDefaultResultLimit(int? limit) =>
+  _i6.Future<void> setDefaultResultLimit(int? limit) =>
       (super.noSuchMethod(
             Invocation.method(#setDefaultResultLimit, [limit]),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<int> loadMessageBufferLimit() =>
+  _i6.Future<int> loadMessageBufferLimit() =>
       (super.noSuchMethod(
             Invocation.method(#loadMessageBufferLimit, []),
-            returnValue: _i10.Future<int>.value(0),
+            returnValue: _i6.Future<int>.value(0),
           )
-          as _i10.Future<int>);
+          as _i6.Future<int>);
 
   @override
-  _i10.Future<void> setMessageBufferLimit(int? limit) =>
+  _i6.Future<void> setMessageBufferLimit(int? limit) =>
       (super.noSuchMethod(
             Invocation.method(#setMessageBufferLimit, [limit]),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<int> lagWarnThreshold() =>
+  _i6.Future<int> lagWarnThreshold() =>
       (super.noSuchMethod(
             Invocation.method(#lagWarnThreshold, []),
-            returnValue: _i10.Future<int>.value(0),
+            returnValue: _i6.Future<int>.value(0),
           )
-          as _i10.Future<int>);
+          as _i6.Future<int>);
 
   @override
-  _i10.Future<void> setLagWarnThreshold(int? messages) =>
+  _i6.Future<void> setLagWarnThreshold(int? messages) =>
       (super.noSuchMethod(
             Invocation.method(#setLagWarnThreshold, [messages]),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<String?> defaultOutputDirectory() =>
+  _i6.Future<String?> defaultOutputDirectory() =>
       (super.noSuchMethod(
             Invocation.method(#defaultOutputDirectory, []),
-            returnValue: _i10.Future<String?>.value(),
+            returnValue: _i6.Future<String?>.value(),
           )
-          as _i10.Future<String?>);
+          as _i6.Future<String?>);
 
   @override
-  _i10.Future<void> initializeSettings() =>
+  _i6.Future<void> initializeSettings() =>
       (super.noSuchMethod(
             Invocation.method(#initializeSettings, []),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<void> resetGeneralSettings() =>
+  _i6.Future<void> resetGeneralSettings() =>
       (super.noSuchMethod(
             Invocation.method(#resetGeneralSettings, []),
-            returnValue: _i10.Future<void>.value(),
-            returnValueForMissingStub: _i10.Future<void>.value(),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
           )
-          as _i10.Future<void>);
+          as _i6.Future<void>);
 
   @override
-  _i10.Future<String?> exportConfiguration({
+  _i6.Future<String?> exportConfiguration({
     required String? dialogTitle,
     String? encryptionPassphrase,
   }) =>
@@ -834,18 +529,15 @@ class MockSettingsService extends _i1.Mock implements _i16.SettingsService {
               #dialogTitle: dialogTitle,
               #encryptionPassphrase: encryptionPassphrase,
             }),
-            returnValue: _i10.Future<String?>.value(),
+            returnValue: _i6.Future<String?>.value(),
           )
-          as _i10.Future<String?>);
+          as _i6.Future<String?>);
 
   @override
-  _i10.Future<_i16.ImportConfigurationResult?> importConfiguration({
+  _i6.Future<_i12.ImportConfigurationResult?> importConfiguration({
     required String? dialogTitle,
-    required _i17.PassphrasePrompt? promptPassphrase,
-    _i10.Future<_i11.ImportConflictChoice?> Function(
-      _i9.ClusterProfile,
-      String,
-    )?
+    required _i13.PassphrasePrompt? promptPassphrase,
+    _i6.Future<_i7.ImportConflictChoice?> Function(_i5.ClusterProfile, String)?
     onClusterConflict,
   }) =>
       (super.noSuchMethod(
@@ -854,7 +546,7 @@ class MockSettingsService extends _i1.Mock implements _i16.SettingsService {
               #promptPassphrase: promptPassphrase,
               #onClusterConflict: onClusterConflict,
             }),
-            returnValue: _i10.Future<_i16.ImportConfigurationResult?>.value(),
+            returnValue: _i6.Future<_i12.ImportConfigurationResult?>.value(),
           )
-          as _i10.Future<_i16.ImportConfigurationResult?>);
+          as _i6.Future<_i12.ImportConfigurationResult?>);
 }

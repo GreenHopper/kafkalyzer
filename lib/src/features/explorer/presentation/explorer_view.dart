@@ -235,7 +235,7 @@ class _ExplorerViewState extends State<ExplorerView> {
         profile: activeProfile,
         topics: allTopics,
         isLoading: isLoading,
-        onShowUnhealthyTopics: activeController.showUnhealthyTopicsOnly,
+        onShowUnhealthyTopics: topicController.showUnhealthyTopicsOnly,
         onSelectTopic: (topicName) {
           openTopicByNameWithFeedback(
             controller: activeController,
@@ -264,7 +264,7 @@ class _ExplorerViewState extends State<ExplorerView> {
       children: [
         if (activeBannerProfile != null)
           EnvironmentBanner(profile: activeBannerProfile),
-        _buildTabBar(context, l10n, activeController),
+        _buildTabBar(context, l10n, activeController, topicController),
         _buildTabViews(activeController, safeIndex),
       ],
     );
@@ -292,6 +292,7 @@ class _ExplorerViewState extends State<ExplorerView> {
     BuildContext context,
     AppLocalizations l10n,
     ActiveConnectionController activeController,
+    TopicController topicController,
   ) {
     return Container(
       height: 48,
@@ -337,6 +338,7 @@ class _ExplorerViewState extends State<ExplorerView> {
                   context,
                   l10n,
                   activeController,
+                  topicController,
                   activeController.openTopics[index],
                 );
               },
@@ -351,11 +353,13 @@ class _ExplorerViewState extends State<ExplorerView> {
     BuildContext context,
     AppLocalizations l10n,
     ActiveConnectionController activeController,
+    TopicController topicController,
     OpenTopicRecord record,
   ) {
     final isSelected = activeController.activeTopic?.id == record.id;
-    final streamCtrl = activeController.getStreamController(record.id);
-    final analysisCtrl = activeController.getAnalysisController(record.id);
+    final viewControllers = topicController.viewControllers;
+    final streamCtrl = viewControllers.stream(record.id);
+    final analysisCtrl = viewControllers.analysis(record.id);
 
     return InkWell(
       onTap: () => activeController.setActiveTabId(record.id),

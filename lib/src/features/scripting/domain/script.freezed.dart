@@ -29,16 +29,21 @@ $ScriptVariableCopyWith<ScriptVariable> get copyWith => _$ScriptVariableCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScriptVariable&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type));
+  final _this = this as ScriptVariable;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScriptVariable&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.type, _this.type) || other.type == _this.type));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,type);
+int get hashCode {
+  final _this = this as ScriptVariable;
+  return Object.hash(runtimeType,_this.name,_this.type);
+}
 
 @override
 String toString() {
-  return 'ScriptVariable(name: $name, type: $type)';
+  final _this = this as ScriptVariable;
+  return 'ScriptVariable(name: ${_this.name}, type: ${_this.type})';
 }
 
 
@@ -230,16 +235,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScriptVariable&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScriptVariable&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,name,type);
+int get hashCode {
+    return Object.hash(runtimeType,name,type);
+}
 
 @override
 String toString() {
-  return 'ScriptVariable(name: $name, type: $type)';
+    return 'ScriptVariable(name: $name, type: $type)';
 }
 
 
@@ -295,16 +302,21 @@ $ScriptCopyWith<Script> get copyWith => _$ScriptCopyWithImpl<Script>(this as Scr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Script&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.concurrencyLimit, concurrencyLimit) || other.concurrencyLimit == concurrencyLimit)&&(identical(other.outputDirectory, outputDirectory) || other.outputDirectory == outputDirectory)&&const DeepCollectionEquality().equals(other.variables, variables)&&const DeepCollectionEquality().equals(other.steps, steps));
+  final _this = this as Script;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Script&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.concurrencyLimit, _this.concurrencyLimit) || other.concurrencyLimit == _this.concurrencyLimit)&&(identical(other.outputDirectory, _this.outputDirectory) || other.outputDirectory == _this.outputDirectory)&&const DeepCollectionEquality().equals(other.variables, _this.variables)&&const DeepCollectionEquality().equals(other.steps, _this.steps));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,concurrencyLimit,outputDirectory,const DeepCollectionEquality().hash(variables),const DeepCollectionEquality().hash(steps));
+int get hashCode {
+  final _this = this as Script;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.concurrencyLimit,_this.outputDirectory,const DeepCollectionEquality().hash(_this.variables),const DeepCollectionEquality().hash(_this.steps));
+}
 
 @override
 String toString() {
-  return 'Script(id: $id, name: $name, concurrencyLimit: $concurrencyLimit, outputDirectory: $outputDirectory, variables: $variables, steps: $steps)';
+  final _this = this as Script;
+  return 'Script(id: ${_this.id}, name: ${_this.name}, concurrencyLimit: ${_this.concurrencyLimit}, outputDirectory: ${_this.outputDirectory}, variables: ${_this.variables}, steps: ${_this.steps})';
 }
 
 
@@ -516,16 +528,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Script&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.concurrencyLimit, concurrencyLimit) || other.concurrencyLimit == concurrencyLimit)&&(identical(other.outputDirectory, outputDirectory) || other.outputDirectory == outputDirectory)&&const DeepCollectionEquality().equals(other._variables, _variables)&&const DeepCollectionEquality().equals(other._steps, _steps));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Script&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.concurrencyLimit, concurrencyLimit) || other.concurrencyLimit == concurrencyLimit)&&(identical(other.outputDirectory, outputDirectory) || other.outputDirectory == outputDirectory)&&const DeepCollectionEquality().equals(other.variables, _variables)&&const DeepCollectionEquality().equals(other.steps, _steps));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,concurrencyLimit,outputDirectory,const DeepCollectionEquality().hash(_variables),const DeepCollectionEquality().hash(_steps));
+int get hashCode {
+    return Object.hash(runtimeType,id,name,concurrencyLimit,outputDirectory,const DeepCollectionEquality().hash(_variables),const DeepCollectionEquality().hash(_steps));
+}
 
 @override
 String toString() {
-  return 'Script(id: $id, name: $name, concurrencyLimit: $concurrencyLimit, outputDirectory: $outputDirectory, variables: $variables, steps: $steps)';
+    return 'Script(id: $id, name: $name, concurrencyLimit: $concurrencyLimit, outputDirectory: $outputDirectory, variables: $variables, steps: $steps)';
 }
 
 
@@ -585,16 +599,21 @@ $ScriptExtractionCopyWith<ScriptExtraction> get copyWith => _$ScriptExtractionCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScriptExtraction&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.variableName, variableName) || other.variableName == variableName)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.source, source) || other.source == source));
+  final _this = this as ScriptExtraction;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScriptExtraction&&(identical(other.jsonPath, _this.jsonPath) || other.jsonPath == _this.jsonPath)&&(identical(other.variableName, _this.variableName) || other.variableName == _this.variableName)&&(identical(other.topic, _this.topic) || other.topic == _this.topic)&&(identical(other.source, _this.source) || other.source == _this.source));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,jsonPath,variableName,topic,source);
+int get hashCode {
+  final _this = this as ScriptExtraction;
+  return Object.hash(runtimeType,_this.jsonPath,_this.variableName,_this.topic,_this.source);
+}
 
 @override
 String toString() {
-  return 'ScriptExtraction(jsonPath: $jsonPath, variableName: $variableName, topic: $topic, source: $source)';
+  final _this = this as ScriptExtraction;
+  return 'ScriptExtraction(jsonPath: ${_this.jsonPath}, variableName: ${_this.variableName}, topic: ${_this.topic}, source: ${_this.source})';
 }
 
 
@@ -790,16 +809,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScriptExtraction&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.variableName, variableName) || other.variableName == variableName)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScriptExtraction&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.variableName, variableName) || other.variableName == variableName)&&(identical(other.topic, topic) || other.topic == topic)&&(identical(other.source, source) || other.source == source));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,jsonPath,variableName,topic,source);
+int get hashCode {
+    return Object.hash(runtimeType,jsonPath,variableName,topic,source);
+}
 
 @override
 String toString() {
-  return 'ScriptExtraction(jsonPath: $jsonPath, variableName: $variableName, topic: $topic, source: $source)';
+    return 'ScriptExtraction(jsonPath: $jsonPath, variableName: $variableName, topic: $topic, source: $source)';
 }
 
 
@@ -857,16 +878,21 @@ $ScriptStepCopyWith<ScriptStep> get copyWith => _$ScriptStepCopyWithImpl<ScriptS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScriptStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.clusterName, clusterName) || other.clusterName == clusterName)&&const DeepCollectionEquality().equals(other.topicNames, topicNames)&&(identical(other.filterTemplate, filterTemplate) || other.filterTemplate == filterTemplate)&&(identical(other.filterExpression, filterExpression) || other.filterExpression == filterExpression)&&(identical(other.filterType, filterType) || other.filterType == filterType)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.startStrategy, startStrategy) || other.startStrategy == startStrategy)&&(identical(other.endStrategy, endStrategy) || other.endStrategy == endStrategy)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.startTimestamp, startTimestamp) || other.startTimestamp == startTimestamp)&&(identical(other.startPartition, startPartition) || other.startPartition == startPartition)&&(identical(other.fastTraceEnabled, fastTraceEnabled) || other.fastTraceEnabled == fastTraceEnabled)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.endTimestamp, endTimestamp) || other.endTimestamp == endTimestamp)&&(identical(other.maxResults, maxResults) || other.maxResults == maxResults)&&const DeepCollectionEquality().equals(other.extractions, extractions));
+  final _this = this as ScriptStep;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScriptStep&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.clusterName, _this.clusterName) || other.clusterName == _this.clusterName)&&const DeepCollectionEquality().equals(other.topicNames, _this.topicNames)&&(identical(other.filterTemplate, _this.filterTemplate) || other.filterTemplate == _this.filterTemplate)&&(identical(other.filterExpression, _this.filterExpression) || other.filterExpression == _this.filterExpression)&&(identical(other.filterType, _this.filterType) || other.filterType == _this.filterType)&&(identical(other.scope, _this.scope) || other.scope == _this.scope)&&(identical(other.startStrategy, _this.startStrategy) || other.startStrategy == _this.startStrategy)&&(identical(other.endStrategy, _this.endStrategy) || other.endStrategy == _this.endStrategy)&&(identical(other.startOffset, _this.startOffset) || other.startOffset == _this.startOffset)&&(identical(other.startTimestamp, _this.startTimestamp) || other.startTimestamp == _this.startTimestamp)&&(identical(other.startPartition, _this.startPartition) || other.startPartition == _this.startPartition)&&(identical(other.fastTraceEnabled, _this.fastTraceEnabled) || other.fastTraceEnabled == _this.fastTraceEnabled)&&(identical(other.endOffset, _this.endOffset) || other.endOffset == _this.endOffset)&&(identical(other.endTimestamp, _this.endTimestamp) || other.endTimestamp == _this.endTimestamp)&&(identical(other.maxResults, _this.maxResults) || other.maxResults == _this.maxResults)&&const DeepCollectionEquality().equals(other.extractions, _this.extractions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,clusterName,const DeepCollectionEquality().hash(topicNames),filterTemplate,filterExpression,filterType,scope,startStrategy,endStrategy,startOffset,startTimestamp,startPartition,fastTraceEnabled,endOffset,endTimestamp,maxResults,const DeepCollectionEquality().hash(extractions));
+int get hashCode {
+  final _this = this as ScriptStep;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.clusterName,const DeepCollectionEquality().hash(_this.topicNames),_this.filterTemplate,_this.filterExpression,_this.filterType,_this.scope,_this.startStrategy,_this.endStrategy,_this.startOffset,_this.startTimestamp,_this.startPartition,_this.fastTraceEnabled,_this.endOffset,_this.endTimestamp,_this.maxResults,const DeepCollectionEquality().hash(_this.extractions));
+}
 
 @override
 String toString() {
-  return 'ScriptStep(id: $id, name: $name, clusterName: $clusterName, topicNames: $topicNames, filterTemplate: $filterTemplate, filterExpression: $filterExpression, filterType: $filterType, scope: $scope, startStrategy: $startStrategy, endStrategy: $endStrategy, startOffset: $startOffset, startTimestamp: $startTimestamp, startPartition: $startPartition, fastTraceEnabled: $fastTraceEnabled, endOffset: $endOffset, endTimestamp: $endTimestamp, maxResults: $maxResults, extractions: $extractions)';
+  final _this = this as ScriptStep;
+  return 'ScriptStep(id: ${_this.id}, name: ${_this.name}, clusterName: ${_this.clusterName}, topicNames: ${_this.topicNames}, filterTemplate: ${_this.filterTemplate}, filterExpression: ${_this.filterExpression}, filterType: ${_this.filterType}, scope: ${_this.scope}, startStrategy: ${_this.startStrategy}, endStrategy: ${_this.endStrategy}, startOffset: ${_this.startOffset}, startTimestamp: ${_this.startTimestamp}, startPartition: ${_this.startPartition}, fastTraceEnabled: ${_this.fastTraceEnabled}, endOffset: ${_this.endOffset}, endTimestamp: ${_this.endTimestamp}, maxResults: ${_this.maxResults}, extractions: ${_this.extractions})';
 }
 
 
@@ -1102,16 +1128,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScriptStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.clusterName, clusterName) || other.clusterName == clusterName)&&const DeepCollectionEquality().equals(other._topicNames, _topicNames)&&(identical(other.filterTemplate, filterTemplate) || other.filterTemplate == filterTemplate)&&(identical(other.filterExpression, filterExpression) || other.filterExpression == filterExpression)&&(identical(other.filterType, filterType) || other.filterType == filterType)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.startStrategy, startStrategy) || other.startStrategy == startStrategy)&&(identical(other.endStrategy, endStrategy) || other.endStrategy == endStrategy)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.startTimestamp, startTimestamp) || other.startTimestamp == startTimestamp)&&(identical(other.startPartition, startPartition) || other.startPartition == startPartition)&&(identical(other.fastTraceEnabled, fastTraceEnabled) || other.fastTraceEnabled == fastTraceEnabled)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.endTimestamp, endTimestamp) || other.endTimestamp == endTimestamp)&&(identical(other.maxResults, maxResults) || other.maxResults == maxResults)&&const DeepCollectionEquality().equals(other._extractions, _extractions));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScriptStep&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.clusterName, clusterName) || other.clusterName == clusterName)&&const DeepCollectionEquality().equals(other.topicNames, _topicNames)&&(identical(other.filterTemplate, filterTemplate) || other.filterTemplate == filterTemplate)&&(identical(other.filterExpression, filterExpression) || other.filterExpression == filterExpression)&&(identical(other.filterType, filterType) || other.filterType == filterType)&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.startStrategy, startStrategy) || other.startStrategy == startStrategy)&&(identical(other.endStrategy, endStrategy) || other.endStrategy == endStrategy)&&(identical(other.startOffset, startOffset) || other.startOffset == startOffset)&&(identical(other.startTimestamp, startTimestamp) || other.startTimestamp == startTimestamp)&&(identical(other.startPartition, startPartition) || other.startPartition == startPartition)&&(identical(other.fastTraceEnabled, fastTraceEnabled) || other.fastTraceEnabled == fastTraceEnabled)&&(identical(other.endOffset, endOffset) || other.endOffset == endOffset)&&(identical(other.endTimestamp, endTimestamp) || other.endTimestamp == endTimestamp)&&(identical(other.maxResults, maxResults) || other.maxResults == maxResults)&&const DeepCollectionEquality().equals(other.extractions, _extractions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,clusterName,const DeepCollectionEquality().hash(_topicNames),filterTemplate,filterExpression,filterType,scope,startStrategy,endStrategy,startOffset,startTimestamp,startPartition,fastTraceEnabled,endOffset,endTimestamp,maxResults,const DeepCollectionEquality().hash(_extractions));
+int get hashCode {
+    return Object.hash(runtimeType,id,name,clusterName,const DeepCollectionEquality().hash(_topicNames),filterTemplate,filterExpression,filterType,scope,startStrategy,endStrategy,startOffset,startTimestamp,startPartition,fastTraceEnabled,endOffset,endTimestamp,maxResults,const DeepCollectionEquality().hash(_extractions));
+}
 
 @override
 String toString() {
-  return 'ScriptStep(id: $id, name: $name, clusterName: $clusterName, topicNames: $topicNames, filterTemplate: $filterTemplate, filterExpression: $filterExpression, filterType: $filterType, scope: $scope, startStrategy: $startStrategy, endStrategy: $endStrategy, startOffset: $startOffset, startTimestamp: $startTimestamp, startPartition: $startPartition, fastTraceEnabled: $fastTraceEnabled, endOffset: $endOffset, endTimestamp: $endTimestamp, maxResults: $maxResults, extractions: $extractions)';
+    return 'ScriptStep(id: $id, name: $name, clusterName: $clusterName, topicNames: $topicNames, filterTemplate: $filterTemplate, filterExpression: $filterExpression, filterType: $filterType, scope: $scope, startStrategy: $startStrategy, endStrategy: $endStrategy, startOffset: $startOffset, startTimestamp: $startTimestamp, startPartition: $startPartition, fastTraceEnabled: $fastTraceEnabled, endOffset: $endOffset, endTimestamp: $endTimestamp, maxResults: $maxResults, extractions: $extractions)';
 }
 
 

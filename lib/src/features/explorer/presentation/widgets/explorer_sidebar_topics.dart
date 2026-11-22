@@ -36,7 +36,7 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
   SchemaController get schemaController => widget.schemaController;
 
   late final TextEditingController _filterController = TextEditingController(
-    text: widget.activeController.topicFilter,
+    text: widget.topicController.topicFilter,
   );
 
   @override
@@ -61,7 +61,7 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
 
   Widget _topicsControls(BuildContext context, AppLocalizations l10n) {
     final activeProfile = activeController.activeProfile!;
-    final view = activeController.topicListView;
+    final view = topicController.topicListView(activeController.activeProfile);
     final totalCount = topicController.getTopics(activeProfile)?.length ?? 0;
     final fetchedAt = topicController.fetchedAt(activeProfile);
 
@@ -94,8 +94,8 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                 tooltip: l10n.topicListSortTooltip,
                 icon: const Icon(Icons.sort, size: 16),
                 padding: EdgeInsets.zero,
-                initialValue: activeController.topicSortOrder,
-                onSelected: activeController.setTopicSortOrder,
+                initialValue: topicController.topicSortOrder,
+                onSelected: topicController.setTopicSortOrder,
                 itemBuilder: (context) => [
                   PopupMenuItem(
                     value: TopicSortOrder.name,
@@ -114,17 +114,17 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
               IconButton(
                 key: const Key('topic_group_by_prefix_button'),
                 icon: Icon(
-                  activeController.groupTopicsByPrefix
+                  topicController.groupTopicsByPrefix
                       ? Icons.account_tree
                       : Icons.account_tree_outlined,
                   size: 16,
-                  color: activeController.groupTopicsByPrefix
+                  color: topicController.groupTopicsByPrefix
                       ? Theme.of(context).colorScheme.primary
                       : null,
                 ),
                 tooltip: l10n.topicListGroupByPrefixTooltip,
                 padding: EdgeInsets.zero,
-                onPressed: activeController.toggleGroupByPrefix,
+                onPressed: topicController.toggleGroupByPrefix,
               ),
               IconButton(
                 key: const Key('explorer_quick_jump_button'),
@@ -160,17 +160,17 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
   }
 
   Widget _topicFilter(BuildContext context, AppLocalizations l10n) {
-    final view = activeController.topicListView;
-    if (_filterController.text != activeController.topicFilter) {
+    final view = topicController.topicListView(activeController.activeProfile);
+    if (_filterController.text != topicController.topicFilter) {
       _filterController.value = TextEditingValue(
-        text: activeController.topicFilter,
+        text: topicController.topicFilter,
         selection: TextSelection.collapsed(
-          offset: activeController.topicFilter.length,
+          offset: topicController.topicFilter.length,
         ),
       );
     }
 
-    final modeLabel = switch (activeController.topicFilterMode) {
+    final modeLabel = switch (topicController.topicFilterMode) {
       TopicFilterMode.substring => l10n.topicListFilterModeSubstring,
       TopicFilterMode.glob => l10n.topicListFilterModeGlob,
       TopicFilterMode.regex => l10n.topicListFilterModeRegex,
@@ -187,16 +187,16 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
             children: [
               FilterChip(
                 label: Text(l10n.internalTopicsFilter),
-                selected: activeController.showInternalTopics,
+                selected: topicController.showInternalTopics,
                 onSelected: (val) =>
-                    activeController.toggleShowInternalTopics(val),
+                    topicController.toggleShowInternalTopics(val),
                 visualDensity: VisualDensity.compact,
               ),
               FilterChip(
                 label: Text(l10n.streamTopicsFilter),
-                selected: activeController.showStreamTopics,
+                selected: topicController.showStreamTopics,
                 onSelected: (val) =>
-                    activeController.toggleShowStreamTopics(val),
+                    topicController.toggleShowStreamTopics(val),
                 visualDensity: VisualDensity.compact,
               ),
               if (view.totalHidden > 0)
@@ -214,12 +214,12 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                     ),
                     onPressed: () {
                       _filterController.clear();
-                      activeController.showAllTopics();
+                      topicController.showAllTopics();
                     },
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
-              if (activeController.unhealthyTopicsOnly)
+              if (topicController.unhealthyTopicsOnly)
                 InputChip(
                   key: const Key('topic_unhealthy_only_chip'),
                   avatar: Icon(
@@ -229,10 +229,12 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                   ),
                   label: Text(
                     l10n.topicListUnhealthyOnlyChip(
-                      activeController.topics.length,
+                      topicController
+                          .topics(activeController.activeProfile)
+                          .length,
                     ),
                   ),
-                  onDeleted: activeController.clearUnhealthyTopicsOnly,
+                  onDeleted: topicController.clearUnhealthyTopicsOnly,
                   visualDensity: VisualDensity.compact,
                 ),
             ],
@@ -249,8 +251,8 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
               prefixIcon: PopupMenuButton<TopicFilterMode>(
                 key: const Key('topic_filter_mode_button'),
                 tooltip: l10n.topicListFilterModeTooltip,
-                initialValue: activeController.topicFilterMode,
-                onSelected: activeController.setTopicFilterMode,
+                initialValue: topicController.topicFilterMode,
+                onSelected: topicController.setTopicFilterMode,
                 itemBuilder: (context) => [
                   PopupMenuItem(
                     value: TopicFilterMode.substring,
@@ -289,7 +291,7 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                       tooltip: l10n.clear,
                       onPressed: () {
                         _filterController.clear();
-                        activeController.updateTopicFilter("");
+                        topicController.updateTopicFilter("");
                         setState(() {});
                       },
                     )
@@ -307,7 +309,7 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
               isDense: true,
             ),
             onChanged: (value) {
-              activeController.updateTopicFilter(value);
+              topicController.updateTopicFilter(value);
               setState(() {});
             },
           ),
@@ -345,7 +347,7 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
       );
     }
 
-    final view = activeController.topicListView;
+    final view = topicController.topicListView(activeController.activeProfile);
     final rows = view.rows;
     final failureGroups = view.failureGroups;
     final theme = Theme.of(context);
@@ -392,8 +394,8 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                 ],
               ),
             ),
-          if (activeController.topicPreferencesUnreadable ||
-              activeController.topicPreferencesWriteBlocked)
+          if (topicController.topicPreferencesUnreadable ||
+              topicController.topicPreferencesWriteBlocked)
             Container(
               key: const Key('topic_list_prefs_notice'),
               width: double.infinity,
@@ -413,7 +415,7 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      activeController.topicPreferencesWriteBlocked
+                      topicController.topicPreferencesWriteBlocked
                           ? l10n.topicListPrefsWriteBlockedNotice
                           : l10n.topicListPrefsUnreadableNotice,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -429,7 +431,7 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                       minWidth: 24,
                       minHeight: 24,
                     ),
-                    onPressed: activeController.dismissTopicPreferencesNotice,
+                    onPressed: topicController.dismissTopicPreferencesNotice,
                   ),
                 ],
               ),
@@ -467,7 +469,7 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                     return InkWell(
                       key: Key('topic_group_header_${row.prefix}'),
                       onTap: () =>
-                          activeController.toggleGroupCollapsed(row.prefix),
+                          topicController.toggleGroupCollapsed(row.prefix),
                       borderRadius: BorderRadius.circular(6),
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
@@ -518,12 +520,12 @@ class _ExplorerTopicPanelState extends State<ExplorerTopicPanel> {
                     return TopicListItem(
                       topic: topic,
                       isSelected: isSelected,
-                      highlightQuery: activeController.topicFilter,
+                      highlightQuery: topicController.topicFilter,
                       highlightPattern: view.highlightPattern,
                       isFavourite: row.isFavourite,
                       isMissingFavourite: row.isMissingFavourite,
                       onToggleFavourite: () =>
-                          activeController.toggleFavourite(row.name),
+                          topicController.toggleFavourite(row.name),
                       associatedFailureTopics: row.isMissingFavourite
                           ? null
                           : failureGroups[row.name],
