@@ -1,7 +1,12 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
+
+/// How far one scan or script step has got.
+///
+/// Defined once here because this tile renders it; the script runner, the topic
+/// detail progress tile and the headless runner all report into it.
+enum StepStatus { pending, running, completed, error }
 
 class TopicProgressTile extends StatelessWidget {
   final String topic;
