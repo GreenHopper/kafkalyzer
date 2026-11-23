@@ -120,6 +120,13 @@ context: |
         `presentation/widgets/` (one public widget class per file), and extend
         an existing util file instead of adding a new one. The CI size guard
         checks the files a change touches; generated sources are exempt.
+      - Commit regenerated bridge bindings (`lib/src/rust/`,
+        `rust/src/frb_generated.rs`) and checked-in mocks (`*.mocks.dart`) with
+        every bridge or mocked-interface change. The quality gate regenerates
+        them with the pinned `flutter_rust_bridge_codegen` and fails on any
+        difference (`bindings-guard`). Install the pin with
+        `cargo install flutter_rust_bridge_codegen --version <pin> --locked`
+        (version from `pubspec.yaml` / `rust/Cargo.toml`).
       - Use structured logging via the Dart `logger` package and the Rust `log`
         crate instead of `print`, `debugPrint` or ad-hoc log files. Never log
         secrets or message payloads.
@@ -233,9 +240,10 @@ context: |
       4. `dart format --output=none --set-exit-if-changed lib test`,
          `flutter analyze`, `flutter test`
       5. `scripts/check_read_only.sh`
-      6. `scripts/quality_gates.sh` runs the CI gate checks in one call (dart
-         format, flutter analyze, cargo fmt --check, source-file size guard,
-         session-wide state locator guard, feature import-cycle guard,
+      6. `scripts/quality_gates.sh` runs the CI gate checks in one call
+         (generated-source drift guard for bridge bindings + checked-in mocks,
+         dart format, flutter analyze, cargo fmt --check, source-file size
+         guard, session-wide state locator guard, feature import-cycle guard,
          shared-module import guard) and stops at the first finding.
          clippy is not part of it yet: it joins with `-D warnings` only once the
          change `enable-rust-lint-gate` lands.

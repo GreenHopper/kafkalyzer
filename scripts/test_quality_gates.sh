@@ -3,8 +3,10 @@
 # Automated regression tests for the guards in scripts/quality_gates.sh: the
 # session-wide state locator guard (OpenSpec change: remove-global-controller-
 # state), the feature import-cycle guard (OpenSpec change: break-feature-
-# cycles), and the shared-module import guard (OpenSpec change:
-# relocate-feature-services), all under the static-analysis-gates capability.
+# cycles), the shared-module import guard (OpenSpec change:
+# relocate-feature-services), and the generated-source drift guard (OpenSpec
+# change: verify-generated-bindings), all under the static-analysis-gates
+# capability.
 #
 # The guard compares the worktree with a base revision, so every case runs
 # against a throwaway git repository with a known base.
@@ -313,5 +315,174 @@ else
     chmod a+r "$TEMP_DIR/lib/src/ui/unreadable.dart" 2>/dev/null || true
     echo "OK (rejected as expected)"
 fi
+
+# OpenSpec change: verify-generated-bindings (capability: static-analysis-gates).
+# Stub generators on PATH so fixtures stay offline and fast.
+echo "Running tests for the generated-source drift guard..."
+
+FAKE_BIN=""
+FAKE_FRB_CALLED=""
+FAKE_DART_CALLED=""
+
+install_fake_generators() {
+    FAKE_BIN="$TEMP_DIR/fake-bin"
+    FAKE_FRB_CALLED="$TEMP_DIR/frb.called"
+    FAKE_DART_CALLED="$TEMP_DIR/dart.called"
+    mkdir -p "$FAKE_BIN"
+    rm -f "$FAKE_FRB_CALLED" "$FAKE_DART_CALLED"
+    cat > "$FAKE_BIN/flutter_rust_bridge_codegen" << 'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+: "${FAKE_FRB_CALLED:?}"
+if [ "${1:-}" = "--version" ]; then
+  echo "flutter_rust_bridge_codegen ${FAKE_FRB_VERSION:-2.11.1}"
+  exit 0
+fi
+echo called >> "$FAKE_FRB_CALLED"
+if [ "${FAKE_FRB_EXIT:-0}" != "0" ]; then
+  echo "fake frb fail" >&2
+  exit "${FAKE_FRB_EXIT}"
+fi
+case "${FAKE_FRB_ACTION:-noop}" in
+  mutate)
+    printf 'mutated-bridge\n' > lib/src/rust/api.dart
+    ;;
+  newfile)
+    printf 'new\n' > lib/src/rust/extra_generated.dart
+    ;;
+  noop|*) ;;
+esac
+exit 0
+EOF
+    cat > "$FAKE_BIN/dart" << 'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+: "${FAKE_DART_CALLED:?}"
+echo called >> "$FAKE_DART_CALLED"
+if [ "${FAKE_DART_EXIT:-0}" != "0" ]; then
+  echo "fake dart fail" >&2
+  exit "${FAKE_DART_EXIT}"
+fi
+case "${FAKE_DART_ACTION:-noop}" in
+  mutate)
+    printf 'mutated-mock\n' > test/example.mocks.dart
+    ;;
+  noop|*) ;;
+esac
+exit 0
+EOF
+    chmod +x "$FAKE_BIN/flutter_rust_bridge_codegen" "$FAKE_BIN/dart"
+    export PATH="$FAKE_BIN:$PATH"
+    export FAKE_FRB_CALLED FAKE_DART_CALLED
+    export FAKE_FRB_VERSION=2.11.1
+    export FAKE_FRB_EXIT=0
+    export FAKE_DART_EXIT=0
+    export FAKE_FRB_ACTION=noop
+    export FAKE_DART_ACTION=noop
+}
+
+build_bindings_repo() {
+    build_repo
+    mkdir -p "$TEMP_DIR/lib/src/rust" "$TEMP_DIR/rust/src" "$TEMP_DIR/test"
+    cat > "$TEMP_DIR/pubspec.yaml" << 'EOF'
+name: kafkalyzer
+dependencies:
+  flutter_rust_bridge: 2.11.1
+EOF
+    cat > "$TEMP_DIR/rust/Cargo.toml" << 'EOF'
+[dependencies]
+flutter_rust_bridge = "=2.11.1"
+EOF
+    printf 'bridge\n' > "$TEMP_DIR/lib/src/rust/api.dart"
+    printf 'rs\n' > "$TEMP_DIR/rust/src/frb_generated.rs"
+    printf 'mock\n' > "$TEMP_DIR/test/example.mocks.dart"
+    git_in add -A >/dev/null
+    git_in commit -m bindings-base >/dev/null
+    BASE_REF="$(git_in rev-parse HEAD)"
+    export KAFKALYZER_REPO_DIR="$TEMP_DIR"
+    export KAFKALYZER_BASE_REF="$BASE_REF"
+    install_fake_generators
+}
+
+run_bindings_guard() {
+    "$GATE_SCRIPT" bindings-guard >/dev/null 2>&1
+}
+
+RUNNER=run_bindings_guard
+
+build_bindings_repo
+expect_pass "Test 23: clean regeneration passes"
+
+build_bindings_repo
+export FAKE_FRB_ACTION=mutate
+echo -n "Test 24: modified bridge file fails and names it ... "
+out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 24 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'lib/src/rust/api.dart differs from generator output' \
+  || fail "Test 24 must name the drifted bridge file"
+echo "OK (rejected as expected)"
+
+build_bindings_repo
+export FAKE_DART_ACTION=mutate
+echo -n "Test 25: stale mock fails and names it ... "
+out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 25 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'test/example.mocks.dart differs from generator output' \
+  || fail "Test 25 must name the stale mock"
+echo "OK (rejected as expected)"
+
+build_bindings_repo
+export FAKE_FRB_ACTION=newfile
+echo -n "Test 26: new untracked generated file fails ... "
+out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 26 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'lib/src/rust/extra_generated.dart is generated but not checked in' \
+  || fail "Test 26 must name the new generated file"
+echo "OK (rejected as expected)"
+
+build_bindings_repo
+# Drop the fake and hide the real cargo install so "missing" is unambiguous.
+rm -f "$FAKE_BIN/flutter_rust_bridge_codegen"
+export PATH="$FAKE_BIN:/usr/bin:/bin"
+echo -n "Test 27: generator missing gives a tooling error ... "
+out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 27 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'not installed' \
+  || fail "Test 27 must report the generator as missing"
+echo "OK (rejected as expected)"
+# Restore PATH for later cases (reinstall puts FAKE_BIN first again).
+
+build_bindings_repo
+export FAKE_FRB_VERSION=9.9.9
+echo -n "Test 28: wrong version gives a tooling error ... "
+out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 28 should have been rejected" || true
+printf '%s\n' "$out" | grep -q "need 2.11.1" \
+  || fail "Test 28 must name the expected version"
+echo "OK (rejected as expected)"
+
+build_bindings_repo
+cat > "$TEMP_DIR/rust/Cargo.toml" << 'EOF'
+[dependencies]
+flutter_rust_bridge = "=9.9.9"
+EOF
+echo -n "Test 29: pubspec/Cargo version mismatch gives a tooling error ... "
+out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 29 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'version mismatch' \
+  || fail "Test 29 must report a version mismatch"
+echo "OK (rejected as expected)"
+
+build_bindings_repo
+printf 'dirty\n' >> "$TEMP_DIR/lib/src/rust/api.dart"
+rm -f "$FAKE_FRB_CALLED" "$FAKE_DART_CALLED"
+echo -n "Test 30: dirty generated file fails without regenerating ... "
+out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 30 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'lib/src/rust/api.dart has uncommitted changes' \
+  || fail "Test 30 must name the dirty file"
+[ ! -f "$FAKE_FRB_CALLED" ] || fail "Test 30 must not call the generator"
+echo "OK (rejected as expected)"
+
+build_bindings_repo
+export FAKE_FRB_EXIT=1
+echo -n "Test 31: generator exit 1 gives a tooling error ... "
+out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 31 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'flutter_rust_bridge_codegen generate failed' \
+  || fail "Test 31 must report the generator failure"
+echo "OK (rejected as expected)"
 
 echo "All quality gate tests passed."

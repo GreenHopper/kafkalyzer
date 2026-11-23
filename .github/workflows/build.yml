@@ -104,6 +104,23 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      # Pin matches pubspec.yaml / rust/Cargo.toml so the bindings-guard
+      # regenerates with the same generator developers use locally.
+      - name: Read flutter_rust_bridge version
+        id: frb
+        run: |
+          v="$(sed -nE 's/^[[:space:]]*flutter_rust_bridge:[[:space:]]*([^[:space:]#]+).*/\1/p' pubspec.yaml | head -1)"
+          if [ -z "$v" ]; then
+            echo "could not read flutter_rust_bridge version from pubspec.yaml" >&2
+            exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: Install flutter_rust_bridge_codegen
+        uses: taiki-e/install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen@${{ steps.frb.outputs.version }}
+
       # Same script a developer runs locally; it fails on the first finding.
       - name: Run quality gates
         run: bash scripts/quality_gates.sh

@@ -356,6 +356,109 @@ check_shared_imports() {
   return "$failed"
 }
 
+# OpenSpec change: verify-generated-bindings (capability: static-analysis-gates).
+#
+# Regenerates the language-bridge outputs and the checked-in mockito mocks with
+# the pinned generator, then fails when any of those paths differ from what is
+# checked in. Absolute: no base-ref, no exception list.
+
+pinned_frb_version_from_pubspec() {
+  sed -nE 's/^[[:space:]]*flutter_rust_bridge:[[:space:]]*([^[:space:]#]+).*/\1/p' \
+    pubspec.yaml | head -1
+}
+
+pinned_frb_version_from_cargo() {
+  sed -nE 's/^flutter_rust_bridge[[:space:]]*=[[:space:]]*"=?([^"]+)".*/\1/p' \
+    rust/Cargo.toml | head -1
+}
+
+# True when $1 is a bridge output or a checked-in mockito mock.
+is_bindings_path() {
+  case "$1" in
+    lib/src/rust | lib/src/rust/* | rust/src/frb_generated.rs) return 0 ;;
+    *.mocks.dart) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Prints repo-relative paths currently dirty in the bindings scope.
+bindings_dirty_paths() {
+  local line status path
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    status="${line:0:2}"
+    path="${line:3}"
+    # Renames: "R  old -> new" — take the new path.
+    case "$status" in
+      R* | C*) path="${path##* -> }" ;;
+    esac
+    is_bindings_path "$path" || continue
+    printf '%s\n' "$path"
+  done < <(git status --porcelain --untracked-files=all)
+}
+
+check_generated_bindings() {
+  local pub_v cargo_v installed_v path failed=0
+  local gen_out
+
+  pub_v="$(pinned_frb_version_from_pubspec)"
+  cargo_v="$(pinned_frb_version_from_cargo)"
+  if [ -z "$pub_v" ] || [ -z "$cargo_v" ]; then
+    echo "bindings guard: cannot read flutter_rust_bridge version from pubspec.yaml / rust/Cargo.toml" >&2
+    return 1
+  fi
+  if [ "$pub_v" != "$cargo_v" ]; then
+    echo "bindings guard: version mismatch: pubspec.yaml=$pub_v rust/Cargo.toml=$cargo_v" >&2
+    return 1
+  fi
+
+  if ! command -v flutter_rust_bridge_codegen >/dev/null 2>&1; then
+    echo "bindings guard: flutter_rust_bridge_codegen not installed (need $pub_v)" >&2
+    echo "bindings guard: install with: cargo install flutter_rust_bridge_codegen --version $pub_v --locked" >&2
+    return 1
+  fi
+  installed_v="$(
+    flutter_rust_bridge_codegen --version 2>/dev/null |
+      grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1
+  )"
+  if [ "$installed_v" != "$pub_v" ]; then
+    echo "bindings guard: generator version is '${installed_v:-unknown}', need $pub_v" >&2
+    echo "bindings guard: install with: cargo install flutter_rust_bridge_codegen --version $pub_v --locked" >&2
+    return 1
+  fi
+
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    echo "bindings guard: $path has uncommitted changes; refusing to regenerate" >&2
+    failed=1
+  done < <(bindings_dirty_paths)
+  if [ "$failed" -ne 0 ]; then
+    return 1
+  fi
+
+  if ! gen_out="$(flutter_rust_bridge_codegen generate 2>&1)"; then
+    echo "bindings guard: flutter_rust_bridge_codegen generate failed:" >&2
+    printf '%s\n' "$gen_out" >&2
+    return 1
+  fi
+  if ! gen_out="$(dart run build_runner build 2>&1)"; then
+    echo "bindings guard: dart run build_runner build failed:" >&2
+    printf '%s\n' "$gen_out" >&2
+    return 1
+  fi
+
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    if git ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then
+      echo "bindings guard: $path differs from generator output" >&2
+    else
+      echo "bindings guard: $path is generated but not checked in" >&2
+    fi
+    failed=1
+  done < <(bindings_dirty_paths)
+  return "$failed"
+}
+
 # scripts/test_quality_gates.sh exercises one guard against a fixture repo.
 if [ "${1:-all}" = "cycle-guard" ]; then
   echo "==> feature import-cycle guard (new mutual reachability)"
@@ -378,6 +481,16 @@ if [ "${1:-all}" = "shared-guard" ]; then
   exit 0
 fi
 
+if [ "${1:-all}" = "bindings-guard" ]; then
+  echo "==> generated source drift guard (bridge bindings + checked-in mocks)"
+  check_generated_bindings
+  echo "bindings guard passed"
+  exit 0
+fi
+
+
+echo "==> generated source drift guard (bridge bindings + checked-in mocks)"
+check_generated_bindings
 
 echo "==> dart format --output=none --set-exit-if-changed lib test"
 dart format --output=none --set-exit-if-changed lib test
