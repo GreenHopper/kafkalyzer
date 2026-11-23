@@ -91,7 +91,11 @@ kafka_it_end_offsets() {
   local topic="$1"
   local raw
   raw="$(kafka_it_kafka kafka-get-offsets --topic "$topic" 2>/dev/null)" || return 1
-  awk -F: -v t="$topic" '$1 == t { print $2 ":" $3 }' <<<"$raw" | sort -t: -n
+  # Two-column numeric sort — avoid `sort -t=` / `sort -t:` (uutils treats
+  # attached `-t=` as an empty separator).
+  awk -F: -v t="$topic" '$1 == t { printf "%d %d\n", $2, $3 }' <<<"$raw" \
+    | sort -n \
+    | awk '{ print $1 ":" $2 }'
 }
 
 kafka_it_ensure_topic() {
@@ -180,9 +184,11 @@ kafka_it_group_committed_map() {
   raw="$(kafka_it_kafka kafka-consumer-groups --describe --group lag-spike-g --offsets 2>/dev/null)" || return 1
   awk '
       $1 == "lag-spike-g" && $2 == "lag-spike" {
-        print $3 "=" $4
+        printf "%d %d\n", $3, $4
       }
-    ' <<<"$raw" | sort -t= -n
+    ' <<<"$raw" \
+    | sort -n \
+    | awk '{ print $1 "=" $2 }'
 }
 
 kafka_it_seed_lag_spike_g() {
@@ -239,9 +245,11 @@ kafka_it_write_snapshot() {
     else
       awk '
         $1 == "lag-spike-g" && $2 == "lag-spike" {
-          print "p" $3 "=" $4
+          printf "%d p%d=%s\n", $3, $3, $4
         }
-      ' "$tmp" | sort -t= -k1.2n
+      ' "$tmp" \
+        | sort -n \
+        | awk '{ print $2 }'
     fi
 
     echo "group-members:lag-spike-g"
