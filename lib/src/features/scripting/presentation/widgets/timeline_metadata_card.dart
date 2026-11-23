@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
+import 'package:kafkalyzer/src/features/messages/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/color_utils.dart';

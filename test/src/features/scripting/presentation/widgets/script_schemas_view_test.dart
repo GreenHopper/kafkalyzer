@@ -5,7 +5,7 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_widget.dart';
+import 'package:kafkalyzer/src/ui/diff/json_diff_widget.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_schemas_view.dart';
 import 'package:kafkalyzer/src/rust/api/json_diff.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart'

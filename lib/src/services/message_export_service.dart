@@ -5,11 +5,11 @@ import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 
-import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
+import 'package:kafkalyzer/src/features/messages/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
-import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/models/table_column_config.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 

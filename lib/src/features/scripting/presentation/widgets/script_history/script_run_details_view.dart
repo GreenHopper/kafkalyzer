@@ -2,12 +2,12 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
-import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
+import 'package:kafkalyzer/src/features/messages/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history/script_run_header.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history/script_run_sidebar.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
-import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/messages_view.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_schemas_view.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 import 'package:material_ui/material_ui.dart';
@@ -262,6 +262,7 @@ class _ScriptRunDetailsViewState extends State<ScriptRunDetailsView> {
                       searchPhrase: searchPhrase,
                     );
                   },
+                  onJumpToOriginalMessage: (topic, partition, offset) {},
                 ),
               ),
             ],

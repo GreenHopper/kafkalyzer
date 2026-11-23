@@ -30,10 +30,10 @@ import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/services/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
-import 'package:kafkalyzer/src/ui/messages/models/projected_column.dart';
-import 'package:kafkalyzer/src/ui/messages/models/table_column_config.dart';
-import 'package:kafkalyzer/src/ui/messages/views/messages_table_view.dart';
-import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/models/projected_column.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/models/table_column_config.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/views/messages_table_view.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_inspector_panel.dart';
 import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
@@ -368,6 +368,7 @@ void main() {
               onClose: () {},
               dockPosition: InspectorDockPosition.bottom,
               onToggleDockPosition: () {},
+              onJumpToOriginalMessage: (topic, partition, offset) {},
             ),
           ),
         );

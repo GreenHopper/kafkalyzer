@@ -4,10 +4,10 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/search/domain/filter_field_suggestions.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/topic/models/duplicate_navigation_target.dart';
-import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/messages_view.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
-import 'package:kafkalyzer/src/features/schema/presentation/local_schema_error_formatter.dart';
+import 'package:kafkalyzer/src/ui/local_schema_error_formatter.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/local_schema_assignment_dialog.dart';
 import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
@@ -550,6 +550,27 @@ class _TopicDetailViewState extends State<TopicDetailView>
                           },
                         );
                       },
+                  schemaTabBuilder: (context, message, subject, version) {
+                    return TopicSchemaInspectorView(
+                      profile: widget.profile,
+                      topicName: message.topic,
+                      initialSubject: subject,
+                      initialVersion: version,
+                      isEmbedded: true,
+                      controller: schemaController,
+                      onPinToColumn: null,
+                    );
+                  },
+                  onJumpToOriginalMessage: (topicName, partition, offset) {
+                    final active = getIt<ActiveConnectionController>();
+                    openTopicByNameWithFeedback(
+                      controller: active,
+                      profile: widget.profile,
+                      topicName: topicName,
+                      messenger: ScaffoldMessenger.maybeOf(context),
+                      l10n: AppLocalizations.of(context),
+                    );
+                  },
                 ),
               ),
             ] else if (_viewMode == TopicViewMode.analysis) ...[

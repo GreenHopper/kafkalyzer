@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/l10n/app_localizations_de.dart';
 import 'package:kafkalyzer/l10n/app_localizations_en.dart';
-import 'package:kafkalyzer/src/features/schema/presentation/local_schema_error_formatter.dart';
+import 'package:kafkalyzer/src/ui/local_schema_error_formatter.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
-import 'package:kafkalyzer/src/ui/messages/widgets/message_metadata_card.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_metadata_card.dart';
 import 'package:material_ui/material_ui.dart';
 
 Widget _wrap(Widget child) {

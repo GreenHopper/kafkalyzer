@@ -12,8 +12,8 @@ import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dar
 import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/services/message_consume_stream.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
-import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
-import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/message_ring_buffer.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/message_sort_utils.dart';
 
 class SearchTarget {
   final ClusterProfile profile;

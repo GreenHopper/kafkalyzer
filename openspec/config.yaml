@@ -39,9 +39,12 @@ context: |
         `scripts/gen_flex_theme_bridge.py`) are generator-owned too: change the
         generator or its configuration, never the generated file.
       - Source layout:
-        `lib/src/features/<feature>/{presentation,domain,data,application}`,
-        shared widgets in `lib/src/ui/`, services in `lib/src/services/`,
-        generated bridge code in `lib/src/rust/` (never edit).
+        `lib/src/features/<feature>/{presentation,domain,data,application}`.
+        A surface with its own views, widgets and models is a feature module
+        even when several features consume it (e.g. `features/messages/`).
+        `lib/src/ui/` holds app chrome plus feature-neutral UI (smart tree,
+        diff kit, shared utils). Services live in `lib/src/services/`.
+        Generated bridge code lives in `lib/src/rust/` (never edit).
     - Backend: Rust Cargo workspace under `rust/`.
       - `kafkalyzer-core` (`rust/kafkalyzer-core`): pure computation with serde
         domain types - canonical field path resolution (`json_path`), Avro

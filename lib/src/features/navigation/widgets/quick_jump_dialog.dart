@@ -3,7 +3,7 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
-import 'package:kafkalyzer/src/features/navigation/models/message_reference.dart';
+import 'package:kafkalyzer/src/features/messages/domain/message_reference.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 

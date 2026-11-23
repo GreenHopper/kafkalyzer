@@ -5,7 +5,7 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
 import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
-import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_inspector_panel.dart';
 import 'widgets/lag_trend.dart';
 
 class TopicPartitionTable extends StatefulWidget {
@@ -109,6 +109,8 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                   dockPosition: InspectorDockPosition.side,
                   onToggleDockPosition: () {},
                   onClose: () => Navigator.of(dialogContext).pop(),
+                  profile: widget.profile,
+                  onJumpToOriginalMessage: (topic, partition, offset) {},
                 ),
               ),
             ),

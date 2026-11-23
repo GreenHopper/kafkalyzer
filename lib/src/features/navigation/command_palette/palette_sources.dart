@@ -3,7 +3,7 @@ import '../../../rust/api/kafka_metadata.dart';
 import '../../../rust/api/kafka_types.dart';
 import '../../scripting/domain/script.dart';
 import '../main_navigation_controller.dart';
-import '../models/message_reference.dart';
+import 'package:kafkalyzer/src/features/messages/domain/message_reference.dart';
 import 'fuzzy_match.dart';
 import 'palette_entry.dart';
 

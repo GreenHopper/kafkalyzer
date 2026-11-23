@@ -7,7 +7,7 @@ import 'package:kafkalyzer/src/features/consumer/application/consumer_group_dire
 import 'package:kafkalyzer/src/features/explorer/presentation/controllers/cluster_overview_controller.dart';
 import 'package:kafkalyzer/src/features/navigation/main_navigation_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_batcher.dart';
+import 'package:kafkalyzer/src/ui/diff/json_diff_batcher.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';

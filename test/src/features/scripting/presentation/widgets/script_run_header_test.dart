@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history/script_run_header.dart';
-import 'package:kafkalyzer/src/ui/messages/widgets/message_search_bar.dart';
-import 'package:kafkalyzer/src/ui/messages/widgets/view_mode_switcher.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_search_bar.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/widgets/view_mode_switcher.dart';
 import 'package:material_ui/material_ui.dart';
 
 void main() {

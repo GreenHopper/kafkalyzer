@@ -6,7 +6,7 @@ import 'package:kafkalyzer/src/features/consumer/presentation/topic_partition_ta
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
-import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_inspector_panel.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

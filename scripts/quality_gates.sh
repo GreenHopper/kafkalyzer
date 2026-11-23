@@ -40,6 +40,27 @@ is_generated() {
   esac
 }
 
+# When a file was renamed, the new path is absent at the base. Comparing it to
+# 0 lines would treat a pure move of an already-oversized file as a new growth;
+# follow the rename so the line count is taken from the old path at the base.
+base_path_for_size() {
+  local base="$1" file="$2"
+  if git cat-file -e "$base:$file" 2>/dev/null; then
+    printf '%s\n' "$file"
+    return 0
+  fi
+  local old
+  old="$(
+    git diff -M --name-status --diff-filter=R "$base" -- |
+      awk -F'\t' -v f="$file" '$1 ~ /^R/ && $3 == f { print $2; exit }'
+  )"
+  if [ -n "$old" ] && git cat-file -e "$base:$old" 2>/dev/null; then
+    printf '%s\n' "$old"
+    return 0
+  fi
+  return 1
+}
+
 check_file_size() {
   base="$(resolve_base)" || return 1
   files="$(
@@ -58,8 +79,8 @@ check_file_size() {
     # The worktree is what a contributor edits; in CI it equals HEAD.
     [ -f "$file" ] || continue
     lines=$(wc -l <"$file")
-    if git cat-file -e "$base:$file" 2>/dev/null; then
-      base_lines=$(git show "$base:$file" | wc -l)
+    if base_file="$(base_path_for_size "$base" "$file")"; then
+      base_lines=$(git show "$base:$base_file" | wc -l)
     else
       base_lines=0 # new file: there is no earlier revision to compare against
     fi
