@@ -4,9 +4,10 @@
 # session-wide state locator guard (OpenSpec change: remove-global-controller-
 # state), the feature import-cycle guard (OpenSpec change: break-feature-
 # cycles), the shared-module import guard (OpenSpec change:
-# relocate-feature-services), and the generated-source drift guard (OpenSpec
-# change: verify-generated-bindings), all under the static-analysis-gates
-# capability.
+# relocate-feature-services), the generated-source drift guard (OpenSpec
+# change: verify-generated-bindings), and the legacy-material import guard
+# (OpenSpec change: material-ui-migration-tracking), all under the
+# static-analysis-gates capability.
 #
 # The guard compares the worktree with a base revision, so every case runs
 # against a throwaway git repository with a known base.
@@ -484,5 +485,75 @@ out="$("$GATE_SCRIPT" bindings-guard 2>&1)" && fail "Test 31 should have been re
 printf '%s\n' "$out" | grep -q 'flutter_rust_bridge_codegen generate failed' \
   || fail "Test 31 must report the generator failure"
 echo "OK (rejected as expected)"
+
+# OpenSpec change: material-ui-migration-tracking (capability: static-analysis-gates).
+echo "Running tests for the legacy-material import guard..."
+
+run_legacy_material_guard() {
+    "$GATE_SCRIPT" legacy-material-guard >/dev/null 2>&1
+}
+RUNNER=run_legacy_material_guard
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui"
+cat > "$TEMP_DIR/lib/src/ui/material_ui_only.dart" << 'EOF'
+import 'package:material_ui/material_ui.dart';
+EOF
+expect_pass "Test 32: material_ui-only tree passes"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui"
+cat > "$TEMP_DIR/lib/src/ui/legacy_prefixed.dart" << 'EOF'
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart' as legacy;
+EOF
+echo -n "Test 33: prefixed import with an ignore comment fails and names both ... "
+out="$("$GATE_SCRIPT" legacy-material-guard 2>&1)" && fail "Test 33 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'lib/src/ui/legacy_prefixed.dart → package:flutter/material.dart' \
+  || fail "Test 33 must name the file and the library"
+echo "OK (rejected as expected)"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui"
+cat > "$TEMP_DIR/lib/src/ui/reexport_cupertino.dart" << 'EOF'
+export 'package:flutter/cupertino.dart';
+EOF
+expect_reject "Test 34: cupertino export fails"
+
+build_repo
+mkdir -p "$TEMP_DIR/test/src"
+cat > "$TEMP_DIR/test/src/legacy_in_test.dart" << 'EOF'
+import 'package:flutter/material.dart';
+EOF
+expect_reject "Test 35: import under test/ fails"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/l10n"
+cat > "$TEMP_DIR/lib/l10n/x.dart" << 'EOF'
+import 'package:flutter/material.dart';
+EOF
+expect_pass "Test 36: legacy import in lib/l10n/x.dart passes"
+
+build_repo
+mkdir -p "$TEMP_DIR/test"
+cat > "$TEMP_DIR/test/foo.mocks.dart" << 'EOF'
+import 'package:flutter/material.dart';
+EOF
+expect_pass "Test 37: legacy import in test/foo.mocks.dart passes"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui"
+cat > "$TEMP_DIR/lib/src/ui/unreadable.dart" << 'EOF'
+import 'package:flutter/material.dart';
+EOF
+chmod a-r "$TEMP_DIR/lib/src/ui/unreadable.dart"
+echo -n "Test 38: a listed but unreadable file is a tooling error ... "
+if "$GATE_SCRIPT" legacy-material-guard >/dev/null 2>&1; then
+    chmod a+r "$TEMP_DIR/lib/src/ui/unreadable.dart" 2>/dev/null || true
+    fail "an unreadable file must not report success"
+else
+    chmod a+r "$TEMP_DIR/lib/src/ui/unreadable.dart" 2>/dev/null || true
+    echo "OK (rejected as expected)"
+fi
 
 echo "All quality gate tests passed."

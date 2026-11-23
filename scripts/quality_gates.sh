@@ -35,7 +35,7 @@ resolve_base() {
 
 is_generated() {
   case "$1" in
-    *.g.dart | *.freezed.dart | lib/src/rust/* | lib/l10n/*) return 0 ;;
+    *.g.dart | *.freezed.dart | *.mocks.dart | lib/src/rust/* | lib/l10n/*) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -356,6 +356,38 @@ check_shared_imports() {
   return "$failed"
 }
 
+# OpenSpec change: material-ui-migration-tracking (capability: static-analysis-gates).
+#
+# Rejects hand-written lib/ and test/ sources that import or re-export the
+# framework's deprecated Material or Cupertino library. Generated sources are
+# exempt. Absolute: no base-ref, no exception list.
+
+app_and_test_dart_files() {
+  git ls-files --cached --others --exclude-standard -- 'lib/**/*.dart' 'test/**/*.dart'
+}
+
+check_legacy_material_imports() {
+  failed=0
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    is_generated "$file" && continue
+    if [ ! -f "$file" ] || [ ! -r "$file" ]; then
+      echo "legacy material guard: $file is listed in the worktree but cannot be read" >&2
+      failed=1
+      continue
+    fi
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      lib="$(printf '%s\n' "$line" | sed -E "s/^(import|export)[[:space:]]+['\"]package:flutter\/(material|cupertino)\.dart['\"].*/\2/")"
+      [ -n "$lib" ] || continue
+      [ "$lib" = "$line" ] && continue
+      echo "legacy material guard: $file → package:flutter/${lib}.dart" >&2
+      failed=1
+    done < <(grep -E "^(import|export)[[:space:]]+['\"]package:flutter/(material|cupertino)\.dart['\"]" "$file" || true)
+  done < <(app_and_test_dart_files)
+  return "$failed"
+}
+
 # OpenSpec change: verify-generated-bindings (capability: static-analysis-gates).
 #
 # Regenerates the language-bridge outputs and the checked-in mockito mocks with
@@ -481,6 +513,13 @@ if [ "${1:-all}" = "shared-guard" ]; then
   exit 0
 fi
 
+if [ "${1:-all}" = "legacy-material-guard" ]; then
+  echo "==> legacy material import guard (no flutter/material or flutter/cupertino)"
+  check_legacy_material_imports
+  echo "legacy material guard passed"
+  exit 0
+fi
+
 if [ "${1:-all}" = "bindings-guard" ]; then
   echo "==> generated source drift guard (bridge bindings + checked-in mocks)"
   check_generated_bindings
@@ -512,6 +551,9 @@ check_feature_cycles
 
 echo "==> shared-module import guard (ui/services/utils must not import features)"
 check_shared_imports
+
+echo "==> legacy material import guard (no flutter/material or flutter/cupertino)"
+check_legacy_material_imports
 
 # Not enabled yet: cargo clippy --manifest-path rust/Cargo.toml --workspace
 # --all-targets -- -D warnings currently reports 30 pre-existing findings.

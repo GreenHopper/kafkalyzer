@@ -28,16 +28,16 @@ context: |
         live inside one of them.
       - Persistence: shared_preferences for non-sensitive settings and profiles;
         flutter_secure_storage (OS keyring) for every secret.
-      - Styling & Theming: flex_color_scheme, google_fonts, Material 3.
+      - Styling & Theming: flex_color_scheme (≥ 9, builds material_ui themes),
+        google_fonts, Material 3.
       - UI building blocks: material_ui, two_dimensional_scrollables (message
         table), scrollable_positioned_list, timelines_plus, file_picker, and the
         in-house `SmartVirtualJsonTree` (`lib/src/ui/smart_tree/`).
       - Code generation: freezed / json_serializable (build_runner), mockito
         mocks for the Rust bridge (`test/src/rust/api/rust_mocks.mocks.dart`,
         checked in). Generated localizations (`lib/l10n/*.dart`, configured in
-        `l10n.yaml`) and `lib/src/flex_theme_bridge.dart` (from
-        `scripts/gen_flex_theme_bridge.py`) are generator-owned too: change the
-        generator or its configuration, never the generated file.
+        `l10n.yaml`) are generator-owned too: change the generator or its
+        configuration, never the generated file.
       - Source layout:
         `lib/src/features/<feature>/{presentation,domain,data,application}`.
         A surface with its own views, widgets and models is a feature module
@@ -202,7 +202,9 @@ context: |
     - UI & UX:
       - Material UI Elements: The Flutter package
         `package:material_ui/material_ui.dart` MUST be used for all Material UI
-        elements.
+        elements. Never import `package:flutter/material.dart` or
+        `package:flutter/cupertino.dart`; the legacy-material guard in
+        `scripts/quality_gates.sh` enforces this.
       - All asynchronous UI actions (e.g., fetching Kafka messages, cluster
         connection) MUST provide visual feedback (e.g.,
         CircularProgressIndicator or loading states).
@@ -244,9 +246,9 @@ context: |
          (generated-source drift guard for bridge bindings + checked-in mocks,
          dart format, flutter analyze, cargo fmt --check, source-file size
          guard, session-wide state locator guard, feature import-cycle guard,
-         shared-module import guard) and stops at the first finding.
-         clippy is not part of it yet: it joins with `-D warnings` only once the
-         change `enable-rust-lint-gate` lands.
+         shared-module import guard, legacy-material import guard) and stops at
+         the first finding. clippy is not part of it yet: it joins with
+         `-D warnings` only once the change `enable-rust-lint-gate` lands.
 
 # Per-artifact generation rules
 rules:
