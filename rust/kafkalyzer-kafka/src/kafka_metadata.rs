@@ -1752,7 +1752,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires local docker compose kafka on localhost:9094 with lag-spike-g fixture"]
+    #[ignore = "broker test: run scripts/kafka_integration_tests.sh"]
     fn integration_lag_spike_g_empty_group_has_accurate_lags() {
         let profile = ClusterProfile {
             name: "local".to_string(),
@@ -1803,89 +1803,6 @@ mod tests {
             classified,
             TlsFailureClassification::CertificateRejected(_)
         ));
-    }
-
-    #[test]
-    #[ignore = "Spike 1.1: requires local docker compose kafka on localhost:9094 with 1000 spike-t-* topics"]
-    fn spike_describe_configs_and_single_topic_metadata() {
-        use std::time::Instant;
-
-        let profile = ClusterProfile {
-            name: "spike".to_string(),
-            bootstrap_servers: "localhost:9094".to_string(),
-            security_protocol: Some("PLAINTEXT".to_string()),
-            ..Default::default()
-        };
-
-        let rt = Runtime::new().unwrap();
-        let config = create_config(&profile);
-        let admin: AdminClient<DefaultClientContext> = config.create().unwrap();
-        let missing_name = "does-not-exist-spike-11-9f8e7d6c";
-
-        // (a) describe_configs for [existing, missing]
-        let existing_name = "spike-t-0000";
-        let res_pair = rt.block_on(async {
-            let specs = [
-                ResourceSpecifier::Topic(existing_name),
-                ResourceSpecifier::Topic(missing_name),
-            ];
-            let opts = AdminOptions::new()
-                .operation_timeout(Some(Duration::from_secs(10)))
-                .request_timeout(Some(Duration::from_secs(15)));
-            admin.describe_configs(&specs, &opts).await
-        });
-        match &res_pair {
-            Ok(results) => {
-                for r in results {
-                    match r {
-                        Ok(cfg) => println!(
-                            "SPIKE_A: Ok resource={:?} entries_len={}",
-                            cfg.specifier,
-                            cfg.entries.len()
-                        ),
-                        Err(e) => println!("SPIKE_A: per-item Err={e:?}"),
-                    }
-                }
-            }
-            Err(e) => println!("SPIKE_A: outer Err={e:?}"),
-        }
-
-        // (b) measure describe_configs for 100 and 500 topics
-        let topics_500: Vec<String> = (0..500).map(|i| format!("spike-t-{i:04}")).collect();
-        for count in [100usize, 500usize] {
-            let start = Instant::now();
-            let res = rt.block_on(async {
-                let specs: Vec<ResourceSpecifier<'_>> = topics_500[..count]
-                    .iter()
-                    .map(|t| ResourceSpecifier::Topic(t.as_str()))
-                    .collect();
-                let opts = AdminOptions::new()
-                    .operation_timeout(Some(Duration::from_secs(10)))
-                    .request_timeout(Some(Duration::from_secs(15)));
-                admin.describe_configs(&specs, &opts).await
-            });
-            let elapsed = start.elapsed();
-            let ok_count = res.as_ref().map(|v| v.len()).unwrap_or(0);
-            println!(
-                "SPIKE_B: count={count} elapsed_ms={} ok={} len={ok_count}",
-                elapsed.as_millis(),
-                res.is_ok()
-            );
-        }
-
-        // (c) fetch_metadata(Some(missing_name))
-        let consumer: BaseConsumer = create_config(&profile).create().unwrap();
-        let md = consumer
-            .fetch_metadata(Some(missing_name), Duration::from_secs(10))
-            .unwrap();
-        for t in md.topics() {
-            println!(
-                "SPIKE_C: topic={} error={:?} partitions={}",
-                t.name(),
-                t.error(),
-                t.partitions().len()
-            );
-        }
     }
 
     #[test]
@@ -1982,7 +1899,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires local docker compose kafka on localhost:9094 with spike-t-0000"]
+    #[ignore = "broker test: run scripts/kafka_integration_tests.sh"]
     fn integration_fetch_topic_metadata_existing_and_missing() {
         let profile = ClusterProfile {
             name: "local".to_string(),
@@ -2007,7 +1924,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires local docker compose kafka on localhost:9094 with spike-t-0000"]
+    #[ignore = "broker test: run scripts/kafka_integration_tests.sh"]
     fn integration_describe_topic_configs_returns_cleanup_policy() {
         let profile = ClusterProfile {
             name: "local".to_string(),
@@ -2026,7 +1943,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Spike 1.1 (partition-offset-distribution): requires local kafka on localhost:9094 with spike-offset-dist-60p"]
+    #[ignore = "broker test: run scripts/kafka_integration_tests.sh"]
     fn spike_parallel_fetch_watermarks() {
         use std::sync::atomic::{AtomicUsize, Ordering};
         use std::sync::Mutex;
@@ -2334,7 +2251,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires local docker compose kafka on localhost:9094 with spike-t-000"]
+    #[ignore = "broker test: run scripts/kafka_integration_tests.sh"]
     fn integration_describe_topic_configs_detailed_existing_and_missing() {
         let profile = ClusterProfile {
             name: "local".to_string(),

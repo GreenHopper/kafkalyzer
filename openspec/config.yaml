@@ -81,6 +81,9 @@ context: |
       must pass unchanged.
     - The same invariant applies to every entry point: GUI, headless script
       runner, MCP server.
+    - Fixture seeding in `scripts/kafka_integration_tests.sh` writes only to the
+      disposable compose broker. It is test infrastructure under `scripts/`, not
+      an application entry point, and is not a gate exception.
     - Never claim read-only is "guaranteed"; it is enforced by the CI gate,
       crate layering and broker ACLs.
 
@@ -102,6 +105,10 @@ context: |
       `[n]`, `$.` prefix, JSON Pointer). Do not add a second resolver or a
       second path syntax in Dart or Rust.
     - Code Quality & Style:
+      - A broker-dependent Rust test lives in `kafkalyzer-kafka`, is `#[ignore]`d
+        with the reason naming `scripts/kafka_integration_tests.sh`, asserts
+        something, and reads only fixtures that the script creates and
+        shape-checks.
       - Limit line length to a maximum of 120 characters for both Dart and Rust
         source files.
       - Format Dart code strictly using `dart format`.
@@ -249,6 +256,8 @@ context: |
          shared-module import guard, legacy-material import guard) and stops at
          the first finding. clippy is not part of it yet: it joins with
          `-D warnings` only once the change `enable-rust-lint-gate` lands.
+      7. when `rust/kafkalyzer-kafka` changed, `bash scripts/kafka_integration_tests.sh`
+         (needs Docker)
 
 # Per-artifact generation rules
 rules:
