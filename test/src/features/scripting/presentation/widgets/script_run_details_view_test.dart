@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_history/script_run_details_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
-import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/features/messages/data/message_export_service.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_inspector_panel.dart';
 import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';

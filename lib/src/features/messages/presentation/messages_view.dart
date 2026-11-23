@@ -16,7 +16,7 @@ import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_in
 import 'package:kafkalyzer/src/features/messages/domain/script_extraction.dart';
 import 'package:kafkalyzer/src/features/messages/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/features/messages/data/message_export_service.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/incremental_sorted_merge.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/message_ring_buffer.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/message_sort_utils.dart';

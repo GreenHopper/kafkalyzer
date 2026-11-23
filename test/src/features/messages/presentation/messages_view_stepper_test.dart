@@ -10,7 +10,7 @@ import 'package:kafkalyzer/src/features/messages/presentation/views/messages_tab
 import 'package:kafkalyzer/src/features/messages/presentation/views/messages_timeline_view.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/views/messages_diff_view.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_inspector_panel.dart';
-import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/features/messages/data/message_export_service.dart';
 
 class FakeMessageExportService implements MessageExportService {
   @override

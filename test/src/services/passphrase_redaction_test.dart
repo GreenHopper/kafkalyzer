@@ -9,9 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/profile_crypto.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
@@ -119,23 +117,6 @@ class _FakeFilePicker extends FilePickerPlatform {
 
 class _StubScriptRepository extends ScriptRepository {}
 
-class _StubClusterListController extends ChangeNotifier
-    implements ClusterListController {
-  @override
-  Future<void> loadClusters() async {}
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _StubScriptController extends ChangeNotifier implements ScriptController {
-  @override
-  Future<void> loadScripts() async {}
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -182,10 +163,6 @@ void main() {
         ClusterService(secureStorage: secureStorage),
       );
       getIt.registerSingleton<ScriptRepository>(_StubScriptRepository());
-      getIt.registerSingleton<ClusterListController>(
-        _StubClusterListController(),
-      );
-      getIt.registerSingleton<ScriptController>(_StubScriptController());
 
       final tempDir = Directory.systemTemp
           .createTempSync('kafkalyzer_redaction_test')

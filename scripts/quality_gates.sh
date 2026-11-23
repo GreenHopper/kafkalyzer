@@ -289,6 +289,73 @@ check_feature_cycles() {
   return "$failed"
 }
 
+
+# OpenSpec change: relocate-feature-services (capability: static-analysis-gates)
+#
+# Shared modules (lib/src/{ui,services,utils}) must not import or re-export a
+# feature module. Absolute: any finding fails. Composition root is the top
+# level of lib/src/ (and lib/main.dart), which this guard does not scan.
+# Generated sources use the same exemption as the size guard.
+shared_files() {
+  for dir in lib/src/ui lib/src/services lib/src/utils; do
+    [ -d "$dir" ] || continue
+    find "$dir" -name '*.dart' || true
+  done | sort
+}
+
+# Prints "feature" for a path under lib/src/features/<feature>/..., else empty.
+feature_from_path() {
+  printf '%s\n' "$1" | sed -nE 's#^lib/src/features/([^/]+)/.*#\1#p'
+}
+
+# Resolve an import/export target relative to $1 (source file) into a
+# repo-relative path, or empty when it is not a path into this package.
+resolve_import_target() {
+  local src="$1" target="$2"
+  case "$target" in
+    package:kafkalyzer/src/*)
+      printf 'lib/src/%s\n' "${target#package:kafkalyzer/src/}"
+      return 0
+      ;;
+    package:* | dart:*)
+      return 1
+      ;;
+  esac
+  # Relative path: resolve against the source directory.
+  local abs
+  abs="$(cd "$(dirname "$src")" && realpath -m -- "$target" 2>/dev/null)" || return 1
+  case "$abs" in
+    "$REPO_DIR"/*) printf '%s\n' "${abs#"$REPO_DIR"/}" ;;
+    *) return 1 ;;
+  esac
+}
+
+check_shared_imports() {
+  failed=0
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    is_generated "$file" && continue
+    if [ ! -f "$file" ] || [ ! -r "$file" ]; then
+      echo "shared guard: $file is listed in the worktree but cannot be read" >&2
+      failed=1
+      continue
+    fi
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      target="$(printf '%s\n' "$line" | sed -E "s/^(import|export)[[:space:]]+['\"]([^'\"]+)['\"].*/\2/")"
+      [ -n "$target" ] || continue
+      [ "$target" = "$line" ] && continue
+      resolved="$(resolve_import_target "$file" "$target" || true)"
+      [ -n "$resolved" ] || continue
+      feat="$(feature_from_path "$resolved")"
+      [ -n "$feat" ] || continue
+      echo "shared guard: $file → $feat" >&2
+      failed=1
+    done < <(grep -E '^(import|export)[[:space:]]+' "$file" || true)
+  done < <(shared_files)
+  return "$failed"
+}
+
 # scripts/test_quality_gates.sh exercises one guard against a fixture repo.
 if [ "${1:-all}" = "cycle-guard" ]; then
   echo "==> feature import-cycle guard (new mutual reachability)"
@@ -303,6 +370,14 @@ if [ "${1:-all}" = "locator-guard" ]; then
   echo "locator guard passed"
   exit 0
 fi
+
+if [ "${1:-all}" = "shared-guard" ]; then
+  echo "==> shared-module import guard (ui/services/utils must not import features)"
+  check_shared_imports
+  echo "shared guard passed"
+  exit 0
+fi
+
 
 echo "==> dart format --output=none --set-exit-if-changed lib test"
 dart format --output=none --set-exit-if-changed lib test
@@ -321,6 +396,9 @@ check_controller_locator
 
 echo "==> feature import-cycle guard (new mutual reachability)"
 check_feature_cycles
+
+echo "==> shared-module import guard (ui/services/utils must not import features)"
+check_shared_imports
 
 # Not enabled yet: cargo clippy --manifest-path rust/Cargo.toml --workspace
 # --all-targets -- -D warnings currently reports 30 pre-existing findings.

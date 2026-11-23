@@ -7,7 +7,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_ana
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/report_compare.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_export_service.dart';
 
 import '../../../../rust/api/rust_mocks.mocks.dart';
 

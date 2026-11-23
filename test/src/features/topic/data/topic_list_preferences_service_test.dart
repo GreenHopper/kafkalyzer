@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/src/features/topic/domain/topic_list_query.dart';
-import 'package:kafkalyzer/src/services/topic_list_preferences_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_list_preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

@@ -3,8 +3,6 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/appearance_settings.dart';
@@ -599,9 +597,8 @@ class SettingsService {
           }
         }
 
-        // 3. Reload Controllers
-        await getIt<ClusterListController>().loadClusters();
-        await getIt<ScriptController>().loadScripts();
+        // 3. Reload settings-owned state. Feature lists reload in the caller
+        // (settings screen) so this shared service does not import features.
         await loadMessageBufferLimit();
         await loadDefaultResultLimit();
         if (getIt.isRegistered<AppearanceSettings>()) {

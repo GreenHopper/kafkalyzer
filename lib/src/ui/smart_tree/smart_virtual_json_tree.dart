@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/features/schema/utils/schema_path_utils.dart';
+import 'package:kafkalyzer/src/ui/smart_tree/schema_path_utils.dart';
 import 'package:kafkalyzer/src/services/time_display_settings.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/ui/smart_tree/copyable_node_text.dart';

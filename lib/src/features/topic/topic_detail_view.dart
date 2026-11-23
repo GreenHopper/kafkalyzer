@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/ui/local_schema_error_formatter.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/local_schema_assignment_dialog.dart';
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_dialog.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_fact_tags.dart';

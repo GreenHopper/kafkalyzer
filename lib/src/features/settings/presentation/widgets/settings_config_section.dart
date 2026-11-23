@@ -3,6 +3,7 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/import_conflict_dialog.dart';
+import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/controllers/settings_import_export_controller.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/passphrase_prompt_dialog.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
@@ -21,11 +22,13 @@ class SettingsConfigSection extends StatelessWidget {
     required this.exportController,
     this.settingsService,
     this.clusterController,
+    this.scriptController,
   });
 
   /// Session-wide collaborators; null falls back to the application container.
   final SettingsService? settingsService;
   final ClusterListController? clusterController;
+  final ScriptController? scriptController;
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +85,11 @@ class SettingsConfigSection extends StatelessWidget {
                           },
                         );
                     if (importResult != null && context.mounted) {
+                      final scriptController =
+                          this.scriptController ?? getIt<ScriptController>();
+                      await clusterController.loadClusters();
+                      await scriptController.loadScripts();
+                      if (!context.mounted) return;
                       final summary = importResult.summary;
                       final message = summary != null
                           ? l10n.importSummary(

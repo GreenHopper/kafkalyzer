@@ -11,7 +11,7 @@ import 'package:get_it/get_it.dart';
 import 'package:kafkalyzer/src/features/messages/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
-import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/features/messages/data/message_export_service.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/models/projected_column.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/models/table_column_config.dart';
 import 'package:logger/logger.dart';

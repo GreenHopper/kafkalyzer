@@ -11,7 +11,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topi
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/report_compare.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_history_service.dart';
 import 'package:material_ui/material_ui.dart';
 
 TopicAnalysisReport _makeReport({

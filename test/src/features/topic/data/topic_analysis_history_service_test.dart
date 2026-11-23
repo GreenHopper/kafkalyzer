@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_history_service.dart';
 
 TopicAnalysisReport _makeReport({
   required String topic,

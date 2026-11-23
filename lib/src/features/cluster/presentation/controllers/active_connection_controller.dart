@@ -6,7 +6,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/tls_tra
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
-import 'package:kafkalyzer/src/services/recent_topics_service.dart';
+import 'package:kafkalyzer/src/features/cluster/data/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/services/topic_store.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';

@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_history_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/int_setting_field.dart';

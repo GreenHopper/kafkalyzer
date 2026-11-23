@@ -7,8 +7,8 @@ import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_history_service.dart';
 
 class FakeExportService extends TopicAnalysisExportService {
   String? exportResult;

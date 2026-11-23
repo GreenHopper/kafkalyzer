@@ -7,10 +7,10 @@ import 'package:kafkalyzer/src/features/topic/data/topic_analysis_report_file.da
 import 'package:kafkalyzer/src/rust/api/kafka_analyzer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/report_compare.dart';
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_history_service.dart';
 
 typedef ScopeEstimator =
     Future<AnalysisScopeEstimate> Function({

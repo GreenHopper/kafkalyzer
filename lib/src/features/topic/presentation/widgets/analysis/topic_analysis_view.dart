@@ -20,7 +20,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partiti
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_history_service.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:material_ui/material_ui.dart';
 

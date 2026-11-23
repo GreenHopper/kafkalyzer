@@ -7,7 +7,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_vie
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as api;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
-import 'package:kafkalyzer/src/services/topic_list_preferences_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_list_preferences_service.dart';
 import 'package:kafkalyzer/src/services/topic_name_source.dart';
 import 'package:kafkalyzer/src/services/topic_store.dart';
 import 'package:logger/logger.dart';

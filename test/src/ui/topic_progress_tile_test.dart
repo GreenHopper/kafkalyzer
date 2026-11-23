@@ -1,5 +1,4 @@
 import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
-import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';

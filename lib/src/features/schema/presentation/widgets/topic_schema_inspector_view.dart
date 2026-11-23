@@ -11,7 +11,7 @@ import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/ui/local_schema_error_formatter.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/local_schema_assignment_dialog.dart';
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_diff_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/utils/schema_simplifier.dart';

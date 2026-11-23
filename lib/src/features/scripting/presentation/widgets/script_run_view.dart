@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/cluster_dropdown.dart';
 import 'package:kafkalyzer/src/ui/timestamp_picker_field.dart';
-import 'package:kafkalyzer/src/ui/script_progress_widget.dart';
+import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_progress_widget.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 
 class ScriptRunView extends StatefulWidget {

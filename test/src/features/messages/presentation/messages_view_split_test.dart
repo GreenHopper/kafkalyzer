@@ -7,7 +7,7 @@ import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/messages_view.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/views/messages_table_view.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_inspector_panel.dart';
-import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/features/messages/data/message_export_service.dart';
 
 class FakeMessageExportService implements MessageExportService {
   @override

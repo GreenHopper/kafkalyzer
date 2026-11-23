@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kafkalyzer/src/features/schema/utils/schema_path_utils.dart';
+import 'package:kafkalyzer/src/ui/smart_tree/schema_path_utils.dart';
 
 void main() {
   group('normalizeSchemaFieldPath', () {

@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_e
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/filter_expression_editor.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/saved_searches_service.dart';
+import 'package:kafkalyzer/src/features/search/data/saved_searches_service.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condition_configuration.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/end_condition_configuration.dart';
 

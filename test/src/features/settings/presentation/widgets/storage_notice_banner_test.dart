@@ -3,7 +3,7 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
-import 'package:kafkalyzer/src/ui/storage_notice_banner.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/storage_notice_banner.dart';
 import 'package:material_ui/material_ui.dart';
 
 class _StubClusterController extends ChangeNotifier

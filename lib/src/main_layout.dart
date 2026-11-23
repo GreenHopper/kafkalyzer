@@ -14,7 +14,7 @@ import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart
 import 'package:kafkalyzer/src/ui/focus_utils.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/app_shortcuts.dart';
 import 'package:kafkalyzer/src/ui/shortcuts/shortcut_overview_dialog.dart';
-import 'package:kafkalyzer/src/ui/storage_notice_banner.dart';
+import 'package:kafkalyzer/src/features/settings/presentation/widgets/storage_notice_banner.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/widgets/update_dialog.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/update_service.dart';

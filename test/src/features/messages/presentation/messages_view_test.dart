@@ -11,7 +11,7 @@ import 'package:kafkalyzer/src/features/messages/presentation/views/messages_tab
 import 'package:kafkalyzer/src/features/messages/presentation/views/messages_timeline_view.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/views/messages_diff_view.dart';
 import 'package:kafkalyzer/src/services/diff_ignore_list_service.dart';
-import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/features/messages/data/message_export_service.dart';
 import 'package:kafkalyzer/src/services/file_opener_service.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/features/messages/presentation/models/table_column_config.dart';

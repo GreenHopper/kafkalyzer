@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_search_preset.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/saved_searches_service.dart';
+import 'package:kafkalyzer/src/features/search/data/saved_searches_service.dart';
 
 void main() {
   late SavedSearchesService service;

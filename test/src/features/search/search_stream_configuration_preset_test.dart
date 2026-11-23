@@ -8,7 +8,7 @@ import 'package:kafkalyzer/src/features/search/models/topic_search_preset.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/search_stream_configuration.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/saved_searches_service.dart';
+import 'package:kafkalyzer/src/features/search/data/saved_searches_service.dart';
 
 void main() {
   final getIt = GetIt.instance;

@@ -2,8 +2,9 @@
 #
 # Automated regression tests for the guards in scripts/quality_gates.sh: the
 # session-wide state locator guard (OpenSpec change: remove-global-controller-
-# state) and the feature import-cycle guard (OpenSpec change: break-feature-
-# cycles), both under the static-analysis-gates capability.
+# state), the feature import-cycle guard (OpenSpec change: break-feature-
+# cycles), and the shared-module import guard (OpenSpec change:
+# relocate-feature-services), all under the static-analysis-gates capability.
 #
 # The guard compares the worktree with a base revision, so every case runs
 # against a throwaway git repository with a known base.
@@ -242,6 +243,74 @@ echo -n "Test 15: unresolvable base revision is a tooling error ... "
 if KAFKALYZER_BASE_REF="definitely-not-a-ref" run_cycle_guard; then
     fail "a missing base revision must not report success"
 else
+    echo "OK (rejected as expected)"
+fi
+
+# OpenSpec change: relocate-feature-services (capability: static-analysis-gates).
+# Shared folders must not import features; the composition root may.
+echo "Running tests for the shared-module import guard..."
+run_shared_guard() {
+    "$GATE_SCRIPT" shared-guard >/dev/null 2>&1
+}
+RUNNER=run_shared_guard
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui" "$TEMP_DIR/lib/src/services" "$TEMP_DIR/lib/src/utils"
+cat > "$TEMP_DIR/lib/src/ui/clean_shared.dart" << 'EOF'
+class CleanShared {}
+EOF
+expect_pass "Test 16: shared tree with no feature import passes"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui"
+cat > "$TEMP_DIR/lib/src/ui/imports_feature.dart" << 'EOF'
+import 'package:kafkalyzer/src/features/alpha/presentation/alpha_view.dart';
+EOF
+echo -n "Test 17: package import of a feature from shared fails and names both ... "
+out="$("$GATE_SCRIPT" shared-guard 2>&1)" && fail "Test 17 should have been rejected" || true
+printf '%s\n' "$out" | grep -q 'lib/src/ui/imports_feature.dart → alpha' \
+  || fail "Test 17 must name the shared file and the feature"
+echo "OK (rejected as expected)"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui/widgets" "$TEMP_DIR/lib/src/features/alpha/presentation"
+cat > "$TEMP_DIR/lib/src/ui/widgets/relative_import.dart" << 'EOF'
+import '../../features/alpha/presentation/alpha_view.dart';
+EOF
+expect_reject "Test 18: relative import into a feature from shared fails"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/services"
+cat > "$TEMP_DIR/lib/src/services/reexports_feature.dart" << 'EOF'
+export 'package:kafkalyzer/src/features/beta/presentation/widgets/beta_widget.dart';
+EOF
+expect_reject "Test 19: export of a feature from shared fails"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui"
+cat > "$TEMP_DIR/lib/src/ui/generated_bridge.g.dart" << 'EOF'
+import 'package:kafkalyzer/src/features/alpha/presentation/alpha_view.dart';
+EOF
+expect_pass "Test 20: generated .g.dart under a shared folder is exempt"
+
+build_repo
+cat > "$TEMP_DIR/lib/src/composition_root.dart" << 'EOF'
+import 'package:kafkalyzer/src/features/alpha/presentation/alpha_view.dart';
+EOF
+expect_pass "Test 21: top-level lib/src/*.dart importing a feature passes"
+
+build_repo
+mkdir -p "$TEMP_DIR/lib/src/ui"
+cat > "$TEMP_DIR/lib/src/ui/unreadable.dart" << 'EOF'
+class Unreadable {}
+EOF
+chmod a-r "$TEMP_DIR/lib/src/ui/unreadable.dart"
+echo -n "Test 22: unreadable listed shared file is a tooling error ... "
+if "$GATE_SCRIPT" shared-guard >/dev/null 2>&1; then
+    chmod a+r "$TEMP_DIR/lib/src/ui/unreadable.dart" 2>/dev/null || true
+    fail "an unreadable shared file must not report success"
+else
+    chmod a+r "$TEMP_DIR/lib/src/ui/unreadable.dart" 2>/dev/null || true
     echo "OK (rejected as expected)"
 fi
 
