@@ -166,10 +166,11 @@ this change does not start a branch of its own.
 
 ## Workflow follow-up
 
-- The change declares `skip_specs: true`: it adds no requirement. Confirm at
-  archive time that `feature-module-boundaries` (from `break-feature-cycles`)
-  is already merged into `openspec/specs/`, since that capability carries the
-  rules this change obeys; archive `break-feature-cycles` first.
+- The change declares `skip_specs: true`: it adds no requirement. The
+  capability that carries the rules this change obeys,
+  `feature-module-boundaries`, is already merged into `openspec/specs/`
+  (`break-feature-cycles` archived 2026-11-23), so nothing has to be archived
+  before this change.
 - Ask the user to apply the change only after these artifacts are reviewed; the
   apply workflow is a separate, explicit request.
 - `relocate-feature-services` (Q-8) picks up

@@ -152,10 +152,11 @@ introduce.
       `rust/`), `dart format --output=none --set-exit-if-changed lib test`,
       `flutter analyze`, `flutter test`, `scripts/check_read_only.sh` with no new
       exception, and `scripts/quality_gates.sh` including the new guard
-- [ ] 7.2 Spot-check the user-visible invariants on a running app (2026-11-22:
-      everything else in group 7 is green — 1 363 Dart tests, clippy, analyze,
-      read-only gate, quality gates with the new guard; this one is the manual
-      pass the user runs in the app, so it stays open until confirmed there)
+- [x] 7.2 Spot-check the user-visible invariants on a running app (2026-11-22:
+      the four checks were confirmed by the user in the running app: topic list
+      filters and favourites survive the round trip, the schema dialogs show
+      associated topics and the unknown state, the cluster picker still marks
+      cached clusters, and the progress and timeline status text is unchanged)
       (`flutter run -d linux`): topic list filters and favourites persist across a
       navigation round trip, the schema diff dialog shows associated topics or an
       unknown state, the cluster picker still marks clusters with cached topics,

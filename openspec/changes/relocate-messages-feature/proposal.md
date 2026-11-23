@@ -74,8 +74,9 @@ None — this change adds no requirement and changes no observable behaviour, so
 
 - The guarantees this change rests on — one import direction per feature pair,
   one definition for an item two modules share, and a source move that changes
-  nothing the user sees — are already required by `feature-module-boundaries`,
-  introduced by `break-feature-cycles` and not yet archived.
+  nothing the user sees — are already required by `feature-module-boundaries`
+  (`openspec/specs/feature-module-boundaries/spec.md`, merged when
+  `break-feature-cycles` archived on 2026-11-23).
 - The inspector-panel fix closes a deviation from
   `controller-state-lifetime` (session-wide state reached through a constructor
   parameter), which the project rules say to describe as a fix without a spec
@@ -106,7 +107,7 @@ None — this change adds no requirement and changes no observable behaviour, so
 - **Tests:** 19 test files move; their imports and any `package:kafkalyzer/…`
   path in `test/l10n/hardcoded_strings_allowlist.txt` follow. No test assertion
   changes.
-- **Dependency:** `break-feature-cycles` must be archived before this change is
-  archived, so the `feature-module-boundaries` requirements this change relies
-  on are in the main specs. Its guard is already live on `quality-improvements`,
-  so this change is bound by it either way.
+- **Dependency:** `break-feature-cycles` is archived and its
+  `feature-module-boundaries` requirements are in the main specs; its import
+  cycle and locator guards are live on `quality-improvements`, so this change is
+  bound by them from its first commit.
