@@ -22,7 +22,7 @@ the CI setup it needs.
 ## 4. CI
 
 - [x] 4.1 `.github/workflows/build.yml` job `quality-gates`: add the install step chosen in 1.1, reading the version from `pubspec.yaml`, before `Run quality gates`
-- [ ] 4.2 Show that the CI step fails on drift: on a scratch commit, edit one line of `lib/src/rust/api/kafka_types.dart`; the `quality-gates` job must fail and name that file. Drop the scratch commit
+- [x] 4.2 Show that the CI step fails on drift: on a scratch commit, edit one line of `lib/src/rust/api/kafka_types.dart`; the `quality-gates` job must fail and name that file. Drop the scratch commit
 
 ## 5. Rules, backlog, verification
 
