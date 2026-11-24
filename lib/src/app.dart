@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kafkalyzer/src/ui/main_layout.dart';
+import 'package:kafkalyzer/src/main_layout.dart';
 import 'package:kafkalyzer/src/theme.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/services/appearance_settings.dart';

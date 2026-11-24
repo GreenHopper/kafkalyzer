@@ -8,6 +8,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_s
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_view_controllers.dart';
 import 'package:kafkalyzer/src/services/time_display_settings.dart';
 
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
@@ -38,31 +39,7 @@ class FakeActiveConnectionController extends ChangeNotifier
   final TopicAnalysisController mockAnalysisController =
       TopicAnalysisController();
 
-  @override
-  MessageStreamController getStreamController(
-    String tabIdOrTopicName, [
-    String? clusterName,
-  ]) => mockStreamController;
-
-  @override
-  TopicAnalysisController getAnalysisController(
-    String tabIdOrTopicName, [
-    String? clusterName,
-  ]) => mockAnalysisController;
-
   TopicFactsController? mockFactsController;
-
-  @override
-  TopicFactsController getTopicFactsController(
-    String tabIdOrTopicName,
-    ClusterProfile profile,
-    String topicName, [
-    String? clusterName,
-  ]) => mockFactsController ??= TopicFactsController(
-    profile: profile,
-    topicName: topicName,
-    metadataService: _NoOpFactsMetadataService(),
-  );
 
   @override
   List<OpenTopicRecord> get openTopics => topic != null && activeProfile != null
@@ -76,25 +53,10 @@ class FakeActiveConnectionController extends ChangeNotifier
   ClusterProfile? get connectingProfile => null;
 
   @override
-  bool get showInternalTopics => false;
-
-  @override
-  void toggleShowInternalTopics(bool value) {}
-
-  @override
-  String get topicFilter => '';
-
-  @override
-  void updateTopicFilter(String filter) {}
-
-  @override
   bool get isConnecting => false;
 
   @override
   ConnectionError? get error => null;
-
-  @override
-  List<TopicMetadata> get topics => [?topic];
 
   @override
   void closeTopic(TopicMetadata topicToClose, String clusterName) {}
@@ -277,17 +239,22 @@ void main() {
   late FakeSchemaController fakeSchemaController;
   late FakeScriptRunner fakeScriptRunner;
   late FakeMultiSearchController fakeMultiSearchController;
+  late _DetailTopicController fakeTopicController;
   late FakeKafkaMetadataService fakeMetadataService;
 
   setUp(() {
     fakeMetadataService = FakeKafkaMetadataService();
 
     fakeActiveController = FakeActiveConnectionController();
+    fakeTopicController = _DetailTopicController()
+      ..views.streamController = fakeActiveController.mockStreamController
+      ..views.analysisController = fakeActiveController.mockAnalysisController;
     fakeSchemaController = FakeSchemaController();
     fakeScriptRunner = FakeScriptRunner();
     fakeMultiSearchController = FakeMultiSearchController();
 
     getIt.registerSingleton<ActiveConnectionController>(fakeActiveController);
+    getIt.registerSingleton<TopicController>(fakeTopicController);
     getIt.registerSingleton<SchemaController>(fakeSchemaController);
     getIt.registerSingleton<ScriptRunner>(fakeScriptRunner);
     getIt.registerSingleton<MultiSearchController>(fakeMultiSearchController);
@@ -296,9 +263,7 @@ void main() {
     getIt.registerSingleton<Logger>(Logger());
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(() {});
 
   testWidgets(
     'TopicDetailView clears messages on init and renders topic details',
@@ -1031,14 +996,17 @@ void main() {
 
       final active = FakeActiveConnectionController()
         ..activeProfile = profile
-        ..topic = topic
-        ..mockFactsController = TopicFactsController(
-          profile: profile,
-          topicName: topic.name,
-          metadataService: factsMeta,
-        );
+        ..topic = topic;
       getIt.unregister<ActiveConnectionController>();
       getIt.registerSingleton<ActiveConnectionController>(active);
+      getIt.registerSingleton<TopicController>(
+        _DetailTopicController()
+          ..views.factsController = TopicFactsController(
+            profile: profile,
+            topicName: topic.name,
+            metadataService: factsMeta,
+          ),
+      );
       final timeDisplay = TimeDisplaySettings(TimeDisplayMode.utc);
       if (getIt.isRegistered<TimeDisplaySettings>()) {
         getIt.unregister<TimeDisplaySettings>();
@@ -1147,14 +1115,17 @@ void main() {
 
       final active = FakeActiveConnectionController()
         ..activeProfile = profile
-        ..topic = otherTopic
-        ..mockFactsController = TopicFactsController(
-          profile: profile,
-          topicName: targetTopic.name,
-          metadataService: factsMeta,
-        );
+        ..topic = otherTopic;
       getIt.unregister<ActiveConnectionController>();
       getIt.registerSingleton<ActiveConnectionController>(active);
+      getIt.registerSingleton<TopicController>(
+        _DetailTopicController()
+          ..views.factsController = TopicFactsController(
+            profile: profile,
+            topicName: targetTopic.name,
+            metadataService: factsMeta,
+          ),
+      );
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -1396,14 +1367,17 @@ void main() {
 
       final active = FakeActiveConnectionController()
         ..activeProfile = profile
-        ..topic = unhealthyTopic
-        ..mockFactsController = TopicFactsController(
-          profile: profile,
-          topicName: unhealthyTopic.name,
-          metadataService: factsMeta,
-        );
+        ..topic = unhealthyTopic;
       getIt.unregister<ActiveConnectionController>();
       getIt.registerSingleton<ActiveConnectionController>(active);
+      getIt.registerSingleton<TopicController>(
+        _DetailTopicController()
+          ..views.factsController = TopicFactsController(
+            profile: profile,
+            topicName: unhealthyTopic.name,
+            metadataService: factsMeta,
+          ),
+      );
 
       tester.view.physicalSize = const Size(900, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -1472,8 +1446,50 @@ class _FakeTopicConfigService implements TopicConfigService {
   }) => const TopicConfigDiff(rows: [], differenceCount: 0);
 }
 
+/// The per-topic view controllers the detail view asks the topic module for.
+class _FakeViewControllers implements TopicViewControllerRegistry {
+  MessageStreamController? streamController;
+  TopicAnalysisController? analysisController;
+  TopicFactsController? factsController;
+
+  @override
+  MessageStreamController stream(String tabId, [String? clusterName]) =>
+      streamController ??= FakeMessageStreamController();
+
+  @override
+  TopicAnalysisController analysis(String tabId, [String? clusterName]) =>
+      analysisController ??= TopicAnalysisController();
+
+  @override
+  TopicFactsController facts(
+    String tabId,
+    ClusterProfile profile,
+    String topicName, [
+    String? clusterName,
+  ]) => factsController ??= TopicFactsController(
+    profile: profile,
+    topicName: topicName,
+    metadataService: _NoOpFactsMetadataService(),
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Real topic module state for the detail view, with the per-topic view
+/// controllers replaced by the fakes the tests assert on.
+class _DetailTopicController extends TopicController {
+  final _FakeViewControllers views = _FakeViewControllers();
+
+  @override
+  TopicViewControllerRegistry get viewControllers => views;
+}
+
 class _DetailFakeTopicController extends ChangeNotifier
     implements TopicController {
+  @override
+  final _FakeViewControllers viewControllers = _FakeViewControllers();
+
   TopicConfigView view = const TopicConfigView.loading();
   final List<String> ensuredTopics = [];
   final List<String> retriedTopics = [];

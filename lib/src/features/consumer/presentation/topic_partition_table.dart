@@ -4,8 +4,8 @@ import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
-import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_inspector_panel.dart';
 import 'widgets/lag_trend.dart';
 
 class TopicPartitionTable extends StatefulWidget {
@@ -20,6 +20,9 @@ class TopicPartitionTable extends StatefulWidget {
   final int lagWarnThreshold;
   final AppLocalizations l10n;
 
+  /// Null falls back to the application container; a test injects its own.
+  final LocalSchemaAssignmentService? schemaAssignments;
+
   const TopicPartitionTable({
     super.key,
     required this.profile,
@@ -28,6 +31,7 @@ class TopicPartitionTable extends StatefulWidget {
     this.partitionTrends,
     this.lagWarnThreshold = 0,
     required this.l10n,
+    this.schemaAssignments,
   });
 
   @override
@@ -44,6 +48,12 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     return NumberFormat.decimalPattern(locale).format(value);
   }
 
+  LocalSchemaAssignmentService? get _schemaAssignments =>
+      widget.schemaAssignments ??
+      (getIt.isRegistered<LocalSchemaAssignmentService>()
+          ? getIt<LocalSchemaAssignmentService>()
+          : null);
+
   int? _calculatePartitionDelta(TopicPartitionLag part) {
     if (widget.partitionDeltas == null) return null;
     final key = "${part.topic}-${part.partition}";
@@ -58,22 +68,22 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
     });
 
     try {
-      final localSchemas = getIt.isRegistered<LocalSchemaAssignmentService>()
-          ? await getIt<LocalSchemaAssignmentService>().scanOptionsFor(
-              widget.profile.name,
-              part.topic,
-            )
-          : null;
+      final assignments = _schemaAssignments;
+      final localSchemas = assignments == null
+          ? null
+          : await assignments.scanOptionsFor(widget.profile.name, part.topic);
       final stream = consumer.consumeWithFilter(
-        profile: widget.profile,
-        topic: part.topic,
-        filterType: FilterType.contains,
-        searchScope: SearchScope.both,
-        startOffset: part.currentOffset,
-        startPartition: part.partition,
-        maxResults: 1,
-        runForever: false,
-        localSchemas: localSchemas,
+        request: consumer.ConsumeRequest(
+          profile: widget.profile,
+          topic: part.topic,
+          filterType: FilterType.contains,
+          searchScope: SearchScope.both,
+          startOffset: part.currentOffset,
+          startPartition: part.partition,
+          maxResults: 1,
+          runForever: false,
+          localSchemas: localSchemas,
+        ),
       );
 
       consumer.KafkaMessage? message;
@@ -99,6 +109,8 @@ class _TopicPartitionTableState extends State<TopicPartitionTable> {
                   dockPosition: InspectorDockPosition.side,
                   onToggleDockPosition: () {},
                   onClose: () => Navigator.of(dialogContext).pop(),
+                  profile: widget.profile,
+                  onJumpToOriginalMessage: (topic, partition, offset) {},
                 ),
               ),
             ),

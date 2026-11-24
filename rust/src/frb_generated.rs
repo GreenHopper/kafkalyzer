@@ -415,33 +415,8 @@ fn wire__crate__api__kafka_consumer__consume_with_filter_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_profile =
-                <crate::api::kafka_types::ClusterProfile>::sse_decode(&mut deserializer);
-            let api_topic = <String>::sse_decode(&mut deserializer);
-            let api_filter_terms = <Option<Vec<String>>>::sse_decode(&mut deserializer);
-            let api_filter_field = <Option<String>>::sse_decode(&mut deserializer);
-            let api_filter_type =
-                <crate::api::kafka_types::FilterType>::sse_decode(&mut deserializer);
-            let api_search_scope =
-                <crate::api::kafka_types::SearchScope>::sse_decode(&mut deserializer);
-            let api_filter_expression = <Option<String>>::sse_decode(&mut deserializer);
-            let api_filter_variables =
-                <Option<std::collections::HashMap<String, Vec<String>>>>::sse_decode(
-                    &mut deserializer,
-                );
-            let api_start_offset = <Option<i64>>::sse_decode(&mut deserializer);
-            let api_start_timestamp = <Option<i64>>::sse_decode(&mut deserializer);
-            let api_start_partition = <Option<i32>>::sse_decode(&mut deserializer);
-            let api_fast_trace_key = <Option<String>>::sse_decode(&mut deserializer);
-            let api_end_offset = <Option<i64>>::sse_decode(&mut deserializer);
-            let api_end_timestamp = <Option<i64>>::sse_decode(&mut deserializer);
-            let api_max_results = <Option<i32>>::sse_decode(&mut deserializer);
-            let api_run_forever = <bool>::sse_decode(&mut deserializer);
-            let api_start_from_tail = <Option<bool>>::sse_decode(&mut deserializer);
-            let api_local_schemas =
-                <Option<crate::api::local_schema::TopicLocalSchemasDto>>::sse_decode(
-                    &mut deserializer,
-                );
+            let api_request =
+                <crate::api::kafka_consumer::ConsumeRequest>::sse_decode(&mut deserializer);
             let api_sink = <StreamSink<
                 crate::api::kafka_consumer::KafkaMessage,
                 flutter_rust_bridge::for_generated::SseCodec,
@@ -450,28 +425,9 @@ fn wire__crate__api__kafka_consumer__consume_with_filter_impl(
             move |context| async move {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || async move {
-                        let output_ok = crate::api::kafka_consumer::consume_with_filter(
-                            api_profile,
-                            api_topic,
-                            api_filter_terms,
-                            api_filter_field,
-                            api_filter_type,
-                            api_search_scope,
-                            api_filter_expression,
-                            api_filter_variables,
-                            api_start_offset,
-                            api_start_timestamp,
-                            api_start_partition,
-                            api_fast_trace_key,
-                            api_end_offset,
-                            api_end_timestamp,
-                            api_max_results,
-                            api_run_forever,
-                            api_start_from_tail,
-                            api_local_schemas,
-                            api_sink,
-                        )
-                        .await?;
+                        let output_ok =
+                            crate::api::kafka_consumer::consume_with_filter(api_request, api_sink)
+                                .await?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -2770,6 +2726,52 @@ impl SseDecode for crate::api::connection_diagnostics::ConnectionDiagnosis {
             stages: var_stages,
             unattributed: var_unattributed,
             elapsed_ms: var_elapsedMs,
+        };
+    }
+}
+
+impl SseDecode for crate::api::kafka_consumer::ConsumeRequest {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_profile = <crate::api::kafka_types::ClusterProfile>::sse_decode(deserializer);
+        let mut var_topic = <String>::sse_decode(deserializer);
+        let mut var_filterTerms = <Option<Vec<String>>>::sse_decode(deserializer);
+        let mut var_filterField = <Option<String>>::sse_decode(deserializer);
+        let mut var_filterType = <crate::api::kafka_types::FilterType>::sse_decode(deserializer);
+        let mut var_searchScope = <crate::api::kafka_types::SearchScope>::sse_decode(deserializer);
+        let mut var_filterExpression = <Option<String>>::sse_decode(deserializer);
+        let mut var_filterVariables =
+            <Option<std::collections::HashMap<String, Vec<String>>>>::sse_decode(deserializer);
+        let mut var_startOffset = <Option<i64>>::sse_decode(deserializer);
+        let mut var_startTimestamp = <Option<i64>>::sse_decode(deserializer);
+        let mut var_startPartition = <Option<i32>>::sse_decode(deserializer);
+        let mut var_fastTraceKey = <Option<String>>::sse_decode(deserializer);
+        let mut var_endOffset = <Option<i64>>::sse_decode(deserializer);
+        let mut var_endTimestamp = <Option<i64>>::sse_decode(deserializer);
+        let mut var_maxResults = <Option<i32>>::sse_decode(deserializer);
+        let mut var_runForever = <bool>::sse_decode(deserializer);
+        let mut var_startFromTail = <Option<bool>>::sse_decode(deserializer);
+        let mut var_localSchemas =
+            <Option<crate::api::local_schema::TopicLocalSchemasDto>>::sse_decode(deserializer);
+        return crate::api::kafka_consumer::ConsumeRequest {
+            profile: var_profile,
+            topic: var_topic,
+            filter_terms: var_filterTerms,
+            filter_field: var_filterField,
+            filter_type: var_filterType,
+            search_scope: var_searchScope,
+            filter_expression: var_filterExpression,
+            filter_variables: var_filterVariables,
+            start_offset: var_startOffset,
+            start_timestamp: var_startTimestamp,
+            start_partition: var_startPartition,
+            fast_trace_key: var_fastTraceKey,
+            end_offset: var_endOffset,
+            end_timestamp: var_endTimestamp,
+            max_results: var_maxResults,
+            run_forever: var_runForever,
+            start_from_tail: var_startFromTail,
+            local_schemas: var_localSchemas,
         };
     }
 }
@@ -6611,6 +6613,43 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::Conne
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::kafka_consumer::ConsumeRequest {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.profile.into_into_dart().into_dart(),
+            self.topic.into_into_dart().into_dart(),
+            self.filter_terms.into_into_dart().into_dart(),
+            self.filter_field.into_into_dart().into_dart(),
+            self.filter_type.into_into_dart().into_dart(),
+            self.search_scope.into_into_dart().into_dart(),
+            self.filter_expression.into_into_dart().into_dart(),
+            self.filter_variables.into_into_dart().into_dart(),
+            self.start_offset.into_into_dart().into_dart(),
+            self.start_timestamp.into_into_dart().into_dart(),
+            self.start_partition.into_into_dart().into_dart(),
+            self.fast_trace_key.into_into_dart().into_dart(),
+            self.end_offset.into_into_dart().into_dart(),
+            self.end_timestamp.into_into_dart().into_dart(),
+            self.max_results.into_into_dart().into_dart(),
+            self.run_forever.into_into_dart().into_dart(),
+            self.start_from_tail.into_into_dart().into_dart(),
+            self.local_schemas.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::kafka_consumer::ConsumeRequest
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::kafka_consumer::ConsumeRequest>
+    for crate::api::kafka_consumer::ConsumeRequest
+{
+    fn into_into_dart(self) -> crate::api::kafka_consumer::ConsumeRequest {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ConsumerGroupLag {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -9492,6 +9531,36 @@ impl SseEncode for crate::api::connection_diagnostics::ConnectionDiagnosis {
         <Vec<crate::api::connection_diagnostics::StageResult>>::sse_encode(self.stages, serializer);
         <Vec<String>>::sse_encode(self.unattributed, serializer);
         <u64>::sse_encode(self.elapsed_ms, serializer);
+    }
+}
+
+impl SseEncode for crate::api::kafka_consumer::ConsumeRequest {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::kafka_types::ClusterProfile>::sse_encode(self.profile, serializer);
+        <String>::sse_encode(self.topic, serializer);
+        <Option<Vec<String>>>::sse_encode(self.filter_terms, serializer);
+        <Option<String>>::sse_encode(self.filter_field, serializer);
+        <crate::api::kafka_types::FilterType>::sse_encode(self.filter_type, serializer);
+        <crate::api::kafka_types::SearchScope>::sse_encode(self.search_scope, serializer);
+        <Option<String>>::sse_encode(self.filter_expression, serializer);
+        <Option<std::collections::HashMap<String, Vec<String>>>>::sse_encode(
+            self.filter_variables,
+            serializer,
+        );
+        <Option<i64>>::sse_encode(self.start_offset, serializer);
+        <Option<i64>>::sse_encode(self.start_timestamp, serializer);
+        <Option<i32>>::sse_encode(self.start_partition, serializer);
+        <Option<String>>::sse_encode(self.fast_trace_key, serializer);
+        <Option<i64>>::sse_encode(self.end_offset, serializer);
+        <Option<i64>>::sse_encode(self.end_timestamp, serializer);
+        <Option<i32>>::sse_encode(self.max_results, serializer);
+        <bool>::sse_encode(self.run_forever, serializer);
+        <Option<bool>>::sse_encode(self.start_from_tail, serializer);
+        <Option<crate::api::local_schema::TopicLocalSchemasDto>>::sse_encode(
+            self.local_schemas,
+            serializer,
+        );
     }
 }
 

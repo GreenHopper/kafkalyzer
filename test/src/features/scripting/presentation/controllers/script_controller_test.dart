@@ -52,7 +52,6 @@ void main() {
   late MockScriptRepository mockRepository;
 
   setUp(() async {
-    await getIt.reset();
     mockRepository = MockScriptRepository();
     getIt.registerSingleton<ScriptRepository>(mockRepository);
 

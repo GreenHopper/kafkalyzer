@@ -3,7 +3,7 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/recent_topics_service.dart';
+import 'package:kafkalyzer/src/features/cluster/data/recent_topics_service.dart';
 
 class ExplorerOnboardingView extends StatelessWidget {
   final List<ClusterProfile> clusters;

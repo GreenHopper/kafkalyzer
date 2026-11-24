@@ -5,7 +5,7 @@ import 'package:kafkalyzer/src/features/explorer/presentation/widgets/explorer_o
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/recent_topics_service.dart';
+import 'package:kafkalyzer/src/features/cluster/data/recent_topics_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -36,7 +36,6 @@ void main() {
     mockSchemaController = MockSchemaController();
 
     final getIt = GetIt.instance;
-    getIt.reset();
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
     getIt.registerSingleton<ActiveConnectionController>(
       mockActiveConnectionController,
@@ -88,9 +87,9 @@ void main() {
     when(mockClusterListController.clusters).thenReturn([testProfile]);
     when(mockActiveConnectionController.activeProfile).thenReturn(null);
     when(mockActiveConnectionController.isConnecting).thenReturn(false);
-    when(mockActiveConnectionController.showInternalTopics).thenReturn(false);
+    when(mockTopicController.showInternalTopics).thenReturn(false);
     when(mockActiveConnectionController.error).thenReturn(null);
-    when(mockActiveConnectionController.topicFilter).thenReturn('');
+    when(mockTopicController.topicFilter).thenReturn('');
 
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pump();

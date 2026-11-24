@@ -215,7 +215,7 @@ fn extract_duplicate_preview(
     }
     match payload_bytes {
         None => ("[Tombstone]".to_string(), false),
-        Some(b) if b.is_empty() => ("[Empty]".to_string(), false),
+        Some([]) => ("[Empty]".to_string(), false),
         Some(b) => {
             if let Ok(json_val) = serde_json::from_slice::<Value>(b) {
                 if let Ok(s) = serde_json::to_string(&json_val) {
@@ -1662,16 +1662,13 @@ pub fn analyze_topic_content(
     }
 
     let num_workers = active_count.min(64);
-    let mut worker_tasks: Vec<
-        Vec<(
-            i32,
-            rdkafka::consumer::base_consumer::PartitionQueue<
-                rdkafka::consumer::DefaultConsumerContext,
-            >,
-            i64,
-            i64,
-        )>,
-    > = (0..num_workers).map(|_| Vec::new()).collect();
+    type WorkerTask = (
+        i32,
+        rdkafka::consumer::base_consumer::PartitionQueue<rdkafka::consumer::DefaultConsumerContext>,
+        i64,
+        i64,
+    );
+    let mut worker_tasks: Vec<Vec<WorkerTask>> = (0..num_workers).map(|_| Vec::new()).collect();
     for (i, item) in active_partition_queues.into_iter().enumerate() {
         worker_tasks[i % num_workers].push(item);
     }
@@ -2202,7 +2199,7 @@ mod tests {
         let report = acc.to_report(50);
         assert_eq!(report.total_messages, 2);
         assert_eq!(report.tombstones_count, 1);
-        assert_eq!(report.is_compacted, true);
+        assert!(report.is_compacted);
         assert_eq!(report.partition_stats.len(), 2);
 
         if let Some(h) = report.hourly_distribution.iter().find(|h| h.hour == 14) {
@@ -2562,7 +2559,7 @@ mod tests {
             .iter()
             .find(|f| f.field_name == "desc")
             .unwrap();
-        assert_eq!(desc_field.top_values[0].truncated, true);
+        assert!(desc_field.top_values[0].truncated);
         assert!(desc_field.top_values[0].value.ends_with("..."));
 
         // Test capped field (more than 200 distinct values)
@@ -2576,7 +2573,7 @@ mod tests {
             .iter()
             .find(|f| f.field_name == "many_vals")
             .unwrap();
-        assert_eq!(mv_field.values_capped, true);
+        assert!(mv_field.values_capped);
     }
 
     #[test]

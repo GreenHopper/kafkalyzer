@@ -16,7 +16,17 @@ import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ScriptManagerView extends StatefulWidget {
-  const ScriptManagerView({super.key});
+  const ScriptManagerView({
+    super.key,
+    this.scriptController,
+    this.navigation,
+    this.runner,
+  });
+
+  /// Session-wide collaborators; null falls back to the application container.
+  final ScriptController? scriptController;
+  final MainNavigationController? navigation;
+  final ScriptRunner? runner;
 
   static const String sidebarCollapsedPrefKey =
       'script_manager_sidebar_collapsed';
@@ -44,8 +54,9 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
     _tabController = TabController(length: 3, vsync: this);
     _loadSidebarPreference();
 
-    if (getIt.isRegistered<MainNavigationController>()) {
-      getIt<MainNavigationController>().addListener(_consumeNavigationRequest);
+    final navigation = _navigation;
+    if (navigation != null) {
+      navigation.addListener(_consumeNavigationRequest);
       _consumeNavigationRequest();
     }
 
@@ -55,8 +66,20 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
     });
 
     // Listen to controller updates (e.g. initial load completion)
-    getIt<ScriptController>().addListener(_attemptRestoreState);
+    _scriptController.addListener(_attemptRestoreState);
   }
+
+  ScriptController get _scriptController =>
+      widget.scriptController ?? getIt<ScriptController>();
+
+  ScriptRunner get _runner => widget.runner ?? getIt<ScriptRunner>();
+
+  /// Optional: the screen works without the navigation controller.
+  MainNavigationController? get _navigation =>
+      widget.navigation ??
+      (getIt.isRegistered<MainNavigationController>()
+          ? getIt<MainNavigationController>()
+          : null);
 
   Future<void> _loadSidebarPreference() async {
     final prefs = await SharedPreferences.getInstance();
@@ -78,20 +101,18 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
 
   @override
   void dispose() {
-    if (getIt.isRegistered<MainNavigationController>()) {
-      getIt<MainNavigationController>().removeListener(
-        _consumeNavigationRequest,
-      );
-    }
+    _navigation?.removeListener(_consumeNavigationRequest);
     _searchController.dispose();
-    getIt<ScriptController>().removeListener(_attemptRestoreState);
+    _scriptController.removeListener(_attemptRestoreState);
     _tabController.dispose();
     super.dispose();
   }
 
   void _consumeNavigationRequest() {
-    if (!mounted || !getIt.isRegistered<MainNavigationController>()) return;
-    final scriptId = getIt<MainNavigationController>().takeScriptRequest();
+    if (!mounted) return;
+    final navigation = _navigation;
+    if (navigation == null) return;
+    final scriptId = navigation.takeScriptRequest();
     if (scriptId == null) return;
     _pendingScriptId = scriptId;
     _applyPendingScriptRequest();
@@ -100,7 +121,7 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
   bool _applyPendingScriptRequest() {
     final scriptId = _pendingScriptId;
     if (scriptId == null) return false;
-    final controller = getIt<ScriptController>();
+    final controller = _scriptController;
     if (controller.isLoading && controller.scripts.isEmpty) {
       return true;
     }
@@ -134,9 +155,9 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
     // Generally, if we just opened the view and _selectedScript is null, we restore.
     if (_selectedScript != null) return;
 
-    final runner = getIt<ScriptRunner>();
+    final runner = _runner;
     if (runner.isRunning && runner.currentRun != null) {
-      final controller = getIt<ScriptController>();
+      final controller = _scriptController;
       if (controller.isLoading) return;
 
       try {
@@ -167,7 +188,7 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = getIt<ScriptController>();
+    final controller = _scriptController;
 
     return CallbackShortcuts(
       bindings: AppShortcuts.toggleScriptsSidebar.bind(_toggleSidebar),
@@ -551,7 +572,7 @@ class _ScriptManagerViewState extends State<ScriptManagerView>
             ScriptEditor(
               script: _selectedScript!,
               onSave: (updated) {
-                getIt<ScriptController>().saveScript(updated);
+                _scriptController.saveScript(updated);
                 setState(() => _selectedScript = updated);
               },
             ),

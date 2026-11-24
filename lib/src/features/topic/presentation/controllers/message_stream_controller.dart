@@ -3,35 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
-import 'package:kafkalyzer/src/rust/api/local_schema.dart';
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/services/message_consume_stream.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
-import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
-
-/// Builds a filtered Kafka message stream for [MessageStreamController].
-typedef MessageConsumeStreamFactory =
-    Stream<KafkaMessage> Function({
-      required ClusterProfile profile,
-      required String topic,
-      List<String>? filterTerms,
-      String? filterField,
-      required FilterType filterType,
-      required SearchScope searchScope,
-      String? filterExpression,
-      Map<String, List<String>>? filterVariables,
-      String? fastTraceKey,
-      int? startOffset,
-      int? startTimestamp,
-      int? startPartition,
-      int? maxResults,
-      int? endOffset,
-      int? endTimestamp,
-      required bool runForever,
-      bool? startFromTail,
-      TopicLocalSchemasDto? localSchemas,
-    });
+import 'package:kafkalyzer/src/features/messages/presentation/message_ring_buffer.dart';
 
 class MessageStreamController extends ChangeNotifier {
   MessageStreamController({
@@ -40,7 +17,7 @@ class MessageStreamController extends ChangeNotifier {
     int Function()? bufferLimitProvider,
     LocalSchemaAssignmentService? localSchemaService,
   }) : _logger = logger ?? getIt<Logger>(),
-       _consumeStreamFactory = consumeStreamFactory ?? _defaultConsumeStream,
+       _consumeStreamFactory = consumeStreamFactory ?? bridgeConsumeStream,
        _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit,
        _localSchemaService =
            localSchemaService ??
@@ -68,46 +45,6 @@ class MessageStreamController extends ChangeNotifier {
     final limit = _bufferLimitProvider();
     return limit > 0 ? limit : SettingsService.defaultMessageBufferLimit;
   }
-
-  static Stream<KafkaMessage> _defaultConsumeStream({
-    required ClusterProfile profile,
-    required String topic,
-    List<String>? filterTerms,
-    String? filterField,
-    required FilterType filterType,
-    required SearchScope searchScope,
-    String? filterExpression,
-    Map<String, List<String>>? filterVariables,
-    String? fastTraceKey,
-    int? startOffset,
-    int? startTimestamp,
-    int? startPartition,
-    int? maxResults,
-    int? endOffset,
-    int? endTimestamp,
-    required bool runForever,
-    bool? startFromTail,
-    TopicLocalSchemasDto? localSchemas,
-  }) => consumeWithFilter(
-    profile: profile,
-    topic: topic,
-    filterTerms: filterTerms,
-    filterField: filterField,
-    filterType: filterType,
-    searchScope: searchScope,
-    filterExpression: filterExpression,
-    filterVariables: filterVariables,
-    fastTraceKey: fastTraceKey,
-    startOffset: startOffset,
-    startTimestamp: startTimestamp,
-    startPartition: startPartition,
-    maxResults: maxResults,
-    endOffset: endOffset,
-    endTimestamp: endTimestamp,
-    runForever: runForever,
-    startFromTail: startFromTail,
-    localSchemas: localSchemas,
-  );
 
   StreamSubscription<KafkaMessage>? _subscription;
   late MessageRingBuffer _buffer;

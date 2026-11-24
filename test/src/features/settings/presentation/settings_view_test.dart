@@ -8,6 +8,7 @@ import 'package:file_picker/src/platform/file_picker_platform_interface.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/read_only_guidance_dialog.dart';
+import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart';
 import 'package:kafkalyzer/src/rust/api/profile_crypto.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
@@ -15,7 +16,7 @@ import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/appearance_settings.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_history_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
 import 'package:material_ui/material_ui.dart';
@@ -32,6 +33,7 @@ import '../../../rust/api/rust_mocks.mocks.dart';
   ClusterListController,
   ActiveConnectionController,
   SettingsService,
+  ScriptController,
 ])
 import 'settings_view_test.mocks.dart';
 
@@ -63,6 +65,7 @@ void main() {
   late MockClusterListController mockClusterListController;
   late MockActiveConnectionController mockActiveConnectionController;
   late MockSettingsService mockSettingsService;
+  late MockScriptController mockScriptController;
 
   final testProfile = ClusterProfile(
     name: 'test-cluster',
@@ -83,14 +86,15 @@ void main() {
     mockClusterListController = MockClusterListController();
     mockActiveConnectionController = MockActiveConnectionController();
     mockSettingsService = MockSettingsService();
+    mockScriptController = MockScriptController();
 
     final getIt = GetIt.instance;
-    getIt.reset();
     getIt.registerSingleton<ClusterListController>(mockClusterListController);
     getIt.registerSingleton<ActiveConnectionController>(
       mockActiveConnectionController,
     );
     getIt.registerSingleton<SettingsService>(mockSettingsService);
+    getIt.registerSingleton<ScriptController>(mockScriptController);
     getIt.registerSingleton<SessionRestoreService>(SessionRestoreService());
     getIt.registerSingleton<AppearanceSettings>(AppearanceSettings());
     getIt.registerSingleton<TopicAnalysisHistoryService>(
@@ -393,7 +397,52 @@ void main() {
         ),
         findsOneWidget,
       );
+      verifyNever(mockClusterListController.loadClusters());
+      verifyNever(mockScriptController.loadScripts());
     });
+
+    testWidgets(
+      'reloads cluster and script lists before success message after import',
+      (tester) async {
+        tester.view.physicalSize = const Size(1920, 1080);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        when(mockClusterListController.isLoading).thenReturn(false);
+        when(mockClusterListController.clusters).thenReturn([]);
+        when(mockActiveConnectionController.activeProfile).thenReturn(null);
+        when(mockClusterListController.loadClusters()).thenAnswer((_) async {});
+        when(mockScriptController.loadScripts()).thenAnswer((_) async {});
+        when(
+          mockSettingsService.importConfiguration(
+            dialogTitle: anyNamed('dialogTitle'),
+            promptPassphrase: anyNamed('promptPassphrase'),
+            onClusterConflict: anyNamed('onClusterConflict'),
+          ),
+        ).thenAnswer((_) async => const ImportConfigurationResult());
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        await scrollTo(tester, find.text('Import Configuration'));
+        await tester.tap(find.text('Import Configuration'));
+        await tester.pumpAndSettle();
+
+        verifyInOrder([
+          mockSettingsService.importConfiguration(
+            dialogTitle: anyNamed('dialogTitle'),
+            promptPassphrase: anyNamed('promptPassphrase'),
+            onClusterConflict: anyNamed('onClusterConflict'),
+          ),
+          mockClusterListController.loadClusters(),
+          mockScriptController.loadScripts(),
+        ]);
+        expect(
+          find.text('Configuration imported successfully'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets(
       'shows InsecureTlsBadge only for disabled tlsVerification profiles',

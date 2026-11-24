@@ -444,9 +444,7 @@ void main() {
   });
 
   group('ClusterConfigDialog connection diagnostics', () {
-    tearDown(() async {
-      await getIt.reset();
-    });
+    tearDown(() async {});
 
     Future<ClusterProfile? Function()> openDialogApp(
       WidgetTester tester,

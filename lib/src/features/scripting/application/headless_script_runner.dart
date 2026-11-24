@@ -8,6 +8,7 @@ import 'package:kafkalyzer/src/features/scripting/presentation/controllers/scrip
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
+import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
 import 'package:logger/logger.dart';
 
 /// Result summary of a headless script pipeline run.

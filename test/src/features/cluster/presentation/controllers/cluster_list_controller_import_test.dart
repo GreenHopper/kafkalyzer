@@ -50,7 +50,6 @@ void main() {
   late ClusterListController controller;
 
   setUp(() async {
-    await getIt.reset();
     when(
       mockRustApi.crateApiJsonPathSerializeClusterProfile(
         profile: anyNamed('profile'),

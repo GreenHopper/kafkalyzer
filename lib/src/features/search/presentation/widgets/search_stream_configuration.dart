@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_e
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/filter_expression_editor.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/saved_searches_service.dart';
+import 'package:kafkalyzer/src/features/search/data/saved_searches_service.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/start_condition_configuration.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/end_condition_configuration.dart';
 
@@ -53,6 +53,9 @@ class SearchStreamConfiguration extends StatefulWidget {
   final bool showPlaceholderHint;
   final ValueChanged<TopicSearchPreset>? onPresetApplied;
 
+  /// Null falls back to the application container; a test injects its own.
+  final SavedSearchesService? savedSearches;
+
   const SearchStreamConfiguration({
     super.key,
     required this.scanMode,
@@ -84,6 +87,7 @@ class SearchStreamConfiguration extends StatefulWidget {
     this.filterExpressionController,
     this.showPlaceholderHint = false,
     this.onPresetApplied,
+    this.savedSearches,
   });
 
   @override
@@ -95,6 +99,9 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
   late bool _isAdvancedExpanded;
   List<TopicSearchPreset> _presets = [];
   TopicSearchPreset? _selectedPreset;
+
+  SavedSearchesService get _savedSearches =>
+      widget.savedSearches ?? getIt<SavedSearchesService>();
 
   @override
   void initState() {
@@ -120,7 +127,7 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
   Future<void> _loadPresets() async {
     if (widget.clusterName == null || widget.topicName == null) return;
     try {
-      final presets = await getIt<SavedSearchesService>().getPresets(
+      final presets = await _savedSearches.getPresets(
         clusterName: widget.clusterName!,
         topicName: widget.topicName!,
       );
@@ -222,7 +229,7 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
         createdAt: DateTime.now(),
       );
 
-      await getIt<SavedSearchesService>().savePreset(preset);
+      await _savedSearches.savePreset(preset);
       await _loadPresets();
       setState(() => _selectedPreset = preset);
       if (context.mounted) {
@@ -235,7 +242,7 @@ class _SearchStreamConfigurationState extends State<SearchStreamConfiguration> {
 
   Future<void> _deletePreset(TopicSearchPreset preset) async {
     final l10n = AppLocalizations.of(context);
-    await getIt<SavedSearchesService>().deletePreset(
+    await _savedSearches.deletePreset(
       clusterName: preset.clusterName,
       topicName: preset.topicName,
       presetId: preset.id,

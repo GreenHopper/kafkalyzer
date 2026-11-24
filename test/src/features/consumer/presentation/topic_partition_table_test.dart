@@ -6,7 +6,7 @@ import 'package:kafkalyzer/src/features/consumer/presentation/topic_partition_ta
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart' as consumer;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
-import 'package:kafkalyzer/src/ui/messages/widgets/message_inspector_panel.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/widgets/message_inspector_panel.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -107,21 +107,7 @@ void main() {
 
         when(
           mockApi.crateApiKafkaConsumerConsumeWithFilter(
-            profile: anyNamed('profile'),
-            topic: anyNamed('topic'),
-            filterType: anyNamed('filterType'),
-            searchScope: anyNamed('searchScope'),
-            runForever: anyNamed('runForever'),
-            startOffset: anyNamed('startOffset'),
-            startTimestamp: anyNamed('startTimestamp'),
-            startPartition: anyNamed('startPartition'),
-            fastTraceKey: anyNamed('fastTraceKey'),
-            endOffset: anyNamed('endOffset'),
-            endTimestamp: anyNamed('endTimestamp'),
-            maxResults: anyNamed('maxResults'),
-            filterTerms: anyNamed('filterTerms'),
-            filterField: anyNamed('filterField'),
-            startFromTail: anyNamed('startFromTail'),
+            request: anyNamed('request'),
           ),
         ).thenAnswer((_) => stream);
 
@@ -170,21 +156,7 @@ void main() {
 
       when(
         mockApi.crateApiKafkaConsumerConsumeWithFilter(
-          profile: anyNamed('profile'),
-          topic: anyNamed('topic'),
-          filterType: anyNamed('filterType'),
-          searchScope: anyNamed('searchScope'),
-          runForever: anyNamed('runForever'),
-          startOffset: anyNamed('startOffset'),
-          startTimestamp: anyNamed('startTimestamp'),
-          startPartition: anyNamed('startPartition'),
-          fastTraceKey: anyNamed('fastTraceKey'),
-          endOffset: anyNamed('endOffset'),
-          endTimestamp: anyNamed('endTimestamp'),
-          maxResults: anyNamed('maxResults'),
-          filterTerms: anyNamed('filterTerms'),
-          filterField: anyNamed('filterField'),
-          startFromTail: anyNamed('startFromTail'),
+          request: anyNamed('request'),
         ),
       ).thenAnswer((_) => stream);
 
@@ -222,21 +194,7 @@ void main() {
     ) async {
       when(
         mockApi.crateApiKafkaConsumerConsumeWithFilter(
-          profile: anyNamed('profile'),
-          topic: anyNamed('topic'),
-          filterType: anyNamed('filterType'),
-          searchScope: anyNamed('searchScope'),
-          runForever: anyNamed('runForever'),
-          startOffset: anyNamed('startOffset'),
-          startTimestamp: anyNamed('startTimestamp'),
-          startPartition: anyNamed('startPartition'),
-          fastTraceKey: anyNamed('fastTraceKey'),
-          endOffset: anyNamed('endOffset'),
-          endTimestamp: anyNamed('endTimestamp'),
-          maxResults: anyNamed('maxResults'),
-          filterTerms: anyNamed('filterTerms'),
-          filterField: anyNamed('filterField'),
-          startFromTail: anyNamed('startFromTail'),
+          request: anyNamed('request'),
         ),
       ).thenAnswer(
         (_) => Stream<consumer.KafkaMessage>.error(

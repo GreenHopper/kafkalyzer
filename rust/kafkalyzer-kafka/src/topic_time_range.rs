@@ -488,7 +488,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Requires local docker compose kafka on localhost:9094 with spike-tx-12"]
+    #[ignore = "broker test: run scripts/kafka_integration_tests.sh"]
     fn integration_cluster_overview_and_time_range() {
         let profile = ClusterProfile {
             name: "integration".to_string(),

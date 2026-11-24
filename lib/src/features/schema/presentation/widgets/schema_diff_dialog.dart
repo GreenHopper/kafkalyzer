@@ -5,8 +5,8 @@ import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 
 enum DiffLineType { unchanged, added, removed }
@@ -101,6 +101,7 @@ class SchemaDiffDialog extends StatefulWidget {
   final int? initialCompareVersion;
   final SchemaController? controller;
   final ValueChanged<String>? onNavigateToTopic;
+  final TopicNameSource topicNames;
 
   const SchemaDiffDialog({
     super.key,
@@ -110,6 +111,7 @@ class SchemaDiffDialog extends StatefulWidget {
     this.initialCompareVersion,
     this.controller,
     this.onNavigateToTopic,
+    required this.topicNames,
   });
 
   @override
@@ -251,14 +253,10 @@ class _SchemaDiffDialogState extends State<SchemaDiffDialog>
     });
 
     try {
-      List<String> available = [];
-      if (getIt.isRegistered<TopicController>()) {
-        final topicController = getIt<TopicController>();
-        final topics = topicController.getTopics(widget.profile);
-        if (topics != null) {
-          available = topics.map((t) => t.name).toList();
-        }
-      }
+      // A not-loaded topic list is passed as empty: the associated topics then
+      // come from the subject name alone, which is what the native side does.
+      final available =
+          widget.topicNames.topicNames(widget.profile) ?? const [];
 
       final associated = await _controller.getAssociatedTopics(
         widget.subject,

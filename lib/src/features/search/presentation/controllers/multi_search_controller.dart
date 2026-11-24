@@ -9,11 +9,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dart';
-import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/services/message_consume_stream.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
-import 'package:kafkalyzer/src/ui/messages/message_ring_buffer.dart';
-import 'package:kafkalyzer/src/ui/messages/message_sort_utils.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/message_ring_buffer.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/message_sort_utils.dart';
+import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
 
 class SearchTarget {
   final ClusterProfile profile;
@@ -142,32 +143,8 @@ enum MultiSearchEndStrategy { live, latest, customOffset, customTimestamp }
 
 enum SearchStatus { running, stopped, error }
 
-class SearchProgress {
-  final int scanned;
-  final int total;
-  final DateTime startTime;
-
-  SearchProgress(this.scanned, this.total, {DateTime? startTime})
-    : startTime = startTime ?? DateTime.now();
-
-  double get fraction => total == 0 ? 0 : (scanned / total).clamp(0.0, 1.0);
-  int get remaining => (total - scanned).clamp(0, total);
-
-  Duration? get estimatedRemaining {
-    if (scanned <= 0 || total <= 0) return null;
-    final elapsed = DateTime.now().difference(startTime);
-    if (elapsed.inMilliseconds <= 0) return null;
-
-    final rate = scanned / elapsed.inMilliseconds; // messages per ms
-    if (rate <= 0) return null;
-
-    final remainingMs = remaining / rate;
-    return Duration(milliseconds: remainingMs.round());
-  }
-}
-
 class MultiSearchController extends ChangeNotifier {
-  final Logger _logger = getIt<Logger>();
+  final Logger _logger;
   final MessageConsumeStreamFactory _consumeStreamFactory;
   final int Function() _bufferLimitProvider;
   final LocalSchemaAssignmentService? _localSchemaService;
@@ -179,7 +156,9 @@ class MultiSearchController extends ChangeNotifier {
     MessageConsumeStreamFactory? consumeStreamFactory,
     int Function()? bufferLimitProvider,
     LocalSchemaAssignmentService? localSchemaService,
-  }) : _consumeStreamFactory = consumeStreamFactory ?? consumeWithFilter,
+    Logger? logger,
+  }) : _consumeStreamFactory = consumeStreamFactory ?? bridgeConsumeStream,
+       _logger = logger ?? getIt<Logger>(),
        _bufferLimitProvider = bufferLimitProvider ?? _defaultBufferLimit,
        _localSchemaService =
            localSchemaService ??

@@ -86,7 +86,7 @@ pub fn create_config(profile: &ClusterProfile) -> ClientConfig {
         config.set("enable.ssl.certificate.verification", "true");
     }
 
-    config.set("security.protocol", &profile.effective_security_protocol());
+    config.set("security.protocol", profile.effective_security_protocol());
 
     if let Some(mechanism) = &profile.mechanism {
         config.set("sasl.mechanism", mechanism);

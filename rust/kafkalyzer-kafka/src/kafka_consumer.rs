@@ -110,27 +110,96 @@ pub(crate) fn compile_filter_expression(
     Ok(Some((compiled, canonical)))
 }
 
+/// What a consumer asked for: the filter as it arrives, the schemas to decode
+/// with, and the limits that decide when a scan stops. Named fields, so two
+/// optional strings can no longer be swapped by position at a call site.
+pub struct ConsumeCriteria {
+    pub filter_terms: Option<Vec<String>>,
+    pub filter_field: Option<String>,
+    pub filter_type: FilterType,
+    pub search_scope: SearchScope,
+    pub filter_expression: Option<String>,
+    pub filter_variables: Option<std::collections::HashMap<String, Vec<String>>>,
+    pub local_schemas: Option<TopicLocalSchemas>,
+    pub fast_trace_key: Option<String>,
+    pub start_partition: Option<i32>,
+    pub max_results: Option<i32>,
+    pub run_forever: bool,
+}
+
+/// The offset and timestamp window a scan reads, exactly as requested.
+#[derive(Clone, Copy, Default)]
+pub struct ScanBounds {
+    pub start_offset: Option<i64>,
+    pub start_timestamp: Option<i64>,
+    pub end_offset: Option<i64>,
+    pub end_timestamp: Option<i64>,
+    pub start_from_tail: bool,
+}
+
+/// The partitions a scan reads, together with the watermarks already fetched
+/// for them.
+struct ScanTarget {
+    topic: String,
+    assigned_partitions: Vec<i32>,
+    target_partition_id: Option<i32>,
+    watermarks: std::collections::HashMap<i32, (i64, i64)>,
+}
+
+/// The per-partition offsets a scan runs between, and how many messages that is.
+struct ResolvedPlan {
+    start_offsets: std::collections::HashMap<i32, i64>,
+    end_offsets: std::collections::HashMap<i32, i64>,
+    total_to_scan: i64,
+}
+
+/// The filter in the form the message loop consumes it.
+struct ScanFilter {
+    terms: Option<Vec<String>>,
+    field: Option<String>,
+    filter_type: FilterType,
+    search_scope: SearchScope,
+    expression: Option<kafkalyzer_core::filter_expr::CompiledExpr>,
+    max_results: Option<i32>,
+    run_forever: bool,
+}
+
+/// Everything needed to turn one raw record into decoded text: assembled once
+/// per scan instead of passed along the message loop as seven arguments.
+struct DecodeContext<'a> {
+    tokio_runtime: &'static Runtime,
+    decoder: Option<SrDecoders<'a>>,
+    key_is_avro: bool,
+    value_is_avro: bool,
+    loaded_local: LoadedTopicLocalSchemas,
+}
+
 pub fn consume_with_filter(
     profile: ClusterProfile,
     topic: String,
-    filter_terms: Option<Vec<String>>,
-    filter_field: Option<String>,
-    filter_type: FilterType,
-    search_scope: SearchScope,
-    filter_expression: Option<String>,
-    filter_variables: Option<std::collections::HashMap<String, Vec<String>>>,
-    start_offset: Option<i64>,
-    start_timestamp: Option<i64>,
-    start_partition: Option<i32>,
-    fast_trace_key: Option<String>,
-    end_offset: Option<i64>,
-    end_timestamp: Option<i64>,
-    max_results: Option<i32>,
-    run_forever: bool,
-    start_from_tail: bool,
-    local_schemas: Option<TopicLocalSchemas>,
+    criteria: ConsumeCriteria,
+    bounds: ScanBounds,
     sink: StreamSink<KafkaMessage>,
 ) -> Result<()> {
+    let ConsumeCriteria {
+        filter_terms,
+        filter_field,
+        filter_type,
+        search_scope,
+        filter_expression,
+        filter_variables,
+        local_schemas,
+        fast_trace_key,
+        start_partition,
+        max_results,
+        run_forever,
+    } = criteria;
+    let ScanBounds {
+        start_offset,
+        start_timestamp,
+        start_from_tail,
+        ..
+    } = bounds;
     // 0. Parse and compile structured filter expression before touching any broker/registry
     let compiled_filter_expr =
         match compile_filter_expression(filter_expression.as_deref(), filter_variables.as_ref())? {
@@ -186,33 +255,19 @@ pub fn consume_with_filter(
         &sink,
     );
 
+    let target = ScanTarget {
+        topic: topic.clone(),
+        assigned_partitions: assigned_partitions.clone(),
+        target_partition_id,
+        watermarks,
+    };
+
     // 6. Resolve start offsets from the cached watermarks (no seek yet).
-    let start_offsets_map_result = resolve_start_offsets(
-        &consumer,
-        &topic,
-        &watermarks,
-        start_offset,
-        start_timestamp,
-        start_from_tail,
-        max_results,
-        timeout,
-        &sink,
-    )?;
+    let start_offsets_map_result =
+        resolve_start_offsets(&consumer, &target, bounds, max_results, timeout, &sink)?;
 
     // 7. Calculate end offsets from the same watermark map.
-    let end_offsets = calculate_end_offsets(
-        &consumer,
-        &metadata,
-        &topic,
-        &assigned_partitions,
-        &watermarks,
-        run_forever,
-        end_offset,
-        end_timestamp,
-        target_partition_id,
-        timeout,
-        &sink,
-    )?;
+    let end_offsets = calculate_end_offsets(&consumer, &metadata, &target, bounds, timeout, &sink)?;
 
     // 8. Calculate total to scan from the resolved bounds.
     let total_to_scan = calculate_total_to_scan(
@@ -260,26 +315,28 @@ pub fn consume_with_filter(
     );
 
     // 10. Run Main Loop
-    run_poll_loop(
-        consumer,
-        topic,
-        start_offsets_map_result,
+    let plan = ResolvedPlan {
+        start_offsets: start_offsets_map_result,
         end_offsets,
-        filter_terms,
-        filter_field,
+        total_to_scan,
+    };
+    let filter = ScanFilter {
+        terms: filter_terms,
+        field: filter_field,
         filter_type,
         search_scope,
-        compiled_filter_expr,
+        expression: compiled_filter_expr,
         max_results,
         run_forever,
-        sink,
+    };
+    let decode = DecodeContext {
         tokio_runtime,
-        decoders,
+        decoder: decoders,
         key_is_avro,
         value_is_avro,
-        &loaded_local,
-        total_to_scan,
-    )?;
+        loaded_local,
+    };
+    run_poll_loop(consumer, topic, plan, filter, decode, sink)?;
 
     Ok(())
 }
@@ -604,26 +661,19 @@ fn calculate_total_to_scan(
     total_to_scan
 }
 
-fn run_poll_loop<'a>(
+fn run_poll_loop(
     consumer: BaseConsumer,
     topic: String,
-    start_offsets_map: std::collections::HashMap<i32, i64>,
-    end_offsets: std::collections::HashMap<i32, i64>,
-    filter_terms: Option<Vec<String>>,
-    filter_field: Option<String>,
-    filter_type: FilterType,
-    search_scope: SearchScope,
-    filter_expression: Option<kafkalyzer_core::filter_expr::CompiledExpr>,
-    max_results: Option<i32>,
-    run_forever: bool,
+    plan: ResolvedPlan,
+    filter: ScanFilter,
+    decode: DecodeContext<'_>,
     sink: StreamSink<KafkaMessage>,
-    tokio_runtime: &'static Runtime,
-    decoder: Option<SrDecoders<'a>>,
-    key_is_avro: bool,
-    value_is_avro: bool,
-    loaded_local: &LoadedTopicLocalSchemas,
-    total_to_scan: i64,
 ) -> Result<()> {
+    let ResolvedPlan {
+        start_offsets: start_offsets_map,
+        end_offsets,
+        total_to_scan,
+    } = plan;
     let mut scanned_count: u64 = 0;
     let mut last_report_time = std::time::Instant::now();
     let mut last_eof_check_time = std::time::Instant::now();
@@ -632,7 +682,7 @@ fn run_poll_loop<'a>(
     let mut matched_count: i32 = 0;
 
     let assigned_partitions: Vec<i32> = start_offsets_map.keys().copied().collect();
-    let mut quota_tracker = PartitionQuotaTracker::new(&assigned_partitions, max_results);
+    let mut quota_tracker = PartitionQuotaTracker::new(&assigned_partitions, filter.max_results);
     // Partitions that reached their end target and were paused to stop
     // fetching data that would only be skipped.
     let mut ended_partitions: std::collections::HashSet<i32> = std::collections::HashSet::new();
@@ -649,19 +699,19 @@ fn run_poll_loop<'a>(
         }
     }
 
-    // Precompile regexes once if filter_type is Regex. A term that does not
+    // Precompile regexes once if filter.filter_type is Regex. A term that does not
     // compile stops the scan here: it must never degrade to substring matching
     // inside the message loop.
-    let compiled_regexes: Vec<Regex> = if filter_type == FilterType::Regex {
-        compile_filter_patterns(filter_terms.as_deref().unwrap_or_default())?
+    let compiled_regexes: Vec<Regex> = if filter.filter_type == FilterType::Regex {
+        compile_filter_patterns(filter.terms.as_deref().unwrap_or_default())?
     } else {
         Vec::new()
     };
 
     loop {
         // Check Limit
-        if should_stop_for_limit(matched_count, max_results) {
-            if let Some(limit) = max_results {
+        if should_stop_for_limit(matched_count, filter.max_results) {
+            if let Some(limit) = filter.max_results {
                 log_to_dart(
                     &sink,
                     format!("Max results limit ({}) reached. Stopping.", limit),
@@ -673,7 +723,7 @@ fn run_poll_loop<'a>(
         }
 
         // Stream mode: after initial tail catch-up, drop per-partition pause quotas.
-        if run_forever
+        if filter.run_forever
             && quota_tracker.is_enabled()
             && partitions_caught_up_to_ends(&current_offsets, &end_offsets)
         {
@@ -690,7 +740,8 @@ fn run_poll_loop<'a>(
             Some(Ok(msg)) => {
                 let partition = msg.partition();
                 if let Some(target_end_offset) = end_offsets.get(&partition) {
-                    if should_skip_beyond_end(run_forever, msg.offset(), *target_end_offset) {
+                    if should_skip_beyond_end(filter.run_forever, msg.offset(), *target_end_offset)
+                    {
                         current_offsets.insert(partition, msg.offset() + 1);
                         let to_resume = quota_tracker.mark_exhausted(partition);
                         resume_partitions(&consumer, &topic, &to_resume);
@@ -714,7 +765,7 @@ fn run_poll_loop<'a>(
                     last_report_time = std::time::Instant::now();
                 }
 
-                if !run_forever && last_eof_check_time.elapsed().as_millis() >= 500 {
+                if !filter.run_forever && last_eof_check_time.elapsed().as_millis() >= 500 {
                     redistribute_newly_done_partitions(
                         &consumer,
                         &topic,
@@ -742,17 +793,9 @@ fn run_poll_loop<'a>(
 
                 match process_and_send_message(
                     &msg,
-                    tokio_runtime,
-                    &decoder,
-                    key_is_avro,
-                    value_is_avro,
-                    &loaded_local,
-                    &filter_terms,
+                    &decode,
+                    &filter,
                     &compiled_regexes,
-                    &filter_field,
-                    &filter_type,
-                    search_scope,
-                    filter_expression.as_ref(),
                     &sink,
                     &mut matched_count,
                 ) {
@@ -780,7 +823,7 @@ fn run_poll_loop<'a>(
                             *entry = *target_end_offset;
                         }
                     }
-                    if !run_forever && check_done(&end_offsets, &current_offsets) {
+                    if !filter.run_forever && check_done(&end_offsets, &current_offsets) {
                         all_done_log(&topic);
                         send_progress(&sink, &topic, scanned_count, total_to_scan).ok();
                         send_eof(&sink, &topic);
@@ -795,7 +838,7 @@ fn run_poll_loop<'a>(
                 }
             },
             None => {
-                if !run_forever {
+                if !filter.run_forever {
                     redistribute_newly_done_partitions(
                         &consumer,
                         &topic,
@@ -959,16 +1002,7 @@ impl<'a, 'd, M: KafkaMessageTrait> LazyMessage<'a, 'd, M> {
         &self.decoded_value_side().component
     }
 
-    fn into_parts(
-        mut self,
-    ) -> (
-        Option<String>,
-        Option<String>,
-        Option<MessageSchema>,
-        Option<MessageSchema>,
-        Option<LocalSchemaUse>,
-        Option<LocalSchemaUse>,
-    ) {
+    fn into_parts(mut self) -> DecodedParts {
         let _ = self.decoded_key_side();
         let _ = self.decoded_value_side();
         let key_side = self.key_cell.take();
@@ -1050,39 +1084,31 @@ impl<'a, 'd, M: KafkaMessageTrait> kafkalyzer_core::filter_expr::MessageView
     }
 }
 
-fn process_and_send_message<'a, M: KafkaMessageTrait>(
+fn process_and_send_message<M: KafkaMessageTrait>(
     msg: &M,
-    tokio_runtime: &Runtime,
-    decoder: &Option<SrDecoders<'a>>,
-    key_is_avro: bool,
-    value_is_avro: bool,
-    loaded_local: &LoadedTopicLocalSchemas,
-    filter_terms: &Option<Vec<String>>,
+    decode: &DecodeContext<'_>,
+    filter: &ScanFilter,
     compiled_regexes: &[Regex],
-    filter_field: &Option<String>,
-    filter_type: &FilterType,
-    search_scope: SearchScope,
-    filter_expression: Option<&kafkalyzer_core::filter_expr::CompiledExpr>,
     sink: &StreamSink<KafkaMessage>,
     matched_count: &mut i32,
 ) -> ProcessMessageResult {
     let lazy = LazyMessage::new(
         msg,
-        tokio_runtime,
-        decoder,
-        key_is_avro,
-        value_is_avro,
-        loaded_local.key.as_ref(),
-        loaded_local.value.as_ref(),
+        decode.tokio_runtime,
+        &decode.decoder,
+        decode.key_is_avro,
+        decode.value_is_avro,
+        decode.loaded_local.key.as_ref(),
+        decode.loaded_local.value.as_ref(),
     );
 
-    if let Some(expr) = filter_expression {
+    if let Some(expr) = filter.expression.as_ref() {
         if !expr.evaluate(&lazy) {
             return ProcessMessageResult::NotMatched;
         }
     }
 
-    let has_legacy_filter = filter_terms.as_ref().is_some_and(|t| !t.is_empty());
+    let has_legacy_filter = filter.terms.as_ref().is_some_and(|t| !t.is_empty());
 
     if has_legacy_filter {
         let key_opt = lazy.decoded_key().text.clone();
@@ -1090,10 +1116,10 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
         match matches_filter(
             &key_opt,
             &payload_opt,
-            filter_terms,
-            filter_field,
-            filter_type,
-            search_scope,
+            &filter.terms,
+            &filter.field,
+            &filter.filter_type,
+            filter.search_scope,
             compiled_regexes,
         ) {
             FilterOutcome::NotMatched => return ProcessMessageResult::NotMatched,
@@ -1102,7 +1128,7 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
                 match_diagnostic(msg.topic(), msg.partition(), msg.offset(), &term),
             ),
             FilterOutcome::Pass => {
-                if filter_expression.is_some() {
+                if filter.expression.is_some() {
                     log_to_dart(
                         sink,
                         match_diagnostic(msg.topic(), msg.partition(), msg.offset(), "expression"),
@@ -1110,7 +1136,7 @@ fn process_and_send_message<'a, M: KafkaMessageTrait>(
                 }
             }
         }
-    } else if filter_expression.is_some() {
+    } else if filter.expression.is_some() {
         log_to_dart(
             sink,
             match_diagnostic(msg.topic(), msg.partition(), msg.offset(), "expression"),
@@ -1268,7 +1294,23 @@ fn resolve_target_partitions(
         return Err(anyhow::anyhow!("Topic {} not found", topic));
     }
 
+    check_requested_partition(topic, target_partition_id, &assigned_partitions)?;
+
     Ok((assigned_partitions, target_partition_id))
+}
+
+/// A partition the topic does not have is a mistake in the request, not an
+/// empty range: without this the scan would report "done" without a word.
+fn check_requested_partition(topic: &str, requested: Option<i32>, available: &[i32]) -> Result<()> {
+    match requested {
+        Some(id) if !available.contains(&id) => Err(anyhow::anyhow!(
+            "Partition {} does not exist on topic {} (available: {:?})",
+            id,
+            topic,
+            available
+        )),
+        _ => Ok(()),
+    }
 }
 
 fn fetch_partition_watermarks(
@@ -1297,15 +1339,21 @@ fn fetch_partition_watermarks(
 
 fn resolve_start_offsets(
     consumer: &BaseConsumer,
-    topic: &str,
-    watermarks: &std::collections::HashMap<i32, (i64, i64)>,
-    start_offset: Option<i64>,
-    start_timestamp: Option<i64>,
-    start_from_tail: bool,
+    target: &ScanTarget,
+    bounds: ScanBounds,
     max_results: Option<i32>,
     timeout: std::time::Duration,
     sink: &StreamSink<KafkaMessage>,
 ) -> Result<std::collections::HashMap<i32, i64>> {
+    let topic = target.topic.as_str();
+    let watermarks = &target.watermarks;
+    let ScanBounds {
+        start_offset,
+        start_timestamp,
+        start_from_tail,
+        ..
+    } = bounds;
+
     if let Some(timestamp) = start_timestamp {
         return resolve_start_offsets_for_timestamp(
             consumer, topic, watermarks, timestamp, timeout, sink,
@@ -1402,16 +1450,20 @@ fn resolve_start_offsets_for_timestamp(
 fn calculate_end_offsets(
     consumer: &BaseConsumer,
     metadata: &rdkafka::metadata::Metadata,
-    topic: &str,
-    assigned_partitions: &[i32],
-    watermarks: &std::collections::HashMap<i32, (i64, i64)>,
-    _run_forever: bool,
-    end_offset: Option<i64>,
-    end_timestamp: Option<i64>,
-    target_partition_id: Option<i32>,
+    target: &ScanTarget,
+    bounds: ScanBounds,
     timeout: std::time::Duration,
     sink: &StreamSink<KafkaMessage>,
 ) -> Result<std::collections::HashMap<i32, i64>> {
+    let topic = target.topic.as_str();
+    let watermarks = &target.watermarks;
+    let assigned_partitions = target.assigned_partitions.as_slice();
+    let target_partition_id = target.target_partition_id;
+    let ScanBounds {
+        end_offset,
+        end_timestamp,
+        ..
+    } = bounds;
     let mut end_offsets: std::collections::HashMap<i32, i64> = std::collections::HashMap::new();
 
     if let Some(end_timestamp_val) = end_timestamp {
@@ -1484,6 +1536,17 @@ pub(crate) fn message_schema<'a>(
     let schema_id = kafkalyzer_core::schema_wire::wire_schema_id(payload?)?;
     Some(provenance.resolve(tokio_runtime, schema_id))
 }
+
+/// What one decoded message splits into: key and payload text, the registry
+/// schemas behind them, and the local schemas that were used.
+type DecodedParts = (
+    Option<String>,
+    Option<String>,
+    Option<MessageSchema>,
+    Option<MessageSchema>,
+    Option<LocalSchemaUse>,
+    Option<LocalSchemaUse>,
+);
 
 pub(crate) struct DecodedComponent {
     pub json: Option<serde_json::Value>,
@@ -1810,6 +1873,55 @@ fn matches_filter(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The plainest request there is: every optional criterion left out. These
+    /// are the defaults the 19-argument entry point used, now spelled by name.
+    #[test]
+    fn an_all_defaults_request_reads_from_the_low_watermark_without_limits() {
+        let criteria = ConsumeCriteria {
+            filter_terms: None,
+            filter_field: None,
+            filter_type: FilterType::Contains,
+            search_scope: SearchScope::Both,
+            filter_expression: None,
+            filter_variables: None,
+            local_schemas: None,
+            fast_trace_key: None,
+            start_partition: None,
+            max_results: None,
+            run_forever: false,
+        };
+        let bounds = ScanBounds::default();
+
+        // Tail is off and no offset was asked for, so the scan starts at the
+        // high watermark: a plain subscribe shows new messages only.
+        assert!(!bounds.start_from_tail);
+        assert_eq!(
+            start_offset_from_watermarks(bounds.start_offset, 42, 999),
+            999
+        );
+        // No result limit, so no per-partition fairness quota is in play.
+        assert!(!PartitionQuotaTracker::new(&[0, 1], criteria.max_results).is_enabled());
+        // No structured filter, so nothing is compiled and nothing is filtered out.
+        assert!(compile_filter_expression(
+            criteria.filter_expression.as_deref(),
+            criteria.filter_variables.as_ref()
+        )
+        .unwrap()
+        .is_none());
+        // A non-live scan over an empty range finishes without polling.
+        assert!(should_fast_path_empty(criteria.run_forever, 0));
+    }
+
+    #[test]
+    fn a_requested_partition_the_topic_does_not_have_is_an_error() {
+        let error = check_requested_partition("orders", Some(7), &[0, 1, 2]).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("Partition 7 does not exist on topic orders"));
+        assert!(check_requested_partition("orders", Some(2), &[0, 1, 2]).is_ok());
+        assert!(check_requested_partition("orders", None, &[0, 1, 2]).is_ok());
+    }
 
     // Mock sink not easily available for unit tests without boilerplate.
     // We will bypass sink requirement for tests or mock it if necessary.
@@ -2842,23 +2954,24 @@ mod local_schema_decode_side_tests {
             5,
             None,
         );
+        let decode = DecodeContext {
+            tokio_runtime: rt,
+            decoder: None,
+            key_is_avro: false,
+            value_is_avro: false,
+            loaded_local,
+        };
+        let filter = ScanFilter {
+            terms: None,
+            field: None,
+            filter_type: FilterType::Contains,
+            search_scope: SearchScope::Both,
+            expression: None,
+            max_results: None,
+            run_forever: false,
+        };
         let mut matched = 0;
-        let res = process_and_send_message(
-            &msg,
-            rt,
-            &None,
-            false,
-            false,
-            &loaded_local,
-            &None,
-            &[],
-            &None,
-            &FilterType::Contains,
-            SearchScope::Both,
-            None,
-            &sink,
-            &mut matched,
-        );
+        let res = process_and_send_message(&msg, &decode, &filter, &[], &sink, &mut matched);
         assert!(matches!(res, ProcessMessageResult::Matched));
         let emitted = rx.try_recv().unwrap();
         assert_eq!(emitted.payload.as_deref(), Some("raw-payload"));

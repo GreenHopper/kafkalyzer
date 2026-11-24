@@ -326,12 +326,15 @@ mod tests {
             .map(|t| gen_fps(t as u64 + 1, PER_THREAD))
             .collect();
 
+        // Step (b) consumes `batches` by value and the threads need owned
+        // batches, so the copy is taken here, outside the measured region.
+        let shared_batches = batches.clone();
+
         // (a) Shared 16-shard BoundedFingerprintSet
         let shared = Arc::new(BoundedFingerprintSet::with_per_shard_cap(1_000_000));
         let t0 = Instant::now();
-        let handles: Vec<_> = batches
-            .iter()
-            .cloned()
+        let handles: Vec<_> = shared_batches
+            .into_iter()
             .map(|batch| {
                 let s = Arc::clone(&shared);
                 std::thread::spawn(move || {

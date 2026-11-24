@@ -7,7 +7,7 @@ import 'package:kafkalyzer/src/services/stored_list.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 
 class ScriptController extends ChangeNotifier {
-  final ScriptRepository _repository = getIt<ScriptRepository>();
+  final ScriptRepository _repository;
 
   List<Script> _scripts = [];
   List<Script> get scripts => List.unmodifiable(_scripts);
@@ -16,7 +16,8 @@ class ScriptController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   StoreStatus get storeStatus => _repository.storeStatus;
 
-  ScriptController() {
+  ScriptController({ScriptRepository? repository})
+    : _repository = repository ?? getIt<ScriptRepository>() {
     loadScripts();
   }
 

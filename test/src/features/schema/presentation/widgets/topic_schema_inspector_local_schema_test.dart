@@ -5,7 +5,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';

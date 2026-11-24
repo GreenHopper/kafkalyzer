@@ -1017,18 +1017,16 @@ mod provenance_cache_tests {
         let port = listener.local_addr().unwrap().port();
 
         let handle = std::thread::spawn(move || {
-            for stream in listener.incoming().take(2) {
-                if let Ok(stream) = stream {
-                    let acceptor = acceptor.clone();
-                    std::thread::spawn(move || {
-                        if let Ok(mut ssl_stream) = acceptor.accept(stream) {
-                            let mut buf = [0u8; 512];
-                            let _ = ssl_stream.read(&mut buf);
-                            let _ = ssl_stream
-                                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n[]");
-                        }
-                    });
-                }
+            for stream in listener.incoming().take(2).flatten() {
+                let acceptor = acceptor.clone();
+                std::thread::spawn(move || {
+                    if let Ok(mut ssl_stream) = acceptor.accept(stream) {
+                        let mut buf = [0u8; 512];
+                        let _ = ssl_stream.read(&mut buf);
+                        let _ =
+                            ssl_stream.write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n[]");
+                    }
+                });
             }
         });
 

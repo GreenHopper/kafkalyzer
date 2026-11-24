@@ -124,6 +124,12 @@ class _FakeTopicController extends ChangeNotifier implements TopicController {
   bool isLoading(ClusterProfile cluster) => false;
 
   @override
+  bool hasCachedTopics(ClusterProfile cluster) => false;
+
+  @override
+  Listenable get topicListenable => this;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -169,7 +175,6 @@ void main() {
   late MainNavigationController nav;
 
   setUp(() async {
-    await getIt.reset();
     SharedPreferences.setMockInitialValues({});
     metadata = _FakeMetadataService()
       ..groups = [_makeGroup('group-a'), _makeGroup('group-b')];
@@ -188,9 +193,7 @@ void main() {
     getIt.registerSingleton<MainNavigationController>(nav);
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   Widget buildApp() {
     return const MaterialApp(

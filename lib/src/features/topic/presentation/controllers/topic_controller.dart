@@ -2,9 +2,14 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/features/topic/domain/topic_list_query.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_view_controllers.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as api;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_list_preferences_service.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
+import 'package:kafkalyzer/src/services/topic_store.dart';
 import 'package:logger/logger.dart';
 
 enum TopicConfigViewState { loading, available, notReadable, failed }
@@ -25,7 +30,19 @@ class TopicConfigView {
   const TopicConfigView.loading() : this(state: TopicConfigViewState.loading);
 }
 
-class TopicController extends ChangeNotifier {
+/// Answers [TopicNameSource] from this module's own topic cache, so other
+/// modules can ask which topics exist without importing [TopicController].
+class CachedTopicNames implements TopicNameSource {
+  const CachedTopicNames(this._controller);
+
+  final TopicController _controller;
+
+  @override
+  List<String>? topicNames(ClusterProfile profile) =>
+      _controller.getTopics(profile)?.map((t) => t.name).toList();
+}
+
+class TopicController extends ChangeNotifier implements TopicStore {
   static const int configChunkSize = 100;
 
   final KafkaMetadataService _metadataService = getIt<KafkaMetadataService>();
@@ -45,9 +62,15 @@ class TopicController extends ChangeNotifier {
   final Map<String, Set<String>> _inFlightConfigs = {};
   final Map<String, Map<String, api.TopicMetadata>> _resolved = {};
 
+  /// The per-topic stream, analysis and facts controllers, owned here because
+  /// they hang off the cached topic list.
+  final TopicViewControllerRegistry viewControllers =
+      TopicViewControllerRegistry();
+
   List<api.TopicMetadata>? getTopics(ClusterProfile cluster) =>
       _cache[cluster.name];
 
+  @override
   bool hasCachedTopics(ClusterProfile cluster) =>
       _cache.containsKey(cluster.name);
 
@@ -60,6 +83,7 @@ class TopicController extends ChangeNotifier {
   api.TopicMetadata? findTopic(ClusterProfile cluster, String name) =>
       _index[cluster.name]?[name];
 
+  @override
   Future<api.TopicMetadata> resolveTopic(
     ClusterProfile cluster,
     String name,
@@ -260,6 +284,53 @@ class TopicController extends ChangeNotifier {
     }
   }
 
+  @override
+  List<api.TopicMetadata>? cachedTopics(ClusterProfile profile) =>
+      getTopics(profile);
+
+  @override
+  Future<void> refreshTopics(ClusterProfile profile) => fetchTopics(profile);
+
+  @override
+  void clearTopics(ClusterProfile profile) => clearCache(profile);
+
+  @override
+  bool hasRunningTopicOperations(Iterable<String> tabIds) =>
+      viewControllers.hasRunningOperations(tabIds);
+
+  @override
+  void releaseTopicViews(Iterable<String> tabIds) =>
+      viewControllers.release(tabIds);
+
+  @override
+  Listenable get topicListenable => this;
+
+  @override
+  void releaseTopicViewByName(String topicName, String clusterName) =>
+      viewControllers.releaseByName(topicName, clusterName);
+
+  @override
+  void startTopicStream(
+    String tabId,
+    ClusterProfile profile,
+    String topicName,
+  ) => viewControllers.streamWithDefaults(tabId, profile, topicName);
+
+  /// Forgets the topic list filters, sort order and notice state, e.g. after a
+  /// disconnect.
+  @override
+  void resetTopicListView() {
+    _query = const TopicListQuery();
+    _unhealthyTopicsOnly = false;
+    _preferenceCluster = null;
+    _topicPreferencesUnreadable = false;
+    _topicPreferencesWriteBlocked = false;
+    _memoList = null;
+    _memoQuery = null;
+    _memoUnhealthyOnly = null;
+    _memoView = null;
+  }
+
   void clearCache(ClusterProfile cluster) {
     final name = cluster.name;
     _generation[name] = (_generation[name] ?? 0) + 1;
@@ -272,6 +343,217 @@ class TopicController extends ChangeNotifier {
     _resolved.remove(name);
     _errors.remove(name);
     _isLoading.remove(name);
+    // The per-topic view state hangs off the cached list, so it goes with it.
+    viewControllers.releaseAll();
     notifyListeners();
+  }
+
+  // --- topic list view state -------------------------------------------------
+  //
+  // Query, filter, sort, favourite and unhealthy-only state, plus the memoised
+  // view: this is per-topic-list state, so it sits next to the topic cache it
+  // reads instead of in the connection controller.
+
+  TopicListQuery _query = const TopicListQuery();
+  List<api.TopicMetadata>? _memoList;
+  TopicListQuery? _memoQuery;
+  bool? _memoUnhealthyOnly;
+  TopicListView? _memoView;
+  bool _unhealthyTopicsOnly = false;
+  String? _preferenceCluster;
+  bool _topicPreferencesUnreadable = false;
+  bool _topicPreferencesWriteBlocked = false;
+
+  @visibleForTesting
+  int viewComputations = 0;
+
+  static const _emptyView = TopicListView(
+    rows: [],
+    visibleTopics: [],
+    hiddenByInternal: 0,
+    hiddenByStream: 0,
+    hiddenByText: 0,
+    patternError: null,
+    highlightPattern: null,
+    failureGroups: {},
+  );
+
+  TopicListQuery get topicListQuery => _query;
+  bool get showInternalTopics => _query.showInternal;
+  bool get showStreamTopics => _query.showStream;
+  String get topicFilter => _query.text;
+  TopicFilterMode get topicFilterMode => _query.mode;
+  TopicSortOrder get topicSortOrder => _query.sort;
+  bool get groupTopicsByPrefix => _query.groupByPrefix;
+  Set<String> get favouriteTopics => _query.favourites;
+  bool get topicPreferencesUnreadable => _topicPreferencesUnreadable;
+  bool get topicPreferencesWriteBlocked => _topicPreferencesWriteBlocked;
+  bool get unhealthyTopicsOnly => _unhealthyTopicsOnly;
+
+  TopicListView topicListView(ClusterProfile? profile) {
+    if (profile == null) return _emptyView;
+
+    final allTopics = getTopics(profile) ?? const [];
+    if (identical(_memoList, allTopics) &&
+        _memoQuery == _query &&
+        _memoUnhealthyOnly == _unhealthyTopicsOnly &&
+        _memoView != null) {
+      return _memoView!;
+    }
+
+    final TopicListView view;
+    if (_unhealthyTopicsOnly) {
+      final unhealthy = allTopics
+          .where(
+            (t) =>
+                ((t.underReplicatedPartitions ?? 0) +
+                    (t.leaderlessPartitions ?? 0)) >
+                0,
+          )
+          .toList(growable: false);
+      view = buildTopicListView(
+        unhealthy,
+        _query.copyWith(
+          text: '',
+          showInternal: true,
+          showStream: true,
+          groupByPrefix: false,
+        ),
+      );
+    } else {
+      view = buildTopicListView(allTopics, _query);
+    }
+    viewComputations++;
+    _memoList = allTopics;
+    _memoQuery = _query;
+    _memoUnhealthyOnly = _unhealthyTopicsOnly;
+    _memoView = view;
+    return view;
+  }
+
+  List<api.TopicMetadata> topics(ClusterProfile? profile) =>
+      topicListView(profile).visibleTopics;
+
+  void toggleShowInternalTopics(bool value) {
+    if (_query.showInternal == value) return;
+    _query = _query.copyWith(showInternal: value);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void toggleShowStreamTopics(bool value) {
+    if (_query.showStream == value) return;
+    _query = _query.copyWith(showStream: value);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void setTopicFilterMode(TopicFilterMode mode) {
+    if (_query.mode == mode) return;
+    _query = _query.copyWith(mode: mode);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void setTopicSortOrder(TopicSortOrder sort) {
+    if (_query.sort == sort) return;
+    _query = _query.copyWith(sort: sort);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void setGroupByPrefix(bool value) {
+    if (_query.groupByPrefix == value) return;
+    _query = _query.copyWith(groupByPrefix: value);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void toggleGroupByPrefix() => setGroupByPrefix(!_query.groupByPrefix);
+
+  void toggleFavourite(String topicName) {
+    final next = Set<String>.from(_query.favourites);
+    if (!next.add(topicName)) {
+      next.remove(topicName);
+    }
+    _query = _query.copyWith(favourites: next);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void toggleGroupCollapsed(String prefix) {
+    final next = Set<String>.from(_query.collapsedGroups);
+    if (!next.add(prefix)) {
+      next.remove(prefix);
+    }
+    _query = _query.copyWith(collapsedGroups: next);
+    notifyListeners();
+  }
+
+  void showAllTopics() {
+    _query = _query.copyWith(text: '', showInternal: true, showStream: true);
+    notifyListeners();
+    _saveTopicPreferences();
+  }
+
+  void showUnhealthyTopicsOnly() {
+    _unhealthyTopicsOnly = true;
+    _query = _query.copyWith(text: '');
+    notifyListeners();
+  }
+
+  void clearUnhealthyTopicsOnly() {
+    if (!_unhealthyTopicsOnly) return;
+    _unhealthyTopicsOnly = false;
+    notifyListeners();
+  }
+
+  void updateTopicFilter(String filter) {
+    if (_query.text == filter) return;
+    _query = _query.copyWith(text: filter);
+    notifyListeners();
+  }
+
+  void dismissTopicPreferencesNotice() {
+    if (!_topicPreferencesUnreadable && !_topicPreferencesWriteBlocked) return;
+    _topicPreferencesUnreadable = false;
+    _topicPreferencesWriteBlocked = false;
+    notifyListeners();
+  }
+
+  /// Loads the saved topic list preferences for the cluster being connected to.
+  @override
+  Future<void> loadTopicPreferences(ClusterProfile profile) async {
+    _unhealthyTopicsOnly = false;
+    _preferenceCluster = profile.name;
+    if (!getIt.isRegistered<TopicListPreferencesService>()) {
+      _query = const TopicListQuery();
+      _topicPreferencesUnreadable = false;
+      _topicPreferencesWriteBlocked = false;
+      return;
+    }
+    final service = getIt<TopicListPreferencesService>();
+    final result = await service.load(profile.name);
+    _query = result.preferences.toQuery();
+    _topicPreferencesUnreadable = result.unreadable;
+    _topicPreferencesWriteBlocked = false;
+    _memoList = null;
+    _memoQuery = null;
+    _memoView = null;
+  }
+
+  Future<void> _saveTopicPreferences() async {
+    final cluster = _preferenceCluster;
+    if (cluster == null) return;
+    if (!getIt.isRegistered<TopicListPreferencesService>()) return;
+    final service = getIt<TopicListPreferencesService>();
+    final saved = await service.save(
+      cluster,
+      TopicListPreferences.fromQuery(_query),
+    );
+    if (!saved && service.isWriteBlocked(cluster)) {
+      _topicPreferencesWriteBlocked = true;
+      notifyListeners();
+    }
   }
 }

@@ -88,7 +88,7 @@ message EnumValueDescriptorProto {
 }
 "#;
 
-fn get_str<'a>(msg: &'a MessageValue, num: u64) -> Option<&'a str> {
+fn get_str(msg: &MessageValue, num: u64) -> Option<&str> {
     msg.fields
         .iter()
         .find(|f| f.number == num)
@@ -105,7 +105,7 @@ fn get_int(msg: &MessageValue, num: u64) -> Option<i64> {
         .and_then(|f| match &f.value {
             Value::Int32(v) => Some(i64::from(*v)),
             Value::Int64(v) => Some(*v),
-            Value::Enum(e) => Some(i64::from(e.value)),
+            Value::Enum(e) => Some(e.value),
             _ => None,
         })
 }
@@ -116,7 +116,7 @@ fn get_bool(msg: &MessageValue, num: u64) -> bool {
         .any(|f| f.number == num && matches!(f.value, Value::Bool(true)))
 }
 
-fn get_msgs<'a>(msg: &'a MessageValue, num: u64) -> Vec<&'a MessageValue> {
+fn get_msgs(msg: &MessageValue, num: u64) -> Vec<&MessageValue> {
     msg.fields
         .iter()
         .filter(|f| f.number == num)

@@ -1,19 +1,21 @@
 import 'dart:math' as math;
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter/services.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
 import 'package:kafkalyzer/src/features/search/domain/filter_field_suggestions.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/topic/models/duplicate_navigation_target.dart';
-import 'package:kafkalyzer/src/ui/messages/messages_view.dart';
+import 'package:kafkalyzer/src/features/messages/presentation/messages_view.dart';
 import 'package:kafkalyzer/src/ui/date_format_utils.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
-import 'package:kafkalyzer/src/features/schema/presentation/local_schema_error_formatter.dart';
+import 'package:kafkalyzer/src/ui/local_schema_error_formatter.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/local_schema_assignment_dialog.dart';
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_partition_health_dialog.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_fact_tags.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_header.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_tags.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_detail_progress_tile.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_tag.dart';
 import 'package:kafkalyzer/src/features/topic/topic_utils.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
@@ -32,17 +34,12 @@ import 'package:kafkalyzer/src/services/topic_config_service.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/topic_schema_inspector_view.dart';
-import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
-import 'package:kafkalyzer/src/ui/widgets/dropped_messages_indicator.dart';
 import 'package:kafkalyzer/src/features/search/domain/filter_terms.dart';
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_search_bar.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
 
 enum StartStrategy { latest, earliest, customOffset, customTimestamp }
-
-enum TopicViewMode { messages, analysis, config }
 
 class TopicDetailView extends StatefulWidget {
   final TopicMetadata topic;
@@ -176,9 +173,10 @@ class _TopicDetailViewState extends State<TopicDetailView>
     _maxResultsController.text = _defaultResultLimit().toString();
     activeController = getIt<ActiveConnectionController>();
     final key = widget.tabId ?? '${widget.profile.name}:${widget.topic.name}';
-    streamController = activeController.getStreamController(key);
-    analysisController = activeController.getAnalysisController(key);
-    factsController = activeController.getTopicFactsController(
+    final viewControllers = getIt<TopicController>().viewControllers;
+    streamController = viewControllers.stream(key);
+    analysisController = viewControllers.analysis(key);
+    factsController = viewControllers.facts(
       key,
       widget.profile,
       widget.topic.name,
@@ -331,12 +329,8 @@ class _TopicDetailViewState extends State<TopicDetailView>
         ),
       ),
       isPinned: hasError,
-      estimatedWidth: _estimateTagWidth(text),
+      estimatedWidth: estimateTagWidth(text),
     );
-  }
-
-  static double _estimateTagWidth(String text, {bool hasIcon = false}) {
-    return text.length * 5.2 + 14.0 + (hasIcon ? 16.0 : 0.0);
   }
 
   void _onActiveConnectionChanged() {
@@ -432,7 +426,61 @@ class _TopicDetailViewState extends State<TopicDetailView>
                     ),
                   ),
                 ),
-                child: _buildHeader(context),
+                child: TopicDetailHeader(
+                  topicName: widget.topic.name,
+                  profile: widget.profile,
+                  topicController: topicController,
+                  factsController: factsController,
+                  viewMode: _viewMode,
+                  onViewModeChanged: (mode) => setState(() => _viewMode = mode),
+                  onSelectConfig: () {
+                    _ensureConfigController();
+                    setState(() => _viewMode = TopicViewMode.config);
+                  },
+                  onClose: () {
+                    final isRunning =
+                        streamController.isStreaming ||
+                        analysisController.isAnalyzing;
+                    confirmCloseTab(
+                      context,
+                      isOperationRunning: isRunning,
+                      onClose: () {
+                        if (widget.tabId != null) {
+                          activeController.closeTopicTab(widget.tabId!);
+                        } else {
+                          activeController.closeTopic(
+                            widget.topic,
+                            widget.profile.name,
+                          );
+                        }
+                      },
+                    );
+                  },
+                  showSchema: hasSchema(
+                    schemaController,
+                    widget.profile,
+                    widget.topic.name,
+                  ),
+                  onOpenSchema: _openSchemaView,
+                  tags: TopicDetailTags(
+                    profile: widget.profile,
+                    topic: _currentTopic,
+                    topicController: topicController,
+                    factsController: factsController,
+                    schemaController: schemaController,
+                    timeDisplaySettings: _timeDisplaySettings,
+                    localSchemaFact: _buildLocalSchemaFactItem(
+                      context,
+                      AppLocalizations.of(context),
+                    ),
+                    onOpenPartitionHealthDialog: () =>
+                        _openPartitionHealthDialog(context),
+                  ),
+                  progressTile: TopicDetailProgressTile(
+                    stream: streamController,
+                    onStart: startStreaming,
+                  ),
+                ),
               ),
             ),
             if (_viewMode == TopicViewMode.messages) ...[
@@ -502,6 +550,27 @@ class _TopicDetailViewState extends State<TopicDetailView>
                           },
                         );
                       },
+                  schemaTabBuilder: (context, message, subject, version) {
+                    return TopicSchemaInspectorView(
+                      profile: widget.profile,
+                      topicName: message.topic,
+                      initialSubject: subject,
+                      initialVersion: version,
+                      isEmbedded: true,
+                      controller: schemaController,
+                      onPinToColumn: null,
+                    );
+                  },
+                  onJumpToOriginalMessage: (topicName, partition, offset) {
+                    final active = getIt<ActiveConnectionController>();
+                    openTopicByNameWithFeedback(
+                      controller: active,
+                      profile: widget.profile,
+                      topicName: topicName,
+                      messenger: ScaffoldMessenger.maybeOf(context),
+                      l10n: AppLocalizations.of(context),
+                    );
+                  },
                 ),
               ),
             ] else if (_viewMode == TopicViewMode.analysis) ...[
@@ -527,247 +596,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context);
-
-    final closeButton = IconButton(
-      onPressed: () {
-        final isRunning =
-            streamController.isStreaming || analysisController.isAnalyzing;
-        confirmCloseTab(
-          context,
-          isOperationRunning: isRunning,
-          onClose: () {
-            if (widget.tabId != null) {
-              activeController.closeTopicTab(widget.tabId!);
-            } else {
-              activeController.closeTopic(widget.topic, widget.profile.name);
-            }
-          },
-        );
-      },
-      icon: const Icon(Icons.close),
-      tooltip: l10n?.closeTab ?? "Close Tab",
-      style: IconButton.styleFrom(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-      ),
-    );
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // shortcut: fixed breakpoints, raise the second one if the pane gets wider sidebars
-        final compact = constraints.maxWidth < 1220;
-        final iconOnly = constraints.maxWidth < 700;
-
-        final identityRow = Row(
-          children: [
-            closeButton,
-            const SizedBox(width: 16),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildTopicTitleRow(context),
-                        const SizedBox(height: 8),
-                        _buildTopicTags(context),
-                      ],
-                    ),
-                  ),
-                  if (hasSchema(
-                    schemaController,
-                    widget.profile,
-                    widget.topic.name,
-                  )) ...[
-                    const SizedBox(width: 12),
-                    _buildSchemaButton(context),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
-          ],
-        );
-
-        if (_viewMode != TopicViewMode.messages) {
-          return identityRow;
-        }
-
-        final progressTile = Align(
-          alignment: Alignment.centerRight,
-          child: _buildProgressTile(context, colorScheme),
-        );
-
-        if (!compact) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  closeButton,
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(child: _buildTopicTitleRow(context)),
-                        if (hasSchema(
-                          schemaController,
-                          widget.profile,
-                          widget.topic.name,
-                        )) ...[
-                          const SizedBox(width: 12),
-                          _buildSchemaButton(context),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
-                  const SizedBox(width: 16),
-                  Flexible(child: progressTile),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.only(left: 56),
-                child: _buildTopicTags(context),
-              ),
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                closeButton,
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(child: _buildTopicTitleRow(context)),
-                      if (hasSchema(
-                        schemaController,
-                        widget.profile,
-                        widget.topic.name,
-                      )) ...[
-                        const SizedBox(width: 12),
-                        _buildSchemaButton(context),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                _buildTopicModeSwitcher(context, colorScheme, l10n, iconOnly),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.only(left: 56),
-              child: _buildTopicTags(context),
-            ),
-            const SizedBox(height: 8),
-            progressTile,
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildTopicModeSwitcher(
-    BuildContext context,
-    ColorScheme colorScheme,
-    AppLocalizations? l10n,
-    bool iconOnly,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.all(2),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _TopicModeButton(
-            icon: Icons.list_alt_rounded,
-            label: l10n?.messagesView ?? 'Messages',
-            isSelected: _viewMode == TopicViewMode.messages,
-            showLabel: !iconOnly,
-            onTap: () => setState(() => _viewMode = TopicViewMode.messages),
-          ),
-          const SizedBox(width: 2),
-          _TopicModeButton(
-            icon: Icons.analytics_outlined,
-            label: l10n?.topicAnalysis ?? 'Analysis',
-            isSelected: _viewMode == TopicViewMode.analysis,
-            showLabel: !iconOnly,
-            onTap: () => setState(() => _viewMode = TopicViewMode.analysis),
-          ),
-          const SizedBox(width: 2),
-          _TopicModeButton(
-            icon: Icons.tune,
-            label: l10n?.topicModeConfig ?? 'Configuration',
-            isSelected: _viewMode == TopicViewMode.config,
-            showLabel: !iconOnly,
-            onTap: () {
-              _ensureConfigController();
-              setState(() => _viewMode = TopicViewMode.config);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopicTitleRow(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Row(
-      children: [
-        Flexible(
-          child: Text(
-            widget.topic.name,
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.copy, size: 18),
-          tooltip: l10n?.copyTopicName ?? "Copy Topic Name",
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: widget.topic.name));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n?.topicNameCopied ?? "Topic name copied"),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
-        ),
-        IconButton(
-          key: const Key('topic_header_refresh_facts_button'),
-          icon: const Icon(Icons.refresh, size: 18),
-          tooltip:
-              l10n?.topicHeaderRefreshFactsTooltip ?? 'Refresh topic facts',
-          onPressed: () {
-            topicController?.fetchTopics(widget.profile, force: true);
-            factsController.refresh();
-          },
-        ),
-      ],
-    );
-  }
-
   void _openPartitionHealthDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -784,863 +612,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
           }
         },
       ),
-    );
-  }
-
-  Widget _buildTopicTags(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final topic = _currentTopic;
-    final healthTooltip =
-        l10n?.partitionHealthTooltip ??
-        'View partition replication & health details';
-
-    if (!topic.metadataKnown) {
-      final err = topic.metadataError!;
-      final reason = switch (err.kind) {
-        TopicMetadataErrorKind.notFound =>
-          l10n?.topicMetadataNotFound ?? 'topic not found',
-        TopicMetadataErrorKind.notAuthorized =>
-          l10n?.topicConfigNotReadable ?? 'not readable — permission?',
-        TopicMetadataErrorKind.other =>
-          l10n?.topicConfigLoadFailed ?? 'could not be loaded',
-      };
-      final schemaLabel = resolveTopicSchemaLabel(
-        l10n,
-        schemaController,
-        widget.profile,
-        topic.name,
-      );
-      final localSchemaItem = _buildLocalSchemaFactItem(context, l10n);
-      return Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: [
-          TopicTag(reason, key: const Key('topic_metadata_error_tag')),
-          if (schemaLabel != null)
-            TopicTag(
-              schemaLabel,
-              key: const Key('topic_schema_tag'),
-              isSchema: true,
-            ),
-          ?localSchemaItem.tag,
-        ],
-      );
-    }
-
-    final unhealthy =
-        (topic.underReplicatedPartitions ?? 0) +
-        (topic.leaderlessPartitions ?? 0);
-    final configView = topicController?.configFor(widget.profile, topic.name);
-
-    return ListenableBuilder(
-      listenable: Listenable.merge([
-        factsController,
-        _timeDisplaySettings,
-        schemaController,
-      ]),
-      builder: (context, _) {
-        final schemaLabel = resolveTopicSchemaLabel(
-          l10n,
-          schemaController,
-          widget.profile,
-          topic.name,
-        );
-        final pinned = <({Widget widget, double width})>[];
-        final regular = <({Widget widget, double width})>[];
-
-        // 1. Unhealthy partitions warning (always pinned)
-        if (unhealthy > 0) {
-          final text =
-              l10n?.topicHealthWarning(
-                topic.underReplicatedPartitions ?? 0,
-                topic.leaderlessPartitions ?? 0,
-              ) ??
-              'Unhealthy partitions';
-          pinned.add((
-            widget: Tooltip(
-              message: healthTooltip,
-              child: TopicTag(
-                text,
-                key: const Key('topic_health_tag'),
-                onTap: () => _openPartitionHealthDialog(context),
-              ),
-            ),
-            width: _estimateTagWidth(text),
-          ));
-        }
-
-        // 2. Partitions & RF (primary regular facts)
-        final partitionsText =
-            l10n?.topicPartitionsLabel(topic.partitionCount) ??
-            "${topic.partitionCount} Partitions";
-        regular.add((
-          widget: Tooltip(
-            message: healthTooltip,
-            child: TopicTag(
-              partitionsText,
-              key: const Key('topic_partitions_tag'),
-              onTap: () => _openPartitionHealthDialog(context),
-            ),
-          ),
-          width: _estimateTagWidth(partitionsText),
-        ));
-
-        final rfText =
-            l10n?.topicRfLabel(topic.replicationFactor) ??
-            "RF: ${topic.replicationFactor}";
-        regular.add((
-          widget: Tooltip(
-            message: healthTooltip,
-            child: TopicTag(
-              rfText,
-              key: const Key('topic_rf_tag'),
-              onTap: () => _openPartitionHealthDialog(context),
-            ),
-          ),
-          width: _estimateTagWidth(rfText),
-        ));
-
-        // 3. Estimate fact (pinned if unknown/notReadable, else regular)
-        for (final estItem in _buildEstimateFactItems(context, l10n, topic)) {
-          if (estItem.isPinned) {
-            pinned.add((widget: estItem.widget, width: estItem.width));
-          } else {
-            regular.add((widget: estItem.widget, width: estItem.width));
-          }
-        }
-
-        // 4. Schema tags (pinned if unknown/error, else primary regular)
-        if (schemaLabel != null) {
-          final isSchemaUnknown =
-              schemaController.errorFor(widget.profile) != null;
-          final schemaWidget = TopicTag(
-            schemaLabel,
-            key: const Key('topic_schema_tag'),
-            isSchema: true,
-          );
-          if (isSchemaUnknown) {
-            pinned.add((
-              widget: schemaWidget,
-              width: _estimateTagWidth(schemaLabel),
-            ));
-          } else {
-            regular.add((
-              widget: schemaWidget,
-              width: _estimateTagWidth(schemaLabel),
-            ));
-          }
-        }
-
-        final localSchemaItem = _buildLocalSchemaFactItem(context, l10n);
-        if (localSchemaItem.tag != null) {
-          if (localSchemaItem.isPinned) {
-            pinned.add((
-              widget: localSchemaItem.tag!,
-              width: localSchemaItem.estimatedWidth,
-            ));
-          } else {
-            regular.add((
-              widget: localSchemaItem.tag!,
-              width: localSchemaItem.estimatedWidth,
-            ));
-          }
-        }
-
-        // 5. Config view status (pinned if notReadable/failed, regular if loading)
-        if (configView != null) {
-          switch (configView.state) {
-            case TopicConfigViewState.loading:
-              if (topic.cleanupPolicy == null && topic.retentionMs == null) {
-                final text = l10n?.topicConfigLoading ?? 'loading';
-                regular.add((
-                  widget: TopicTag(
-                    text,
-                    key: const Key('topic_config_loading_tag'),
-                    isConfig: true,
-                  ),
-                  width: _estimateTagWidth(text),
-                ));
-              }
-            case TopicConfigViewState.available:
-              break;
-            case TopicConfigViewState.notReadable:
-              final text =
-                  l10n?.topicConfigNotReadable ?? 'not readable — permission?';
-              pinned.add((
-                widget: TopicTag(
-                  text,
-                  key: const Key('topic_config_not_readable_tag'),
-                  isConfig: true,
-                ),
-                width: _estimateTagWidth(text),
-              ));
-            case TopicConfigViewState.failed:
-              final text =
-                  '${l10n?.topicConfigLoadFailed ?? 'could not be loaded'} · ${l10n?.retry ?? 'Retry'}';
-              pinned.add((
-                widget: TopicTag(
-                  text,
-                  key: const Key('topic_config_failed_tag'),
-                  isConfig: true,
-                  onTap: () =>
-                      topicController!.retryConfig(widget.profile, topic.name),
-                ),
-                width: _estimateTagWidth(text),
-              ));
-          }
-        }
-
-        // 6. Retention & policy tags
-        for (final retItem in _buildRetentionAndPolicyFactItems(
-          context,
-          l10n,
-          topic,
-          configView,
-        )) {
-          if (retItem.isPinned) {
-            pinned.add((widget: retItem.widget, width: retItem.width));
-          } else {
-            regular.add((widget: retItem.widget, width: retItem.width));
-          }
-        }
-
-        // 7. Time range facts
-        for (final trItem in _buildTimeRangeFactItems(context, l10n, topic)) {
-          if (trItem.isPinned) {
-            pinned.add((widget: trItem.widget, width: trItem.width));
-          } else {
-            regular.add((widget: trItem.widget, width: trItem.width));
-          }
-        }
-
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final maxWidth = constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : 1200.0;
-            const spacing = 8.0;
-            const overflowChipReservedWidth = 44.0;
-
-            double usedWidth = 0.0;
-            final visible = <Widget>[];
-            final overflow = <Widget>[];
-
-            for (final item in pinned) {
-              if (visible.isNotEmpty) usedWidth += spacing;
-              usedWidth += item.width;
-              visible.add(item.widget);
-            }
-
-            // Compute total width if all regular items were shown without overflow chip
-            double totalIfAllShown = usedWidth;
-            for (int i = 0; i < regular.length; i++) {
-              if (visible.isNotEmpty || i > 0) totalIfAllShown += spacing;
-              totalIfAllShown += regular[i].width;
-            }
-
-            if (totalIfAllShown <= maxWidth) {
-              for (final item in regular) {
-                visible.add(item.widget);
-              }
-            } else {
-              final budget = maxWidth - overflowChipReservedWidth - spacing;
-              for (final item in regular) {
-                final nextWidth =
-                    usedWidth + (visible.isEmpty ? 0 : spacing) + item.width;
-                if (overflow.isEmpty &&
-                    (nextWidth <= budget || visible.isEmpty)) {
-                  usedWidth = nextWidth;
-                  visible.add(item.widget);
-                } else {
-                  overflow.add(item.widget);
-                }
-              }
-            }
-
-            if (overflow.isNotEmpty) {
-              visible.add(_buildOverflowFactsChip(context, l10n, overflow));
-            }
-
-            return Wrap(
-              key: const Key('topic_facts_strip'),
-              spacing: spacing,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: visible,
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildOverflowFactsChip(
-    BuildContext context,
-    AppLocalizations? l10n,
-    List<Widget> overflowItems,
-  ) {
-    final count = overflowItems.length;
-    final semanticLabel =
-        l10n?.topicFactsMoreCount(count) ?? '$count more topic facts';
-
-    return MenuAnchor(
-      style: MenuStyle(
-        padding: const WidgetStatePropertyAll(EdgeInsets.all(10)),
-        backgroundColor: WidgetStatePropertyAll(
-          Theme.of(context).colorScheme.surfaceContainerHigh,
-        ),
-      ),
-      menuChildren: [
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: overflowItems,
-          ),
-        ),
-      ],
-      builder: (context, controller, child) {
-        return Semantics(
-          label: semanticLabel,
-          button: true,
-          child: Tooltip(
-            message: semanticLabel,
-            child: TopicTag(
-              '+$count',
-              key: const Key('topic_facts_overflow_tag'),
-              isConfig: true,
-              onTap: () {
-                if (controller.isOpen) {
-                  controller.close();
-                } else {
-                  controller.open();
-                }
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  List<({Widget widget, bool isPinned, double width})> _buildEstimateFactItems(
-    BuildContext context,
-    AppLocalizations? l10n,
-    TopicMetadata topic,
-  ) {
-    final offsets = factsController.offsets;
-    switch (offsets.status) {
-      case TopicFactStatus.idle:
-        return const [];
-      case TopicFactStatus.loading:
-        final text = l10n?.topicConfigLoading ?? 'loading';
-        return [
-          (
-            widget: TopicTag(
-              text,
-              key: const Key('topic_estimate_loading_tag'),
-              isConfig: true,
-            ),
-            isPinned: false,
-            width: _estimateTagWidth(text),
-          ),
-        ];
-      case TopicFactStatus.error:
-        if (offsets.notReadable) {
-          final text =
-              l10n?.topicHeaderEstimateNotReadable ?? 'Messages: not readable';
-          return [
-            (
-              widget: TopicTag(
-                text,
-                key: const Key('topic_estimate_not_readable_tag'),
-                isConfig: true,
-              ),
-              isPinned: true,
-              width: _estimateTagWidth(text),
-            ),
-          ];
-        }
-        final text = l10n?.topicHeaderEstimateUnknown ?? 'Messages: unknown';
-        return [
-          (
-            widget: Tooltip(
-              message: offsets.error ?? '',
-              child: TopicTag(
-                text,
-                key: const Key('topic_estimate_unknown_tag'),
-                isConfig: true,
-              ),
-            ),
-            isPinned: true,
-            width: _estimateTagWidth(text),
-          ),
-        ];
-      case TopicFactStatus.value:
-        final est = offsets.data!;
-        if (est.notReadable) {
-          final text =
-              l10n?.topicHeaderEstimateNotReadable ?? 'Messages: not readable';
-          return [
-            (
-              widget: Tooltip(
-                message: est.unreadableReason ?? '',
-                child: TopicTag(
-                  text,
-                  key: const Key('topic_estimate_not_readable_tag'),
-                  isConfig: true,
-                ),
-              ),
-              isPinned: true,
-              width: _estimateTagWidth(text),
-            ),
-          ];
-        }
-        if (est.totalSpan == null) {
-          final text = l10n?.topicHeaderEstimateUnknown ?? 'Messages: unknown';
-          return [
-            (
-              widget: Tooltip(
-                message: est.unreadableReason ?? '',
-                child: TopicTag(
-                  text,
-                  key: const Key('topic_estimate_unknown_tag'),
-                  isConfig: true,
-                ),
-              ),
-              isPinned: true,
-              width: _estimateTagWidth(text),
-            ),
-          ];
-        }
-        final locale = Localizations.localeOf(context).toString();
-        final formattedCount = NumberFormat.decimalPattern(
-          locale,
-        ).format(est.totalSpan!);
-        final label =
-            l10n?.topicHeaderEstimateValue(formattedCount) ??
-            '≈ $formattedCount messages (estimate)';
-        final policy =
-            factsController.configs.data?.cleanupPolicy ?? topic.cleanupPolicy;
-        final isCompactedOrUnknown =
-            policy == null || policy.isEmpty || policy.contains('compact');
-        final tag = TopicTag(
-          label,
-          key: const Key('topic_estimate_tag'),
-          isConfig: true,
-        );
-        final widget = (isCompactedOrUnknown && l10n != null)
-            ? Tooltip(
-                key: const Key('topic_estimate_compaction_tooltip'),
-                message: l10n.topicHeaderEstimateCompactedNote,
-                child: tag,
-              )
-            : tag;
-        return [
-          (widget: widget, isPinned: false, width: _estimateTagWidth(label)),
-        ];
-    }
-  }
-
-  List<({Widget widget, bool isPinned, double width})>
-  _buildRetentionAndPolicyFactItems(
-    BuildContext context,
-    AppLocalizations? l10n,
-    TopicMetadata topic,
-    TopicConfigView? configView,
-  ) {
-    final configs = factsController.configs;
-    if (configs.status == TopicFactStatus.error && configs.notReadable) {
-      if (configView?.state == TopicConfigViewState.notReadable) {
-        return const [];
-      }
-      final text =
-          l10n?.topicHeaderRetentionLabel(
-            l10n.topicHeaderRetentionNotReadable,
-          ) ??
-          'Retention: not readable';
-      return [
-        (
-          widget: TopicTag(
-            text,
-            key: const Key('topic_retention_not_readable_tag'),
-            isConfig: true,
-          ),
-          isPinned: true,
-          width: _estimateTagWidth(text),
-        ),
-      ];
-    }
-
-    final policy =
-        configs.data?.cleanupPolicy ??
-        configView?.cleanupPolicy ??
-        topic.cleanupPolicy;
-    final retentionMs =
-        configs.data?.retentionMs ??
-        configView?.retentionMs ??
-        topic.retentionMs;
-    final retentionBytes = configs.data?.retentionBytes;
-
-    final items = <({Widget widget, bool isPinned, double width})>[];
-    if (policy != null && policy.isNotEmpty) {
-      final policyText = splitPolicy(policy);
-      items.add((
-        widget: TopicTag(policyText, isConfig: true),
-        isPinned: false,
-        width: _estimateTagWidth(policyText),
-      ));
-    }
-    if (retentionMs != null && retentionMs.isNotEmpty && l10n != null) {
-      final retText = l10n.topicHeaderRetentionLabel(
-        formatRetentionDuration(retentionMs, l10n),
-      );
-      items.add((
-        widget: TopicTag(
-          retText,
-          key: const Key('topic_retention_tag'),
-          isConfig: true,
-        ),
-        isPinned: false,
-        width: _estimateTagWidth(retText),
-      ));
-    }
-    if (retentionBytes != null && retentionBytes.isNotEmpty && l10n != null) {
-      final bytesText = l10n.topicHeaderRetentionBytesLabel(
-        formatRetentionBytes(retentionBytes, l10n),
-      );
-      items.add((
-        widget: TopicTag(
-          bytesText,
-          key: const Key('topic_retention_bytes_tag'),
-          isConfig: true,
-        ),
-        isPinned: false,
-        width: _estimateTagWidth(bytesText),
-      ));
-    }
-    return items;
-  }
-
-  List<({Widget widget, bool isPinned, double width})> _buildTimeRangeFactItems(
-    BuildContext context,
-    AppLocalizations? l10n,
-    TopicMetadata topic,
-  ) {
-    final tr = factsController.timeRange;
-    switch (tr.status) {
-      case TopicFactStatus.idle:
-        final labelText = l10n?.topicHeaderLoadTimeRange ?? 'Load time range';
-        return [
-          (
-            widget: Tooltip(
-              message:
-                  l10n?.topicHeaderLoadTimeRangeTooltip(topic.partitionCount) ??
-                  'Read oldest & newest message timestamps across ${topic.partitionCount} partitions',
-              child: OutlinedButton.icon(
-                key: const Key('topic_load_time_range_button'),
-                onPressed: factsController.loadTimeRange,
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: const Size(24, 24),
-                ),
-                icon: const Icon(Icons.schedule, size: 14),
-                label: Text(
-                  labelText,
-                  style: Theme.of(context).textTheme.labelSmall,
-                ),
-              ),
-            ),
-            isPinned: false,
-            width: _estimateTagWidth(labelText, hasIcon: true) + 8,
-          ),
-        ];
-      case TopicFactStatus.loading:
-        final text = l10n?.topicHeaderTimeRangeLoading ?? 'Loading time range…';
-        return [
-          (
-            widget: TopicTag(
-              text,
-              key: const Key('topic_time_range_loading_tag'),
-              isConfig: true,
-            ),
-            isPinned: false,
-            width: _estimateTagWidth(text),
-          ),
-        ];
-      case TopicFactStatus.error:
-        final text =
-            '${l10n?.topicHeaderTimeRangeError(tr.error ?? '') ?? 'Time range failed'} · ${l10n?.retry ?? 'Retry'}';
-        return [
-          (
-            widget: TopicTag(
-              text,
-              key: const Key('topic_time_range_error_tag'),
-              isConfig: true,
-              onTap: factsController.loadTimeRange,
-            ),
-            isPinned: true,
-            width: _estimateTagWidth(text),
-          ),
-        ];
-      case TopicFactStatus.value:
-        final range = tr.data!;
-        if (range.allEmpty) {
-          final text = l10n?.topicHeaderTimeRangeEmpty ?? 'No messages';
-          return [
-            (
-              widget: TopicTag(
-                text,
-                key: const Key('topic_time_range_empty_tag'),
-                isConfig: true,
-              ),
-              isPinned: false,
-              width: _estimateTagWidth(text),
-            ),
-          ];
-        }
-        final oldest = range.oldest;
-        final newest = range.newest;
-        if (oldest == null || newest == null) {
-          final text =
-              l10n?.topicHeaderTimeRangeUnknown ?? 'Time range: unknown';
-          return [
-            (
-              widget: TopicTag(
-                text,
-                key: const Key('topic_time_range_unknown_tag'),
-                isConfig: true,
-              ),
-              isPinned: true,
-              width: _estimateTagWidth(text),
-            ),
-          ];
-        }
-        final oldestStr = _formatZoneTimestamp(
-          context,
-          oldest.timestampMs.toInt(),
-        );
-        final newestStr = _formatZoneTimestamp(
-          context,
-          newest.timestampMs.toInt(),
-        );
-        final tooltipLines = <String>[
-          'P${oldest.partition} @ ${oldest.offset} (${oldest.timestampType.name})',
-          'P${newest.partition} @ ${newest.offset} (${newest.timestampType.name})',
-        ];
-        final nonFoundReasons = <String>[];
-        for (final probe in range.probes) {
-          if (probe.oldest.kind != ProbeOutcomeKind.found &&
-              probe.oldest.kind != ProbeOutcomeKind.empty) {
-            nonFoundReasons.add(
-              'P${probe.partition} oldest: ${probe.oldest.reason ?? probe.oldest.kind.name}',
-            );
-          }
-          if (probe.newest.kind != ProbeOutcomeKind.found &&
-              probe.newest.kind != ProbeOutcomeKind.empty) {
-            nonFoundReasons.add(
-              'P${probe.partition} newest: ${probe.newest.reason ?? probe.newest.kind.name}',
-            );
-          }
-        }
-        final valueText =
-            l10n?.topicHeaderTimeRangeValue(oldestStr, newestStr) ??
-            '$oldestStr – $newestStr';
-        final mainTag = Tooltip(
-          message: tooltipLines.join('\n'),
-          child: TopicTag(
-            valueText,
-            key: const Key('topic_time_range_tag'),
-            isConfig: true,
-          ),
-        );
-        if (nonFoundReasons.isEmpty) {
-          return [
-            (
-              widget: mainTag,
-              isPinned: false,
-              width: _estimateTagWidth(valueText),
-            ),
-          ];
-        }
-        final partialText =
-            l10n?.topicHeaderTimeRangePartial(
-              range.oldestKnown,
-              range.newestKnown,
-              range.partitionsTotal,
-            ) ??
-            'Partial (${range.oldestKnown}/${range.partitionsTotal} oldest, ${range.newestKnown}/${range.partitionsTotal} newest)';
-        return [
-          (
-            widget: mainTag,
-            isPinned: false,
-            width: _estimateTagWidth(valueText),
-          ),
-          (
-            widget: Tooltip(
-              key: const Key('topic_time_range_partial_tooltip'),
-              message: nonFoundReasons.join('\n'),
-              child: TopicTag(
-                partialText,
-                key: const Key('topic_time_range_partial_tag'),
-                isConfig: true,
-              ),
-            ),
-            isPinned: true,
-            width: _estimateTagWidth(partialText),
-          ),
-        ];
-    }
-  }
-
-  String _formatZoneTimestamp(BuildContext context, int timestampMs) {
-    final utc = DateTime.fromMillisecondsSinceEpoch(timestampMs, isUtc: true);
-    final dt = _timeDisplaySettings.isUtc ? utc : utc.toLocal();
-    final formatted = DateFormatUtils.formatDateTime(context, dt);
-    if (_timeDisplaySettings.isUtc) {
-      return '$formatted UTC';
-    }
-    final offset = dt.timeZoneOffset;
-    final sign = offset.isNegative ? '-' : '+';
-    final absMinutes = offset.inMinutes.abs();
-    final hours = absMinutes ~/ 60;
-    final mins = absMinutes % 60;
-    final offsetLabel = mins == 0
-        ? 'UTC$sign$hours'
-        : 'UTC$sign$hours:${mins.toString().padLeft(2, '0')}';
-    return '$formatted $offsetLabel';
-  }
-
-  Widget _buildSchemaButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16),
-      child: OutlinedButton.icon(
-        onPressed: _openSchemaView,
-        style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-        icon: const Icon(Icons.schema_outlined, size: 16),
-        label: Text(AppLocalizations.of(context)?.schemaAction ?? "Schema"),
-      ),
-    );
-  }
-
-  Widget _buildProgressTile(BuildContext context, ColorScheme colorScheme) {
-    final l10n = AppLocalizations.of(context);
-    final droppedCount = streamController.droppedCount;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 700),
-      child: Row(
-        children: [
-          Expanded(
-            child: TopicProgressTile(
-              topic: l10n?.scanProgressTitle ?? "Scan Progress",
-              status: streamController.isStreaming
-                  ? StepStatus.running
-                  : (streamController.totalConsumed > 0
-                        ? StepStatus.completed
-                        : StepStatus.pending),
-              progress: SearchProgress(
-                streamController.totalConsumed,
-                streamController.totalToScan,
-                startTime: streamController.startTime,
-              ),
-              matchCount: streamController.receivedCount,
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              extraSubtitle: droppedCount > 0
-                  ? DroppedMessagesIndicator(
-                      droppedCount: droppedCount,
-                      bufferLimit: streamController.bufferLimit,
-                    )
-                  : null,
-              trailing: const SizedBox.shrink(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(child: _buildProgressActions(context, colorScheme)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressActions(BuildContext context, ColorScheme colorScheme) {
-    final l10n = AppLocalizations.of(context);
-    final showPauseResume =
-        streamController.isStreaming || streamController.isPaused;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
-      alignment: WrapAlignment.end,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        if (showPauseResume)
-          if (streamController.isPaused)
-            Tooltip(
-              message:
-                  l10n?.resumeViewTooltip ?? 'Resume updating the message view',
-              child: OutlinedButton.icon(
-                onPressed: streamController.resume,
-                icon: const Icon(Icons.play_arrow, size: 16),
-                label: Text(
-                  l10n?.resumeViewWithNew(streamController.pendingCount) ??
-                      'Resume · ${streamController.pendingCount} new',
-                ),
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                ),
-              ),
-            )
-          else
-            Tooltip(
-              message:
-                  l10n?.pauseViewTooltip ??
-                  'Pause view updates while keeping the stream active',
-              child: OutlinedButton.icon(
-                onPressed: streamController.pause,
-                icon: const Icon(Icons.pause, size: 16),
-                label: Text(l10n?.pauseView ?? 'Pause view'),
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                ),
-              ),
-            ),
-        if (streamController.isStreaming)
-          FilledButton.icon(
-            onPressed: () => streamController.stopStreaming(),
-            icon: const Icon(Icons.stop, size: 16),
-            label: Text(l10n?.stop ?? 'Stop'),
-            style: FilledButton.styleFrom(
-              backgroundColor: colorScheme.error,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-          )
-        else
-          FilledButton.icon(
-            onPressed: startStreaming,
-            icon: const Icon(Icons.play_arrow, size: 16),
-            label: Text(l10n?.stream ?? 'Stream'),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-          ),
-        IconButton.filledTonal(
-          onPressed: streamController.clearMessages,
-          icon: const Icon(Icons.delete_sweep, size: 16),
-          tooltip: l10n?.clearMessagesTooltip ?? "Clear Messages",
-          style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
-        ),
-      ],
     );
   }
 
@@ -1701,69 +672,6 @@ class _TopicDetailViewState extends State<TopicDetailView>
       endTimestamp: endTimestamp,
       runForever: _endStrategy == MultiSearchEndStrategy.live,
       startFromTail: _startStrategy == MultiSearchStartStrategy.latest,
-    );
-  }
-}
-
-class _TopicModeButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final bool showLabel;
-  final VoidCallback onTap;
-
-  const _TopicModeButton({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.showLabel = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected ? colorScheme.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          border: isSelected
-              ? Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                )
-              : null,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
-            if (!showLabel) const SizedBox(width: 4),
-            if (showLabel) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }

@@ -140,10 +140,11 @@ if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then
   exit 1
 fi
 
-# Check required Linux development packages for CMake/GTK/Secret storage
+# Check required Linux development packages: CMake/GTK/Secret storage, plus the
+# three the Kafka crate links (rdkafka is built with ssl, sasl and gssapi).
 if [ "$RUN_BUILD" = true ]; then
   MISSING_PKGS=()
-  for pkg in gtk+-3.0 libsecret-1; do
+  for pkg in gtk+-3.0 libsecret-1 openssl libsasl2 zlib; do
     if ! pkg-config --exists "$pkg" 2>/dev/null; then
       MISSING_PKGS+=("$pkg")
     fi
@@ -154,6 +155,9 @@ if [ "$RUN_BUILD" = true ]; then
     echo ""
     echo "Please install required development packages with:"
     echo "  sudo apt-get update && sudo apt-get install -y libgtk-3-dev libsecret-1-dev libblkid-dev liblzma-dev pkg-config libssl-dev libsasl2-dev libz-dev"
+    echo ""
+    echo "If the package is installed but not found (Homebrew, for example), add its"
+    echo "directory to PKG_CONFIG_PATH, e.g. PKG_CONFIG_PATH=/home/linuxbrew/.linuxbrew/lib/pkgconfig"
     echo ""
     exit 1
   fi

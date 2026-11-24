@@ -2,8 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_controller.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/features/scripting/data/script_repository.dart';
@@ -134,20 +132,6 @@ class MockScriptRepository implements ScriptRepository {
   Future<void> saveScript(Script script) async {}
 }
 
-class MockClusterListController extends ClusterListController {
-  @override
-  Future<void> loadClusters() async {
-    // No-op for test
-  }
-}
-
-class MockScriptController extends ScriptController {
-  @override
-  Future<void> loadScripts() async {
-    // No-op for test
-  }
-}
-
 class MockFilePicker extends FilePickerPlatform {
   String? savePath;
   FilePickerResult? pickResult;
@@ -212,7 +196,6 @@ void main() {
   });
 
   setUp(() async {
-    await getIt.reset();
     reset(mockRustApi);
     _registerClusterCodec(mockRustApi);
 
@@ -223,9 +206,6 @@ void main() {
       ClusterService(secureStorage: secureStorage),
     );
     getIt.registerSingleton<ScriptRepository>(MockScriptRepository());
-
-    getIt.registerSingleton<ClusterListController>(MockClusterListController());
-    getIt.registerSingleton<ScriptController>(MockScriptController());
 
     tempDir = Directory.systemTemp
         .createTempSync('kafkalyzer_settings_test')

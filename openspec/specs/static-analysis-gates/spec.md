@@ -1,0 +1,395 @@
+# static-analysis-gates Specification
+
+## Purpose
+
+Makes formatting, static analysis and lint cleanliness a blocking, reproducible verification step for every change in both the Dart/Flutter and the Rust codebase, so documented quality rules are enforced automatically instead of by convention.
+
+## Requirements
+
+### Requirement: Automated Source Quality Gate On Every Change
+
+The delivery pipeline SHALL run a source quality gate on every pull request targeting the main branch and on every push to the main branch, independently of the release build stages, and SHALL mark the run as failed when the gate reports any finding.
+
+#### Scenario: Pull request introducing a quality finding is blocked
+
+- **WHEN** a pull request introduces a formatting or static-analysis finding in Dart or Rust sources
+- **THEN** the quality gate stage SHALL report a failed result for that pull request
+- **AND** the failing check SHALL be named in the run so the contributor can identify which check failed
+
+#### Scenario: Clean pull request passes the gate
+
+- **WHEN** a pull request contains no formatting, analysis or lint findings
+- **THEN** the quality gate stage SHALL report a successful result
+
+#### Scenario: Gate result is independent of release builds
+
+- **WHEN** a change is pushed that triggers no release build
+- **THEN** the quality gate SHALL still run and report its result
+
+### Requirement: Gate Covers Formatting And Static Analysis For Both Codebases
+
+The quality gate SHALL verify that Dart sources are formatted, that Dart sources are free of analyzer errors, and that Rust sources are formatted. It SHALL additionally verify that the Rust workspace is free of lint findings once that workspace passes without findings.
+
+#### Scenario: Unformatted Dart sources fail the gate
+
+- **WHEN** the gate runs against Dart sources whose formatting differs from the project's formatter output
+- **THEN** the gate SHALL fail and identify the affected files
+
+#### Scenario: Unformatted Rust sources fail the gate
+
+- **WHEN** the gate runs against Rust sources whose formatting differs from the workspace formatter output
+- **THEN** the gate SHALL fail and identify the affected files
+
+#### Scenario: Analyzer error in Dart sources fails the gate
+
+- **WHEN** the gate runs against Dart sources that contain an analyzer error under the project's configured rule set
+- **THEN** the gate SHALL fail and list the reported errors with their locations
+
+#### Scenario: Compile error in the Rust workspace fails the gate
+
+- **WHEN** the Rust lint stage cannot compile a workspace crate, for example because of a compile error or a missing native build dependency
+- **THEN** the gate SHALL fail with the tooling error
+- **AND** the gate SHALL NOT report success when a stage could not be executed
+
+### Requirement: Lint Warnings Block The Gate
+
+The Rust lint stage SHALL treat lint warnings as blocking findings, so that a newly introduced warning fails the gate even when the same warning class already existed elsewhere in the workspace.
+
+#### Scenario: Newly introduced lint warning fails the gate
+
+- **WHEN** a change introduces a lint warning in any workspace crate
+- **THEN** the gate SHALL fail and identify the crate, file and rule
+
+#### Scenario: Suppressed warning with a stated reason passes the gate
+
+- **WHEN** a lint finding is suppressed at the narrowest scope that covers only the affected source item and the suppression carries a reason
+- **THEN** the gate SHALL report no finding for that source item
+
+### Requirement: Gate Activated Only On A Clean Baseline
+
+Each individual check SHALL be switched on only for a revision that already passes it; findings that exist before activation SHALL be resolved in the same change or in an explicitly named prerequisite change.
+
+#### Scenario: Activation revision passes every enabled check
+
+- **WHEN** the quality gate is enabled at a revision
+- **THEN** that revision SHALL pass all enabled checks, so the gate is green from its first run
+
+#### Scenario: Check that still has findings is not enabled
+
+- **WHEN** a check would fail on the current revision because of pre-existing findings
+- **THEN** the change SHALL leave that check disabled and name the prerequisite change that clears the findings
+- **AND** the change SHALL NOT lower the severity of that check to make it pass
+
+#### Scenario: Deferred check is switched on once its baseline is clean
+
+- **WHEN** the named prerequisite change has removed the pre-existing findings of a deferred check
+- **THEN** a follow-up change SHALL enable that check in the gate, so the gate reaches the full check set instead of staying partially enabled
+
+### Requirement: No Repository-Wide Exception Mechanism
+
+The quality gate SHALL NOT be introduced or kept green by a repository-wide exception list, a baseline or diff-ratchet file, or a workspace-level or project-level downgrade of lint severities.
+
+#### Scenario: Global suppression request is rejected
+
+- **WHEN** a change would satisfy the gate by adding a repository-wide exception list or a global severity downgrade
+- **THEN** that change SHALL be considered non-conforming to this capability
+
+#### Scenario: Exception limited to generated sources
+
+- **WHEN** a finding originates in code that is generated by a checked-in generator
+- **THEN** the exception SHALL be applied inside that generator's output or configuration only
+- **AND** hand-written sources SHALL remain fully checked
+
+### Requirement: Gate Verdict Reproducible Locally
+
+The checks performed by the quality gate SHALL be runnable by a contributor on a workstation with the documented project toolchain, and the documented commands SHALL produce the same pass or fail verdict as the pipeline.
+
+#### Scenario: Contributor reproduces a gate failure locally
+
+- **WHEN** a contributor runs the documented quality-gate commands on the same revision that failed in the pipeline
+- **THEN** at least one documented command SHALL fail with the same finding
+
+#### Scenario: Toolchain missing locally
+
+- **WHEN** a required tool is not installed on the contributor's workstation
+- **THEN** the command SHALL fail with a tooling error rather than reporting the sources as clean
+
+### Requirement: Quality Gate Performs No Cluster Or Registry Access
+
+The quality gate SHALL NOT open any connection to a Kafka cluster or a Schema Registry, and SHALL NOT replace, weaken or absorb the existing read-only invariant verification stage.
+
+#### Scenario: Gate runs without any broker or registry reachable
+
+- **WHEN** the quality gate runs in an environment with no Kafka cluster and no Schema Registry reachable
+- **THEN** all of its checks SHALL complete and report a verdict based only on the checked-out sources
+
+#### Scenario: Read-only verification remains separate
+
+- **WHEN** the quality gate is enabled
+- **THEN** the read-only invariant verification stage and its regression test SHALL continue to run unchanged as their own stage
+
+### Requirement: Source File Size Guard For Changed Sources
+
+The quality gate SHALL check the size of hand-written Dart sources under the application source tree, and SHALL fail a change that takes such a file from at or below the agreed size limit to above it, or that adds a new hand-written Dart source above the limit. Files already above the limit at the merge base of the change SHALL stay editable without failing the check, and generated sources SHALL be exempt.
+
+#### Scenario: Change grows a source file past the limit
+
+- **WHEN** a change modifies a hand-written Dart source that was at or below the size limit at the merge base and leaves it above the limit
+- **THEN** the quality gate SHALL fail and name the file with its line count and the limit
+
+#### Scenario: Change adds an oversized new source file
+
+- **WHEN** a change adds a new hand-written Dart source that is above the size limit
+- **THEN** the quality gate SHALL fail and name the new file with its line count and the limit
+
+#### Scenario: Unrelated work continues in an already oversized file
+
+- **WHEN** a change modifies a hand-written Dart source that was already above the size limit at the merge base
+- **THEN** the quality gate SHALL report no finding for that file, so long as the change does not take another file over the limit
+
+#### Scenario: Oversized file is split
+
+- **WHEN** a change splits an oversized source file into several files that are each at or below the limit
+- **THEN** the quality gate SHALL report no finding for any of them
+
+#### Scenario: Generated source is large
+
+- **WHEN** the only file above the limit is produced by a checked-in generator or by code generation
+- **THEN** the quality gate SHALL report no finding for that file
+
+### Requirement: Size Guard Carries No Exception List
+
+The source file size guard SHALL decide its verdict from the checked-out revision and the merge base of the change alone. It SHALL NOT read a committed baseline, allowlist or ratchet file, and SHALL NOT be silenced by a project-wide configuration switch.
+
+#### Scenario: Contributor tries to exempt a file by editing a list
+
+- **WHEN** keeping the gate green would require adding the file name to a committed exception list
+- **THEN** that approach SHALL be considered non-conforming to this capability, and the change SHALL split the file or leave it below the limit
+
+#### Scenario: Merge base is unavailable
+
+- **WHEN** the version control history needed to compare the change against its merge base is not available to the gate
+- **THEN** the guard SHALL fail with a tooling error naming the missing revision information
+- **AND** it SHALL NOT report success for the checked-out sources
+
+### Requirement: Controller Locator Guard For Presentation Sources
+
+The quality gate SHALL verify that a change does not introduce a new ambient lookup of session-wide state inside presentation sources of a feature, and SHALL scope that check to the hand-written sources the change touches, with no committed baseline or exception list.
+
+#### Scenario: Change introduces a locator lookup for session-wide state
+
+- **WHEN** a change adds a lookup of session-wide state in a presentation source it touches
+- **THEN** the gate SHALL fail and identify the file and the state being looked up
+
+#### Scenario: Change only removes such lookups
+
+- **WHEN** a change reduces the number of session-wide state lookups in the presentation sources it touches
+- **THEN** the gate SHALL report no finding for those files
+
+#### Scenario: Presentation source needs a stateless service
+
+- **WHEN** a touched presentation source obtains a stateless service or a dependency it receives from its caller
+- **THEN** the gate SHALL report no finding, so the check covers session-wide state only
+
+#### Scenario: Composition root wires the state
+
+- **WHEN** the only place that performs such lookups is the application wiring or the shared test setup that provides the state
+- **THEN** the gate SHALL report no finding for that source
+
+#### Scenario: Unrelated work in an already non-conforming source
+
+- **WHEN** a change touches a presentation source that already contained such a lookup at the merge base and does not add one
+- **THEN** the gate SHALL report no finding for that file, so the existing count does not block unrelated work
+
+### Requirement: Import Cycle Guard For Changed Sources
+
+The quality gate SHALL verify that a change does not enlarge the set of import
+cycles between feature modules, and SHALL decide that verdict from the
+hand-written sources the change touches and the merge base of the change, with
+no committed baseline or exception list.
+
+#### Scenario: Change closes an import cycle between features
+
+- **WHEN** a change adds an import between feature modules that completes a cycle
+  which did not exist at the merge base
+- **THEN** the quality gate SHALL fail and name the feature modules on that cycle
+  and the source carrying the added import
+
+#### Scenario: Change removes a cycle
+
+- **WHEN** a change relocates a shared source so that one cycle disappears and no
+  cycle is added
+- **THEN** the quality gate SHALL report no finding
+
+#### Scenario: Pre-existing cycle is untouched
+
+- **WHEN** a change edits feature modules that already form a cycle at the merge
+  base and adds no import that creates another cycle
+- **THEN** the quality gate SHALL report no finding, so the existing cycle does
+  not block unrelated work
+
+#### Scenario: Generated source takes part in a cycle
+
+- **WHEN** the only source on the added edge is produced by a checked-in
+  generator or by code generation
+- **THEN** the quality gate SHALL report no finding for that file
+
+#### Scenario: Module graph cannot be resolved
+
+- **WHEN** the guard cannot resolve the imports of a touched source, for example
+  because the source does not compile or the merge base is unavailable
+- **THEN** the guard SHALL fail with a tooling error naming what it could not
+  resolve
+- **AND** it SHALL NOT report success for the checked-out sources
+
+### Requirement: Native Build Prerequisites For Rust Verification
+
+The project SHALL document the native build packages that the Rust workspace verification commands require on each supported operating system, and the local build entry point SHALL check that same set before running them. A missing native package SHALL stop the command with a tooling error naming the package and SHALL NOT be reported as a clean source tree.
+
+#### Scenario: Native package missing on a contributor workstation
+
+- **WHEN** a contributor runs the workspace lint or workspace test command on a machine that lacks a required native development package
+- **THEN** the run SHALL fail with a tooling error that names the missing package and the documented way to install it
+- **AND** the run SHALL NOT report zero findings or otherwise present the sources as clean
+
+#### Scenario: Local prerequisite check compared with the pipeline
+
+- **WHEN** the documented prerequisite set is compared with the packages the pipeline installs before running the same commands
+- **THEN** both SHALL require the same set of native packages
+- **AND** a revision that is green in the pipeline SHALL be reachable as green locally
+
+#### Scenario: Library provided by a non-system package manager
+
+- **WHEN** a workstation provides a required native library through a package manager other than the system one
+- **THEN** the documented search-path override SHALL let the same commands reach the same verdict as the pipeline
+- **AND** that override SHALL be recorded where a contributor can find it
+
+### Requirement: Shared Module Import Guard
+
+The quality gate SHALL reject any hand-written source in a shared module that
+imports or re-exports a feature module, whether the reference is written as a
+package path or as a relative path. Generated sources SHALL be exempt, as for
+the other source guards. The guard SHALL decide from the checked-out sources
+alone, with no committed baseline or exception list, and SHALL run both as part
+of the full gate and as a separate entry point.
+
+#### Scenario: Shared source gains a feature import
+
+- **WHEN** a change adds an import of a feature module to a shared source
+- **THEN** the quality gate SHALL fail and name the shared source and the
+  imported feature module
+
+#### Scenario: Relative path into a feature module
+
+- **WHEN** a shared source reaches a feature module through a relative import
+  path instead of a package path
+- **THEN** the quality gate SHALL fail in the same way
+
+#### Scenario: Composition root imports features
+
+- **WHEN** the application's composition root imports feature modules to build
+  the layout or register session-wide state
+- **THEN** the quality gate SHALL report no finding for it
+
+#### Scenario: Generated shared source
+
+- **WHEN** the only offending reference is in a source produced by code
+  generation
+- **THEN** the quality gate SHALL report no finding for that file
+
+#### Scenario: Source cannot be read
+
+- **WHEN** the guard cannot read a shared source it lists
+- **THEN** it SHALL fail with a tooling error naming that source
+- **AND** it SHALL NOT report success for the checked-out sources
+
+### Requirement: Generated Source Drift Guard
+
+The quality gate SHALL regenerate every checked-in source that a code
+generator owns for the language bridge and for the test doubles, using the
+generator version the project pins, and SHALL fail when the regenerated output
+differs from the checked-in files. The guard SHALL decide from the checked-out
+sources alone, with no committed baseline or exception list, and SHALL run
+both as part of the full gate and as a separate entry point, locally and in
+the pipeline.
+
+#### Scenario: Bridge interface changed without regeneration
+
+- **WHEN** a change edits a function or data type exposed across the language
+  bridge and does not commit the regenerated bindings
+- **THEN** the quality gate SHALL fail and name every generated file whose
+  content differs
+
+#### Scenario: Test double out of date
+
+- **WHEN** a mocked interface changes and the checked-in test double was not
+  regenerated
+- **THEN** the quality gate SHALL fail and name the stale test double
+
+#### Scenario: Regeneration adds a file
+
+- **WHEN** regeneration produces a generated file that is not checked in
+- **THEN** the quality gate SHALL fail and name the new file
+
+#### Scenario: Checked-in output matches the generator
+
+- **WHEN** regenerating with the pinned generator leaves every checked-in file
+  unchanged and adds none
+- **THEN** the guard SHALL report no finding
+
+#### Scenario: Generator missing or at another version
+
+- **WHEN** the generator is not installed, or its version differs from the
+  version the project pins
+- **THEN** the guard SHALL fail with a tooling error naming the expected version
+  and how to install it
+- **AND** it SHALL NOT report success for the checked-out sources
+
+#### Scenario: Generated files already have uncommitted edits
+
+- **WHEN** a generated file has uncommitted changes before the guard runs
+- **THEN** the guard SHALL fail without regenerating, name the file, and leave
+  its content untouched
+
+#### Scenario: Generator run fails
+
+- **WHEN** a generator exits with an error
+- **THEN** the guard SHALL fail with a tooling error carrying the generator
+  output and SHALL NOT report the sources as matching
+
+### Requirement: Legacy Material Import Guard
+
+The quality gate SHALL reject any hand-written application or test source
+that imports or re-exports the framework's deprecated legacy Material or
+Cupertino library, so all Material UI comes from the standalone package.
+Generated sources SHALL be exempt. The guard SHALL use no baseline or
+exception list and SHALL run in the full gate and as its own entry point.
+
+#### Scenario: Source imports the legacy Material library
+
+- **WHEN** a hand-written application or test source imports the legacy
+  Material library, with or without a prefix or an ignore comment
+- **THEN** the quality gate SHALL fail and name the source and the imported
+  library
+
+#### Scenario: Source re-exports the legacy Cupertino library
+
+- **WHEN** a hand-written source re-exports the legacy Cupertino library
+- **THEN** the quality gate SHALL fail and name the source
+
+#### Scenario: Only the standalone Material UI package is used
+
+- **WHEN** every hand-written source takes Material UI from the standalone
+  package
+- **THEN** the guard SHALL report no finding
+
+#### Scenario: Generated source uses the legacy library
+
+- **WHEN** only a generated source references the legacy library
+- **THEN** the guard SHALL report no finding for it
+
+#### Scenario: Listed source cannot be read
+
+- **WHEN** a source the guard must check cannot be read
+- **THEN** the guard SHALL fail with a tooling error naming the source
+- **AND** it SHALL NOT report the sources as clean

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
 import 'package:logger/logger.dart';

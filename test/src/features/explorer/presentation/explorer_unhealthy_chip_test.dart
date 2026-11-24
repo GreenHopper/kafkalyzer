@@ -14,9 +14,9 @@ import 'package:kafkalyzer/src/rust/api/profile_tools.dart';
 import 'package:kafkalyzer/src/services/cluster_profile_tools.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
-import 'package:kafkalyzer/src/services/recent_topics_service.dart';
+import 'package:kafkalyzer/src/features/cluster/data/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
-import 'package:kafkalyzer/src/services/topic_list_preferences_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_list_preferences_service.dart';
 import 'package:logger/logger.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,12 +92,9 @@ class _FakeProfileTools implements ClusterProfileTools {
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await getIt.reset();
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(() async {});
 
   testWidgets(
     'sidebar shows unhealthy filter chip after showUnhealthyTopicsOnly and clears on delete',
@@ -155,8 +152,11 @@ void main() {
       await activeController.connect(profile);
       await getIt<TopicController>().fetchTopics(profile);
       expect(activeController.error, isNull);
-      expect(activeController.topics.length, 2);
-      expect(activeController.topicListView.visibleTopics.length, 2);
+      expect(getIt<TopicController>().topics(profile).length, 2);
+      expect(
+        getIt<TopicController>().topicListView(profile).visibleTopics.length,
+        2,
+      );
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -180,7 +180,7 @@ void main() {
       expect(findTopicItem('healthy-orders'), findsOneWidget);
       expect(findTopicItem('broken-payments'), findsOneWidget);
 
-      activeController.showUnhealthyTopicsOnly();
+      getIt<TopicController>().showUnhealthyTopicsOnly();
       await tester.pumpAndSettle();
 
       expect(
@@ -201,7 +201,7 @@ void main() {
       await tester.tap(deleteIcon);
       await tester.pumpAndSettle();
 
-      expect(activeController.unhealthyTopicsOnly, isFalse);
+      expect(getIt<TopicController>().unhealthyTopicsOnly, isFalse);
       expect(find.byKey(const Key('topic_unhealthy_only_chip')), findsNothing);
       expect(findTopicItem('healthy-orders'), findsOneWidget);
       expect(findTopicItem('broken-payments'), findsOneWidget);

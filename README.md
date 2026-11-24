@@ -128,6 +128,13 @@ The application uses `shared_preferences` to store local configurations and clus
 - **Flutter SDK**: [Install Flutter](https://flutter.dev/docs/get-started/install)
 - **Rust Toolchain**: [Install Rust](https://www.rust-lang.org/tools/install)
 - **Codegen Tools**: `flutter_rust_bridge_codegen` v2 (only if modifying the bridge).
+- **Linux — native packages**: the Kafka client links OpenSSL, Cyrus SASL and zlib, so a
+  Linux build also needs `libssl-dev libsasl2-dev libz-dev` next to the usual
+  `libgtk-3-dev libsecret-1-dev libblkid-dev`. Without them the build fails while compiling
+  `rdkafka-sys`, most often as `Could not find libsasl2 ... via pkg-config`.
+  `scripts/build_linux.sh` checks all five before it starts. If a package is installed but
+  still reported missing — typical for a Homebrew install — add its library directory to
+  `PKG_CONFIG_PATH`.
 
 ### Installation
 
@@ -160,6 +167,20 @@ The application uses `shared_preferences` to store local configurations and clus
 We use **GitHub Actions** for continuous integration and automated release packaging across Linux, macOS, and Windows.
 
 - **Selective CI**: Pull requests and main pushes execute unit tests (`flutter test` and `cargo test`).
+- **Source Quality Gates**: The `Source quality gates` job runs `bash scripts/quality_gates.sh`, the same script you can run locally before pushing:
+
+  ```bash
+  bash scripts/quality_gates.sh
+  ```
+
+  It checks Dart formatting (`dart format --output=none --set-exit-if-changed lib test`), the Dart analyzer (`flutter analyze`), Rust formatting (`cargo fmt --all --manifest-path rust/Cargo.toml --check`), a source-file size guard and a session-wide state locator guard, and stops at the first finding. Release builds wait for it. The size guard allows 800 lines per hand-written Dart file under `lib/`: it fails a change that takes a file from at or below 800 lines to above it, or adds a new file above 800 lines, and it leaves files that were already oversized at the merge base editable. Generated sources (`*.g.dart`, `*.freezed.dart`, `lib/src/rust/**`, `lib/l10n/**`) are exempt, and there is no exception list to add a file to. Locally the base revision is `origin/main`; set `KAFKALYZER_BASE_REF` to compare against another revision. The Rust lint check (`cargo clippy --workspace --all-targets -- -D warnings`) is not enabled yet: 30 pre-existing findings must be removed first.
+
+  The locator guard fails a change that adds a container lookup of a type listed in `sessionWideState` (`lib/src/dependency_injection.dart`) to a hand-written file under `lib/src/features/*/presentation/`. Passing the object in as a constructor parameter with a container default (`this.x ?? getIt<T>()`) stays allowed, and the composition root and `test/` are not checked paths. To run that guard alone, or against a scratch revision:
+
+  ```bash
+  KAFKALYZER_BASE_REF=<revision> bash scripts/quality_gates.sh locator-guard
+  bash scripts/test_quality_gates.sh   # guard self-test against a throwaway repo
+  ```
 - **Automated Releases**: Pushing a version tag (`v*`) automatically builds release binaries for all target platforms and creates a GitHub Release.
 - **Artifacts**: You can find the latest binaries in the "Actions" tab or the "Releases" section of the repository.
 

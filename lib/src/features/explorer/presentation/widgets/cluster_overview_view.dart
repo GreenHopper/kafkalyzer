@@ -6,7 +6,7 @@ import 'package:kafkalyzer/src/features/explorer/domain/cluster_summary.dart';
 import 'package:kafkalyzer/src/features/explorer/presentation/controllers/cluster_overview_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/recent_topics_service.dart';
+import 'package:kafkalyzer/src/features/cluster/data/recent_topics_service.dart';
 import 'package:material_ui/material_ui.dart';
 
 class ClusterOverviewView extends StatefulWidget {

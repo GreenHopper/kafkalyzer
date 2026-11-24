@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
-import 'package:kafkalyzer/src/services/recent_topics_service.dart';
+import 'package:kafkalyzer/src/features/cluster/data/recent_topics_service.dart';
 
 class _FakeMetadataService implements KafkaMetadataService {
   Future<ClusterOverview> Function(ClusterProfile profile)? onFetchOverview;

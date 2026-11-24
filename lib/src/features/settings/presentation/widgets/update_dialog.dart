@@ -20,7 +20,10 @@ enum _UpdateDialogStatus {
 }
 
 class UpdateDialog extends StatefulWidget {
-  const UpdateDialog({super.key});
+  const UpdateDialog({super.key, this.updateService});
+
+  /// Null falls back to the application container; a test injects its own.
+  final UpdateService? updateService;
 
   static Future<void> show(BuildContext context) {
     return showDialog<void>(
@@ -43,10 +46,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
   String? _errorMessage;
   int _downloadProgress = 0;
 
+  UpdateService get _updateService =>
+      widget.updateService ?? getIt<UpdateService>();
+
   @override
   void initState() {
     super.initState();
-    final updateService = getIt<UpdateService>();
+    final updateService = _updateService;
     updateService.downloadState.addListener(_onDownloadStateChanged);
     final dl = updateService.downloadState.value;
     if (dl.phase == DownloadPhase.running && !dl.cancelled) {
@@ -62,15 +68,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
   @override
   void dispose() {
-    getIt<UpdateService>().downloadState.removeListener(
-      _onDownloadStateChanged,
-    );
+    _updateService.downloadState.removeListener(_onDownloadStateChanged);
     super.dispose();
   }
 
   void _onDownloadStateChanged() {
     if (!mounted) return;
-    final dl = getIt<UpdateService>().downloadState.value;
+    final dl = _updateService.downloadState.value;
     setState(() {
       _downloadProgress = dl.progress;
       if (dl.phase == DownloadPhase.running && !dl.cancelled) {
@@ -90,7 +94,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       _errorMessage = null;
     });
 
-    final updateService = getIt<UpdateService>();
+    final updateService = _updateService;
 
     try {
       final result = await updateService.checkForUpdates();
@@ -146,12 +150,12 @@ class _UpdateDialogState extends State<UpdateDialog> {
   }
 
   void _startDownload() {
-    getIt<UpdateService>().startDownload();
+    _updateService.startDownload();
   }
 
   void _cancelDownload(AppLocalizations l10n) {
     final messenger = ScaffoldMessenger.maybeOf(context);
-    getIt<UpdateService>().cancelDownload();
+    _updateService.cancelDownload();
     Navigator.of(context).pop();
     messenger?.showSnackBar(
       SnackBar(content: Text(l10n.downloadCancelledSnackbar)),
@@ -159,7 +163,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
   }
 
   Future<void> _applyAndRestart() async {
-    final updateService = getIt<UpdateService>();
+    final updateService = _updateService;
     try {
       await updateService.applyAndRestart();
     } catch (e) {

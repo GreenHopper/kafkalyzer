@@ -1,7 +1,37 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:kafkalyzer/l10n/app_localizations.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
-import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
+
+/// How far one scan or script step has got.
+///
+/// Defined once here because this tile renders it; the script runner, the topic
+/// detail progress tile and the headless runner all report into it.
+enum StepStatus { pending, running, completed, error }
+
+/// Scan progress for one topic (fraction, ETA). Lives next to [StepStatus]
+/// so shared UI does not import the search feature.
+class SearchProgress {
+  final int scanned;
+  final int total;
+  final DateTime startTime;
+
+  SearchProgress(this.scanned, this.total, {DateTime? startTime})
+    : startTime = startTime ?? DateTime.now();
+
+  double get fraction => total == 0 ? 0 : (scanned / total).clamp(0.0, 1.0);
+  int get remaining => (total - scanned).clamp(0, total);
+
+  Duration? get estimatedRemaining {
+    if (scanned <= 0 || total <= 0) return null;
+    final elapsed = DateTime.now().difference(startTime);
+    if (elapsed.inMilliseconds <= 0) return null;
+
+    final rate = scanned / elapsed.inMilliseconds; // messages per ms
+    if (rate <= 0) return null;
+
+    final remainingMs = remaining / rate;
+    return Duration(milliseconds: remainingMs.round());
+  }
+}
 
 class TopicProgressTile extends StatelessWidget {
   final String topic;

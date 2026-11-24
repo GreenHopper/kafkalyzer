@@ -1904,20 +1904,22 @@ mod tests {
 
     #[test]
     fn evaluator_typed_and_unresolvable_semantics() {
-        let mut msg = MockMsg::default();
-        msg.value_json = Some(serde_json::json!({
-            "count": 42,
-            "price": 19.5,
-            "active": true,
-            "deleted": null,
-            "name": "Alice",
-            "items": [{"sku": "ABC-1"}]
-        }));
-        msg.headers = vec![("x-env", b"prod")];
-        msg.key_text = Some("order-99");
-        msg.key_bytes = Some(b"order-99");
-        msg.partition = 3;
-        msg.offset = 500;
+        let msg = MockMsg {
+            value_json: Some(serde_json::json!({
+                "count": 42,
+                "price": 19.5,
+                "active": true,
+                "deleted": null,
+                "name": "Alice",
+                "items": [{"sku": "ABC-1"}]
+            })),
+            headers: vec![("x-env", b"prod")],
+            key_text: Some("order-99"),
+            key_bytes: Some(b"order-99"),
+            partition: 3,
+            offset: 500,
+            ..Default::default()
+        };
 
         assert!(
             compile_str("value.count = 42 AND value.price > 19.0", &HashMap::new())
@@ -1954,9 +1956,11 @@ mod tests {
 
     #[test]
     fn evaluator_short_circuits_value_access() {
-        let mut msg = MockMsg::default();
-        msg.partition = 1;
-        msg.value_json = Some(serde_json::json!({"a": 1}));
+        let msg = MockMsg {
+            partition: 1,
+            value_json: Some(serde_json::json!({"a": 1})),
+            ..Default::default()
+        };
 
         let compiled = compile_str("partition = 2 AND value.a = 1", &HashMap::new()).unwrap();
         assert!(!compiled.evaluate(&msg));
@@ -1978,9 +1982,11 @@ mod tests {
         )
         .unwrap();
 
-        let mut msg = MockMsg::default();
-        msg.offset = 100;
-        msg.value_json = Some(serde_json::json!({"userId": "u2"}));
+        let mut msg = MockMsg {
+            offset: 100,
+            value_json: Some(serde_json::json!({"userId": "u2"})),
+            ..Default::default()
+        };
         assert!(compiled.evaluate(&msg));
 
         msg.value_json = Some(serde_json::json!({"userId": "u3"}));
@@ -1992,12 +1998,14 @@ mod tests {
 
     #[test]
     fn timestamp_literals_compile_and_eval() {
-        let mut msg = MockMsg::default();
-        msg.timestamp = Some(
-            DateTime::parse_from_rfc3339("2025-01-15T12:00:00Z")
-                .unwrap()
-                .timestamp_millis(),
-        );
+        let mut msg = MockMsg {
+            timestamp: Some(
+                DateTime::parse_from_rfc3339("2025-01-15T12:00:00Z")
+                    .unwrap()
+                    .timestamp_millis(),
+            ),
+            ..Default::default()
+        };
         assert!(
             compile_str("timestamp >= \"2025-01-15T10:00:00Z\"", &HashMap::new())
                 .unwrap()

@@ -18,8 +18,8 @@ import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topi
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_export_service.dart';
-import 'package:kafkalyzer/src/services/topic_analysis_history_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_export_service.dart';
+import 'package:kafkalyzer/src/features/topic/data/topic_analysis_history_service.dart';
 
 class _EmptyHistoryService extends TopicAnalysisHistoryService {
   @override
@@ -159,7 +159,6 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final getIt = GetIt.instance;
-    await getIt.reset();
     getIt.registerSingleton<Logger>(
       Logger(printer: PrettyPrinter(methodCount: 0)),
     );
@@ -199,11 +198,9 @@ void main() {
 
   setUp(() {
     resetMockitoState();
-    if (!GetIt.instance.isRegistered<TopicAnalysisHistoryService>()) {
-      GetIt.instance.registerSingleton<TopicAnalysisHistoryService>(
-        _EmptyHistoryService(),
-      );
-    }
+    GetIt.instance.registerSingleton<TopicAnalysisHistoryService>(
+      _EmptyHistoryService(),
+    );
     when(
       mockApi.crateApiReportCompareCompareReports(
         before: anyNamed('before'),

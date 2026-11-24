@@ -1,6 +1,9 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:kafkalyzer/src/features/messages/domain/script_extraction.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
+
+export 'package:kafkalyzer/src/features/messages/domain/script_extraction.dart';
 
 part 'script.freezed.dart';
 part 'script.g.dart';
@@ -30,21 +33,6 @@ abstract class Script with _$Script {
   }) = _Script;
 
   factory Script.fromJson(Map<String, dynamic> json) => _$ScriptFromJson(json);
-}
-
-enum ScriptExtractionSource { value, key }
-
-@freezed
-abstract class ScriptExtraction with _$ScriptExtraction {
-  const factory ScriptExtraction({
-    required String jsonPath,
-    required String variableName,
-    String? topic,
-    @Default(ScriptExtractionSource.value) ScriptExtractionSource source,
-  }) = _ScriptExtraction;
-
-  factory ScriptExtraction.fromJson(Map<String, dynamic> json) =>
-      _$ScriptExtractionFromJson(json);
 }
 
 @freezed

@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_c
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/rust/api/json_diff.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
-import 'package:kafkalyzer/src/features/scripting/presentation/widgets/diff/json_diff_widget.dart';
+import 'package:kafkalyzer/src/ui/diff/json_diff_widget.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:logger/logger.dart';
@@ -30,10 +30,18 @@ class ScriptSchemasView extends StatefulWidget {
   final Script script;
   final String searchPhrase;
 
+  /// Session-wide collaborators; null falls back to the application container.
+  final Logger? logger;
+  final SchemaController? schemaController;
+  final ClusterListController? clusterController;
+
   const ScriptSchemasView({
     super.key,
     required this.script,
     required this.searchPhrase,
+    this.logger,
+    this.schemaController,
+    this.clusterController,
   });
 
   @override
@@ -41,9 +49,13 @@ class ScriptSchemasView extends StatefulWidget {
 }
 
 class _ScriptSchemasViewState extends State<ScriptSchemasView> {
-  final _logger = getIt<Logger>();
-  final _schemaController = getIt<SchemaController>();
-  final _clusterController = getIt<ClusterListController>();
+  Logger get _logger => widget.logger ?? getIt<Logger>();
+
+  SchemaController get _schemaController =>
+      widget.schemaController ?? getIt<SchemaController>();
+
+  ClusterListController get _clusterController =>
+      widget.clusterController ?? getIt<ClusterListController>();
 
   bool _isLoading = false;
 

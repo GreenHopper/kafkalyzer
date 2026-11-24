@@ -9,7 +9,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/cluster_dropdown.dart';
 import 'package:kafkalyzer/src/ui/timestamp_picker_field.dart';
-import 'package:kafkalyzer/src/ui/script_progress_widget.dart';
+import 'package:kafkalyzer/src/features/scripting/presentation/widgets/script_progress_widget.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 
 class ScriptRunView extends StatefulWidget {
@@ -17,11 +17,17 @@ class ScriptRunView extends StatefulWidget {
   final Map<String, String>? initialValues;
   final void Function(ScriptRun)? onRunFinished;
 
+  /// Session-wide collaborators; null falls back to the application container.
+  final ScriptRunner? runner;
+  final ClusterListController? clusterController;
+
   const ScriptRunView({
     super.key,
     required this.script,
     this.initialValues,
     this.onRunFinished,
+    this.runner,
+    this.clusterController,
   });
 
   @override
@@ -33,6 +39,11 @@ class _ScriptRunViewState extends State<ScriptRunView> {
   bool _isMonitoring = false;
   ClusterProfile? _selectedCluster;
 
+  ScriptRunner get _runner => widget.runner ?? getIt<ScriptRunner>();
+
+  ClusterListController get _clusterController =>
+      widget.clusterController ?? getIt<ClusterListController>();
+
   @override
   void initState() {
     super.initState();
@@ -41,7 +52,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
       _controllers[v.name] = TextEditingController(text: initialVal);
     }
     // Default cluster selection logic
-    final clusters = getIt<ClusterListController>().clusters;
+    final clusters = _clusterController.clusters;
     if (clusters.isNotEmpty) {
       // Try to find the one used in the first step as default, or just the first one
       final defaultName = widget.script.steps.isNotEmpty
@@ -54,7 +65,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
     }
 
     // Check if valid run is already in progress
-    final runner = getIt<ScriptRunner>();
+    final runner = _runner;
     if (runner.isRunning &&
         runner.currentRun?.scriptName == widget.script.name) {
       _isMonitoring = true;
@@ -81,7 +92,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
 
   @override
   void dispose() {
-    getIt<ScriptRunner>().removeListener(_onRunnerChanged);
+    _runner.removeListener(_onRunnerChanged);
     for (var c in _controllers.values) {
       c.dispose();
     }
@@ -89,7 +100,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
   }
 
   void _onRunnerChanged() {
-    final runner = getIt<ScriptRunner>();
+    final runner = _runner;
     if (_isMonitoring && !runner.isRunning) {
       // Run finished
       if (mounted &&
@@ -111,7 +122,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
       _isMonitoring = true;
     });
 
-    final run = await getIt<ScriptRunner>().runScript(
+    final run = await _runner.runScript(
       widget.script,
       values,
       overrideCluster: _selectedCluster,
@@ -251,7 +262,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
 
   Widget _buildClusterSelection() {
     final l10n = AppLocalizations.of(context);
-    final clusters = getIt<ClusterListController>().clusters;
+    final clusters = _clusterController.clusters;
     if (clusters.isEmpty) return const SizedBox.shrink();
 
     return ClusterDropdown(
@@ -535,7 +546,7 @@ class _ScriptRunViewState extends State<ScriptRunView> {
 
   Widget _buildMonitor() {
     final l10n = AppLocalizations.of(context);
-    final runner = getIt<ScriptRunner>();
+    final runner = _runner;
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(

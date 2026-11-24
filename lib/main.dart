@@ -45,12 +45,14 @@ Future<void> main([List<String> args = const []]) async {
         logFilePath: AppLogging.fileLogPath ?? '',
       ),
     );
-    setupDependencyInjection(errorReporter: reporter);
-
     if (headless) {
+      setupCoreServices(errorReporter: reporter);
+      registerScriptExecutionState();
       await HeadlessScriptRunner.runCli(args);
       return;
     }
+
+    setupDependencyInjection(errorReporter: reporter);
 
     final windowState = getIt<WindowStateService>();
     await windowState.restore();

@@ -11,6 +11,8 @@ import 'package:kafkalyzer/src/features/topic/models/duplicate_navigation_target
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/message_stream_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_analysis_controller.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_facts_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_controller.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_view_controllers.dart';
 import 'package:kafkalyzer/src/features/topic/presentation/widgets/analysis/topic_analysis_view.dart';
 import 'package:kafkalyzer/src/features/topic/topic_detail_view.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
@@ -103,43 +105,50 @@ class _RecordingStreamController extends ChangeNotifier
 
 class _FakeActiveConnectionController extends ChangeNotifier
     implements ActiveConnectionController {
-  final _RecordingStreamController streamController =
-      _RecordingStreamController();
-  final TopicAnalysisController analysisController = TopicAnalysisController();
   TopicMetadata? topic;
   @override
   ClusterProfile? activeProfile;
 
   @override
-  MessageStreamController getStreamController(
-    String tabIdOrTopicName, [
-    String? clusterName,
-  ]) => streamController;
-
-  @override
   OpenTopicRecord? get activeTopic => null;
 
   @override
-  TopicAnalysisController getAnalysisController(
-    String tabIdOrTopicName, [
-    String? clusterName,
-  ]) => analysisController;
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
-  TopicFactsController? _factsController;
+/// The per-topic view controllers the detail view asks the topic module for.
+class _FakeViewControllers implements TopicViewControllerRegistry {
+  final _RecordingStreamController streamController =
+      _RecordingStreamController();
+  final TopicAnalysisController analysisController = TopicAnalysisController();
 
   @override
-  TopicFactsController getTopicFactsController(
-    String tabIdOrTopicName,
+  MessageStreamController stream(String tabId, [String? clusterName]) =>
+      streamController;
+
+  @override
+  TopicAnalysisController analysis(String tabId, [String? clusterName]) =>
+      analysisController;
+
+  @override
+  TopicFactsController facts(
+    String tabId,
     ClusterProfile profile,
     String topicName, [
     String? clusterName,
-  ]) => _factsController ??= TopicFactsController(
-    profile: profile,
-    topicName: topicName,
-  );
+  ]) => TopicFactsController(profile: profile, topicName: topicName);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// The real topic module state, with the per-topic view controllers replaced by
+/// the recording fakes this test asserts on.
+class _FakeTopicController extends TopicController {
+  final _FakeViewControllers views = _FakeViewControllers();
+
+  @override
+  TopicViewControllerRegistry get viewControllers => views;
 }
 
 class _FakeSchemaController extends ChangeNotifier implements SchemaController {
@@ -202,6 +211,7 @@ class _FakeMultiSearchController extends ChangeNotifier
 
 void main() {
   late _FakeActiveConnectionController fakeActiveController;
+  late _FakeTopicController fakeTopicController;
   late _FakeSchemaController fakeSchemaController;
   late _FakeScriptRunner fakeScriptRunner;
 
@@ -218,8 +228,8 @@ void main() {
   );
 
   setUp(() {
-    getIt.reset();
     fakeActiveController = _FakeActiveConnectionController();
+    fakeTopicController = _FakeTopicController();
     fakeActiveController.topic = testTopic;
     fakeActiveController.activeProfile = testProfile;
 
@@ -227,6 +237,7 @@ void main() {
     fakeScriptRunner = _FakeScriptRunner();
 
     getIt.registerSingleton<ActiveConnectionController>(fakeActiveController);
+    getIt.registerSingleton<TopicController>(fakeTopicController);
     getIt.registerSingleton<SchemaController>(fakeSchemaController);
     getIt.registerSingleton<ScriptRunner>(fakeScriptRunner);
     getIt.registerSingleton<MultiSearchController>(
@@ -236,9 +247,7 @@ void main() {
     getIt.registerSingleton<Logger>(Logger());
   });
 
-  tearDown(() {
-    getIt.reset();
-  });
+  tearDown(() {});
 
   Widget buildTestView() {
     return MaterialApp(
@@ -309,7 +318,7 @@ void main() {
       expect(searchBar.startOffsetController.text, equals('0'));
 
       // Verify stream started with topic-wide earliest settings
-      final streamCtrl = fakeActiveController.streamController;
+      final streamCtrl = fakeTopicController.views.streamController;
       expect(streamCtrl.startStreamingCalled, isTrue);
       expect(streamCtrl.lastFilterTerms, equals(['cor-uuid-999']));
       expect(streamCtrl.lastSearchScope, equals(SearchScope.key));
@@ -367,7 +376,7 @@ void main() {
       expect(searchBar.partitionController.text, isEmpty);
       expect(searchBar.scanMode, equals(TopicScanMode.offsetEarliest));
 
-      final streamCtrl = fakeActiveController.streamController;
+      final streamCtrl = fakeTopicController.views.streamController;
       expect(streamCtrl.startStreamingCalled, isTrue);
       expect(
         streamCtrl.lastFilterTerms,
@@ -425,7 +434,7 @@ void main() {
         equals(MultiSearchStartStrategy.customOffset),
       );
 
-      final streamCtrl = fakeActiveController.streamController;
+      final streamCtrl = fakeTopicController.views.streamController;
       expect(streamCtrl.startStreamingCalled, isTrue);
       expect(streamCtrl.lastStartPartition, equals(2));
       expect(streamCtrl.lastStartOffset, equals(8888));

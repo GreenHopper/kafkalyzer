@@ -9,14 +9,15 @@ import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/api/local_schema.dart';
 import 'package:kafkalyzer/src/rust/api/schema_registry.dart' as api;
 import 'package:kafkalyzer/src/features/schema/presentation/controllers/schema_controller.dart';
-import 'package:kafkalyzer/src/features/schema/presentation/local_schema_error_formatter.dart';
+import 'package:kafkalyzer/src/ui/local_schema_error_formatter.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/local_schema_assignment_dialog.dart';
-import 'package:kafkalyzer/src/services/local_schema_assignment_service.dart';
+import 'package:kafkalyzer/src/features/schema/data/local_schema_assignment_service.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_diff_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/presentation/widgets/schema_viewer_dialog.dart';
 import 'package:kafkalyzer/src/features/schema/utils/schema_simplifier.dart';
 import 'package:kafkalyzer/src/features/schema/utils/schema_type_labels.dart';
 import 'package:kafkalyzer/src/services/schema_registry_service.dart';
+import 'package:kafkalyzer/src/services/topic_name_source.dart';
 import 'package:kafkalyzer/src/ui/json_or_string_viewer.dart';
 import 'package:kafkalyzer/src/ui/widgets/error_banner.dart';
 import 'package:kafkalyzer/src/ui/widgets/export_notification_helper.dart';
@@ -535,6 +536,7 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
         initialBaseVersion: _selectedVersion,
         initialCompareVersion: _selectedVersion,
         controller: _controller,
+        topicNames: getIt<TopicNameSource>(),
         onNavigateToTopic: widget.onNavigateToTopic,
       ),
     );
@@ -807,6 +809,7 @@ class _TopicSchemaInspectorViewState extends State<TopicSchemaInspectorView> {
         initialSubject: ref.subject,
         initialVersion: ref.version,
         controller: _controller,
+        topicNames: getIt<TopicNameSource>(),
       ),
     );
   }

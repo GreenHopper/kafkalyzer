@@ -8,6 +8,7 @@ import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script_run.dart';
 import 'package:kafkalyzer/src/features/scripting/presentation/controllers/script_runner.dart';
+import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
 import 'package:path/path.dart' as p;
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
@@ -190,7 +191,6 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
 
-    getIt.reset();
     getIt.registerSingleton<Logger>(MockLogger());
     getIt.registerSingleton<KafkaMetadataService>(MockKafkaMetadataService());
     getIt.registerSingleton<ClusterService>(MockClusterService());

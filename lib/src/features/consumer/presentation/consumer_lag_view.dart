@@ -40,7 +40,24 @@ enum ConsumerGroupSortType {
 class ConsumerLagView extends WatchingStatefulWidget {
   final DateTime Function() clock;
 
-  const ConsumerLagView({super.key, this.clock = DateTime.now});
+  /// Session-wide state and services this screen reads. When left null the
+  /// screen falls back to the application container, so call sites stay
+  /// unchanged; a test passes its own instance instead.
+  final ActiveConnectionController? activeConnection;
+  final MainNavigationController? navigation;
+  final SettingsService? settings;
+  final KafkaMetadataService? kafkaMetadata;
+  final ConsumerGroupDirectory? groupDirectory;
+
+  const ConsumerLagView({
+    super.key,
+    this.clock = DateTime.now,
+    this.activeConnection,
+    this.navigation,
+    this.settings,
+    this.kafkaMetadata,
+    this.groupDirectory,
+  });
 
   @override
   State<ConsumerLagView> createState() => _ConsumerLagViewState();
@@ -145,11 +162,34 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _loadConcurrencyLimit();
-    if (getIt.isRegistered<MainNavigationController>()) {
-      getIt<MainNavigationController>().addListener(_consumeNavigationRequest);
+    final navigation = _navigation;
+    if (navigation != null) {
+      navigation.addListener(_consumeNavigationRequest);
       _consumeNavigationRequest();
     }
   }
+
+  ActiveConnectionController get _activeConnection =>
+      widget.activeConnection ?? getIt<ActiveConnectionController>();
+
+  SettingsService get _settings => widget.settings ?? getIt<SettingsService>();
+
+  KafkaMetadataService get _kafkaMetadata =>
+      widget.kafkaMetadata ?? getIt<KafkaMetadataService>();
+
+  /// Optional: the screen works without the navigation controller, which is why
+  /// the old code probed the container for it.
+  MainNavigationController? get _navigation =>
+      widget.navigation ??
+      (getIt.isRegistered<MainNavigationController>()
+          ? getIt<MainNavigationController>()
+          : null);
+
+  ConsumerGroupDirectory? get _groupDirectory =>
+      widget.groupDirectory ??
+      (getIt.isRegistered<ConsumerGroupDirectory>()
+          ? getIt<ConsumerGroupDirectory>()
+          : null);
 
   Future<void> _loadConcurrencyLimit() async {
     final prefs = await SharedPreferences.getInstance();
@@ -157,7 +197,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
       prefs,
       SettingsService.maxConcurrentLagQueriesSetting,
     );
-    final threshold = await getIt<SettingsService>().lagWarnThreshold();
+    final threshold = await _settings.lagWarnThreshold();
     if (mounted) {
       setState(() {
         _maxConcurrentLagQueries = limit;
@@ -168,11 +208,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
   @override
   void dispose() {
-    if (getIt.isRegistered<MainNavigationController>()) {
-      getIt<MainNavigationController>().removeListener(
-        _consumeNavigationRequest,
-      );
-    }
+    _navigation?.removeListener(_consumeNavigationRequest);
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _refreshTimer?.cancel();
@@ -180,9 +216,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
   }
 
   void _consumeNavigationRequest() {
-    if (!mounted || !getIt.isRegistered<MainNavigationController>()) return;
-    final groupId = getIt<MainNavigationController>()
-        .takeConsumerGroupRequest();
+    if (!mounted) return;
+    final navigation = _navigation;
+    if (navigation == null) return;
+    final groupId = navigation.takeConsumerGroupRequest();
     if (groupId == null) return;
 
     if (_lags.isEmpty && (_isCycleRunning || _lastProfile == null)) {
@@ -224,7 +261,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     setState(() {
       _filterText = _searchController.text;
     });
-    final profile = getIt<ActiveConnectionController>().activeProfile;
+    final profile = _activeConnection.activeProfile;
     if (profile != null) {
       _enqueueUnloadedGroups(
         _filteredLagsFor(_lags),
@@ -250,7 +287,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     if (!mounted || _isCycleRunning) return;
     _loadConcurrencyLimit();
 
-    final activeController = getIt<ActiveConnectionController>();
+    final activeController = _activeConnection;
     final generation = ++_fetchGeneration;
     _isCycleRunning = true;
 
@@ -261,20 +298,16 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
     final stopwatch = Stopwatch()..start();
     try {
-      final lags = await getIt<KafkaMetadataService>().fetchConsumerGroups(
-        profile: profile,
-      );
+      final lags = await _kafkaMetadata.fetchConsumerGroups(profile: profile);
       stopwatch.stop();
       if (!mounted ||
           generation != _fetchGeneration ||
           activeController.activeProfile != profile) {
         return;
       }
-      if (getIt.isRegistered<ConsumerGroupDirectory>()) {
-        getIt<ConsumerGroupDirectory>().record(
-          profile.name,
-          lags.map((l) => l.groupId),
-        );
+      final directory = _groupDirectory;
+      if (directory != null) {
+        directory.record(profile.name, lags.map((l) => l.groupId));
       }
       setState(() {
         _lags = lags;
@@ -357,7 +390,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
 
   void _pumpLagChunks(ClusterProfile profile, int generation) {
     if (!mounted || generation != _fetchGeneration) return;
-    final activeController = getIt<ActiveConnectionController>();
+    final activeController = _activeConnection;
     if (activeController.activeProfile != profile) return;
 
     while (_lagChunkQueue.isNotEmpty &&
@@ -376,7 +409,7 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     int generation,
   ) async {
     if (!mounted || generation != _fetchGeneration) return;
-    final activeController = getIt<ActiveConnectionController>();
+    final activeController = _activeConnection;
     if (activeController.activeProfile != profile) return;
 
     _activeLagQueries++;
@@ -385,8 +418,10 @@ class _ConsumerLagViewState extends State<ConsumerLagView> {
     });
 
     try {
-      final updatedGroups = await getIt<KafkaMetadataService>()
-          .fetchConsumerGroupLags(profile: profile, groupIds: groupIds);
+      final updatedGroups = await _kafkaMetadata.fetchConsumerGroupLags(
+        profile: profile,
+        groupIds: groupIds,
+      );
       if (!mounted ||
           generation != _fetchGeneration ||
           activeController.activeProfile != profile) {

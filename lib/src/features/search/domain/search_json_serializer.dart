@@ -1,6 +1,6 @@
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
-import 'package:kafkalyzer/src/services/message_export_service.dart';
+import 'package:kafkalyzer/src/features/messages/data/message_export_service.dart';
 
 class SearchJsonSerializer {
   static Map<String, dynamic> serializeTarget(SearchTarget target) {

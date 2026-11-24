@@ -6,7 +6,7 @@ import 'package:kafkalyzer/src/features/topic/presentation/controllers/topic_con
 import 'package:kafkalyzer/src/features/search/models/topic_scan_mode.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/filter_expression_editing_controller.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
-import 'package:kafkalyzer/src/features/search/presentation/widgets/topic_selection_dialog.dart';
+import 'package:kafkalyzer/src/features/topic/presentation/widgets/topic_selection_dialog.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 
@@ -20,11 +20,19 @@ class ScriptStepEditor extends StatefulWidget {
   final List<ScriptVariable> variables;
   final Function(ScriptStep) onSave;
 
+  /// Session-wide collaborators; null falls back to the application container.
+  final ClusterListController? clusterController;
+  final TopicController? topicController;
+  final SchemaController? schemaController;
+
   const ScriptStepEditor({
     super.key,
     required this.step,
     required this.variables,
     required this.onSave,
+    this.clusterController,
+    this.topicController,
+    this.schemaController,
   });
 
   @override
@@ -38,6 +46,15 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   late FilterExpressionEditingController _filterExpressionController;
 
   ClusterProfile? _selectedCluster;
+
+  ClusterListController get _clusterController =>
+      widget.clusterController ?? getIt<ClusterListController>();
+
+  TopicController get _topicController =>
+      widget.topicController ?? getIt<TopicController>();
+
+  SchemaController get _schemaController =>
+      widget.schemaController ?? getIt<SchemaController>();
   List<String> _selectedTopics =
       []; // Changed from _selectedTopicName to _selectedTopics
 
@@ -108,7 +125,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
     );
 
     // Resolve cluster object if possible
-    final clusters = getIt<ClusterListController>().clusters;
+    final clusters = _clusterController.clusters;
     try {
       _selectedCluster = clusters.firstWhere(
         (c) => c.name == widget.step.clusterName,
@@ -119,7 +136,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
 
     // If cluster resolved, fetch topics?
     if (_selectedCluster != null) {
-      getIt<TopicController>().fetchTopics(_selectedCluster!);
+      _topicController.fetchTopics(_selectedCluster!);
     }
 
     _extractions = List.from(widget.step.extractions);
@@ -180,7 +197,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   }
 
   Widget _buildClusterSelection() {
-    final topicController = getIt<TopicController>();
+    final topicController = _topicController;
 
     return ClusterDropdown(
       value: _selectedCluster,
@@ -199,7 +216,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
   }
 
   Widget _buildTopicSelection() {
-    final topicController = getIt<TopicController>();
+    final topicController = _topicController;
 
     if (_selectedCluster == null) return const SizedBox.shrink();
 
@@ -581,7 +598,7 @@ class _ScriptStepEditorState extends State<ScriptStepEditor> {
               return [];
             }
             final topic = extraction.topic ?? _selectedTopics.first;
-            final fields = await getIt<SchemaController>().fetchSchemaFields(
+            final fields = await _schemaController.fetchSchemaFields(
               _selectedCluster!,
               topic,
             );

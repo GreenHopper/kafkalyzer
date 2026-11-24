@@ -1,3 +1,5 @@
+import 'package:kafkalyzer/src/features/search/models/topic_search_preset.dart';
+import 'package:kafkalyzer/src/services/message_consume_stream.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_consumer.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
@@ -147,32 +149,138 @@ void main() {
 
       when(
         mockApi.crateApiKafkaConsumerConsumeWithFilter(
-          profile: anyNamed('profile'),
-          topic: anyNamed('topic'),
-          filterType: anyNamed('filterType'),
-          searchScope: anyNamed('searchScope'),
-          runForever: anyNamed('runForever'),
-          startOffset: anyNamed('startOffset'),
-          startTimestamp: anyNamed('startTimestamp'),
-          startPartition: anyNamed('startPartition'),
-          fastTraceKey: anyNamed('fastTraceKey'),
-          endOffset: anyNamed('endOffset'),
-          endTimestamp: anyNamed('endTimestamp'),
-          maxResults: anyNamed('maxResults'),
-          filterTerms: anyNamed('filterTerms'),
-          filterField: anyNamed('filterField'),
+          request: anyNamed('request'),
         ),
       ).thenAnswer((_) => stream);
 
       final result = consumeWithFilter(
-        profile: profile,
-        topic: 'topic',
-        filterType: FilterType.exact,
-        searchScope: SearchScope.key,
-        runForever: false,
+        request: ConsumeRequest(
+          profile: profile,
+          topic: 'topic',
+          filterType: FilterType.exact,
+          searchScope: SearchScope.key,
+          runForever: false,
+        ),
       );
 
       expect(result, emits(isA<KafkaMessage>()));
     });
+
+    ConsumeRequest capturedRequest() =>
+        verify(
+              mockApi.crateApiKafkaConsumerConsumeWithFilter(
+                request: captureAnyNamed('request'),
+              ),
+            ).captured.single
+            as ConsumeRequest;
+
+    test('a request without the optional criteria keeps the old defaults', () {
+      when(
+        mockApi.crateApiKafkaConsumerConsumeWithFilter(
+          request: anyNamed('request'),
+        ),
+      ).thenAnswer((_) => const Stream<KafkaMessage>.empty());
+
+      bridgeConsumeStream(
+        profile: profile,
+        topic: 'topic',
+        filterType: FilterType.contains,
+        searchScope: SearchScope.both,
+        runForever: false,
+      );
+
+      final request = capturedRequest();
+      expect(request.topic, 'topic');
+      expect(request.filterTerms, isNull);
+      expect(request.filterField, isNull);
+      expect(request.filterExpression, isNull);
+      expect(request.filterVariables, isNull);
+      expect(request.startOffset, isNull);
+      expect(request.startTimestamp, isNull);
+      expect(request.startPartition, isNull);
+      expect(request.fastTraceKey, isNull);
+      expect(request.endOffset, isNull);
+      expect(request.endTimestamp, isNull);
+      expect(request.maxResults, isNull);
+      expect(request.startFromTail, isNull);
+      expect(request.localSchemas, isNull);
+      expect(request.runForever, isFalse);
+    });
+
+    test(
+      'a saved search stored before this change replays with the same criteria',
+      () {
+        // Written in the on-disk format of the previous version.
+        final preset = TopicSearchPreset.fromJson({
+          'id': 'p1',
+          'name': 'errors',
+          'clusterName': 'test',
+          'topicName': 'orders',
+          'filterType': 'regex',
+          'searchScope': 'value',
+          'filterTerm': 'timeout',
+          'filterExpression': 'payload contains "x"',
+          'fastTraceEnabled': true,
+          'limitResults': true,
+          'maxResults': '50',
+          'partition': '2',
+          'startStrategy': 'customOffset',
+          'startOffset': '1000',
+          'endStrategy': 'customOffset',
+          'endOffset': '2000',
+          'createdAt': '2026-01-05T10:00:00.000',
+        });
+
+        when(
+          mockApi.crateApiKafkaConsumerConsumeWithFilter(
+            request: anyNamed('request'),
+          ),
+        ).thenAnswer((_) => const Stream<KafkaMessage>.empty());
+
+        bridgeConsumeStream(
+          profile: profile,
+          topic: preset.topicName,
+          filterTerms: [preset.filterTerm],
+          filterType: preset.filterType,
+          searchScope: preset.searchScope,
+          filterExpression: preset.filterExpression,
+          fastTraceKey: preset.fastTraceEnabled ? preset.filterTerm : null,
+          startPartition: int.parse(preset.partition),
+          startOffset: int.parse(preset.startOffset),
+          endOffset: int.parse(preset.endOffset),
+          maxResults: int.parse(preset.maxResults),
+          runForever: false,
+        );
+
+        final request = capturedRequest();
+        expect(request.topic, 'orders');
+        expect(request.filterType, FilterType.regex);
+        expect(request.searchScope, SearchScope.value);
+        expect(request.filterTerms, ['timeout']);
+        expect(request.filterExpression, 'payload contains "x"');
+        expect(request.fastTraceKey, 'timeout');
+        expect(request.startPartition, 2);
+        expect(request.startOffset, 1000);
+        expect(request.endOffset, 2000);
+        expect(request.maxResults, 50);
+      },
+    );
+
+    test(
+      'a stored criterion this version cannot name is reported, not dropped',
+      () {
+        expect(
+          () => TopicSearchPreset.fromJson({
+            'id': 'p1',
+            'name': 'errors',
+            'clusterName': 'test',
+            'topicName': 'orders',
+            'filterType': 'fuzzy',
+            'createdAt': '2026-01-05T10:00:00.000',
+          }),
+          throwsFormatException,
+        );
+      },
+    );
   });
 }

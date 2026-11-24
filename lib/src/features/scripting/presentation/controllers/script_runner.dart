@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
-import 'package:kafkalyzer/src/features/scripting/domain/extraction_utils.dart';
+import 'package:kafkalyzer/src/features/messages/domain/extraction_utils.dart';
 import 'package:kafkalyzer/src/features/scripting/domain/script.dart';
 import 'package:kafkalyzer/src/features/search/presentation/controllers/multi_search_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
@@ -18,19 +18,32 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:kafkalyzer/src/features/search/domain/search_json_serializer.dart';
-import 'package:kafkalyzer/src/features/scripting/domain/script_result_message.dart';
+import 'package:kafkalyzer/src/features/messages/domain/script_result_message.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/utils/archive_safety.dart';
-
-enum StepStatus { pending, running, completed, error }
+import 'package:kafkalyzer/src/ui/topic_progress_tile.dart';
 
 class ScriptRunner extends ChangeNotifier {
-  final Logger _logger = getIt<Logger>();
+  final Logger _logger;
   final MultiSearchController _multiSearchController;
+  final ClusterListController _clusterController;
+  final TopicController _topicController;
+  final ScriptRepository _scriptRepository;
 
-  ScriptRunner({MultiSearchController? multiSearchController})
-    : _multiSearchController =
-          multiSearchController ?? getIt<MultiSearchController>();
+  /// Dependencies default to the application container; a test or the headless
+  /// runner passes its own.
+  ScriptRunner({
+    MultiSearchController? multiSearchController,
+    Logger? logger,
+    ClusterListController? clusterController,
+    TopicController? topicController,
+    ScriptRepository? scriptRepository,
+  }) : _multiSearchController =
+           multiSearchController ?? getIt<MultiSearchController>(),
+       _logger = logger ?? getIt<Logger>(),
+       _clusterController = clusterController ?? getIt<ClusterListController>(),
+       _topicController = topicController ?? getIt<TopicController>(),
+       _scriptRepository = scriptRepository ?? getIt<ScriptRepository>();
 
   /// Executes the given [script] with the provided [variableValues].
   ///
@@ -45,9 +58,6 @@ class ScriptRunner extends ChangeNotifier {
   /// 3. **Decoupling**: This runner is UI-agnostic. It relies on [MultiSearchController] for Kafka interactions.
   ///    It does not depend on BuildContext or specific UI widgets.
   MultiSearchController get multiSearchController => _multiSearchController;
-  final ClusterListController _clusterController =
-      getIt<ClusterListController>();
-  final TopicController _topicController = getIt<TopicController>();
 
   Map<String, String> _variableValues = {};
 
@@ -1115,7 +1125,7 @@ class ScriptRunner extends ChangeNotifier {
 
       // 2. Custom script directories
       try {
-        final scriptRepo = getIt<ScriptRepository>();
+        final scriptRepo = _scriptRepository;
         final scripts = await scriptRepo.getScripts();
         for (final script in scripts) {
           if (script.outputDirectory != null &&

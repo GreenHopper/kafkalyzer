@@ -123,6 +123,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ClusterProfile dco_decode_box_autoadd_cluster_profile(dynamic raw);
 
   @protected
+  ConsumeRequest dco_decode_box_autoadd_consume_request(dynamic raw);
+
+  @protected
   DiagnosisHint dco_decode_box_autoadd_diagnosis_hint(dynamic raw);
 
   @protected
@@ -258,6 +261,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   ConnectionDiagnosis dco_decode_connection_diagnosis(dynamic raw);
+
+  @protected
+  ConsumeRequest dco_decode_consume_request(dynamic raw);
 
   @protected
   ConsumerGroupLag dco_decode_consumer_group_lag(dynamic raw);
@@ -1030,6 +1036,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  ConsumeRequest sse_decode_box_autoadd_consume_request(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   DiagnosisHint sse_decode_box_autoadd_diagnosis_hint(
     SseDeserializer deserializer,
   );
@@ -1207,6 +1218,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   ConnectionDiagnosis sse_decode_connection_diagnosis(
     SseDeserializer deserializer,
   );
+
+  @protected
+  ConsumeRequest sse_decode_consume_request(SseDeserializer deserializer);
 
   @protected
   ConsumerGroupLag sse_decode_consumer_group_lag(SseDeserializer deserializer);
@@ -2173,6 +2187,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_consume_request(
+    ConsumeRequest self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_diagnosis_hint(
     DiagnosisHint self,
     SseSerializer serializer,
@@ -2391,6 +2411,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_connection_diagnosis(
     ConnectionDiagnosis self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_consume_request(
+    ConsumeRequest self,
     SseSerializer serializer,
   );
 

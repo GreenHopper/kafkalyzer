@@ -8,47 +8,103 @@ import 'kafka_types.dart';
 import 'local_schema.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `into_domain`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`
 
-Stream<KafkaMessage> consumeWithFilter({
-  required ClusterProfile profile,
-  required String topic,
-  List<String>? filterTerms,
-  String? filterField,
-  required FilterType filterType,
-  required SearchScope searchScope,
-  String? filterExpression,
-  Map<String, List<String>>? filterVariables,
-  PlatformInt64? startOffset,
-  PlatformInt64? startTimestamp,
-  int? startPartition,
-  String? fastTraceKey,
-  PlatformInt64? endOffset,
-  PlatformInt64? endTimestamp,
-  int? maxResults,
-  required bool runForever,
-  bool? startFromTail,
-  TopicLocalSchemasDto? localSchemas,
-}) => KafkalyzerRustLib.instance.api.crateApiKafkaConsumerConsumeWithFilter(
-  profile: profile,
-  topic: topic,
-  filterTerms: filterTerms,
-  filterField: filterField,
-  filterType: filterType,
-  searchScope: searchScope,
-  filterExpression: filterExpression,
-  filterVariables: filterVariables,
-  startOffset: startOffset,
-  startTimestamp: startTimestamp,
-  startPartition: startPartition,
-  fastTraceKey: fastTraceKey,
-  endOffset: endOffset,
-  endTimestamp: endTimestamp,
-  maxResults: maxResults,
-  runForever: runForever,
-  startFromTail: startFromTail,
-  localSchemas: localSchemas,
-);
+Stream<KafkaMessage> consumeWithFilter({required ConsumeRequest request}) =>
+    KafkalyzerRustLib.instance.api.crateApiKafkaConsumerConsumeWithFilter(
+      request: request,
+    );
+
+/// One message-consumption request: what to read, how to filter it and when
+/// to stop. Every criterion carries its own name, so a call site can no longer
+/// exchange two optional values by position.
+class ConsumeRequest {
+  final ClusterProfile profile;
+  final String topic;
+  final List<String>? filterTerms;
+  final String? filterField;
+  final FilterType filterType;
+  final SearchScope searchScope;
+  final String? filterExpression;
+  final Map<String, List<String>>? filterVariables;
+  final PlatformInt64? startOffset;
+  final PlatformInt64? startTimestamp;
+  final int? startPartition;
+  final String? fastTraceKey;
+  final PlatformInt64? endOffset;
+  final PlatformInt64? endTimestamp;
+  final int? maxResults;
+  final bool runForever;
+  final bool? startFromTail;
+  final TopicLocalSchemasDto? localSchemas;
+
+  const ConsumeRequest({
+    required this.profile,
+    required this.topic,
+    this.filterTerms,
+    this.filterField,
+    required this.filterType,
+    required this.searchScope,
+    this.filterExpression,
+    this.filterVariables,
+    this.startOffset,
+    this.startTimestamp,
+    this.startPartition,
+    this.fastTraceKey,
+    this.endOffset,
+    this.endTimestamp,
+    this.maxResults,
+    required this.runForever,
+    this.startFromTail,
+    this.localSchemas,
+  });
+
+  @override
+  int get hashCode =>
+      profile.hashCode ^
+      topic.hashCode ^
+      filterTerms.hashCode ^
+      filterField.hashCode ^
+      filterType.hashCode ^
+      searchScope.hashCode ^
+      filterExpression.hashCode ^
+      filterVariables.hashCode ^
+      startOffset.hashCode ^
+      startTimestamp.hashCode ^
+      startPartition.hashCode ^
+      fastTraceKey.hashCode ^
+      endOffset.hashCode ^
+      endTimestamp.hashCode ^
+      maxResults.hashCode ^
+      runForever.hashCode ^
+      startFromTail.hashCode ^
+      localSchemas.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConsumeRequest &&
+          runtimeType == other.runtimeType &&
+          profile == other.profile &&
+          topic == other.topic &&
+          filterTerms == other.filterTerms &&
+          filterField == other.filterField &&
+          filterType == other.filterType &&
+          searchScope == other.searchScope &&
+          filterExpression == other.filterExpression &&
+          filterVariables == other.filterVariables &&
+          startOffset == other.startOffset &&
+          startTimestamp == other.startTimestamp &&
+          startPartition == other.startPartition &&
+          fastTraceKey == other.fastTraceKey &&
+          endOffset == other.endOffset &&
+          endTimestamp == other.endTimestamp &&
+          maxResults == other.maxResults &&
+          runForever == other.runForever &&
+          startFromTail == other.startFromTail &&
+          localSchemas == other.localSchemas;
+}
 
 class KafkaHeader {
   final String key;

@@ -14,6 +14,10 @@ context: |
       OpenSpec change name and follow the guardrails (L1-L7) and decisions
       (E1-E20) of that document. Entries marked as deferred or listed under
       non-goals there MUST NOT be proposed.
+    - The code-quality backlog lives in
+      `design/code-quality-refactoring-backlog.md`. Its section 8 table fixes
+      the change id for every Q-n entry; use that id as the OpenSpec change
+      name, and keep the table's status in step with the implemented change.
 
   Tech Stack:
     - Frontend: Flutter (Dart SDK >= 3.9) targeting desktop only. Flutter Web
@@ -24,17 +28,27 @@ context: |
         live inside one of them.
       - Persistence: shared_preferences for non-sensitive settings and profiles;
         flutter_secure_storage (OS keyring) for every secret.
-      - Styling & Theming: flex_color_scheme, google_fonts, Material 3.
+      - Styling & Theming: flex_color_scheme (≥ 9, builds material_ui themes),
+        google_fonts, Material 3.
       - UI building blocks: material_ui, two_dimensional_scrollables (message
         table), scrollable_positioned_list, timelines_plus, file_picker, and the
         in-house `SmartVirtualJsonTree` (`lib/src/ui/smart_tree/`).
       - Code generation: freezed / json_serializable (build_runner), mockito
         mocks for the Rust bridge (`test/src/rust/api/rust_mocks.mocks.dart`,
-        checked in).
+        checked in). Generated localizations (`lib/l10n/*.dart`, configured in
+        `l10n.yaml`) are generator-owned too: change the generator or its
+        configuration, never the generated file.
       - Source layout:
-        `lib/src/features/<feature>/{presentation,domain,data,application}`,
-        shared widgets in `lib/src/ui/`, services in `lib/src/services/`,
-        generated bridge code in `lib/src/rust/` (never edit).
+        `lib/src/features/<feature>/{presentation,domain,data,application}`.
+        A surface with its own views, widgets and models is a feature module
+        even when several features consume it (e.g. `features/messages/`).
+        `lib/src/ui/` holds feature-neutral UI (smart tree, diff kit, shared
+        utils). `lib/src/services/` holds services no single feature owns; a
+        service whose stored data one feature owns lives in that feature's
+        `data/`. The top level of `lib/src/` (`app.dart`,
+        `dependency_injection.dart`, `main_layout.dart`, theme files) is the
+        composition root. Generated bridge code lives in `lib/src/rust/`
+        (never edit).
     - Backend: Rust Cargo workspace under `rust/`.
       - `kafkalyzer-core` (`rust/kafkalyzer-core`): pure computation with serde
         domain types - canonical field path resolution (`json_path`), Avro
@@ -67,6 +81,9 @@ context: |
       must pass unchanged.
     - The same invariant applies to every entry point: GUI, headless script
       runner, MCP server.
+    - Fixture seeding in `scripts/kafka_integration_tests.sh` writes only to the
+      disposable compose broker. It is test infrastructure under `scripts/`, not
+      an application entry point, and is not a gate exception.
     - Never claim read-only is "guaranteed"; it is enforced by the CI gate,
       crate layering and broker ACLs.
 
@@ -88,10 +105,35 @@ context: |
       `[n]`, `$.` prefix, JSON Pointer). Do not add a second resolver or a
       second path syntax in Dart or Rust.
     - Code Quality & Style:
+      - A broker-dependent Rust test lives in `kafkalyzer-kafka`, is `#[ignore]`d
+        with the reason naming `scripts/kafka_integration_tests.sh`, asserts
+        something, and reads only fixtures that the script creates and
+        shape-checks.
       - Limit line length to a maximum of 120 characters for both Dart and Rust
         source files.
       - Format Dart code strictly using `dart format`.
       - Format Rust code strictly using `cargo fmt`.
+      - Feature modules import each other in one direction only: no two feature
+        modules import each other, directly or through other feature modules. A
+        type needed by two features lives in the owning feature (imported one
+        way) or in a shared module (`lib/src/ui/`, `lib/src/services/`,
+        `lib/src/utils/`) when no single feature owns it. Shared modules import
+        no feature module; only the composition root may. The CI import-cycle
+        guard rejects a pair of modules that becomes mutually reachable, and
+        the shared-module guard rejects a shared source that imports a feature;
+        generated sources are exempt.
+      - Keep hand-written Dart source files at or below 800 lines. Split a
+        screen into one file per section under the owning feature's
+        `presentation/widgets/` (one public widget class per file), and extend
+        an existing util file instead of adding a new one. The CI size guard
+        checks the files a change touches; generated sources are exempt.
+      - Commit regenerated bridge bindings (`lib/src/rust/`,
+        `rust/src/frb_generated.rs`) and checked-in mocks (`*.mocks.dart`) with
+        every bridge or mocked-interface change. The quality gate regenerates
+        them with the pinned `flutter_rust_bridge_codegen` and fails on any
+        difference (`bindings-guard`). Install the pin with
+        `cargo install flutter_rust_bridge_codegen --version <pin> --locked`
+        (version from `pubspec.yaml` / `rust/Cargo.toml`).
       - Use structured logging via the Dart `logger` package and the Rust `log`
         crate instead of `print`, `debugPrint` or ad-hoc log files. Never log
         secrets or message payloads.
@@ -167,7 +209,9 @@ context: |
     - UI & UX:
       - Material UI Elements: The Flutter package
         `package:material_ui/material_ui.dart` MUST be used for all Material UI
-        elements.
+        elements. Never import `package:flutter/material.dart` or
+        `package:flutter/cupertino.dart`; the legacy-material guard in
+        `scripts/quality_gates.sh` enforces this.
       - All asynchronous UI actions (e.g., fetching Kafka messages, cluster
         connection) MUST provide visual feedback (e.g.,
         CircularProgressIndicator or loading states).
@@ -180,8 +224,15 @@ context: |
       - Icon-only controls need a tooltip and a semantic label. State must not
         be conveyed by colour alone; status colours come from the theme's colour
         scheme.
-      - Global state (active cluster, settings) is accessed through
-        `ActiveConnectionController` or `getIt`.
+      - State lifetime: session-wide state (active cluster and profile,
+        cluster list, TLS transition, main navigation, multi search, topic,
+        schema, script, script-run and consumer-group directory) is registered
+        once per app session and reached through a constructor parameter whose
+        default is the container (`widget.x ?? getIt<T>()`). Anything that
+        belongs to a single screen or dialog is view-owned. A presentation
+        source must not look session-wide state up from the container outside
+        such a constructor-parameter default; `scripts/quality_gates.sh`
+        enforces this on the files a change touches.
 
     - Localization:
       - All user-facing strings must be localized using `AppLocalizations` (via
@@ -195,8 +246,18 @@ context: |
          test --workspace` (in `rust/`)
       2. `flutter_rust_bridge_codegen generate`
       3. `dart run build_runner build` (regenerates the checked-in bridge mocks)
-      4. `flutter analyze`, `flutter test`
+      4. `dart format --output=none --set-exit-if-changed lib test`,
+         `flutter analyze`, `flutter test`
       5. `scripts/check_read_only.sh`
+      6. `scripts/quality_gates.sh` runs the CI gate checks in one call
+         (generated-source drift guard for bridge bindings + checked-in mocks,
+         dart format, flutter analyze, cargo fmt --check, source-file size
+         guard, session-wide state locator guard, feature import-cycle guard,
+         shared-module import guard, legacy-material import guard) and stops at
+         the first finding. clippy is not part of it yet: it joins with
+         `-D warnings` only once the change `enable-rust-lint-gate` lands.
+      7. when `rust/kafkalyzer-kafka` changed, `bash scripts/kafka_integration_tests.sh`
+         (needs Docker)
 
 # Per-artifact generation rules
 rules:
@@ -238,9 +299,29 @@ rules:
       and keep previously stored data (profiles, saved searches, scripts,
       reports) loadable.
     - >-
-      Status Access: For accessing global state (like the active cluster or
-      settings), prefer using ActiveConnectionController or getIt over deep
-      prop-drilling unless a widget is purely presentational.
+      Bridge parameter objects: a Dart to Rust call that carries more than a
+      handful of criteria crosses in one request struct whose fields hold the
+      names, and is mapped to the domain type by one explicit method — no
+      generative or macro-built mapping.
+    - >-
+      No positional argument piles in shared Rust code: a consumption path takes
+      one criteria struct and one bounds struct instead of optional values of
+      one type next to each other, and it silences
+      `clippy::too_many_arguments` by dropping arguments, not by adding an
+      `allow`.
+    - >-
+      Module boundaries: when behaviour needs a type from another feature
+      module, the design says where the shared item moves to, and no new pair of
+      feature modules ends up mutually reachable. No shared module
+      (`lib/src/ui/`, `lib/src/services/`, `lib/src/utils/`) gains a feature
+      import. If an existing cycle stays in place, the design states which one
+      and why.
+    - >-
+      Status Access: Reach session-wide state through a constructor parameter
+      that defaults to the container (`widget.x ?? getIt<T>()`) instead of deep
+      prop-drilling; state belonging to one screen or dialog stays view-owned.
+      `watch_it` may keep a screen subscribed to the session-wide object it
+      renders.
     - >-
       Detail design choices, state flow, and any alternatives considered.
     - >-
@@ -288,6 +369,7 @@ rules:
       regenerating bridge code and mocks when rust/src/api/ changes, and for
       adding en and de ARB keys.
     - >-
-      End with a verification task: cargo fmt, cargo clippy, cargo test, flutter
-      analyze, flutter test and scripts/check_read_only.sh.
+      End with a verification task: scripts/quality_gates.sh, cargo fmt, cargo
+      clippy, cargo test, flutter analyze, flutter test and
+      scripts/check_read_only.sh.
 skillsScope: project
