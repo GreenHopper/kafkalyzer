@@ -11,7 +11,8 @@ crate-type = ["cdylib", "staticlib"]
 members = [
     ".",
     "kafkalyzer-core",
-    "kafkalyzer-kafka"
+    "kafkalyzer-kafka",
+    "kafkalyzer-keyring-spike"
 ]
 
 [dependencies]

@@ -188,6 +188,10 @@ jobs:
           toolchain: stable
           cache-workspaces: "rust"
 
+      # mcp-profile-export spike 1.1 — remove after keyring feature set is confirmed
+      - name: Spike keyring crate build
+        run: cargo build --manifest-path rust/Cargo.toml -p kafkalyzer-keyring-spike
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -292,6 +296,10 @@ jobs:
           toolchain: stable
           target: x86_64-apple-darwin,aarch64-apple-darwin
           cache-workspaces: "rust"
+
+      # mcp-profile-export spike 1.1 — remove after keyring feature set is confirmed
+      - name: Spike keyring crate build
+        run: cargo build --manifest-path rust/Cargo.toml -p kafkalyzer-keyring-spike
 
       - name: Cache Cargokit macOS target directory
         uses: actions/cache@v4
@@ -398,6 +406,10 @@ jobs:
         with:
           toolchain: stable
           cache-workspaces: "rust"
+
+      # mcp-profile-export spike 1.1 — remove after keyring feature set is confirmed
+      - name: Spike keyring crate build
+        run: cargo build --manifest-path rust/Cargo.toml -p kafkalyzer-keyring-spike
 
       - name: Export GitHub Actions cache API variables
         uses: actions/github-script@v7
