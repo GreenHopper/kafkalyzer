@@ -165,7 +165,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            # PR shallow clones often have no tags; git describe then exits 128 under set -e
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//') || true
             LATEST_TAG=${LATEST_TAG:-1.0.0}
             SHA=$(git rev-parse --short HEAD)
             echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
@@ -281,7 +282,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            # PR shallow clones often have no tags; git describe then exits 128 under set -e
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//') || true
             LATEST_TAG=${LATEST_TAG:-1.0.0}
             SHA=$(git rev-parse --short HEAD)
             echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
@@ -387,7 +389,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            # PR shallow clones often have no tags; git describe then exits 128 under set -e
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//') || true
             LATEST_TAG=${LATEST_TAG:-1.0.0}
             SHA=$(git rev-parse --short HEAD)
             echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
