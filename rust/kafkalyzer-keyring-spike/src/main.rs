@@ -1,6 +1,5 @@
 fn main() {
-    let entry = keyring::Entry::new("kafkalyzer-keyring-spike", "probe")
-        .expect("create entry");
+    let entry = keyring::Entry::new("kafkalyzer-keyring-spike", "probe").expect("create entry");
     match entry.set_password("roundtrip-value") {
         Ok(()) => {
             let got = entry.get_password().expect("get");
