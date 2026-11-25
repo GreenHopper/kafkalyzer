@@ -1,8 +1,0 @@
-[package]
-name = "kafkalyzer-keyring-spike"
-version = "0.1.0"
-edition = "2021"
-publish = false
-
-[dependencies]
-keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }

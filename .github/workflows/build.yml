@@ -152,8 +152,7 @@ jobs:
     name: Build Linux
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: ubuntu-latest
-    # spike/keyring-ci: temporarily always run so keyring spike builds on PRs
-    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -189,10 +188,6 @@ jobs:
         with:
           toolchain: stable
           cache-workspaces: "rust"
-
-      # mcp-profile-export spike 1.1 — remove after keyring feature set is confirmed
-      - name: Spike keyring crate build
-        run: cargo build --manifest-path rust/Cargo.toml -p kafkalyzer-keyring-spike
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -269,8 +264,7 @@ jobs:
     name: Build macOS
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: macos-latest
-    # spike/keyring-ci: temporarily always run so keyring spike builds on PRs
-    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -300,10 +294,6 @@ jobs:
           toolchain: stable
           target: x86_64-apple-darwin,aarch64-apple-darwin
           cache-workspaces: "rust"
-
-      # mcp-profile-export spike 1.1 — remove after keyring feature set is confirmed
-      - name: Spike keyring crate build
-        run: cargo build --manifest-path rust/Cargo.toml -p kafkalyzer-keyring-spike
 
       - name: Cache Cargokit macOS target directory
         uses: actions/cache@v4
@@ -376,8 +366,7 @@ jobs:
     name: Build Windows
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: windows-latest
-    # spike/keyring-ci: temporarily always run so keyring spike builds on PRs
-    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -412,10 +401,6 @@ jobs:
         with:
           toolchain: stable
           cache-workspaces: "rust"
-
-      # mcp-profile-export spike 1.1 — remove after keyring feature set is confirmed
-      - name: Spike keyring crate build
-        run: cargo build --manifest-path rust/Cargo.toml -p kafkalyzer-keyring-spike
 
       - name: Export GitHub Actions cache API variables
         uses: actions/github-script@v7

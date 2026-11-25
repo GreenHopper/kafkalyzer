@@ -8,7 +8,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `delete_legacy_debug_log_in`, `format_panic_body`, `format_panic_line`, `handle_panic`, `map_level_filter`, `map_log_level`, `new`, `set_sink`, `truncate_utf8`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ForwardingLogger`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `enabled`, `eq`, `eq`, `flush`, `fmt`, `fmt`, `log`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `enabled`, `eq`, `eq`, `flush`, `fmt`, `fmt`, `log`
 
 Stream<RustLogRecord> initRustLogging({
   required RustLogLevel maxLevel,

@@ -66,6 +66,9 @@ class FakeClusterListController extends ChangeNotifier
   bool get isLoading => false;
   @override
   StoreStatus get storeStatus => const StoreStatus.ok();
+  @override
+  ValueNotifier<SharedProfilesStatus> get sharedProfilesStatus =>
+      ValueNotifier(const SharedProfilesStatus.ok());
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

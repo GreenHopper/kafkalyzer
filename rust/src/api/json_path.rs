@@ -115,12 +115,14 @@ mod tests {
             environment_label: Some("PROD".to_string()),
             environment_color: Some("red".to_string()),
             extra_properties: Some("client.id=kafkalyzer\nsocket.timeout.ms=30000".to_string()),
+            headless_shared: Some(true),
         }
     }
 
     #[test]
     fn profile_round_trip_keeps_every_field() {
         let json = serialize_cluster_profile(full_profile()).unwrap();
+        assert!(json.contains("\"headlessShared\":true"));
         let loaded = deserialize_cluster_profile(json).unwrap();
         assert_eq!(loaded, full_profile());
     }
@@ -140,6 +142,29 @@ mod tests {
         assert_eq!(loaded.environment_label, None);
         assert_eq!(loaded.environment_color, None);
         assert_eq!(loaded.extra_properties, None);
+        assert_eq!(loaded.headless_shared, None);
+    }
+
+    #[test]
+    fn headless_shared_does_not_change_to_domain() {
+        let mut dto = full_profile();
+        let domain_shared = dto.to_domain();
+        dto.headless_shared = None;
+        let domain_unset = dto.to_domain();
+        assert_eq!(domain_shared.name, domain_unset.name);
+        assert_eq!(
+            domain_shared.bootstrap_servers,
+            domain_unset.bootstrap_servers
+        );
+        assert_eq!(domain_shared.sasl_password, domain_unset.sasl_password);
+        assert_eq!(
+            domain_shared.ssl_verification_disabled,
+            domain_unset.ssl_verification_disabled
+        );
+        assert_eq!(
+            domain_shared.extra_properties,
+            domain_unset.extra_properties
+        );
     }
 
     #[test]

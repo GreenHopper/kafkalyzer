@@ -3467,5 +3467,44 @@
     "placeholders": {
       "count": { "type": "int" }
     }
-  }
+  },
+  "mcpSharingDialogTitle": "Share with MCP",
+  "mcpSharingSwitchLabel": "Share this cluster with headless kafkalyzer (MCP)",
+  "mcpSharingDataFlowWarning": "Message keys, payloads, headers and cluster metadata read by an MCP client can be sent to the language-model provider that client uses. You are responsible for sharing a production cluster.",
+  "mcpSharingSnippetLabel": "MCP client configuration",
+  "mcpSharingCopyAction": "Copy snippet",
+  "mcpSharingCopiedConfirmation": "Snippet copied",
+  "mcpSharingShareFirstHint": "Share the profile first to enable copying.",
+  "mcpSharingProgramNotFoundHint": "Program not found at {path}",
+  "@mcpSharingProgramNotFoundHint": {
+    "placeholders": {
+      "path": { "type": "String" }
+    }
+  },
+  "mcpSharedBadge": "Shared with MCP",
+  "mcpSharingFailedBadge": "Sharing failed",
+  "mcpSharingFailureKeyringUnavailable": "OS keyring unavailable",
+  "mcpSharingFailureSecretRejected": "Secret rejected by the keyring",
+  "mcpSharingFailureFileError": "Could not write the shared profiles file: {detail}",
+  "@mcpSharingFailureFileError": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "mcpSharingFailureBridgeError": "Sharing sync failed: {detail}",
+  "@mcpSharingFailureBridgeError": {
+    "placeholders": {
+      "detail": { "type": "String" }
+    }
+  },
+  "mcpSharingFailureNamed": "{name}: {reason}",
+  "@mcpSharingFailureNamed": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "reason": { "type": "String" }
+    }
+  },
+  "mcpSharingRetry": "Retry sharing",
+  "mcpSharingToggleFailed": "Could not update sharing for this cluster.",
+  "mcpSharingOpenAction": "Share with MCP"
 }

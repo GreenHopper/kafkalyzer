@@ -87,6 +87,9 @@ void main() {
     mockActiveConnectionController = MockActiveConnectionController();
     mockSettingsService = MockSettingsService();
     mockScriptController = MockScriptController();
+    when(
+      mockClusterListController.sharedProfilesStatus,
+    ).thenReturn(ValueNotifier(const SharedProfilesStatus.ok()));
 
     final getIt = GetIt.instance;
     getIt.registerSingleton<ClusterListController>(mockClusterListController);

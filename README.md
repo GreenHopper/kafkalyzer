@@ -121,6 +121,30 @@ The application uses `shared_preferences` to store local configurations and clus
 - **macOS**: `~/Library/Preferences/at.greenhopper.kafkalyzer.plist`
 - **Windows**: `C:\Users\<User>\AppData\Roaming\at.greenhopper\kafkalyzer\shared_preferences.json`
 
+## Sharing a cluster with an MCP client
+
+Opt in per cluster from **Settings → Clusters → Share with MCP**. Only shared clusters are visible to headless kafkalyzer binaries (for example `kafkalyzer-mcp`).
+
+**What is written where**
+
+- Non-secret connection settings go to one JSON file under the user config directory:
+  - **Linux**: `$XDG_CONFIG_HOME/kafkalyzer/shared-profiles.json` if `XDG_CONFIG_HOME` is set and absolute, otherwise `~/.config/kafkalyzer/shared-profiles.json`
+  - **macOS**: `~/Library/Application Support/kafkalyzer/shared-profiles.json`
+  - **Windows**: `%APPDATA%\kafkalyzer\shared-profiles.json`
+- Secrets (passwords, tokens, key passwords) go to the OS keyring under the dedicated service name `kafkalyzer-shared-profiles` (not the GUI app’s own keyring entries).
+
+**Linux keyring precondition**
+
+Sharing needs a running Secret Service (for example GNOME Keyring or KWallet). Without it, sharing fails with “keyring unavailable”; the same precondition already applies to storing secrets for the GUI.
+
+**Data flow to the LLM provider**
+
+An MCP client that uses a shared cluster can read message keys, payloads, headers and cluster metadata and may send that data to the language-model provider the client is configured with. Only share clusters you accept exposing that way.
+
+**After moving the app**
+
+The dialog’s MCP client snippet embeds the absolute path of the server program next to the GUI binary. If you move or reinstall the app, open the sharing dialog again and copy the snippet so the client keeps a valid `command` path.
+
 ## 🛠️ Getting Started
 
 ### Prerequisites

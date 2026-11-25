@@ -8733,6 +8733,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} more topic facts'**
   String topicFactsMoreCount(int count);
+
+  /// No description provided for @mcpSharingDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with MCP'**
+  String get mcpSharingDialogTitle;
+
+  /// No description provided for @mcpSharingSwitchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this cluster with headless kafkalyzer (MCP)'**
+  String get mcpSharingSwitchLabel;
+
+  /// No description provided for @mcpSharingDataFlowWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Message keys, payloads, headers and cluster metadata read by an MCP client can be sent to the language-model provider that client uses. You are responsible for sharing a production cluster.'**
+  String get mcpSharingDataFlowWarning;
+
+  /// No description provided for @mcpSharingSnippetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'MCP client configuration'**
+  String get mcpSharingSnippetLabel;
+
+  /// No description provided for @mcpSharingCopyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy snippet'**
+  String get mcpSharingCopyAction;
+
+  /// No description provided for @mcpSharingCopiedConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Snippet copied'**
+  String get mcpSharingCopiedConfirmation;
+
+  /// No description provided for @mcpSharingShareFirstHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the profile first to enable copying.'**
+  String get mcpSharingShareFirstHint;
+
+  /// No description provided for @mcpSharingProgramNotFoundHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Program not found at {path}'**
+  String mcpSharingProgramNotFoundHint(String path);
+
+  /// No description provided for @mcpSharedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with MCP'**
+  String get mcpSharedBadge;
+
+  /// No description provided for @mcpSharingFailedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing failed'**
+  String get mcpSharingFailedBadge;
+
+  /// No description provided for @mcpSharingFailureKeyringUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'OS keyring unavailable'**
+  String get mcpSharingFailureKeyringUnavailable;
+
+  /// No description provided for @mcpSharingFailureSecretRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Secret rejected by the keyring'**
+  String get mcpSharingFailureSecretRejected;
+
+  /// No description provided for @mcpSharingFailureFileError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not write the shared profiles file: {detail}'**
+  String mcpSharingFailureFileError(String detail);
+
+  /// No description provided for @mcpSharingFailureBridgeError.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing sync failed: {detail}'**
+  String mcpSharingFailureBridgeError(String detail);
+
+  /// No description provided for @mcpSharingFailureNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: {reason}'**
+  String mcpSharingFailureNamed(String name, String reason);
+
+  /// No description provided for @mcpSharingRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry sharing'**
+  String get mcpSharingRetry;
+
+  /// No description provided for @mcpSharingToggleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update sharing for this cluster.'**
+  String get mcpSharingToggleFailed;
+
+  /// No description provided for @mcpSharingOpenAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with MCP'**
+  String get mcpSharingOpenAction;
 }
 
 class _AppLocalizationsDelegate

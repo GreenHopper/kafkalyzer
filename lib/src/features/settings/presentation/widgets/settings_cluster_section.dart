@@ -9,9 +9,11 @@ import 'package:watch_it/watch_it.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/active_connection_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/controllers/cluster_list_controller.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/config_dialog/cluster_config_dialog.dart';
+import 'package:kafkalyzer/src/features/cluster/presentation/widgets/mcp_sharing_dialog.dart';
 import 'package:kafkalyzer/src/ui/widgets/environment_tag.dart';
 import 'package:kafkalyzer/src/features/cluster/presentation/widgets/import_conflict_dialog.dart';
 import 'package:kafkalyzer/src/ui/widgets/insecure_tls_badge.dart';
+import 'package:kafkalyzer/src/rust/api/headless_profiles.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
@@ -288,6 +290,76 @@ class _SettingsClusterSectionState extends State<SettingsClusterSection> {
     );
   }
 
+  String _sharingFailureReason(
+    AppLocalizations l10n,
+    SharedProfileFailureKind kind,
+  ) {
+    return switch (kind) {
+      SharedProfileFailureKind.keyringUnavailable =>
+        l10n.mcpSharingFailureKeyringUnavailable,
+      SharedProfileFailureKind.secretRejected =>
+        l10n.mcpSharingFailureSecretRejected,
+    };
+  }
+
+  Widget _buildSharingStatusBanner(
+    BuildContext context,
+    AppLocalizations l10n,
+    ClusterListController clusterController,
+    SharedProfilesStatus status,
+  ) {
+    final theme = Theme.of(context);
+    final lines = <String>[];
+    if (status.bridgeError != null) {
+      lines.add(l10n.mcpSharingFailureBridgeError(status.bridgeError!));
+    }
+    if (status.fileError != null) {
+      lines.add(l10n.mcpSharingFailureFileError(status.fileError!));
+    }
+    for (final failure in status.failed) {
+      lines.add(
+        l10n.mcpSharingFailureNamed(
+          failure.name,
+          _sharingFailureReason(l10n, failure.kind),
+        ),
+      );
+    }
+    if (lines.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: theme.colorScheme.onErrorContainer,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  lines.join('\n'),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => clusterController.retrySharedProfilesSync(),
+                child: Text(l10n.mcpSharingRetry),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildClusterListContent(
     BuildContext context,
     AppLocalizations l10n,
@@ -297,6 +369,7 @@ class _SettingsClusterSectionState extends State<SettingsClusterSection> {
     if (clusterController.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+    final sharingStatus = watch(clusterController.sharedProfilesStatus).value;
     final filteredEntries = clusterController.clusters
         .asMap()
         .entries
@@ -306,6 +379,13 @@ class _SettingsClusterSectionState extends State<SettingsClusterSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (!sharingStatus.isOk)
+          _buildSharingStatusBanner(
+            context,
+            l10n,
+            clusterController,
+            sharingStatus,
+          ),
         if (clusterController.clusters.isNotEmpty) ...[
           ClusterFilterField(
             controller: _clusterFilterController,
@@ -444,6 +524,26 @@ class _SettingsClusterSectionState extends State<SettingsClusterSection> {
                       ),
                     if (cluster.tlsVerification == TlsVerification.disabled)
                       const InsecureTlsBadge(compact: true),
+                    if (mcpSharingFailedFor(cluster, sharingStatus))
+                      _McpSharingBadge(
+                        label: l10n.mcpSharingFailedBadge,
+                        icon: Icons.error_outline,
+                        container: Theme.of(context).colorScheme.errorContainer,
+                        onContainer: Theme.of(
+                          context,
+                        ).colorScheme.onErrorContainer,
+                      )
+                    else if (cluster.headlessShared == true)
+                      _McpSharingBadge(
+                        label: l10n.mcpSharedBadge,
+                        icon: Icons.hub_outlined,
+                        container: Theme.of(
+                          context,
+                        ).colorScheme.secondaryContainer,
+                        onContainer: Theme.of(
+                          context,
+                        ).colorScheme.onSecondaryContainer,
+                      ),
                   ],
                 ),
                 subtitle: Text(cluster.bootstrapServers),
@@ -452,13 +552,23 @@ class _SettingsClusterSectionState extends State<SettingsClusterSection> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
+                      icon: const Icon(Icons.hub_outlined),
+                      tooltip: l10n.mcpSharingOpenAction,
+                      onPressed: () => McpSharingDialog.show(
+                        context,
+                        profile: cluster,
+                        index: index,
+                        clusterController: clusterController,
+                      ),
+                    ),
+                    IconButton(
                       icon: const Icon(Icons.content_copy_outlined),
                       tooltip: l10n.duplicateClusterAction,
                       onPressed: () async {
                         final result = await showDialog<ClusterProfile>(
                           context: context,
                           builder: (context) => ClusterConfigDialog(
-                            cluster: cluster,
+                            cluster: cluster.copyWith(headlessShared: null),
                             isDuplicate: true,
                             existingNames: clusterController.clusters
                                 .map((c) => c.name)
@@ -466,7 +576,9 @@ class _SettingsClusterSectionState extends State<SettingsClusterSection> {
                           ),
                         );
                         if (result != null) {
-                          clusterController.addCluster(result);
+                          clusterController.addCluster(
+                            result.copyWith(headlessShared: null),
+                          );
                         }
                       },
                     ),
@@ -555,6 +667,45 @@ class _SettingsClusterSectionState extends State<SettingsClusterSection> {
             },
           ),
       ],
+    );
+  }
+}
+
+class _McpSharingBadge extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color container;
+  final Color onContainer;
+
+  const _McpSharingBadge({
+    required this.label,
+    required this.icon,
+    required this.container,
+    required this.onContainer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: container,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: onContainer),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: onContainer,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

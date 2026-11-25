@@ -99,7 +99,8 @@ crate's existing runtime.
 - No Secret Service (fake `DBUS_SESSION_BUS_ADDRESS`):
   `PlatformFailure(Dbus(D-Bus error: Failed to connect to socket …: No such file or directory
   (org.freedesktop.DBus.Error.FileNotFound)))`.
-- macOS / Windows CI builds: pending a branch push (those jobs are tag/`workflow_dispatch` only today).
+- macOS / Windows / Linux CI: `cargo build -p kafkalyzer-keyring-spike` passed on all three OS jobs
+  with no new system packages.
 
 ### D4 — Sync algorithm (`write_shared`)
 

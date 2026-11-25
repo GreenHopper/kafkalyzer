@@ -5344,4 +5344,72 @@ class AppLocalizationsDe extends AppLocalizations {
   String topicFactsMoreCount(int count) {
     return '$count weitere Topic-Fakten';
   }
+
+  @override
+  String get mcpSharingDialogTitle => 'Mit MCP teilen';
+
+  @override
+  String get mcpSharingSwitchLabel =>
+      'Diesen Cluster mit headless kafkalyzer (MCP) teilen';
+
+  @override
+  String get mcpSharingDataFlowWarning =>
+      'Nachrichtenschlüssel, Payloads, Header und Cluster-Metadaten, die ein MCP-Client liest, können an den Anbieter des verwendeten Sprachmodells gesendet werden. Sie sind dafür verantwortlich, einen Produktionscluster freizugeben.';
+
+  @override
+  String get mcpSharingSnippetLabel => 'MCP-Client-Konfiguration';
+
+  @override
+  String get mcpSharingCopyAction => 'Snippet kopieren';
+
+  @override
+  String get mcpSharingCopiedConfirmation => 'Snippet kopiert';
+
+  @override
+  String get mcpSharingShareFirstHint =>
+      'Teilen Sie das Profil zuerst, um das Kopieren zu aktivieren.';
+
+  @override
+  String mcpSharingProgramNotFoundHint(String path) {
+    return 'Programm nicht gefunden unter $path';
+  }
+
+  @override
+  String get mcpSharedBadge => 'Mit MCP geteilt';
+
+  @override
+  String get mcpSharingFailedBadge => 'Teilen fehlgeschlagen';
+
+  @override
+  String get mcpSharingFailureKeyringUnavailable =>
+      'OS-Schlüsselbund nicht verfügbar';
+
+  @override
+  String get mcpSharingFailureSecretRejected =>
+      'Geheimnis vom Schlüsselbund abgelehnt';
+
+  @override
+  String mcpSharingFailureFileError(String detail) {
+    return 'Shared-Profiles-Datei konnte nicht geschrieben werden: $detail';
+  }
+
+  @override
+  String mcpSharingFailureBridgeError(String detail) {
+    return 'Teilen-Sync fehlgeschlagen: $detail';
+  }
+
+  @override
+  String mcpSharingFailureNamed(String name, String reason) {
+    return '$name: $reason';
+  }
+
+  @override
+  String get mcpSharingRetry => 'Teilen erneut versuchen';
+
+  @override
+  String get mcpSharingToggleFailed =>
+      'Teilen für diesen Cluster konnte nicht aktualisiert werden.';
+
+  @override
+  String get mcpSharingOpenAction => 'Mit MCP teilen';
 }

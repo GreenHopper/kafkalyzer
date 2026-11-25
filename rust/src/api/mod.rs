@@ -2,6 +2,7 @@ pub mod avro_utils;
 pub mod connection_diagnostics;
 pub mod diagnostics;
 pub mod filter_expr;
+pub mod headless_profiles;
 pub mod json_diff;
 pub mod json_path;
 pub mod kafka_analyzer;

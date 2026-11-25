@@ -255,6 +255,10 @@ class _ClusterConfigDialogState extends State<ClusterConfigDialog> {
       extraProperties: _extraPropertiesController.text.trim().isEmpty
           ? null
           : _extraPropertiesController.text.trim(),
+      // Duplicates must not inherit sharing; edits keep the existing flag.
+      headlessShared: widget.isDuplicate
+          ? null
+          : widget.cluster?.headlessShared,
     );
   }
 

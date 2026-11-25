@@ -7,6 +7,7 @@ import 'api.dart';
 import 'api/connection_diagnostics.dart';
 import 'api/diagnostics.dart';
 import 'api/filter_expr.dart';
+import 'api/headless_profiles.dart';
 import 'api/json_diff.dart';
 import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
@@ -86,7 +87,7 @@ class KafkalyzerRustLib
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 1940193560;
+  int get rustContentHash => -2106193375;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -291,6 +292,8 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
 
   Future<LocalSchemaModeDto> crateApiLocalSchemaLocalSchemaModeDtoDefault();
 
+  Future<McpServerLaunch> crateApiHeadlessProfilesMcpServerLaunch();
+
   Future<int> crateApiKafkaUtilsMurmur2({required List<int> data});
 
   Future<ClientPropertiesPreview> crateApiProfileToolsParseClientProperties({
@@ -331,6 +334,10 @@ abstract class KafkalyzerRustLibApi extends BaseApi {
 
   Future<String> crateApiJsonPathSerializeClusterProfile({
     required ClusterProfile profile,
+  });
+
+  Future<SharedProfilesSyncResult> crateApiHeadlessProfilesSyncSharedProfiles({
+    required SharedProfilesSyncRequest request,
   });
 
   Future<TlsVerification> crateApiKafkaTypesTlsVerificationDefault();
@@ -1802,6 +1809,33 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       );
 
   @override
+  Future<McpServerLaunch> crateApiHeadlessProfilesMcpServerLaunch() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 43,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_mcp_server_launch,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHeadlessProfilesMcpServerLaunchConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHeadlessProfilesMcpServerLaunchConstMeta =>
+      const TaskConstMeta(debugName: "mcp_server_launch", argNames: []);
+
+  @override
   Future<int> crateApiKafkaUtilsMurmur2({required List<int> data}) {
     return handler.executeNormal(
       NormalTask(
@@ -1811,7 +1845,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 43,
+            funcId: 44,
             port: port_,
           );
         },
@@ -1841,7 +1875,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 44,
+            funcId: 45,
             port: port_,
           );
         },
@@ -1871,7 +1905,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(input, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 45)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 46)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_filter_parse_result_dto,
@@ -1899,7 +1933,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 46,
+            funcId: 47,
             port: port_,
           );
         },
@@ -1934,7 +1968,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 47,
+            funcId: 48,
             port: port_,
           );
         },
@@ -1967,7 +2001,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 48,
+            funcId: 49,
             port: port_,
           );
         },
@@ -2002,7 +2036,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 49,
+            funcId: 50,
             port: port_,
           );
         },
@@ -2039,7 +2073,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 50,
+            funcId: 51,
             port: port_,
           );
         },
@@ -2074,7 +2108,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 51,
+            funcId: 52,
             port: port_,
           );
         },
@@ -2104,7 +2138,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 52,
+            funcId: 53,
             port: port_,
           );
         },
@@ -2134,7 +2168,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 53,
+            funcId: 54,
             port: port_,
           );
         },
@@ -2156,6 +2190,42 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       );
 
   @override
+  Future<SharedProfilesSyncResult> crateApiHeadlessProfilesSyncSharedProfiles({
+    required SharedProfilesSyncRequest request,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_shared_profiles_sync_request(
+            request,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 55,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_shared_profiles_sync_result,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHeadlessProfilesSyncSharedProfilesConstMeta,
+        argValues: [request],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHeadlessProfilesSyncSharedProfilesConstMeta =>
+      const TaskConstMeta(
+        debugName: "sync_shared_profiles",
+        argNames: ["request"],
+      );
+
+  @override
   Future<TlsVerification> crateApiKafkaTypesTlsVerificationDefault() {
     return handler.executeNormal(
       NormalTask(
@@ -2164,7 +2234,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 54,
+            funcId: 56,
             port: port_,
           );
         },
@@ -2192,7 +2262,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 55,
+            funcId: 57,
             port: port_,
           );
         },
@@ -2219,7 +2289,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 56,
+            funcId: 58,
             port: port_,
           );
         },
@@ -2250,7 +2320,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 57,
+            funcId: 59,
             port: port_,
           );
         },
@@ -2280,7 +2350,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(value, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 58)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 60)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_bootstrap_server_issue,
@@ -2311,7 +2381,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 59,
+            funcId: 61,
             port: port_,
           );
         },
@@ -2341,7 +2411,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(text, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 60)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 62)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_extra_property_issue,
@@ -2372,7 +2442,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 61,
+            funcId: 63,
             port: port_,
           );
         },
@@ -2739,6 +2809,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  SharedProfilesSyncRequest dco_decode_box_autoadd_shared_profiles_sync_request(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_shared_profiles_sync_request(raw);
+  }
+
+  @protected
   SizePercentiles dco_decode_box_autoadd_size_percentiles(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_size_percentiles(raw);
@@ -2882,8 +2960,8 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   ClusterProfile dco_decode_cluster_profile(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 25)
-      throw Exception('unexpected arr length: expect 25 but see ${arr.length}');
+    if (arr.length != 26)
+      throw Exception('unexpected arr length: expect 26 but see ${arr.length}');
     return ClusterProfile(
       name: dco_decode_String(arr[0]),
       bootstrapServers: dco_decode_String(arr[1]),
@@ -2910,6 +2988,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       environmentLabel: dco_decode_opt_String(arr[22]),
       environmentColor: dco_decode_opt_String(arr[23]),
       extraProperties: dco_decode_opt_String(arr[24]),
+      headlessShared: dco_decode_opt_box_autoadd_bool(arr[25]),
     );
   }
 
@@ -3409,6 +3488,12 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  List<ClusterProfile> dco_decode_list_cluster_profile(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_cluster_profile).toList();
+  }
+
+  @protected
   List<ConsumerGroupLag> dco_decode_list_consumer_group_lag(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_consumer_group_lag).toList();
@@ -3607,6 +3692,16 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  List<SharedProfileFailure> dco_decode_list_shared_profile_failure(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>)
+        .map(dco_decode_shared_profile_failure)
+        .toList();
+  }
+
+  @protected
   List<SkippedClientProperty> dco_decode_list_skipped_client_property(
     dynamic raw,
   ) {
@@ -3770,6 +3865,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       framing: dco_decode_framing_dto(arr[3]),
       wireSchemaId: dco_decode_opt_box_autoadd_u_32(arr[4]),
       error: dco_decode_opt_box_autoadd_local_schema_error_dto(arr[5]),
+    );
+  }
+
+  @protected
+  McpServerLaunch dco_decode_mcp_server_launch(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return McpServerLaunch(
+      command: dco_decode_String(arr[0]),
+      leadingArgs: dco_decode_list_String(arr[1]),
+      exists: dco_decode_bool(arr[2]),
     );
   }
 
@@ -4426,6 +4534,50 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       connectedAddress: dco_decode_opt_String(arr[4]),
       hint: dco_decode_opt_box_autoadd_diagnosis_hint(arr[5]),
       raw: dco_decode_opt_String(arr[6]),
+    );
+  }
+
+  @protected
+  SharedProfileFailure dco_decode_shared_profile_failure(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return SharedProfileFailure(
+      name: dco_decode_String(arr[0]),
+      kind: dco_decode_shared_profile_failure_kind(arr[1]),
+    );
+  }
+
+  @protected
+  SharedProfileFailureKind dco_decode_shared_profile_failure_kind(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SharedProfileFailureKind.values[raw as int];
+  }
+
+  @protected
+  SharedProfilesSyncRequest dco_decode_shared_profiles_sync_request(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 1)
+      throw Exception('unexpected arr length: expect 1 but see ${arr.length}');
+    return SharedProfilesSyncRequest(
+      profiles: dco_decode_list_cluster_profile(arr[0]),
+    );
+  }
+
+  @protected
+  SharedProfilesSyncResult dco_decode_shared_profiles_sync_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return SharedProfilesSyncResult(
+      failed: dco_decode_list_shared_profile_failure(arr[0]),
+      fileError: dco_decode_opt_String(arr[1]),
+      filePath: dco_decode_String(arr[2]),
     );
   }
 
@@ -5320,6 +5472,14 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  SharedProfilesSyncRequest sse_decode_box_autoadd_shared_profiles_sync_request(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_shared_profiles_sync_request(deserializer));
+  }
+
+  @protected
   SizePercentiles sse_decode_box_autoadd_size_percentiles(
     SseDeserializer deserializer,
   ) {
@@ -5503,6 +5663,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     var var_environmentLabel = sse_decode_opt_String(deserializer);
     var var_environmentColor = sse_decode_opt_String(deserializer);
     var var_extraProperties = sse_decode_opt_String(deserializer);
+    var var_headlessShared = sse_decode_opt_box_autoadd_bool(deserializer);
     return ClusterProfile(
       name: var_name,
       bootstrapServers: var_bootstrapServers,
@@ -5529,6 +5690,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       environmentLabel: var_environmentLabel,
       environmentColor: var_environmentColor,
       extraProperties: var_extraProperties,
+      headlessShared: var_headlessShared,
     );
   }
 
@@ -6153,6 +6315,20 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  List<ClusterProfile> sse_decode_list_cluster_profile(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <ClusterProfile>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_cluster_profile(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<ConsumerGroupLag> sse_decode_list_consumer_group_lag(
     SseDeserializer deserializer,
   ) {
@@ -6531,6 +6707,20 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  List<SharedProfileFailure> sse_decode_list_shared_profile_failure(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <SharedProfileFailure>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_shared_profile_failure(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<SkippedClientProperty> sse_decode_list_skipped_client_property(
     SseDeserializer deserializer,
   ) {
@@ -6801,6 +6991,19 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       framing: var_framing,
       wireSchemaId: var_wireSchemaId,
       error: var_error,
+    );
+  }
+
+  @protected
+  McpServerLaunch sse_decode_mcp_server_launch(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_command = sse_decode_String(deserializer);
+    var var_leadingArgs = sse_decode_list_String(deserializer);
+    var var_exists = sse_decode_bool(deserializer);
+    return McpServerLaunch(
+      command: var_command,
+      leadingArgs: var_leadingArgs,
+      exists: var_exists,
     );
   }
 
@@ -7725,6 +7928,49 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
       connectedAddress: var_connectedAddress,
       hint: var_hint,
       raw: var_raw,
+    );
+  }
+
+  @protected
+  SharedProfileFailure sse_decode_shared_profile_failure(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_kind = sse_decode_shared_profile_failure_kind(deserializer);
+    return SharedProfileFailure(name: var_name, kind: var_kind);
+  }
+
+  @protected
+  SharedProfileFailureKind sse_decode_shared_profile_failure_kind(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return SharedProfileFailureKind.values[inner];
+  }
+
+  @protected
+  SharedProfilesSyncRequest sse_decode_shared_profiles_sync_request(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_profiles = sse_decode_list_cluster_profile(deserializer);
+    return SharedProfilesSyncRequest(profiles: var_profiles);
+  }
+
+  @protected
+  SharedProfilesSyncResult sse_decode_shared_profiles_sync_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_failed = sse_decode_list_shared_profile_failure(deserializer);
+    var var_fileError = sse_decode_opt_String(deserializer);
+    var var_filePath = sse_decode_String(deserializer);
+    return SharedProfilesSyncResult(
+      failed: var_failed,
+      fileError: var_fileError,
+      filePath: var_filePath,
     );
   }
 
@@ -8770,6 +9016,15 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_box_autoadd_shared_profiles_sync_request(
+    SharedProfilesSyncRequest self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_shared_profiles_sync_request(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_size_percentiles(
     SizePercentiles self,
     SseSerializer serializer,
@@ -8955,6 +9210,7 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_opt_String(self.environmentLabel, serializer);
     sse_encode_opt_String(self.environmentColor, serializer);
     sse_encode_opt_String(self.extraProperties, serializer);
+    sse_encode_opt_box_autoadd_bool(self.headlessShared, serializer);
   }
 
   @protected
@@ -9445,6 +9701,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_list_cluster_profile(
+    List<ClusterProfile> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_cluster_profile(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_consumer_group_lag(
     List<ConsumerGroupLag> self,
     SseSerializer serializer,
@@ -9799,6 +10067,18 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
   }
 
   @protected
+  void sse_encode_list_shared_profile_failure(
+    List<SharedProfileFailure> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_shared_profile_failure(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_skipped_client_property(
     List<SkippedClientProperty> self,
     SseSerializer serializer,
@@ -10023,6 +10303,17 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_framing_dto(self.framing, serializer);
     sse_encode_opt_box_autoadd_u_32(self.wireSchemaId, serializer);
     sse_encode_opt_box_autoadd_local_schema_error_dto(self.error, serializer);
+  }
+
+  @protected
+  void sse_encode_mcp_server_launch(
+    McpServerLaunch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.command, serializer);
+    sse_encode_list_String(self.leadingArgs, serializer);
+    sse_encode_bool(self.exists, serializer);
   }
 
   @protected
@@ -10845,6 +11136,45 @@ class KafkalyzerRustLibApiImpl extends KafkalyzerRustLibApiImplPlatform
     sse_encode_opt_String(self.connectedAddress, serializer);
     sse_encode_opt_box_autoadd_diagnosis_hint(self.hint, serializer);
     sse_encode_opt_String(self.raw, serializer);
+  }
+
+  @protected
+  void sse_encode_shared_profile_failure(
+    SharedProfileFailure self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_shared_profile_failure_kind(self.kind, serializer);
+  }
+
+  @protected
+  void sse_encode_shared_profile_failure_kind(
+    SharedProfileFailureKind self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_shared_profiles_sync_request(
+    SharedProfilesSyncRequest self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_cluster_profile(self.profiles, serializer);
+  }
+
+  @protected
+  void sse_encode_shared_profiles_sync_result(
+    SharedProfilesSyncResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_shared_profile_failure(self.failed, serializer);
+    sse_encode_opt_String(self.fileError, serializer);
+    sse_encode_String(self.filePath, serializer);
   }
 
   @protected

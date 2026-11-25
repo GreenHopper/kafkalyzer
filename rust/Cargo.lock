@@ -2085,10 +2085,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "kafkalyzer-keyring-spike"
+name = "kafkalyzer-profiles"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "kafkalyzer-core",
  "keyring",
+ "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3159,6 +3164,7 @@ dependencies = [
  "flutter_rust_bridge",
  "kafkalyzer-core",
  "kafkalyzer-kafka",
+ "kafkalyzer-profiles",
  "log",
  "regex",
  "serde",

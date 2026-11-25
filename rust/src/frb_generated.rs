@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1940193560;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2106193375;
 
 // Section: executor
 
@@ -1668,6 +1668,39 @@ fn wire__crate__api__local_schema__local_schema_mode_dto_default_impl(
         },
     )
 }
+fn wire__crate__api__headless_profiles__mcp_server_launch_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "mcp_server_launch",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::api::headless_profiles::mcp_server_launch())?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__kafka_utils__murmur2_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -2058,6 +2091,44 @@ fn wire__crate__api__json_path__serialize_cluster_profile_impl(
                         Ok(output_ok)
                     })(),
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__headless_profiles__sync_shared_profiles_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "sync_shared_profiles",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_request =
+                <crate::api::headless_profiles::SharedProfilesSyncRequest>::sse_decode(
+                    &mut deserializer,
+                );
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(
+                        crate::api::headless_profiles::sync_shared_profiles(api_request),
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -2682,6 +2753,7 @@ impl SseDecode for crate::api::kafka_types::ClusterProfile {
         let mut var_environmentLabel = <Option<String>>::sse_decode(deserializer);
         let mut var_environmentColor = <Option<String>>::sse_decode(deserializer);
         let mut var_extraProperties = <Option<String>>::sse_decode(deserializer);
+        let mut var_headlessShared = <Option<bool>>::sse_decode(deserializer);
         return crate::api::kafka_types::ClusterProfile {
             name: var_name,
             bootstrap_servers: var_bootstrapServers,
@@ -2708,6 +2780,7 @@ impl SseDecode for crate::api::kafka_types::ClusterProfile {
             environment_label: var_environmentLabel,
             environment_color: var_environmentColor,
             extra_properties: var_extraProperties,
+            headless_shared: var_headlessShared,
         };
     }
 }
@@ -3464,6 +3537,20 @@ impl SseDecode for Vec<crate::api::kafka_metadata::BrokerEndpoint> {
     }
 }
 
+impl SseDecode for Vec<crate::api::kafka_types::ClusterProfile> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::kafka_types::ClusterProfile>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::kafka_types::ConsumerGroupLag> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3848,6 +3935,20 @@ impl SseDecode for Vec<crate::api::connection_diagnostics::ServerCheck> {
     }
 }
 
+impl SseDecode for Vec<crate::api::headless_profiles::SharedProfileFailure> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = vec![];
+        for idx_ in 0..len_ {
+            ans_.push(
+                <crate::api::headless_profiles::SharedProfileFailure>::sse_decode(deserializer),
+            );
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::profile_tools::SkippedClientProperty> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -4135,6 +4236,20 @@ impl SseDecode for crate::api::local_schema::LocalSchemaUseDto {
             framing: var_framing,
             wire_schema_id: var_wireSchemaId,
             error: var_error,
+        };
+    }
+}
+
+impl SseDecode for crate::api::headless_profiles::McpServerLaunch {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_command = <String>::sse_decode(deserializer);
+        let mut var_leadingArgs = <Vec<String>>::sse_decode(deserializer);
+        let mut var_exists = <bool>::sse_decode(deserializer);
+        return crate::api::headless_profiles::McpServerLaunch {
+            command: var_command,
+            leading_args: var_leadingArgs,
+            exists: var_exists,
         };
     }
 }
@@ -5133,6 +5248,57 @@ impl SseDecode for crate::api::connection_diagnostics::ServerCheck {
     }
 }
 
+impl SseDecode for crate::api::headless_profiles::SharedProfileFailure {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_kind =
+            <crate::api::headless_profiles::SharedProfileFailureKind>::sse_decode(deserializer);
+        return crate::api::headless_profiles::SharedProfileFailure {
+            name: var_name,
+            kind: var_kind,
+        };
+    }
+}
+
+impl SseDecode for crate::api::headless_profiles::SharedProfileFailureKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::headless_profiles::SharedProfileFailureKind::KeyringUnavailable,
+            1 => crate::api::headless_profiles::SharedProfileFailureKind::SecretRejected,
+            _ => unreachable!("Invalid variant for SharedProfileFailureKind: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::headless_profiles::SharedProfilesSyncRequest {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_profiles =
+            <Vec<crate::api::kafka_types::ClusterProfile>>::sse_decode(deserializer);
+        return crate::api::headless_profiles::SharedProfilesSyncRequest {
+            profiles: var_profiles,
+        };
+    }
+}
+
+impl SseDecode for crate::api::headless_profiles::SharedProfilesSyncResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_failed =
+            <Vec<crate::api::headless_profiles::SharedProfileFailure>>::sse_decode(deserializer);
+        let mut var_fileError = <Option<String>>::sse_decode(deserializer);
+        let mut var_filePath = <String>::sse_decode(deserializer);
+        return crate::api::headless_profiles::SharedProfilesSyncResult {
+            failed: var_failed,
+            file_error: var_fileError,
+            file_path: var_filePath,
+        };
+    }
+}
+
 impl SseDecode for crate::api::kafka_types::SizePercentiles {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -6071,84 +6237,96 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        43 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
-        44 => wire__crate__api__profile_tools__parse_client_properties_impl(
+        43 => wire__crate__api__headless_profiles__mcp_server_launch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        46 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
+        44 => wire__crate__api__kafka_utils__murmur2_impl(port, ptr, rust_vec_len, data_len),
+        45 => wire__crate__api__profile_tools__parse_client_properties_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        47 => wire__crate__api__kafka_utils__predict_default_partition_impl(
+        47 => wire__crate__api__kafka_types__partition_lag_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        48 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
+        48 => wire__crate__api__kafka_utils__predict_default_partition_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        49 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+        49 => wire__crate__api__kafka_metadata__probe_tls_verification_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        50 => {
+        50 => wire__crate__api__schema_registry__resolve_associated_topics_for_subject_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        51 => {
             wire__crate__api__json_path__resolve_json_path_impl(port, ptr, rust_vec_len, data_len)
         }
-        51 => wire__crate__api__json_path__resolve_json_path_batch_impl(
+        52 => wire__crate__api__json_path__resolve_json_path_batch_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        52 => wire__crate__api__kafka_types__scope_limit_from_default_impl(
+        53 => wire__crate__api__kafka_types__scope_limit_from_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        53 => wire__crate__api__json_path__serialize_cluster_profile_impl(
+        54 => wire__crate__api__json_path__serialize_cluster_profile_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        54 => wire__crate__api__kafka_types__tls_verification_default_impl(
+        55 => wire__crate__api__headless_profiles__sync_shared_profiles_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        55 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
-        56 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
+        56 => wire__crate__api__kafka_types__tls_verification_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        57 => wire__crate__api__local_schema__topic_local_schemas_dto_default_impl(
+        57 => wire__crate__api__kafka_utils__to_positive_impl(port, ptr, rust_vec_len, data_len),
+        58 => wire__crate__api__kafka_types__topic_analysis_options_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        59 => wire__crate__api__kafka_metadata__validate_connection_impl(
+        59 => wire__crate__api__local_schema__topic_local_schemas_dto_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        61 => wire__crate__api__json_path__validate_filter_patterns_impl(
+        61 => wire__crate__api__kafka_metadata__validate_connection_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        63 => wire__crate__api__json_path__validate_filter_patterns_impl(
             port,
             ptr,
             rust_vec_len,
@@ -6181,15 +6359,15 @@ fn pde_ffi_dispatcher_sync_impl(
             rust_vec_len,
             data_len,
         ),
-        45 => {
+        46 => {
             wire__crate__api__filter_expr__parse_filter_expression_impl(ptr, rust_vec_len, data_len)
         }
-        58 => wire__crate__api__profile_tools__validate_bootstrap_servers_impl(
+        60 => wire__crate__api__profile_tools__validate_bootstrap_servers_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        60 => wire__crate__api__profile_tools__validate_extra_properties_impl(
+        62 => wire__crate__api__profile_tools__validate_extra_properties_impl(
             ptr,
             rust_vec_len,
             data_len,
@@ -6574,6 +6752,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::kafka_types::ClusterProfile {
             self.environment_label.into_into_dart().into_dart(),
             self.environment_color.into_into_dart().into_dart(),
             self.extra_properties.into_into_dart().into_dart(),
+            self.headless_shared.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -7662,6 +7841,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::local_schema::LocalSchemaUseD
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::headless_profiles::McpServerLaunch {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.command.into_into_dart().into_dart(),
+            self.leading_args.into_into_dart().into_dart(),
+            self.exists.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::headless_profiles::McpServerLaunch
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::headless_profiles::McpServerLaunch>
+    for crate::api::headless_profiles::McpServerLaunch
+{
+    fn into_into_dart(self) -> crate::api::headless_profiles::McpServerLaunch {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::kafka_consumer::MessageSchema {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -8327,6 +8528,87 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::connection_diagnostics::Serve
     for crate::api::connection_diagnostics::ServerCheck
 {
     fn into_into_dart(self) -> crate::api::connection_diagnostics::ServerCheck {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::headless_profiles::SharedProfileFailure {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::headless_profiles::SharedProfileFailure
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::headless_profiles::SharedProfileFailure>
+    for crate::api::headless_profiles::SharedProfileFailure
+{
+    fn into_into_dart(self) -> crate::api::headless_profiles::SharedProfileFailure {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::headless_profiles::SharedProfileFailureKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::KeyringUnavailable => 0.into_dart(),
+            Self::SecretRejected => 1.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::headless_profiles::SharedProfileFailureKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::headless_profiles::SharedProfileFailureKind>
+    for crate::api::headless_profiles::SharedProfileFailureKind
+{
+    fn into_into_dart(self) -> crate::api::headless_profiles::SharedProfileFailureKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::headless_profiles::SharedProfilesSyncRequest {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [self.profiles.into_into_dart().into_dart()].into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::headless_profiles::SharedProfilesSyncRequest
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::headless_profiles::SharedProfilesSyncRequest>
+    for crate::api::headless_profiles::SharedProfilesSyncRequest
+{
+    fn into_into_dart(self) -> crate::api::headless_profiles::SharedProfilesSyncRequest {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::headless_profiles::SharedProfilesSyncResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.failed.into_into_dart().into_dart(),
+            self.file_error.into_into_dart().into_dart(),
+            self.file_path.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::headless_profiles::SharedProfilesSyncResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::headless_profiles::SharedProfilesSyncResult>
+    for crate::api::headless_profiles::SharedProfilesSyncResult
+{
+    fn into_into_dart(self) -> crate::api::headless_profiles::SharedProfilesSyncResult {
         self
     }
 }
@@ -9518,6 +9800,7 @@ impl SseEncode for crate::api::kafka_types::ClusterProfile {
         <Option<String>>::sse_encode(self.environment_label, serializer);
         <Option<String>>::sse_encode(self.environment_color, serializer);
         <Option<String>>::sse_encode(self.extra_properties, serializer);
+        <Option<bool>>::sse_encode(self.headless_shared, serializer);
     }
 }
 
@@ -10165,6 +10448,16 @@ impl SseEncode for Vec<crate::api::kafka_metadata::BrokerEndpoint> {
     }
 }
 
+impl SseEncode for Vec<crate::api::kafka_types::ClusterProfile> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::kafka_types::ClusterProfile>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::kafka_types::ConsumerGroupLag> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -10455,6 +10748,16 @@ impl SseEncode for Vec<crate::api::connection_diagnostics::ServerCheck> {
     }
 }
 
+impl SseEncode for Vec<crate::api::headless_profiles::SharedProfileFailure> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::headless_profiles::SharedProfileFailure>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::profile_tools::SkippedClientProperty> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -10683,6 +10986,15 @@ impl SseEncode for crate::api::local_schema::LocalSchemaUseDto {
         <crate::api::local_schema::FramingDto>::sse_encode(self.framing, serializer);
         <Option<u32>>::sse_encode(self.wire_schema_id, serializer);
         <Option<crate::api::local_schema::LocalSchemaErrorDto>>::sse_encode(self.error, serializer);
+    }
+}
+
+impl SseEncode for crate::api::headless_profiles::McpServerLaunch {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.command, serializer);
+        <Vec<String>>::sse_encode(self.leading_args, serializer);
+        <bool>::sse_encode(self.exists, serializer);
     }
 }
 
@@ -11498,6 +11810,51 @@ impl SseEncode for crate::api::connection_diagnostics::ServerCheck {
             self.hint, serializer,
         );
         <Option<String>>::sse_encode(self.raw, serializer);
+    }
+}
+
+impl SseEncode for crate::api::headless_profiles::SharedProfileFailure {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <crate::api::headless_profiles::SharedProfileFailureKind>::sse_encode(
+            self.kind, serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::headless_profiles::SharedProfileFailureKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::headless_profiles::SharedProfileFailureKind::KeyringUnavailable => 0,
+                crate::api::headless_profiles::SharedProfileFailureKind::SecretRejected => 1,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::headless_profiles::SharedProfilesSyncRequest {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<crate::api::kafka_types::ClusterProfile>>::sse_encode(self.profiles, serializer);
+    }
+}
+
+impl SseEncode for crate::api::headless_profiles::SharedProfilesSyncResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<crate::api::headless_profiles::SharedProfileFailure>>::sse_encode(
+            self.failed,
+            serializer,
+        );
+        <Option<String>>::sse_encode(self.file_error, serializer);
+        <String>::sse_encode(self.file_path, serializer);
     }
 }
 

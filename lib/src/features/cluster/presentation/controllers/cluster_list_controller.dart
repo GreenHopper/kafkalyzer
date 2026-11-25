@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 import 'dart:convert';
 import 'package:archive/archive.dart';
@@ -21,6 +22,15 @@ class ClusterListController extends ChangeNotifier {
   List<ClusterProfile> get clusters => _clusters;
   bool get isLoading => _isLoading;
   StoreStatus get storeStatus => _clusterService.storeStatus;
+  ValueNotifier<SharedProfilesStatus> get sharedProfilesStatus =>
+      _clusterService.sharedProfilesStatus;
+
+  /// Re-runs the shared-profiles sync by saving the current in-memory list.
+  Future<void> retrySharedProfilesSync() async {
+    _requireReadableStore();
+    await _clusterService.saveClusters(_clusters);
+    notifyListeners();
+  }
 
   ClusterListController() {
     loadClusters();

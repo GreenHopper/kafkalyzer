@@ -1,10 +1,34 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kafkalyzer/src/dependency_injection.dart';
+import 'package:kafkalyzer/src/rust/api/headless_profiles.dart';
 import 'package:kafkalyzer/src/rust/api/json_path.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/services/secure_storage_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
+
+const Object _copyWithUnset = Object();
+
+/// Outcome of syncing shared profiles to the headless allowlist file/keyring.
+class SharedProfilesStatus {
+  const SharedProfilesStatus.ok()
+    : failed = const [],
+      fileError = null,
+      bridgeError = null;
+
+  const SharedProfilesStatus.failed({
+    this.failed = const [],
+    this.fileError,
+    this.bridgeError,
+  });
+
+  final List<SharedProfileFailure> failed;
+  final String? fileError;
+  final String? bridgeError;
+
+  bool get isOk => failed.isEmpty && fileError == null && bridgeError == null;
+}
 
 /// Normalises a cluster profile name for case- and whitespace-insensitive
 /// uniqueness comparisons.
@@ -89,7 +113,9 @@ Future<MergeImportResult?> mergeImportedProfiles(
   var renamedCount = 0;
   var skippedCount = 0;
 
-  for (final item in imported) {
+  for (final raw in imported) {
+    // Imports never carry sharing state across machines (design D5).
+    final item = raw.copyWith(headlessShared: null);
     final norm = normalizeProfileName(item.name);
     final existingIdx = merged.indexWhere(
       (c) => normalizeProfileName(c.name) == norm,
@@ -139,6 +165,10 @@ class ClusterService {
   List<dynamic> _rawUnreadable = const [];
   String? _backupWrittenForRaw;
   String? _lastBackupPath;
+
+  /// Latest headless shared-profiles sync result for the UI.
+  final ValueNotifier<SharedProfilesStatus> sharedProfilesStatus =
+      ValueNotifier(const SharedProfilesStatus.ok());
 
   StoreStatus get storeStatus => _storeStatus;
 
@@ -203,6 +233,28 @@ class ClusterService {
     _backupWrittenForRaw = null;
     _lastBackupPath = null;
     _storeStatus = const StoreStatus.ok();
+    await _syncSharedProfiles(const []);
+  }
+
+  Future<void> _syncSharedProfiles(List<ClusterProfile> clusters) async {
+    try {
+      final result = await syncSharedProfiles(
+        request: SharedProfilesSyncRequest(profiles: clusters),
+      );
+      if (result.failed.isEmpty &&
+          (result.fileError == null || result.fileError!.isEmpty)) {
+        sharedProfilesStatus.value = const SharedProfilesStatus.ok();
+      } else {
+        sharedProfilesStatus.value = SharedProfilesStatus.failed(
+          failed: result.failed,
+          fileError: result.fileError,
+        );
+      }
+    } catch (e) {
+      sharedProfilesStatus.value = SharedProfilesStatus.failed(
+        bridgeError: e.toString(),
+      );
+    }
   }
 
   Future<List<ClusterProfile>> loadClusters() async {
@@ -355,6 +407,7 @@ class ClusterService {
     }
 
     _updateStatus(clusters, _rawUnreadable);
+    await _syncSharedProfiles(clusters);
     return allWritesOk;
   }
 }
@@ -387,6 +440,7 @@ extension ClusterProfileExtension on ClusterProfile {
       environmentLabel: environmentLabel,
       environmentColor: environmentColor,
       extraProperties: extraProperties,
+      headlessShared: headlessShared,
     );
   }
 
@@ -421,6 +475,7 @@ extension ClusterProfileExtension on ClusterProfile {
       environmentLabel: environmentLabel,
       environmentColor: environmentColor,
       extraProperties: extraProperties,
+      headlessShared: headlessShared,
     );
   }
 
@@ -450,6 +505,7 @@ extension ClusterProfileExtension on ClusterProfile {
     String? environmentLabel,
     String? environmentColor,
     String? extraProperties,
+    Object? headlessShared = _copyWithUnset,
   }) {
     return ClusterProfile(
       name: name ?? this.name,
@@ -484,6 +540,9 @@ extension ClusterProfileExtension on ClusterProfile {
       environmentLabel: environmentLabel ?? this.environmentLabel,
       environmentColor: environmentColor ?? this.environmentColor,
       extraProperties: extraProperties ?? this.extraProperties,
+      headlessShared: identical(headlessShared, _copyWithUnset)
+          ? this.headlessShared
+          : headlessShared as bool?,
     );
   }
 }

@@ -10,6 +10,7 @@ import 'api.dart';
 import 'api/connection_diagnostics.dart';
 import 'api/diagnostics.dart';
 import 'api/filter_expr.dart';
+import 'api/headless_profiles.dart';
 import 'api/json_diff.dart';
 import 'api/json_path.dart';
 import 'api/kafka_analyzer.dart';
@@ -196,6 +197,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   SchemaFieldModelDto dco_decode_box_autoadd_schema_field_model_dto(
+    dynamic raw,
+  );
+
+  @protected
+  SharedProfilesSyncRequest dco_decode_box_autoadd_shared_profiles_sync_request(
     dynamic raw,
   );
 
@@ -399,6 +405,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<BrokerEndpoint> dco_decode_list_broker_endpoint(dynamic raw);
 
   @protected
+  List<ClusterProfile> dco_decode_list_cluster_profile(dynamic raw);
+
+  @protected
   List<ConsumerGroupLag> dco_decode_list_consumer_group_lag(dynamic raw);
 
   @protected
@@ -495,6 +504,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<ServerCheck> dco_decode_list_server_check(dynamic raw);
 
   @protected
+  List<SharedProfileFailure> dco_decode_list_shared_profile_failure(
+    dynamic raw,
+  );
+
+  @protected
   List<SkippedClientProperty> dco_decode_list_skipped_client_property(
     dynamic raw,
   );
@@ -556,6 +570,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   LocalSchemaUseDto dco_decode_local_schema_use_dto(dynamic raw);
+
+  @protected
+  McpServerLaunch dco_decode_mcp_server_launch(dynamic raw);
 
   @protected
   MessageSchema dco_decode_message_schema(dynamic raw);
@@ -804,6 +821,20 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   ServerCheck dco_decode_server_check(dynamic raw);
+
+  @protected
+  SharedProfileFailure dco_decode_shared_profile_failure(dynamic raw);
+
+  @protected
+  SharedProfileFailureKind dco_decode_shared_profile_failure_kind(dynamic raw);
+
+  @protected
+  SharedProfilesSyncRequest dco_decode_shared_profiles_sync_request(
+    dynamic raw,
+  );
+
+  @protected
+  SharedProfilesSyncResult dco_decode_shared_profiles_sync_result(dynamic raw);
 
   @protected
   SizePercentiles dco_decode_size_percentiles(dynamic raw);
@@ -1135,6 +1166,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  SharedProfilesSyncRequest sse_decode_box_autoadd_shared_profiles_sync_request(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SizePercentiles sse_decode_box_autoadd_size_percentiles(
     SseDeserializer deserializer,
   );
@@ -1378,6 +1414,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  List<ClusterProfile> sse_decode_list_cluster_profile(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<ConsumerGroupLag> sse_decode_list_consumer_group_lag(
     SseDeserializer deserializer,
   );
@@ -1506,6 +1547,11 @@ abstract class KafkalyzerRustLibApiImplPlatform
   List<ServerCheck> sse_decode_list_server_check(SseDeserializer deserializer);
 
   @protected
+  List<SharedProfileFailure> sse_decode_list_shared_profile_failure(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<SkippedClientProperty> sse_decode_list_skipped_client_property(
     SseDeserializer deserializer,
   );
@@ -1595,6 +1641,9 @@ abstract class KafkalyzerRustLibApiImplPlatform
   LocalSchemaUseDto sse_decode_local_schema_use_dto(
     SseDeserializer deserializer,
   );
+
+  @protected
+  McpServerLaunch sse_decode_mcp_server_launch(SseDeserializer deserializer);
 
   @protected
   MessageSchema sse_decode_message_schema(SseDeserializer deserializer);
@@ -1893,6 +1942,26 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   ServerCheck sse_decode_server_check(SseDeserializer deserializer);
+
+  @protected
+  SharedProfileFailure sse_decode_shared_profile_failure(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SharedProfileFailureKind sse_decode_shared_profile_failure_kind(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SharedProfilesSyncRequest sse_decode_shared_profiles_sync_request(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SharedProfilesSyncResult sse_decode_shared_profiles_sync_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   SizePercentiles sse_decode_size_percentiles(SseDeserializer deserializer);
@@ -2307,6 +2376,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_box_autoadd_shared_profiles_sync_request(
+    SharedProfilesSyncRequest self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_size_percentiles(
     SizePercentiles self,
     SseSerializer serializer,
@@ -2625,6 +2700,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_cluster_profile(
+    List<ClusterProfile> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_consumer_group_lag(
     List<ConsumerGroupLag> self,
     SseSerializer serializer,
@@ -2799,6 +2880,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   );
 
   @protected
+  void sse_encode_list_shared_profile_failure(
+    List<SharedProfileFailure> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_skipped_client_property(
     List<SkippedClientProperty> self,
     SseSerializer serializer,
@@ -2909,6 +2996,12 @@ abstract class KafkalyzerRustLibApiImplPlatform
   @protected
   void sse_encode_local_schema_use_dto(
     LocalSchemaUseDto self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_mcp_server_launch(
+    McpServerLaunch self,
     SseSerializer serializer,
   );
 
@@ -3280,6 +3373,30 @@ abstract class KafkalyzerRustLibApiImplPlatform
 
   @protected
   void sse_encode_server_check(ServerCheck self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_shared_profile_failure(
+    SharedProfileFailure self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_shared_profile_failure_kind(
+    SharedProfileFailureKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_shared_profiles_sync_request(
+    SharedProfilesSyncRequest self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_shared_profiles_sync_result(
+    SharedProfilesSyncResult self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_size_percentiles(
