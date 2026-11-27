@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Start the compose kafka broker, seed broker-test fixtures, run ignored
-# kafkalyzer-kafka tests, and prove the tests left fixture data unchanged.
+# kafkalyzer-kafka and kafkalyzer-mcp tests, and prove the tests left fixture
+# data unchanged.
 #
 # Usage: bash scripts/kafka_integration_tests.sh
 # Also sourcable for negative checks (snapshot helpers).
@@ -212,10 +213,31 @@ kafka_it_seed_lag_spike_g() {
   fi
 }
 
+kafka_it_seed_spike_oversize_33k() {
+  # One UTF-8 record above the 32 KB MCP text ceiling (task mcp-stdio-server 2.4).
+  kafka_it_ensure_topic "spike-oversize-33k" 1
+  kafka_it_check_partition_count "spike-oversize-33k" 1
+  local offsets
+  offsets="$(kafka_it_end_offsets "spike-oversize-33k" | tr '\n' ' ')"
+  if [[ "$offsets" != "0:1 " ]]; then
+    if [[ "$offsets" == "0:0 " || -z "${offsets// }" ]]; then
+      # 33000 ASCII bytes — must be text so the consumer keeps a String payload.
+      python3 -c 'print("x" * 33000, end="")' | kafka_it_exec_i kafka-console-producer \
+        --bootstrap-server "$KAFKA_IT_BOOTSTRAP" \
+        --topic spike-oversize-33k >/dev/null
+      offsets="$(kafka_it_end_offsets "spike-oversize-33k" | tr '\n' ' ')"
+    fi
+  fi
+  if [[ "$offsets" != "0:1 " ]]; then
+    kafka_it_shape_fail "spike-oversize-33k" "expected end offset 0:1, got '${offsets:-unknown}'"
+  fi
+}
+
 kafka_it_seed_and_check() {
   kafka_it_seed_spike_t_000
   kafka_it_seed_spike_offset_dist_60p
   kafka_it_seed_spike_tx_12
+  kafka_it_seed_spike_oversize_33k
   kafka_it_seed_lag_spike
   kafka_it_seed_lag_spike_g
 }
@@ -226,7 +248,7 @@ kafka_it_write_snapshot() {
   tmp="$(mktemp)"
   {
     local t
-    for t in spike-t-000 spike-offset-dist-60p spike-tx-12 lag-spike; do
+    for t in spike-t-000 spike-offset-dist-60p spike-tx-12 spike-oversize-33k lag-spike; do
       echo "offsets:$t"
       if ! kafka_it_kafka kafka-get-offsets --topic "$t" >"$tmp" 2>"$tmp.err"; then
         err="$(tr '\n' ' ' <"$tmp.err" 2>/dev/null || true)"
@@ -296,7 +318,8 @@ kafka_it_compare_snapshots() {
 }
 
 kafka_it_run_tests() {
-  cargo test --manifest-path "$KAFKA_IT_ROOT/rust/Cargo.toml" -p kafkalyzer-kafka -- --ignored
+  cargo test --manifest-path "$KAFKA_IT_ROOT/rust/Cargo.toml" \
+    -p kafkalyzer-kafka -p kafkalyzer-mcp -- --ignored
 }
 
 main() {

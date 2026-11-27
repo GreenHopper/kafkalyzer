@@ -249,6 +249,13 @@ if [ ! -f "$EXECUTABLE" ]; then
   exit 1
 fi
 
+info "Placing kafkalyzer-mcp next to the release bundle..."
+"$REPO_ROOT/scripts/ensure_mcp_sidecar.sh" --release
+if [ ! -x "$BUNDLE_DIR/kafkalyzer-mcp" ]; then
+  error "MCP sidecar missing after ensure_mcp_sidecar.sh: $BUNDLE_DIR/kafkalyzer-mcp"
+  exit 1
+fi
+
 success "Linux release binary successfully built at: $EXECUTABLE"
 
 # 5. Optional Velopack Packaging

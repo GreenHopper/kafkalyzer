@@ -69,6 +69,60 @@ kafka-acls.sh --bootstrap-server <bootstrap:9092> \
 > [!TIP]
 > Do **NOT** grant `Write`, `AlterConfigs`, `Alter`, or `IdempotentWrite` permissions. They are never required by kafkalyzer.
 
+## MCP server
+
+Release packages ship a side-by-side `kafkalyzer-mcp` binary (stdio). The GUI only decides which profiles are shared and shows a client snippet; it does not host the server.
+
+### Connect a client
+
+1. In the app, enable **Share with MCP** for a cluster and copy the snippet.
+2. Paste it into your MCP client config. Shape:
+
+```json
+{
+  "mcpServers": {
+    "kafkalyzer": {
+      "command": "/path/to/kafkalyzer-mcp",
+      "args": ["--cluster", "my-cluster"]
+    }
+  }
+}
+```
+
+On Linux AppImage installs the command is the AppImage itself with a leading `--mcp` arg (the `AppRun` execs `usr/bin/kafkalyzer-mcp`). macOS / Windows use `kafkalyzer-mcp` next to the app executable.
+
+On Linux, `flutter run` / `flutter build linux` place the sidecar via `linux/CMakeLists.txt` (calls `scripts/ensure_mcp_sidecar.sh`). `./scripts/build_linux.sh` does the same for release. On macOS/Windows, run `./scripts/ensure_mcp_sidecar.sh` (add `--release` for release) after a desktop build until those packagers gain the same hook.
+
+### Prerequisites
+
+- **Read-only service account** on the broker (same ACL set as above). The server never produces, commits, or mutates topics/groups/schemas.
+- **Shared profiles**: only clusters marked shared in the app appear. Secrets stay in the OS keyring under the `kafkalyzer-shared-profiles` service name; the MCP process must be allowed to read them (macOS Keychain may prompt once; Windows Credential Manager is silent for the same user; Linux Secret Service needs the session bus — `kafkalyzer-mcp` restores the default `/run/user/<uid>/bus` when MCP clients strip `DBUS_SESSION_BUS_ADDRESS`).
+
+### Data flow
+
+Every tool description states that returned data becomes part of the conversation and is therefore sent to the provider of the client's language model. Do not share clusters whose payloads you would not paste into a chat.
+
+### Tools and limits
+
+| Tool | Role |
+| --- | --- |
+| `kafka_list_clusters` | Shared clusters (non-secret metadata) |
+| `kafka_test_connection` | Broker reachability |
+| `kafka_list_topics` | Topics (optional name filter) |
+| `kafka_list_consumer_groups` | Consumer groups |
+| `kafka_get_consumer_lag` | Per-partition lag |
+| `kafka_calculate_partition` | Default partitioner assignment |
+| `kafka_consume_messages` | Read messages from one topic |
+| `kafka_search_messages` | Filter across topics |
+| `kafka_inspect_lagging_message` | Next unprocessed message for a group/partition |
+| `kafka_analyze_topic` | Content analysis |
+| `kafka_list_schemas` / `kafka_get_schema` | Schema Registry subjects / schema text |
+
+Defaults (ceilings): 20 returned messages (100), 10 000 analysed (100 000), 15 s (60 s), 4 096 B text (32 768 B), 65 536 B schema, 500 list entries, 5 search topics, 1 MB result, 2 parallel calls. Requests above a ceiling are reduced, not rejected.
+
+### Verification
+
+Manual acceptance (roadmap §6.4 phase 4): Linux debug bundle + MCP Inspector against a shared DEV cluster whose broker credentials are limited to read/describe — tool list, consume/analyze under default limits, and “not available” after unshare all succeeded (2026-11-27).
 
 ## ✨ Key Features
 

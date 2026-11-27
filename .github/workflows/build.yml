@@ -152,7 +152,8 @@ jobs:
     name: Build Linux
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    # mcp-stdio-server spike 1.1: temporarily always run so rmcp builds on PRs
+    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -201,6 +202,13 @@ jobs:
       - name: Build Linux app
         run: flutter build linux --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
+      - name: Build kafkalyzer-mcp
+        env:
+          KAFKALYZER_VERSION: ${{ env.VERSION }}
+        run: |
+          cargo build --release --manifest-path rust/Cargo.toml -p kafkalyzer-mcp
+          test -f rust/target/release/kafkalyzer-mcp
+
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
 
@@ -216,6 +224,8 @@ jobs:
           mkdir -p "$APPDIR/usr/share/icons/hicolor/scalable/apps"
 
           cp -a build/linux/x64/release/bundle/. "$APPDIR/usr/bin/"
+          cp rust/target/release/kafkalyzer-mcp "$APPDIR/usr/bin/kafkalyzer-mcp"
+          test -x "$APPDIR/usr/bin/kafkalyzer-mcp"
           cp assets/logo.png "$APPDIR/Kafkalyzer.png"
           cp assets/logo.png "$APPDIR/.DirIcon"
           cp assets/logo.png "$APPDIR/usr/share/icons/hicolor/scalable/apps/Kafkalyzer.png"
@@ -247,6 +257,10 @@ jobs:
           fi
           HERE="$(dirname "$(readlink -f "${0}")")"
           export PATH="${HERE}"/usr/bin/:"${PATH}"
+          if [ "$1" = "--mcp" ]; then
+              shift
+              exec "${HERE}/usr/bin/kafkalyzer-mcp" "$@"
+          fi
           EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2 | cut -d " " -f 1 | sed 's/\\s/ /g')
           exec "${EXEC}" "$@"
           EOF
@@ -264,7 +278,8 @@ jobs:
     name: Build macOS
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: macos-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    # mcp-stdio-server spike 1.1: temporarily always run so rmcp builds on PRs
+    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -337,6 +352,34 @@ jobs:
       - name: Build macOS app
         run: flutter build macos --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
+      - name: Build kafkalyzer-mcp
+        env:
+          KAFKALYZER_VERSION: ${{ env.VERSION }}
+        run: |
+          # Match the packaged app's arch set (spike 1.3 / design D8).
+          APP_BIN="build/macos/Build/Products/Release/kafkalyzer.app/Contents/MacOS/kafkalyzer"
+          ARCHS="$(lipo -archs "$APP_BIN")"
+          echo "app archs: $ARCHS"
+          OUT_DIR="rust/target/mcp-macos"
+          mkdir -p "$OUT_DIR"
+          BINS=()
+          for arch in $ARCHS; do
+            case "$arch" in
+              x86_64) target=x86_64-apple-darwin ;;
+              arm64) target=aarch64-apple-darwin ;;
+              *) echo "unsupported arch $arch"; exit 1 ;;
+            esac
+            cargo build --release --manifest-path rust/Cargo.toml -p kafkalyzer-mcp --target "$target"
+            BINS+=("rust/target/$target/release/kafkalyzer-mcp")
+          done
+          if [ "${#BINS[@]}" -eq 1 ]; then
+            cp "${BINS[0]}" "$OUT_DIR/kafkalyzer-mcp"
+          else
+            lipo -create "${BINS[@]}" -output "$OUT_DIR/kafkalyzer-mcp"
+          fi
+          test -f "$OUT_DIR/kafkalyzer-mcp"
+          lipo -archs "$OUT_DIR/kafkalyzer-mcp"
+
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
 
@@ -345,6 +388,11 @@ jobs:
           if [ -f changelog.md ]; then
             cp changelog.md build/macos/Build/Products/Release/kafkalyzer.app/Contents/Resources/ || true
           fi
+
+          MCP_SRC="rust/target/mcp-macos/kafkalyzer-mcp"
+          MCP_DST="build/macos/Build/Products/Release/kafkalyzer.app/Contents/MacOS/kafkalyzer-mcp"
+          cp "$MCP_SRC" "$MCP_DST"
+          test -x "$MCP_DST"
 
           # Standard-Pack-Befehl OHNE Signierung
           vpk pack -u Kafkalyzer --packTitle "Kafkalyzer" -v ${{ env.VERSION }} -p build/macos/Build/Products/Release/kafkalyzer.app -o velopack_release
@@ -366,7 +414,8 @@ jobs:
     name: Build Windows
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: windows-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    # mcp-stdio-server spike 1.1: temporarily always run so rmcp builds on PRs
+    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -444,6 +493,16 @@ jobs:
       - name: Build Windows app
         run: flutter build windows --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
+      - name: Build kafkalyzer-mcp
+        env:
+          KAFKALYZER_VERSION: ${{ env.VERSION }}
+        shell: pwsh
+        run: |
+          cargo build --release --manifest-path rust/Cargo.toml -p kafkalyzer-mcp
+          if (-not (Test-Path "rust/target/release/kafkalyzer-mcp.exe")) {
+            throw "kafkalyzer-mcp.exe missing after release build"
+          }
+
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
 
@@ -470,6 +529,11 @@ jobs:
           Copy-Item "assets/cacert.pem" -Destination "$releaseDir/cacert.pem" -Force
           if (Test-Path "changelog.md") {
             Copy-Item "changelog.md" "$releaseDir/" -Force
+          }
+
+          Copy-Item "rust/target/release/kafkalyzer-mcp.exe" -Destination "$releaseDir/kafkalyzer-mcp.exe" -Force
+          if (-not (Test-Path "$releaseDir/kafkalyzer-mcp.exe")) {
+            throw "kafkalyzer-mcp.exe missing next to the app executable"
           }
 
           vpk pack -u Kafkalyzer --packTitle "Kafkalyzer" -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe --icon windows/runner/resources/app_icon.ico -o velopack_release

@@ -12,7 +12,8 @@ members = [
     ".",
     "kafkalyzer-core",
     "kafkalyzer-kafka",
-    "kafkalyzer-profiles"
+    "kafkalyzer-profiles",
+    "kafkalyzer-mcp",
 ]
 
 [dependencies]
