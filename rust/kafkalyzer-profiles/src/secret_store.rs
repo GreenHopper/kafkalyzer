@@ -37,10 +37,7 @@ pub fn ensure_linux_session_bus() {
         return;
     }
     // shortcut: only the default user bus path; custom bus addresses need the client to pass env.
-    std::env::set_var(
-        "DBUS_SESSION_BUS_ADDRESS",
-        format!("unix:path={bus_path}"),
-    );
+    std::env::set_var("DBUS_SESSION_BUS_ADDRESS", format!("unix:path={bus_path}"));
     if std::env::var_os("XDG_RUNTIME_DIR").is_none() {
         std::env::set_var("XDG_RUNTIME_DIR", runtime);
     }
