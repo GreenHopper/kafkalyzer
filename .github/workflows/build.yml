@@ -360,6 +360,8 @@ jobs:
           APP_BIN="build/macos/Build/Products/Release/kafkalyzer.app/Contents/MacOS/kafkalyzer"
           ARCHS="$(lipo -archs "$APP_BIN")"
           echo "app archs: $ARCHS"
+          # arm64-only policy: fail here instead of in a krb5 cross-compile.
+          if [ "$ARCHS" != arm64 ]; then echo "not arm64: $ARCHS"; exit 1; fi
           OUT_DIR="rust/target/mcp-macos"
           mkdir -p "$OUT_DIR"
           BINS=()

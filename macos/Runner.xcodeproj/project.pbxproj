@@ -598,8 +598,9 @@
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				// shortcut: arm64 only - GitHub has no Intel macOS runners.
-				ONLY_ACTIVE_ARCH = YES;
+				// arm64 only: no Intel macOS runners, and krb5-src cannot
+				// cross-compile x86_64. Flutter forwards this to xcodebuild.
+				EXCLUDED_ARCHS = x86_64;
 			};
 			name = Release;
 		};
