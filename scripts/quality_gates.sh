@@ -483,6 +483,9 @@ check_generated_bindings() {
     [ -n "$path" ] || continue
     if git ls-files --error-unmatch -- "$path" >/dev/null 2>&1; then
       echo "bindings guard: $path differs from generator output" >&2
+      # The generator is deterministic for a given checkout, so a CI-only
+      # difference is only debuggable with the diff itself in the job log.
+      git diff --unified=1 -- "$path" | head -40 >&2
     else
       echo "bindings guard: $path is generated but not checked in" >&2
     fi
