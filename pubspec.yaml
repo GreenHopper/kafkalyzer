@@ -57,7 +57,7 @@ dependencies:
   timelines_plus: ^2.0.0
   json_explorer: ^0.1.2
   archive: ^4.0.7
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^10.3.4
   path_provider: ^2.1.2
   url_launcher: ^6.3.2
   path: ^1.9.1
