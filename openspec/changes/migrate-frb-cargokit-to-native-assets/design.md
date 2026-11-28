@@ -76,9 +76,11 @@ The builder uses `--target-dir <hook output>/target`, i.e. not `rust/target`, so
 (`build/windows/x64/plugins/rust_lib_kafkalyzer/cargokit_build`,
 `build/macos/Build/Intermediates.noindex/Pods.build/Release/rust_lib_kafkalyzer.build`) cache a directory that stops
 existing. A discovery step records the real path locally and in CI, and the cache key becomes
-`os + flutter version + toolchain channel + rust/Cargo.lock hash`. The temporary Windows pre-build step
+`os + hash of rust/Cargo.lock + hash of rust/rust-toolchain.toml` with `restore-keys`, so a near miss still helps while
+cargo's own fingerprints stop a restored entry from skipping changed code. The temporary Windows pre-build step
 (`cargo build --release -p rust_lib_kafkalyzer` before `flutter build windows`) is removed again — its only purpose was
-to surface cargo output that Cargokit swallowed, and the new build path prints it by itself.
+to surface cargo output that Cargokit swallowed, and the new build path prints that itself once the build runs with
+`-v` (on default verbosity Flutter only says `Building native assets failed`).
 
 **D6 — macOS arm64 by Xcode build setting plus a CI assertion, not by build flags.**
 `EXCLUDED_ARCHS = x86_64` in the project-level Release configuration (already on `spike/keyring-ci`), because Flutter
@@ -151,14 +153,28 @@ still wired in (task 1.1, 1.2, 1.4):
   `build/linux/x64/debug/plugins/rust_lib_kafkalyzer/`, is what ended up in `build/linux/x64/debug/bundle/lib/`.
 - `flutter test` did not trigger a Rust compile (31 s suite, 1377 tests green), and `flutter analyze` reports no issue
   for `hook/build.dart`.
+- The native-assets backend needs the codegen's own hook package, `flutter_rust_bridge_hooks`, which depends on
+  `hooks ^2`. velopack pinned `hooks ^1.0.3`, so the version sets collided and the vendored package moved up to
+  `code_assets ^2.2.0` / `hooks ^2.2.0` / `native_toolchain_rust ^1.1.1` together with the app; velopack's own
+  `hook/build.dart` still compiles against that set.
+- `hook/build.dart` uses `FlutterRustBridgeNativeAssetsBuilder` rather than the raw `RustBuilder` copy from velopack:
+  it is the codegen's own template, it matches the asset name the generated Dart loader looks for
+  (`src/rust/frb_generated.io.dart`), and it shortens the Windows hook output directory so cargo paths stay under the
+  Windows toolchain limit.
+- Loading is proven on Linux: the release bundle's `lib/librust_lib_kafkalyzer.so` comes from the hook, and
+  `./kafkalyzer --help` exits 0 after `KafkalyzerRustLib.init()` plus the Rust-side `initRustLogging` call.
+- A broken Rust file failed the build with only `Target build_hooks failed: Error: Building native assets failed.` on
+  the default verbosity; the cargo block (`error[E0308]`, `--> src/lib.rs:4:28`, source snippet) appeared with `-v`
+  and also printed the exact `rustup run 1.100.0 cargo build --release --manifest-path … --target … --target-dir …`
+  command. The three CI build commands therefore run with `-v`.
 
 ## Open Questions
 
 - The hook target directories for macOS and Windows, to be recorded from the CI spike run and checked against the
-  Linux-shaped path above before the cache steps are written (task 1.4, 4.3).
-- A `flutter build linux --debug` resolved the code asset from the `release` profile directory, so the Rust side looks
-  compiled in release mode even for a debug app. Cargokit used the debug profile there. Decide in task 2.x whether to
-  pass `buildMode` explicitly: explicit mapping costs a parameter and gives faster dev iteration, leaving the default
-  keeps the hook identical to velopack's at the cost of slower debug builds.
+  Linux-shaped path above before the cache steps are relied on (task 1.4, 4.3).
 - Whether `kafkalyzer-mcp` should inherit the pinned toolchain file (it is inside the same `rust/` workspace, so the
   pin applies to `cargo build -p kafkalyzer-mcp` automatically — confirm no CI step overrides it with `+toolchain`).
+
+Resolved during the spike: the hook compiles the Rust side in **release** even for a debug Flutter app (the printed
+cargo line shows `cargo build --release`). That stays as is — it is the codegen default, matches velopack, and avoids
+a per-mode parameter; the cost is a slower first debug link, not a behaviour difference.

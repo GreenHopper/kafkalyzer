@@ -199,8 +199,21 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Cache Native Assets Rust target directory
+        uses: actions/cache@v4
+        with:
+          path: .dart_tool/hooks_runner
+          key: >-
+            ${{ runner.os }}-na-${{ hashFiles('rust/Cargo.lock',
+            'rust/rust-toolchain.toml') }}
+          restore-keys: ${{ runner.os }}-native-assets-
+
       - name: Build Linux app
-        run: flutter build linux --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        run: >-
+          flutter build linux --release -v --build-name=${{ env.VERSION }}
+          --build-number=${{ github.run_number }}
+          --dart-define=APP_VERSION="${{ env.VERSION
+          }}+${{ github.run_number }}"
 
       - name: Build kafkalyzer-mcp
         env:
@@ -310,13 +323,14 @@ jobs:
           target: aarch64-apple-darwin
           cache-workspaces: "rust"
 
-      - name: Cache Cargokit macOS target directory
+      - name: Cache Native Assets Rust target directory
         uses: actions/cache@v4
         with:
-          path: build/macos/Build/Intermediates.noindex/Pods.build/Release/rust_lib_kafkalyzer.build
-          key: ${{ runner.os }}-cargokit-macos-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargokit-macos-
+          path: .dart_tool/hooks_runner
+          key: >-
+            ${{ runner.os }}-na-${{ hashFiles('rust/Cargo.lock',
+            'rust/rust-toolchain.toml') }}
+          restore-keys: ${{ runner.os }}-native-assets-
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -327,8 +341,8 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Disable Swift Package Manager integration
-        run: flutter config --no-enable-swift-package-manager
+      - name: Enable Swift Package Manager integration
+        run: flutter config --enable-swift-package-manager
 
       # --- APPLE CODE SIGNING SETUP (Auskommentiert) ---
       # - name: Install Apple Certificate
@@ -344,13 +358,18 @@ jobs:
       #     security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
       #     security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
       #
-      #     echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+      #     echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode \
+      #       -o $CERTIFICATE_PATH
       #     security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
       #     security list-keychain -d user -s $KEYCHAIN_PATH
       #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
       - name: Build macOS app
-        run: flutter build macos --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        run: >-
+          flutter build macos --release -v --build-name=${{ env.VERSION }}
+          --build-number=${{ github.run_number }}
+          --dart-define=APP_VERSION="${{ env.VERSION
+          }}+${{ github.run_number }}"
 
       - name: Build kafkalyzer-mcp
         env:
@@ -460,13 +479,14 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL)
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN)
 
-      - name: Cache Cargokit Windows target directory
+      - name: Cache Native Assets Rust target directory
         uses: actions/cache@v4
         with:
-          path: build/windows/x64/plugins/rust_lib_kafkalyzer/cargokit_build
-          key: ${{ runner.os }}-cargokit-windows-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargokit-windows-
+          path: .dart_tool/hooks_runner
+          key: >-
+            ${{ runner.os }}-na-${{ hashFiles('rust/Cargo.lock',
+            'rust/rust-toolchain.toml') }}
+          restore-keys: ${{ runner.os }}-native-assets-
 
       - name: Install OpenSSL and Cyrus SASL via vcpkg
         shell: pwsh
@@ -492,15 +512,12 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      # MSBuild hides Cargokit's cargo output (MSB8066 exit -1), so build the
-      # same crate here to get the real error and fail fast.
-      - name: Pre-build rust_lib_kafkalyzer
-        run: >-
-          cargo build --release --manifest-path rust/Cargo.toml
-          -p rust_lib_kafkalyzer
-
       - name: Build Windows app
-        run: flutter build windows --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        run: >-
+          flutter build windows --release -v --build-name=${{ env.VERSION }}
+          --build-number=${{ github.run_number }}
+          --dart-define=APP_VERSION="${{ env.VERSION
+          }}+${{ github.run_number }}"
 
       - name: Build kafkalyzer-mcp
         env:

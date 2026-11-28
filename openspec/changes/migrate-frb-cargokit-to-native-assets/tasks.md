@@ -21,31 +21,31 @@ committed on `spike/keyring-ci` and are carried by this change.
 
 ## 2. Pins, integration, Cargokit removal
 
-- [ ] 2.1 Install the matching generator: `cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked`
-- [ ] 2.2 Raise `flutter_rust_bridge` to `2.13.0` in `pubspec.yaml`, `rust/Cargo.toml`,
+- [x] 2.1 Install the matching generator: `cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked`
+- [x] 2.2 Raise `flutter_rust_bridge` to `2.13.0` in `pubspec.yaml`, `rust/Cargo.toml`,
       `rust/kafkalyzer-mcp/Cargo.toml` and `packages/velopack_flutter/pubspec.yaml`; re-apply the velopack patches
       documented in `KAFKALYZER_PATCHES.md`; `flutter pub get` must resolve a single version
-- [ ] 2.3 Run `flutter_rust_bridge_codegen integrate --integration-backend native-assets`, then `generate`; commit the
+- [x] 2.3 Run `flutter_rust_bridge_codegen integrate --integration-backend native-assets`, then `generate`; commit the
       regenerated `lib/src/rust/frb_generated.dart` and `rust/src/frb_generated.rs` in the same commit as the wiring
-- [ ] 2.4 Delete `rust_builder/` and its path dependency, drop the `rust_builder/**` exclusion in
+- [x] 2.4 Delete `rust_builder/` and its path dependency, drop the `rust_builder/**` exclusion in
       `analysis_options.yaml`, and confirm `rust_lib_kafkalyzer` is gone from
       `linux/flutter/generated_plugins.cmake`, `windows/flutter/generated_plugins.cmake` and
       `macos/Flutter/GeneratedPluginRegistrant.swift`
-- [ ] 2.5 Green locally: `flutter analyze`, `flutter test`, `cargo test` in `rust/`, and `bash scripts/quality_gates.sh`
+- [x] 2.5 Green locally: `flutter analyze`, `flutter test`, `cargo test` in `rust/`, and `bash scripts/quality_gates.sh`
       including the bindings guard (pubspec pin == Cargo pin == installed codegen version)
 
 ## 3. Prove the build-path requirements on the development machine
 
 - [ ] 3.1 From a clean checkout with only the documented bootstrap, `flutter build linux --release` produces a runnable
       app with no extra build command; start it and connect to a Kafka cluster so the bundled library is proven
-- [ ] 3.2 Edit a Rust source under `rust/src/api`, re-run the debug app, and confirm the change is live without any
+- [x] 3.2 Edit a Rust source under `rust/src/api`, re-run the debug app, and confirm the change is live without any
       codegen or wrapper build command in between
-- [ ] 3.3 Introduce a deliberate compile error in the bridge crate and confirm `flutter build linux --release` fails
+- [x] 3.3 Introduce a deliberate compile error in the bridge crate and confirm `flutter build linux --release` fails
       with the cargo diagnostic (file and line) in the log; revert the error
 
 ## 4. CI
 
-- [ ] 4.1 macOS job: replace `flutter config --no-enable-swift-package-manager` with the enabling flag and add the
+- [x] 4.1 macOS job: replace `flutter config --no-enable-swift-package-manager` with the enabling flag and add the
       `ARCHS` assertion that fails the job with the resolved architectures named when they are not `arm64`
 - [ ] 4.2 Verify in the macOS job log: no "unsupported for Swift Package Manager" warning, and
       `lipo -archs` on the built app binary reports `arm64` only
