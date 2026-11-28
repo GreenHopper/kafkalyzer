@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+// shortcut: only the Linux session-bus probe needs a path check.
+#[cfg(target_os = "linux")]
 use std::path::Path;
 use std::sync::Mutex;
 
