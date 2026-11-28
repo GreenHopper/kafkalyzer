@@ -18,7 +18,9 @@ Grab the latest stable release for your platform — the links below always reso
 | 🍎 macOS | Portable App | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer-osx-Portable.zip) |
 | 🪟 Windows | Installer | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer-win-Setup.exe) |
 
-> **Note:** The macOS archive contains a ready-to-use app bundle — unzip it and move the app into your `Applications` folder. All links use GitHub's `/releases/latest/download/` redirect, so they never expire when a new version ships.
+> **Note:** The macOS archive contains a ready-to-use app bundle — unzip it and move the app into your `Applications`
+> folder. macOS builds target Apple silicon (arm64) only; there is no Intel build. All links use GitHub's
+> `/releases/latest/download/` redirect, so they never expire when a new version ships.
 
 ## 🏗️ Architecture
 
@@ -69,6 +71,60 @@ kafka-acls.sh --bootstrap-server <bootstrap:9092> \
 > [!TIP]
 > Do **NOT** grant `Write`, `AlterConfigs`, `Alter`, or `IdempotentWrite` permissions. They are never required by kafkalyzer.
 
+## MCP server
+
+Release packages ship a side-by-side `kafkalyzer-mcp` binary (stdio). The GUI only decides which profiles are shared and shows a client snippet; it does not host the server.
+
+### Connect a client
+
+1. In the app, enable **Share with MCP** for a cluster and copy the snippet.
+2. Paste it into your MCP client config. Shape:
+
+```json
+{
+  "mcpServers": {
+    "kafkalyzer": {
+      "command": "/path/to/kafkalyzer-mcp",
+      "args": ["--cluster", "my-cluster"]
+    }
+  }
+}
+```
+
+On Linux AppImage installs the command is the AppImage itself with a leading `--mcp` arg (the `AppRun` execs `usr/bin/kafkalyzer-mcp`). macOS / Windows use `kafkalyzer-mcp` next to the app executable.
+
+On Linux, `flutter run` / `flutter build linux` place the sidecar via `linux/CMakeLists.txt` (calls `scripts/ensure_mcp_sidecar.sh`). `./scripts/build_linux.sh` does the same for release. On macOS/Windows, run `./scripts/ensure_mcp_sidecar.sh` (add `--release` for release) after a desktop build until those packagers gain the same hook.
+
+### Prerequisites
+
+- **Read-only service account** on the broker (same ACL set as above). The server never produces, commits, or mutates topics/groups/schemas.
+- **Shared profiles**: only clusters marked shared in the app appear. Secrets stay in the OS keyring under the `kafkalyzer-shared-profiles` service name; the MCP process must be allowed to read them (macOS Keychain may prompt once; Windows Credential Manager is silent for the same user; Linux Secret Service needs the session bus — `kafkalyzer-mcp` restores the default `/run/user/<uid>/bus` when MCP clients strip `DBUS_SESSION_BUS_ADDRESS`).
+
+### Data flow
+
+Every tool description states that returned data becomes part of the conversation and is therefore sent to the provider of the client's language model. Do not share clusters whose payloads you would not paste into a chat.
+
+### Tools and limits
+
+| Tool | Role |
+| --- | --- |
+| `kafka_list_clusters` | Shared clusters (non-secret metadata) |
+| `kafka_test_connection` | Broker reachability |
+| `kafka_list_topics` | Topics (optional name filter) |
+| `kafka_list_consumer_groups` | Consumer groups |
+| `kafka_get_consumer_lag` | Per-partition lag |
+| `kafka_calculate_partition` | Default partitioner assignment |
+| `kafka_consume_messages` | Read messages from one topic |
+| `kafka_search_messages` | Filter across topics |
+| `kafka_inspect_lagging_message` | Next unprocessed message for a group/partition |
+| `kafka_analyze_topic` | Content analysis |
+| `kafka_list_schemas` / `kafka_get_schema` | Schema Registry subjects / schema text |
+
+Defaults (ceilings): 20 returned messages (100), 10 000 analysed (100 000), 15 s (60 s), 4 096 B text (32 768 B), 65 536 B schema, 500 list entries, 5 search topics, 1 MB result, 2 parallel calls. Requests above a ceiling are reduced, not rejected.
+
+### Verification
+
+Manual acceptance (roadmap §6.4 phase 4): Linux debug bundle + MCP Inspector against a shared DEV cluster whose broker credentials are limited to read/describe — tool list, consume/analyze under default limits, and “not available” after unshare all succeeded (2026-11-27).
 
 ## ✨ Key Features
 
@@ -121,13 +177,43 @@ The application uses `shared_preferences` to store local configurations and clus
 - **macOS**: `~/Library/Preferences/at.greenhopper.kafkalyzer.plist`
 - **Windows**: `C:\Users\<User>\AppData\Roaming\at.greenhopper\kafkalyzer\shared_preferences.json`
 
+## Sharing a cluster with an MCP client
+
+Opt in per cluster from **Settings → Clusters → Share with MCP**. Only shared clusters are visible to headless kafkalyzer binaries (for example `kafkalyzer-mcp`).
+
+**What is written where**
+
+- Non-secret connection settings go to one JSON file under the user config directory:
+  - **Linux**: `$XDG_CONFIG_HOME/kafkalyzer/shared-profiles.json` if `XDG_CONFIG_HOME` is set and absolute, otherwise `~/.config/kafkalyzer/shared-profiles.json`
+  - **macOS**: `~/Library/Application Support/kafkalyzer/shared-profiles.json`
+  - **Windows**: `%APPDATA%\kafkalyzer\shared-profiles.json`
+- Secrets (passwords, tokens, key passwords) go to the OS keyring under the dedicated service name `kafkalyzer-shared-profiles` (not the GUI app’s own keyring entries).
+
+**Linux keyring precondition**
+
+Sharing needs a running Secret Service (for example GNOME Keyring or KWallet). Without it, sharing fails with “keyring unavailable”; the same precondition already applies to storing secrets for the GUI.
+
+**Data flow to the LLM provider**
+
+An MCP client that uses a shared cluster can read message keys, payloads, headers and cluster metadata and may send that data to the language-model provider the client is configured with. Only share clusters you accept exposing that way.
+
+**After moving the app**
+
+The dialog’s MCP client snippet embeds the absolute path of the server program next to the GUI binary. If you move or reinstall the app, open the sharing dialog again and copy the snippet so the client keeps a valid `command` path.
+
 ## 🛠️ Getting Started
 
 ### Prerequisites
 
 - **Flutter SDK**: [Install Flutter](https://flutter.dev/docs/get-started/install)
-- **Rust Toolchain**: [Install Rust](https://www.rust-lang.org/tools/install)
-- **Codegen Tools**: `flutter_rust_bridge_codegen` v2 (only if modifying the bridge).
+- **Rust Toolchain**: [Install Rust](https://www.rust-lang.org/tools/install). The exact version is pinned in
+  `rust/rust-toolchain.toml`; `rustup` installs that toolchain and the desktop targets on its own, so plain
+  `cargo test` in `rust/` and the app build always use the same compiler.
+- **Codegen Tools**: `flutter_rust_bridge_codegen` 2.13.0, matching the pin in `pubspec.yaml` and
+  `rust/Cargo.toml` — install with
+  `cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked` (only if modifying the bridge).
+- **No separate Rust build step**: `hook/build.dart` compiles `rust/` into the app through Flutter's Native Assets,
+  for `flutter run`, `flutter test` and release builds alike. The old Cargokit plugin (`rust_builder/`) is gone.
 - **Linux — native packages**: the Kafka client links OpenSSL, Cyrus SASL and zlib, so a
   Linux build also needs `libssl-dev libsasl2-dev libz-dev` next to the usual
   `libgtk-3-dev libsecret-1-dev libblkid-dev`. Without them the build fails while compiling

@@ -48,7 +48,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Set up Flutter
@@ -83,7 +83,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Run Kafka integration tests
@@ -115,7 +115,11 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
+          # The action installs with --profile minimal, which drops rustfmt.
+          # Without it, flutter_rust_bridge_codegen generate emits unformatted
+          # bindings and the bindings guard reports them as drift.
+          components: "rustfmt"
           cache-workspaces: "rust"
 
       - name: Set up Flutter
@@ -152,7 +156,8 @@ jobs:
     name: Build Linux
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    # mcp-stdio-server spike 1.1: temporarily always run so rmcp builds on PRs
+    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -164,7 +169,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            # PR shallow clones often have no tags; git describe then exits 128 under set -e
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//') || true
             LATEST_TAG=${LATEST_TAG:-1.0.0}
             SHA=$(git rev-parse --short HEAD)
             echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
@@ -185,7 +191,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Set up Flutter
@@ -197,8 +203,28 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      - name: Cache Native Assets Rust target directory
+        uses: actions/cache@v4
+        with:
+          path: .dart_tool/hooks_runner
+          key: >-
+            ${{ runner.os }}-na-${{ hashFiles('rust/Cargo.lock',
+            'rust/rust-toolchain.toml') }}
+          restore-keys: ${{ runner.os }}-native-assets-
+
       - name: Build Linux app
-        run: flutter build linux --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        run: >-
+          flutter build linux --release -v --build-name=${{ env.VERSION }}
+          --build-number=${{ github.run_number }}
+          --dart-define=APP_VERSION="${{ env.VERSION
+          }}+${{ github.run_number }}"
+
+      - name: Build kafkalyzer-mcp
+        env:
+          KAFKALYZER_VERSION: ${{ env.VERSION }}
+        run: |
+          cargo build --release --manifest-path rust/Cargo.toml -p kafkalyzer-mcp
+          test -f rust/target/release/kafkalyzer-mcp
 
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
@@ -215,6 +241,8 @@ jobs:
           mkdir -p "$APPDIR/usr/share/icons/hicolor/scalable/apps"
 
           cp -a build/linux/x64/release/bundle/. "$APPDIR/usr/bin/"
+          cp rust/target/release/kafkalyzer-mcp "$APPDIR/usr/bin/kafkalyzer-mcp"
+          test -x "$APPDIR/usr/bin/kafkalyzer-mcp"
           cp assets/logo.png "$APPDIR/Kafkalyzer.png"
           cp assets/logo.png "$APPDIR/.DirIcon"
           cp assets/logo.png "$APPDIR/usr/share/icons/hicolor/scalable/apps/Kafkalyzer.png"
@@ -246,6 +274,10 @@ jobs:
           fi
           HERE="$(dirname "$(readlink -f "${0}")")"
           export PATH="${HERE}"/usr/bin/:"${PATH}"
+          if [ "$1" = "--mcp" ]; then
+              shift
+              exec "${HERE}/usr/bin/kafkalyzer-mcp" "$@"
+          fi
           EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2 | cut -d " " -f 1 | sed 's/\\s/ /g')
           exec "${EXEC}" "$@"
           EOF
@@ -263,7 +295,8 @@ jobs:
     name: Build macOS
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: macos-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    # mcp-stdio-server spike 1.1: temporarily always run so rmcp builds on PRs
+    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -275,7 +308,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            # PR shallow clones often have no tags; git describe then exits 128 under set -e
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//') || true
             LATEST_TAG=${LATEST_TAG:-1.0.0}
             SHA=$(git rev-parse --short HEAD)
             echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
@@ -289,17 +323,18 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
-          target: x86_64-apple-darwin,aarch64-apple-darwin
+          toolchain: "1.100.0"
+          target: aarch64-apple-darwin
           cache-workspaces: "rust"
 
-      - name: Cache Cargokit macOS target directory
+      - name: Cache Native Assets Rust target directory
         uses: actions/cache@v4
         with:
-          path: build/macos/Build/Intermediates.noindex/Pods.build/Release/rust_lib_kafkalyzer.build
-          key: ${{ runner.os }}-cargokit-macos-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargokit-macos-
+          path: .dart_tool/hooks_runner
+          key: >-
+            ${{ runner.os }}-na-${{ hashFiles('rust/Cargo.lock',
+            'rust/rust-toolchain.toml') }}
+          restore-keys: ${{ runner.os }}-native-assets-
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -310,8 +345,8 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Disable Swift Package Manager integration
-        run: flutter config --no-enable-swift-package-manager
+      - name: Enable Swift Package Manager integration
+        run: flutter config --enable-swift-package-manager
 
       # --- APPLE CODE SIGNING SETUP (Auskommentiert) ---
       # - name: Install Apple Certificate
@@ -327,13 +362,48 @@ jobs:
       #     security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
       #     security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
       #
-      #     echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+      #     echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode \
+      #       -o $CERTIFICATE_PATH
       #     security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
       #     security list-keychain -d user -s $KEYCHAIN_PATH
       #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
 
       - name: Build macOS app
-        run: flutter build macos --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        run: >-
+          flutter build macos --release -v --build-name=${{ env.VERSION }}
+          --build-number=${{ github.run_number }}
+          --dart-define=APP_VERSION="${{ env.VERSION
+          }}+${{ github.run_number }}"
+
+      - name: Build kafkalyzer-mcp
+        env:
+          KAFKALYZER_VERSION: ${{ env.VERSION }}
+        run: |
+          # Match the packaged app's arch set (spike 1.3 / design D8).
+          APP_BIN="build/macos/Build/Products/Release/kafkalyzer.app/Contents/MacOS/kafkalyzer"
+          ARCHS="$(lipo -archs "$APP_BIN")"
+          echo "app archs: $ARCHS"
+          # arm64-only policy: fail here instead of in a krb5 cross-compile.
+          if [ "$ARCHS" != arm64 ]; then echo "not arm64: $ARCHS"; exit 1; fi
+          OUT_DIR="rust/target/mcp-macos"
+          mkdir -p "$OUT_DIR"
+          BINS=()
+          for arch in $ARCHS; do
+            case "$arch" in
+              x86_64) target=x86_64-apple-darwin ;;
+              arm64) target=aarch64-apple-darwin ;;
+              *) echo "unsupported arch $arch"; exit 1 ;;
+            esac
+            cargo build --release --manifest-path rust/Cargo.toml -p kafkalyzer-mcp --target "$target"
+            BINS+=("rust/target/$target/release/kafkalyzer-mcp")
+          done
+          if [ "${#BINS[@]}" -eq 1 ]; then
+            cp "${BINS[0]}" "$OUT_DIR/kafkalyzer-mcp"
+          else
+            lipo -create "${BINS[@]}" -output "$OUT_DIR/kafkalyzer-mcp"
+          fi
+          test -f "$OUT_DIR/kafkalyzer-mcp"
+          lipo -archs "$OUT_DIR/kafkalyzer-mcp"
 
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
@@ -343,6 +413,11 @@ jobs:
           if [ -f changelog.md ]; then
             cp changelog.md build/macos/Build/Products/Release/kafkalyzer.app/Contents/Resources/ || true
           fi
+
+          MCP_SRC="rust/target/mcp-macos/kafkalyzer-mcp"
+          MCP_DST="build/macos/Build/Products/Release/kafkalyzer.app/Contents/MacOS/kafkalyzer-mcp"
+          cp "$MCP_SRC" "$MCP_DST"
+          test -x "$MCP_DST"
 
           # Standard-Pack-Befehl OHNE Signierung
           vpk pack -u Kafkalyzer --packTitle "Kafkalyzer" -v ${{ env.VERSION }} -p build/macos/Build/Products/Release/kafkalyzer.app -o velopack_release
@@ -364,7 +439,8 @@ jobs:
     name: Build Windows
     needs: [run-tests, quality-gates, kafka-integration] # Wartet zwingend auf erfolgreiche Tests
     runs-on: windows-latest
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    # mcp-stdio-server spike 1.1: temporarily always run so rmcp builds on PRs
+    # if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -376,7 +452,8 @@ jobs:
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           else
-            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//')
+            # PR shallow clones often have no tags; git describe then exits 128 under set -e
+            LATEST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null | sed 's/^v//') || true
             LATEST_TAG=${LATEST_TAG:-1.0.0}
             SHA=$(git rev-parse --short HEAD)
             echo "VERSION=${LATEST_TAG}-dev${{ github.run_number }}.${SHA}" >> $GITHUB_ENV
@@ -396,7 +473,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Export GitHub Actions cache API variables
@@ -406,13 +483,14 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL)
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN)
 
-      - name: Cache Cargokit Windows target directory
+      - name: Cache Native Assets Rust target directory
         uses: actions/cache@v4
         with:
-          path: build/windows/x64/plugins/rust_lib_kafkalyzer/cargokit_build
-          key: ${{ runner.os }}-cargokit-windows-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargokit-windows-
+          path: .dart_tool/hooks_runner
+          key: >-
+            ${{ runner.os }}-na-${{ hashFiles('rust/Cargo.lock',
+            'rust/rust-toolchain.toml') }}
+          restore-keys: ${{ runner.os }}-native-assets-
 
       - name: Install OpenSSL and Cyrus SASL via vcpkg
         shell: pwsh
@@ -439,7 +517,41 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows app
-        run: flutter build windows --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
+        shell: pwsh
+        run: |
+          $appVersion = '${{ env.VERSION }}+${{ github.run_number }}'
+          $buildArgs = @(
+            '--release', '-v',
+            '--build-name=${{ env.VERSION }}',
+            '--build-number=${{ github.run_number }}',
+            "--dart-define=APP_VERSION=$appVersion"
+          )
+          flutter build windows @buildArgs *>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) {
+            # The step log is only readable with admin rights, so the failing
+            # lines are repeated as annotations.
+            Select-String -Path build.log -Pattern 'error' |
+              Select-Object -Last 10 |
+              ForEach-Object { "::error::$($_.Line)" }
+            exit $LASTEXITCODE
+          }
+
+      - name: Upload Windows build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-log
+          path: build.log
+
+      - name: Build kafkalyzer-mcp
+        env:
+          KAFKALYZER_VERSION: ${{ env.VERSION }}
+        shell: pwsh
+        run: |
+          cargo build --release --manifest-path rust/Cargo.toml -p kafkalyzer-mcp
+          if (-not (Test-Path "rust/target/release/kafkalyzer-mcp.exe")) {
+            throw "kafkalyzer-mcp.exe missing after release build"
+          }
 
       - name: Install Velopack CLI
         run: dotnet tool install -g vpk
@@ -467,6 +579,11 @@ jobs:
           Copy-Item "assets/cacert.pem" -Destination "$releaseDir/cacert.pem" -Force
           if (Test-Path "changelog.md") {
             Copy-Item "changelog.md" "$releaseDir/" -Force
+          }
+
+          Copy-Item "rust/target/release/kafkalyzer-mcp.exe" -Destination "$releaseDir/kafkalyzer-mcp.exe" -Force
+          if (-not (Test-Path "$releaseDir/kafkalyzer-mcp.exe")) {
+            throw "kafkalyzer-mcp.exe missing next to the app executable"
           }
 
           vpk pack -u Kafkalyzer --packTitle "Kafkalyzer" -v ${{ env.VERSION }} -p $releaseDir -e kafkalyzer.exe --icon windows/runner/resources/app_icon.ico -o velopack_release

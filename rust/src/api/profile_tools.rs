@@ -152,6 +152,7 @@ pub async fn parse_client_properties(content: String) -> ClientPropertiesPreview
         } else {
             Some(extra_properties.clone())
         },
+        headless_shared: None,
     };
 
     let skipped = mapped

@@ -1,3 +1,4 @@
+pub mod bounded;
 pub mod connection_diagnostics;
 pub mod kafka_analyzer;
 pub mod kafka_consumer;

@@ -22,6 +22,13 @@ pub(crate) fn shared_runtime() -> &'static Runtime {
     &SHARED_TOKIO_RUNTIME
 }
 
+/// Payload prefixes for stream sentinel records (`partition == -1`).
+/// Kept as public string constants so collectors and the Dart parser stay aligned.
+pub const SENTINEL_LOG_PREFIX: &str = "__LOG__:";
+pub const SENTINEL_PROGRESS_PREFIX: &str = "__PROGRESS__:";
+pub const SENTINEL_HEARTBEAT_PREFIX: &str = "__HEARTBEAT__:";
+pub const SENTINEL_EOF: &str = "__EOF__";
+
 static SCHEMA_CACHE: LazyLock<
     Mutex<
         std::collections::HashMap<
@@ -283,7 +290,7 @@ pub fn consume_with_filter(
         partition: -1,
         offset: -1,
         key: None,
-        payload: Some(format!("__PROGRESS__:0:{}", total_to_scan)),
+        payload: Some(format!("{}0:{}", SENTINEL_PROGRESS_PREFIX, total_to_scan)),
         timestamp: 0,
         headers: None,
         key_schema: None,
@@ -860,7 +867,10 @@ fn run_poll_loop(
                     partition: -1,
                     offset: -1,
                     key: None,
-                    payload: Some(format!("__HEARTBEAT__:{}:{}", scanned_count, total_to_scan)),
+                    payload: Some(format!(
+                        "{}{}:{}",
+                        SENTINEL_HEARTBEAT_PREFIX, scanned_count, total_to_scan
+                    )),
                     timestamp: 0,
                     headers: None,
                     key_schema: None,
@@ -908,7 +918,7 @@ fn send_progress(
         partition: -1,
         offset: -1,
         key: None,
-        payload: Some(format!("__PROGRESS__:{}:{}", scanned, total)),
+        payload: Some(format!("{}{}:{}", SENTINEL_PROGRESS_PREFIX, scanned, total)),
         timestamp: 0,
         headers: None,
         key_schema: None,
@@ -2415,7 +2425,7 @@ fn log_to_dart(sink: &StreamSink<KafkaMessage>, message: String) {
         partition: -1,
         offset: -1,
         key: None,
-        payload: Some(format!("__LOG__:{}", message)),
+        payload: Some(format!("{}{}", SENTINEL_LOG_PREFIX, message)),
         timestamp: 0,
         headers: None,
         key_schema: None,
@@ -2432,7 +2442,7 @@ fn send_eof(sink: &StreamSink<KafkaMessage>, topic: &str) {
         partition: -1,
         offset: -1,
         key: None,
-        payload: Some("__EOF__".to_string()),
+        payload: Some(SENTINEL_EOF.to_string()),
         timestamp: 0,
         headers: None,
         key_schema: None,

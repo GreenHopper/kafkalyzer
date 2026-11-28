@@ -41,6 +41,8 @@ pub struct ClusterProfile {
     pub environment_label: Option<String>,
     pub environment_color: Option<String>,
     pub extra_properties: Option<String>,
+    /// `Some(true)` shares this profile with headless binaries; `None`/`Some(false)` do not.
+    pub headless_shared: Option<bool>,
 }
 
 impl ClusterProfile {

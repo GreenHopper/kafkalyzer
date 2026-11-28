@@ -5297,4 +5297,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String topicFactsMoreCount(int count) {
     return '$count more topic facts';
   }
+
+  @override
+  String get mcpSharingDialogTitle => 'Share with MCP';
+
+  @override
+  String get mcpSharingSwitchLabel =>
+      'Share this cluster with headless kafkalyzer (MCP)';
+
+  @override
+  String get mcpSharingDataFlowWarning =>
+      'Message keys, payloads, headers and cluster metadata read by an MCP client can be sent to the language-model provider that client uses. You are responsible for sharing a production cluster.';
+
+  @override
+  String get mcpSharingSnippetLabel => 'MCP client configuration';
+
+  @override
+  String get mcpSharingCopyAction => 'Copy snippet';
+
+  @override
+  String get mcpSharingCopiedConfirmation => 'Snippet copied';
+
+  @override
+  String get mcpSharingShareFirstHint =>
+      'Share the profile first to enable copying.';
+
+  @override
+  String mcpSharingProgramNotFoundHint(String path) {
+    return 'Program not found at $path';
+  }
+
+  @override
+  String get mcpSharedBadge => 'Shared with MCP';
+
+  @override
+  String get mcpSharingFailedBadge => 'Sharing failed';
+
+  @override
+  String get mcpSharingFailureKeyringUnavailable => 'OS keyring unavailable';
+
+  @override
+  String get mcpSharingFailureSecretRejected =>
+      'Secret rejected by the keyring';
+
+  @override
+  String mcpSharingFailureFileError(String detail) {
+    return 'Could not write the shared profiles file: $detail';
+  }
+
+  @override
+  String mcpSharingFailureBridgeError(String detail) {
+    return 'Sharing sync failed: $detail';
+  }
+
+  @override
+  String mcpSharingFailureNamed(String name, String reason) {
+    return '$name: $reason';
+  }
+
+  @override
+  String get mcpSharingRetry => 'Retry sharing';
+
+  @override
+  String get mcpSharingToggleFailed =>
+      'Could not update sharing for this cluster.';
+
+  @override
+  String get mcpSharingOpenAction => 'Share with MCP';
 }

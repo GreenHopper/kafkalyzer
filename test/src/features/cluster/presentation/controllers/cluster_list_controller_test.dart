@@ -10,6 +10,8 @@ class MockClusterService extends ClusterService {
   List<ClusterProfile> _clusters = [];
   StoreStatus _status = const StoreStatus.ok();
   bool throwUnreadable = false;
+  int saveCallCount = 0;
+  List<ClusterProfile>? lastSaved;
 
   @override
   StoreStatus get storeStatus => _status;
@@ -34,6 +36,8 @@ class MockClusterService extends ClusterService {
 
   @override
   Future<bool> saveClusters(List<ClusterProfile> clusters) async {
+    saveCallCount++;
+    lastSaved = List.from(clusters);
     _clusters = List.from(clusters);
     return true;
   }
@@ -146,5 +150,29 @@ void main() {
         expect(controller.clusters.map((c) => c.name), ['Test']);
       },
     );
+
+    test('retrySharedProfilesSync saves the current list again', () async {
+      final cluster = ClusterProfile(
+        name: 'Shared',
+        bootstrapServers: 'localhost:9092',
+        tlsVerification: TlsVerification.enabled,
+        headlessShared: true,
+      );
+      await controller.addCluster(cluster);
+      final savesAfterAdd = mockService.saveCallCount;
+
+      await controller.retrySharedProfilesSync();
+
+      expect(mockService.saveCallCount, savesAfterAdd + 1);
+      expect(mockService.lastSaved!.single.name, 'Shared');
+      expect(mockService.lastSaved!.single.headlessShared, isTrue);
+      expect(
+        identical(
+          controller.sharedProfilesStatus,
+          mockService.sharedProfilesStatus,
+        ),
+        isTrue,
+      );
+    });
   });
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kafkalyzer/src/rust/api/headless_profiles.dart';
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/services/cluster_service.dart';
@@ -21,11 +22,11 @@ class _FakeFlutterSecureStorage implements FlutterSecureStorage {
   Future<void> write({
     required String key,
     required String? value,
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
     if (shouldFail?.call(key) ?? false) throw Exception('Keyring error');
@@ -39,11 +40,11 @@ class _FakeFlutterSecureStorage implements FlutterSecureStorage {
   @override
   Future<String?> read({
     required String key,
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
     if (shouldFail?.call(key) ?? false) throw Exception('Keyring error');
@@ -53,11 +54,11 @@ class _FakeFlutterSecureStorage implements FlutterSecureStorage {
   @override
   Future<void> delete({
     required String key,
-    IOSOptions? iOptions,
+    AppleOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WebOptions? webOptions,
-    MacOsOptions? mOptions,
+    AppleOptions? mOptions,
     WindowsOptions? wOptions,
   }) async {
     if (shouldFail?.call(key) ?? false) throw Exception('Keyring error');
@@ -78,6 +79,13 @@ class _CodecStub {
   final List<String> deserializedInput = [];
   int _next = 0;
 
+  final List<SharedProfilesSyncRequest> syncRequests = [];
+  SharedProfilesSyncResult syncResult = const SharedProfilesSyncResult(
+    failed: [],
+    filePath: '/tmp/shared-profiles.json',
+  );
+  Exception? syncThrow;
+
   void register(MockKafkalyzerRustLibApi api) {
     when(
       api.crateApiJsonPathSerializeClusterProfile(profile: anyNamed('profile')),
@@ -97,6 +105,21 @@ class _CodecStub {
       deserializedInput.add(json);
       final ref = (jsonDecode(json) as Map<String, dynamic>)['ref'];
       return byRef[ref]!;
+    });
+
+    when(
+      api.crateApiHeadlessProfilesSyncSharedProfiles(
+        request: anyNamed('request'),
+      ),
+    ).thenAnswer((invocation) async {
+      final request =
+          invocation.namedArguments[#request] as SharedProfilesSyncRequest;
+      syncRequests.add(request);
+      final err = syncThrow;
+      if (err != null) {
+        throw err;
+      }
+      return syncResult;
     });
   }
 }
@@ -680,6 +703,82 @@ void main() {
         final copied = full.copyWith();
         expectNonSecretsPreserved(copied);
         expect(copied.saslPassword, 'secret-password');
+      },
+    );
+
+    test('save and load keep headlessShared through sanitized path', () async {
+      final shared = fullProfile().copyWith(headlessShared: true);
+      await service.saveClusters([shared]);
+      final loaded = await service.loadClusters();
+      expect(loaded, hasLength(1));
+      expect(loaded.first.headlessShared, isTrue);
+      expect(codec.byRef.values.last.headlessShared, isTrue);
+    });
+
+    test(
+      'mergeImportedProfiles clears headlessShared on new and replace',
+      () async {
+        final existing = [
+          fullProfile(name: 'keep').copyWith(headlessShared: true),
+        ];
+        final importedNew = [
+          fullProfile(name: 'fresh').copyWith(headlessShared: true),
+        ];
+        final newResult = await mergeImportedProfiles(
+          existing,
+          importedNew,
+          (a, b) async => const ImportConflictChoice.skip(),
+        );
+        expect(newResult!.clusters.last.name, 'fresh');
+        expect(newResult.clusters.last.headlessShared, isNull);
+
+        final importedReplace = [
+          fullProfile(
+            name: 'keep',
+          ).copyWith(bootstrapServers: 'other:9092', headlessShared: true),
+        ];
+        final replaced = await mergeImportedProfiles(
+          existing,
+          importedReplace,
+          (a, b) async => const ImportConflictChoice.replace(),
+        );
+        expect(replaced!.clusters, hasLength(1));
+        expect(replaced.clusters.first.headlessShared, isNull);
+        expect(replaced.clusters.first.bootstrapServers, 'other:9092');
+      },
+    );
+
+    test(
+      'saveClusters sync receives saved list and failure leaves save ok',
+      () async {
+        final profile = fullProfile().copyWith(headlessShared: true);
+        final ok = await service.saveClusters([profile]);
+        expect(ok, isTrue);
+        expect(codec.syncRequests, hasLength(1));
+        expect(codec.syncRequests.single.profiles.single.name, profile.name);
+        expect(service.sharedProfilesStatus.value.isOk, isTrue);
+
+        codec.syncResult = const SharedProfilesSyncResult(
+          failed: [
+            SharedProfileFailure(
+              name: 'prod',
+              kind: SharedProfileFailureKind.keyringUnavailable,
+            ),
+          ],
+          filePath: '/tmp/shared-profiles.json',
+        );
+        final stillOk = await service.saveClusters([profile]);
+        expect(stillOk, isTrue);
+        expect(service.sharedProfilesStatus.value.isOk, isFalse);
+        expect(service.sharedProfilesStatus.value.failed.single.name, 'prod');
+
+        codec.syncThrow = Exception('bridge down');
+        final afterThrow = await service.saveClusters([profile]);
+        expect(afterThrow, isTrue);
+        expect(
+          service.sharedProfilesStatus.value.bridgeError,
+          contains('bridge down'),
+        );
       },
     );
 

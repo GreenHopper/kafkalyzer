@@ -26,6 +26,7 @@ import 'package:kafkalyzer/src/rust/api/kafka_metadata.dart' as api;
 import 'package:kafkalyzer/src/rust/api/kafka_types.dart';
 import 'package:kafkalyzer/src/rust/frb_generated.dart';
 import 'package:kafkalyzer/src/services/appearance_settings.dart';
+import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/kafka_metadata_service.dart';
 import 'package:kafkalyzer/src/features/cluster/data/recent_topics_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
@@ -462,6 +463,9 @@ void main() {
 
         when(mockClusters.isLoading).thenReturn(false);
         when(mockClusters.clusters).thenReturn([testProfile]);
+        when(
+          mockClusters.sharedProfilesStatus,
+        ).thenReturn(ValueNotifier(const SharedProfilesStatus.ok()));
         when(mockActive.activeProfile).thenReturn(testProfile);
 
         getIt.registerSingleton<ClusterListController>(mockClusters);

@@ -10,6 +10,7 @@ import 'package:kafkalyzer/src/features/settings/presentation/settings_view.dart
 import 'package:kafkalyzer/src/services/diagnostics/app_logging.dart';
 import 'package:kafkalyzer/src/services/diagnostics/error_reporter.dart';
 import 'package:kafkalyzer/src/services/file_opener_service.dart';
+import 'package:kafkalyzer/src/services/cluster_service.dart';
 import 'package:kafkalyzer/src/services/session_restore_service.dart';
 import 'package:kafkalyzer/src/services/settings_service.dart';
 import 'package:kafkalyzer/src/services/stored_list.dart';
@@ -54,6 +55,9 @@ void main() {
 
     when(mockClusterListController.clusters).thenReturn(const []);
     when(mockClusterListController.isLoading).thenReturn(false);
+    when(
+      mockClusterListController.sharedProfilesStatus,
+    ).thenReturn(ValueNotifier(const SharedProfilesStatus.ok()));
     when(
       mockClusterListController.storeStatus,
     ).thenReturn(const StoreStatus.ok());

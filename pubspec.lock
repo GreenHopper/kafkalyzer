@@ -138,13 +138,13 @@ packages:
     source: hosted
     version: "1.1.3"
   code_assets:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: code_assets
-      sha256: "83ccdaa064c980b5596c35dd64a8d3ecc68620174ab9b90b6343b753aa721687"
+      sha256: "1ef22a0be3af9370bd9481ac76db114db92bfe75d5ca2b2d7bc911764478a4d9"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "2.2.0"
   code_builder:
     dependency: transitive
     description:
@@ -324,58 +324,66 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_rust_bridge
-      sha256: "37ef40bc6f863652e865f0b2563ea07f0d3c58d8efad803cc01933a4b2ee067e"
+      sha256: ec69331e2335ab4d456c0a9fc700892c2c85b72b9c0cb39df3ecfe8833d5d5c8
       url: "https://pub.dev"
     source: hosted
-    version: "2.11.1"
+    version: "2.13.0"
+  flutter_rust_bridge_hooks:
+    dependency: "direct main"
+    description:
+      name: flutter_rust_bridge_hooks
+      sha256: "19900fbcaa8ddc2a4f1b13994ef34393eda129ebccc59ceb887a8fd2cf5def3e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.13.0"
   flutter_secure_storage:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: "9cad52d75ebc511adfae3d447d5d13da15a55a92c9410e50f67335b6d21d16ea"
+      sha256: fe638107c5f69119156ada2db5a57734385fac3f64430bd7252a00d3ead2ca4b
       url: "https://pub.dev"
     source: hosted
-    version: "9.2.4"
+    version: "10.3.4"
+  flutter_secure_storage_darwin:
+    dependency: transitive
+    description:
+      name: flutter_secure_storage_darwin
+      sha256: "82329fa5cdf343773b1b6897dea959105a29f092454259edff92f9f6637e8149"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.2"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
       name: flutter_secure_storage_linux
-      sha256: be76c1d24a97d0b98f8b54bce6b481a380a6590df992d0098f868ad54dc8f688
+      sha256: caa75bd78f017422912e3a904933113b2428eb79f981ac37acd2dd2a700458ea
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.3"
-  flutter_secure_storage_macos:
-    dependency: transitive
-    description:
-      name: flutter_secure_storage_macos
-      sha256: "6c0a2795a2d1de26ae202a0d78527d163f4acbb11cde4c75c670f3a0fc064247"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.3"
+    version: "3.0.3"
   flutter_secure_storage_platform_interface:
     dependency: transitive
     description:
       name: flutter_secure_storage_platform_interface
-      sha256: cf91ad32ce5adef6fba4d736a542baca9daf3beac4db2d04be350b87f69ac4a8
+      sha256: "64951127f001f546891c86f414972bf49ef2c4c8a4c92c65f5790cc0c9100045"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.2"
+    version: "2.1.1"
   flutter_secure_storage_web:
     dependency: transitive
     description:
       name: flutter_secure_storage_web
-      sha256: f4ebff989b4f07b2656fb16b47852c0aab9fed9b4ec1c70103368337bc1886a9
+      sha256: "073a62b3aeb866ab4ce795f960413948e51e5a42a9b0c8333b6daf5bb3208a1c"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "2.1.1"
   flutter_secure_storage_windows:
     dependency: transitive
     description:
       name: flutter_secure_storage_windows
-      sha256: b20b07cb5ed4ed74fc567b78a72936203f587eba460af1df11281c9326cd3709
+      sha256: "3b7c8e068875dfd46719ff57c90d8c459c87f2302ed6b00ff006b3c9fcad1613"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.2"
+    version: "4.1.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -456,13 +464,13 @@ packages:
     source: hosted
     version: "5.3.4"
   hooks:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: hooks
-      sha256: "025f060e86d2d4c3c47b56e33caf7f93bf9283340f26d23424ebcfccf34f621e"
+      sha256: eaac480a35ec0814146c2c48d96aaa829e0e44a7662c88ae84c9edf4bc35651f
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.3"
+    version: "2.2.0"
   http:
     dependency: "direct main"
     description:
@@ -548,14 +556,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
-  js:
-    dependency: transitive
-    description:
-      name: js
-      sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.6.7"
   json_annotation:
     dependency: "direct main"
     description:
@@ -692,22 +692,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.8.1"
-  native_toolchain_c:
-    dependency: transitive
-    description:
-      name: native_toolchain_c
-      sha256: "6ba77bb18063eebe9de401f5e6437e95e1438af0a87a3a39084fbd37c90df572"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.17.6"
   native_toolchain_rust:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: native_toolchain_rust
-      sha256: "26d4dcae954328af4ebfa8fc56cca0bf74b9ae8b4a6132de5da2071ac3d237b3"
+      sha256: "17d083e9d2375d9371b7e23f950746d3dfacc512431f4418a5aa953a73af69a8"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.4"
+    version: "1.1.1"
   nested:
     dependency: transitive
     description:
@@ -720,10 +712,10 @@ packages:
     dependency: transitive
     description:
       name: objective_c
-      sha256: "100a1c87616ab6ed41ec263b083c0ef3261ee6cd1dc3b0f35f8ddfa4f996fe52"
+      sha256: c965d264fd4b0b4dd402dce9d049b70656bf98d3ca108b9bc55d2544ceadbe5e
       url: "https://pub.dev"
     source: hosted
-    version: "9.3.0"
+    version: "9.6.4"
   package_config:
     dependency: transitive
     description:
@@ -880,17 +872,10 @@ packages:
     dependency: transitive
     description:
       name: record_use
-      sha256: "2551bd8eecfe95d14ae75f6021ad0248be5c27f138c2ec12fcb52b500b3ba1ed"
+      sha256: "1cb8564af8d43b464294411db9217f5ec04891c6f22ee2c32d73ae05e88a6bd2"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.0"
-  rust_lib_kafkalyzer:
-    dependency: "direct main"
-    description:
-      path: rust_builder
-      relative: true
-    source: path
-    version: "0.0.1"
+    version: "1.1.1"
   screen_retriever:
     dependency: "direct main"
     description:

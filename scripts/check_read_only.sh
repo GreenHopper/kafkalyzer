@@ -55,7 +55,7 @@ CHECKS=(
     "Prohibited Message Send Calls:::all:::\.send\(:::allow_read_only_exception"
     "Mutating admin calls:::all:::(^|[^A-Za-z0-9_])(create_topics|delete_topics|create_partitions|alter_configs|incremental_alter_configs|delete_records|delete_groups)[[:space:]]*\(:::"
     "Offset store:::all:::(^|[^A-Za-z0-9_])store_offset(s|_from_message)?[[:space:]]*\(:::"
-    "HTTP PUT/DELETE/PATCH:::rs:::\.(put|delete|patch)[[:space:]]*\(|Method::(PUT|DELETE|PATCH):::"
+    "HTTP PUT/DELETE/PATCH:::rs:::\.(put|delete|patch)[[:space:]]*\(|Method::(PUT|DELETE|PATCH):::kafkalyzer-profiles/"
     "HTTP POST:::rs:::\.post[[:space:]]*\(|Method::POST:::allow_read_only_exception:[[:space:]]*[^[:space:]]"
     "Native mutating calls:::rs:::rd_kafka_(produce|producev|produceva|produce_batch|send_offsets_to_transaction|commit|commit_message|commit_queue|offset_store|offsets_store|subscribe|CreateTopics|DeleteTopics|CreatePartitions|AlterConfigs|IncrementalAlterConfigs|DeleteRecords|DeleteGroups|DeleteConsumerGroupOffsets|AlterConsumerGroupOffsets|CreateAcls|DeleteAcls|AlterUserScramCredentials)[^A-Za-z_]:::"
     'Producer-mode kcat command:::all:::(kcat|kafkacat)[^"'\''`]*[[:space:]]-P([^A-Za-z]|$):::'

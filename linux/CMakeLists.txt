@@ -130,3 +130,22 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Place kafkalyzer-mcp next to the app binary. Flutter's install step wipes the
+# bundle on every build, so a one-shot copy after flutter run does not stick.
+set(KAFKALYZER_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/..")
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+  set(KAFKALYZER_MCP_SIDECAR_ARGS "")
+else()
+  set(KAFKALYZER_MCP_SIDECAR_ARGS "--release")
+endif()
+install(CODE "
+  execute_process(
+    COMMAND \"${KAFKALYZER_REPO_ROOT}/scripts/ensure_mcp_sidecar.sh\" ${KAFKALYZER_MCP_SIDECAR_ARGS}
+    WORKING_DIRECTORY \"${KAFKALYZER_REPO_ROOT}\"
+    RESULT_VARIABLE _kafkalyzer_mcp_sidecar_result
+  )
+  if(NOT _kafkalyzer_mcp_sidecar_result EQUAL 0)
+    message(FATAL_ERROR \"ensure_mcp_sidecar.sh failed (exit \${_kafkalyzer_mcp_sidecar_result})\")
+  endif()
+  " COMPONENT Runtime)

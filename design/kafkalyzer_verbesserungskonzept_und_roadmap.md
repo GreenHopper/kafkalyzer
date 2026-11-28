@@ -896,7 +896,7 @@ und sind deshalb knapper gefasst. Abhängigkeiten sind ausdrücklich genannt.
     den Datenabfluss an LLM-Anbieter zeigen.
 - **Schichten:** `kafkalyzer-profiles` (neu) → Bridge → Dart (`features/cluster`, `features/settings`).
 
-#### 5.17 `mcp-stdio-server` (L) — benötigt 5.1, 5.16
+#### 5.17 `mcp-stdio-server` (L) — benötigt 5.1, 5.16 — **implementiert**
 
 - **Capabilities:** NEU `mcp-server`.
 - **Anforderungen:**

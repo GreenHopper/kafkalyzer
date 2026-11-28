@@ -598,6 +598,9 @@
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				// arm64 only: no Intel macOS runners, and krb5-src cannot
+				// cross-compile x86_64. Flutter forwards this to xcodebuild.
+				EXCLUDED_ARCHS = x86_64;
 			};
 			name = Release;
 		};

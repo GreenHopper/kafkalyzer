@@ -105,7 +105,8 @@ context: |
       `[n]`, `$.` prefix, JSON Pointer). Do not add a second resolver or a
       second path syntax in Dart or Rust.
     - Code Quality & Style:
-      - A broker-dependent Rust test lives in `kafkalyzer-kafka`, is `#[ignore]`d
+      - A broker-dependent Rust test lives in `kafkalyzer-kafka` (collectors /
+        metadata) or `kafkalyzer-mcp` (handler end-to-end), is `#[ignore]`d
         with the reason naming `scripts/kafka_integration_tests.sh`, asserts
         something, and reads only fixtures that the script creates and
         shape-checks.
