@@ -14,7 +14,7 @@ dependencies:
   flutter:
     sdk: flutter
   code_assets: ^1.0.0
-  flutter_rust_bridge: 2.11.1
+  flutter_rust_bridge: 2.13.0
   hooks: ^1.0.3
   native_toolchain_rust: ^1.0.3
   plugin_platform_interface: ^2.0.2
