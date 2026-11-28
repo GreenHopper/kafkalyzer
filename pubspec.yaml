@@ -38,13 +38,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   http: ^1.2.0
-  rust_lib_kafkalyzer:
-    path: rust_builder
   flutter_rust_bridge: 2.13.0
   # Native Assets: builds rust/ into the app on Linux, macOS and Windows.
-  code_assets: ^1.0.0
-  hooks: ^1.0.3
-  native_toolchain_rust: ^1.0.3
+  code_assets: ^2.2.0
+  hooks: ^2.2.0
+  native_toolchain_rust: ^1.1.1
   get_it:
   watch_it:
   go_router: ^17.0.1
@@ -77,6 +75,7 @@ dependencies:
   screen_retriever: ^0.2.2
   cupertino_ui: any
   collection: any
+  flutter_rust_bridge_hooks: 2.13.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

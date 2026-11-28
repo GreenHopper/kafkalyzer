@@ -1,22 +1,11 @@
-import 'package:code_assets/code_assets.dart';
-import 'package:hooks/hooks.dart';
-import 'package:native_toolchain_rust/native_toolchain_rust.dart';
+import 'package:flutter_rust_bridge_hooks/flutter_rust_bridge_hooks.dart';
 
+// Builds the rust/ bridge crate into the app bundle on Linux, macOS and Windows.
+// Defaults are the flutter_rust_bridge ones: asset name src/rust/frb_generated.io.dart,
+// crate dir rust/, release profile, routed to the app bundle.
 void main(List<String> args) async {
   await build(args, (input, output) async {
-    if (!input.config.buildCodeAssets) {
-      return;
-    }
-
-    final targetOS = input.config.code.targetOS;
-
-    if (targetOS == OS.iOS || targetOS == OS.android) {
-      return;
-    }
-
-    await const RustBuilder(
-      assetName: 'src/lib.rs',
-      cratePath: 'rust',
-    ).run(input: input, output: output);
+    await const FlutterRustBridgeNativeAssetsBuilder()
+        .run(input: input, output: output);
   });
 }

@@ -13,10 +13,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  code_assets: ^1.0.0
+  code_assets: ^2.2.0
   flutter_rust_bridge: 2.13.0
-  hooks: ^1.0.3
-  native_toolchain_rust: ^1.0.3
+  hooks: ^2.2.0
+  native_toolchain_rust: ^1.1.1
   plugin_platform_interface: ^2.0.2
 dev_dependencies:
   ffi: ^2.1.0
