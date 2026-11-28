@@ -598,6 +598,8 @@
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				// shortcut: arm64 only - GitHub has no Intel macOS runners.
+				ONLY_ACTIVE_ARCH = YES;
 			};
 			name = Release;
 		};
