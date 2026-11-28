@@ -28,8 +28,10 @@ Map<String, String> cargoEnvironment(
 }) {
   final env = <String, String>{
     // The vendored librdkafka CMakeLists asks for a CMake older than 3.5, which
-    // the macOS runner's CMake 4 rejects; this is CMake's own escape hatch.
-    if (targetOS == OS.macOS) 'CMAKE_POLICY_VERSION_MINIMUM': '3.5',
+    // the runners' CMake 4 rejects; this is CMake's own escape hatch. Linux
+    // builds librdkafka with configure instead of CMake.
+    if (targetOS == OS.macOS || targetOS == OS.windows)
+      'CMAKE_POLICY_VERSION_MINIMUM': '3.5',
   };
   if (targetOS != OS.windows) return env;
   if (environment['OPENSSL_DIR'] != null) return env;

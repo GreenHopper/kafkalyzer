@@ -31,6 +31,14 @@ void main() {
     expect(env['VCPKG_ROOT'], r'C:\vcpkg');
     expect(env['OPENSSL_DIR'], r'C:\vcpkg\installed\x64-windows');
     expect(env['SASL2_LIB_DIR'], r'C:\vcpkg\installed\x64-windows\lib');
+    expect(env['CMAKE_POLICY_VERSION_MINIMUM'], '3.5');
+  });
+
+  test('a PATH entry without an installed tree is left alone', () {
+    final env = cargoEnvironment(OS.windows, const {
+      'PATH': r'C:\vcpkg',
+    }, directoryExists: (path) => path != r'C:\vcpkg\installed\x64-windows');
+    expect(env, {'CMAKE_POLICY_VERSION_MINIMUM': '3.5'});
   });
 
   test('an explicit OPENSSL_DIR wins over the PATH lookup', () {
@@ -39,12 +47,5 @@ void main() {
       'OPENSSL_DIR': r'D:\openssl',
     }, directoryExists: (_) => exists);
     expect(env.containsKey('OPENSSL_DIR'), isFalse);
-  });
-
-  test('a PATH entry without an installed tree is left alone', () {
-    final env = cargoEnvironment(OS.windows, const {
-      'PATH': r'C:\vcpkg',
-    }, directoryExists: (path) => path != r'C:\vcpkg\installed\x64-windows');
-    expect(env, isEmpty);
   });
 }

@@ -517,11 +517,31 @@ jobs:
         run: flutter pub get
 
       - name: Build Windows app
-        run: >-
-          flutter build windows --release -v --build-name=${{ env.VERSION }}
-          --build-number=${{ github.run_number }}
-          --dart-define=APP_VERSION="${{ env.VERSION
-          }}+${{ github.run_number }}"
+        shell: pwsh
+        run: |
+          $appVersion = '${{ env.VERSION }}+${{ github.run_number }}'
+          $buildArgs = @(
+            '--release', '-v',
+            '--build-name=${{ env.VERSION }}',
+            '--build-number=${{ github.run_number }}',
+            "--dart-define=APP_VERSION=$appVersion"
+          )
+          flutter build windows @buildArgs *>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) {
+            # The step log is only readable with admin rights, so the failing
+            # lines are repeated as annotations.
+            Select-String -Path build.log -Pattern 'error' |
+              Select-Object -Last 10 |
+              ForEach-Object { "::error::$($_.Line)" }
+            exit $LASTEXITCODE
+          }
+
+      - name: Upload Windows build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-log
+          path: build.log
 
       - name: Build kafkalyzer-mcp
         env:
