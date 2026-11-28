@@ -490,6 +490,13 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
+      # MSBuild hides Cargokit's cargo output (MSB8066 exit -1), so build the
+      # same crate here to get the real error and fail fast.
+      - name: Pre-build rust_lib_kafkalyzer
+        run: >-
+          cargo build --release --manifest-path rust/Cargo.toml
+          -p rust_lib_kafkalyzer
+
       - name: Build Windows app
         run: flutter build windows --release --build-name=${{ env.VERSION }} --build-number=${{ github.run_number }} --dart-define=APP_VERSION="${{ env.VERSION }}+${{ github.run_number }}"
 
