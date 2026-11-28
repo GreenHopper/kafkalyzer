@@ -62,7 +62,11 @@ committed on `spike/keyring-ci` and are carried by this change.
 
 ## 5. Documentation and cleanup
 
-- [ ] 5.1 Update the development docs: pinned Rust toolchain location, the new `hook/build.dart`, the codegen version
+- [x] 5.1 Update the development docs: pinned Rust toolchain location, the new `hook/build.dart`, the codegen version
       to install, and the removal of `rust_builder/`
-- [ ] 5.2 State the macOS arm64-only policy where users see it (README install section and release notes template) and
+- [x] 5.2 State the macOS arm64-only policy where users see it (README install section and release notes template) and
       update `KAFKALYZER_PATCHES.md` if the velopack patch set changed
+
+Note (5.2): the repository has no release-notes template — the release job uses `gh release create
+--generate-notes`. The arm64-only policy is stated in the README Downloads note and enforced by the macOS
+Xcode setting plus its CI assertion.
