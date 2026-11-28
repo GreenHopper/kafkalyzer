@@ -48,7 +48,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Set up Flutter
@@ -83,7 +83,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Run Kafka integration tests
@@ -115,7 +115,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Set up Flutter
@@ -187,7 +187,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Set up Flutter
@@ -306,8 +306,8 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
-          target: x86_64-apple-darwin,aarch64-apple-darwin
+          toolchain: "1.100.0"
+          target: aarch64-apple-darwin
           cache-workspaces: "rust"
 
       - name: Cache Cargokit macOS target directory
@@ -450,7 +450,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: "1.100.0"
           cache-workspaces: "rust"
 
       - name: Export GitHub Actions cache API variables

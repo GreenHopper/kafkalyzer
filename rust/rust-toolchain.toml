@@ -1,0 +1,14 @@
+[toolchain]
+# Exact version on purpose: the native-assets build hook runs `rustup run <channel> cargo build`
+# and refuses bare `stable`/`beta`/`nightly` because the build must be reproducible in CI and locally.
+# Keep equal to the `toolchain:` input of setup-rust-toolchain in .github/workflows/build.yml.
+channel = "1.100.0"
+
+# Only the desktop architectures kafkalyzer ships. The hook always passes --target <triple>, so a
+# missing entry here fails the build with the triple named instead of falling back to another arch.
+targets = [
+  "aarch64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu",
+  "x86_64-pc-windows-msvc",
+]

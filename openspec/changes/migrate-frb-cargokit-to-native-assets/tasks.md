@@ -5,7 +5,7 @@ committed on `spike/keyring-ci` and are carried by this change.
 
 ## 1. Spikes — before any version pin moves
 
-- [ ] 1.1 Add `rust/rust-toolchain.toml` with an exact channel (no bare `stable`) equal to the Rust version the CI jobs
+- [x] 1.1 Add `rust/rust-toolchain.toml` with an exact channel (no bare `stable`) equal to the Rust version the CI jobs
       install, and `targets` = `aarch64-apple-darwin`, `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`,
       `x86_64-pc-windows-msvc`; verify `rustup show active-toolchain` in `rust/` reports that channel and
       `cargo test --manifest-path rust/Cargo.toml` still passes on the pinned toolchain

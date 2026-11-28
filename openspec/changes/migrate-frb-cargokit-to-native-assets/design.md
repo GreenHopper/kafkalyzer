@@ -136,8 +136,29 @@ to `2.13.0`, and the local codegen gets installed at exactly that version before
 Rollback: revert the branch commits in reverse order; the `EXCLUDED_ARCHS` and SPM-flag decisions are kept because they
 do not depend on the build backend.
 
+## Findings From The Spike
+
+Measured on Linux with `rust/rust-toolchain.toml` (`1.100.0`) and `hook/build.dart` present while `rust_builder/` was
+still wired in (task 1.1, 1.2, 1.4):
+
+- `rustup show active-toolchain` inside `rust/` reports `1.100.0-x86_64-unknown-linux-gnu (overridden by
+  '…/rust/rust-toolchain.toml')`, and `cargo test --workspace` passes on it.
+- The hook's cargo target directory is `.dart_tool/hooks_runner/shared/<package>/build/<config-hash>/target`, i.e. it
+  carries a content hash segment. A CI cache MUST therefore cache the `.dart_tool/hooks_runner/` tree, not a fixed
+  path; the hash directory is not predictable across Flutter or dependency changes.
+- Cargo really is invoked with `--target <triple>`: the built code asset resolved to
+  `…/target/x86_64-unknown-linux-gnu/release/librust_lib_kafkalyzer.so` and that file, not the Cargokit product in
+  `build/linux/x64/debug/plugins/rust_lib_kafkalyzer/`, is what ended up in `build/linux/x64/debug/bundle/lib/`.
+- `flutter test` did not trigger a Rust compile (31 s suite, 1377 tests green), and `flutter analyze` reports no issue
+  for `hook/build.dart`.
+
 ## Open Questions
 
-- The exact hook target directory per platform, to be recorded by task 1.4 and pasted into the CI cache paths.
+- The hook target directories for macOS and Windows, to be recorded from the CI spike run and checked against the
+  Linux-shaped path above before the cache steps are written (task 1.4, 4.3).
+- A `flutter build linux --debug` resolved the code asset from the `release` profile directory, so the Rust side looks
+  compiled in release mode even for a debug app. Cargokit used the debug profile there. Decide in task 2.x whether to
+  pass `buildMode` explicitly: explicit mapping costs a parameter and gives faster dev iteration, leaving the default
+  keeps the hook identical to velopack's at the cost of slower debug builds.
 - Whether `kafkalyzer-mcp` should inherit the pinned toolchain file (it is inside the same `rust/` workspace, so the
   pin applies to `cargo build -p kafkalyzer-mcp` automatically — confirm no CI step overrides it with `+toolchain`).

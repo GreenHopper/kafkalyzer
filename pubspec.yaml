@@ -41,6 +41,10 @@ dependencies:
   rust_lib_kafkalyzer:
     path: rust_builder
   flutter_rust_bridge: 2.11.1
+  # Native Assets: builds rust/ into the app on Linux, macOS and Windows.
+  code_assets: ^1.0.0
+  hooks: ^1.0.3
+  native_toolchain_rust: ^1.0.3
   get_it:
   watch_it:
   go_router: ^17.0.1
