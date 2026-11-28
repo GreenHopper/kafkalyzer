@@ -18,7 +18,9 @@ Grab the latest stable release for your platform — the links below always reso
 | 🍎 macOS | Portable App | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer-osx-Portable.zip) |
 | 🪟 Windows | Installer | [Download](https://github.com/GreenHopper/kafkalyzer/releases/latest/download/Kafkalyzer-win-Setup.exe) |
 
-> **Note:** The macOS archive contains a ready-to-use app bundle — unzip it and move the app into your `Applications` folder. All links use GitHub's `/releases/latest/download/` redirect, so they never expire when a new version ships.
+> **Note:** The macOS archive contains a ready-to-use app bundle — unzip it and move the app into your `Applications`
+> folder. macOS builds target Apple silicon (arm64) only; there is no Intel build. All links use GitHub's
+> `/releases/latest/download/` redirect, so they never expire when a new version ships.
 
 ## 🏗️ Architecture
 
@@ -204,8 +206,14 @@ The dialog’s MCP client snippet embeds the absolute path of the server program
 ### Prerequisites
 
 - **Flutter SDK**: [Install Flutter](https://flutter.dev/docs/get-started/install)
-- **Rust Toolchain**: [Install Rust](https://www.rust-lang.org/tools/install)
-- **Codegen Tools**: `flutter_rust_bridge_codegen` v2 (only if modifying the bridge).
+- **Rust Toolchain**: [Install Rust](https://www.rust-lang.org/tools/install). The exact version is pinned in
+  `rust/rust-toolchain.toml`; `rustup` installs that toolchain and the desktop targets on its own, so plain
+  `cargo test` in `rust/` and the app build always use the same compiler.
+- **Codegen Tools**: `flutter_rust_bridge_codegen` 2.13.0, matching the pin in `pubspec.yaml` and
+  `rust/Cargo.toml` — install with
+  `cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked` (only if modifying the bridge).
+- **No separate Rust build step**: `hook/build.dart` compiles `rust/` into the app through Flutter's Native Assets,
+  for `flutter run`, `flutter test` and release builds alike. The old Cargokit plugin (`rust_builder/`) is gone.
 - **Linux — native packages**: the Kafka client links OpenSSL, Cyrus SASL and zlib, so a
   Linux build also needs `libssl-dev libsasl2-dev libz-dev` next to the usual
   `libgtk-3-dev libsecret-1-dev libblkid-dev`. Without them the build fails while compiling
